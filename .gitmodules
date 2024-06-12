@@ -1,0 +1,30 @@
+[submodule "ext/glfw"]
+	path = ext/glfw
+	url = https://github.com/glfw/glfw.git
+[submodule "ext/imgui"]
+	path = ext/imgui
+	url = https://github.com/ocornut/imgui.git
+[submodule "ext/InAppGpuProfiler"]
+	path = ext/InAppGpuProfiler
+	url = https://github.com/aiekick/InAppGpuProfiler.git
+[submodule "ext/ImNodeFlow"]
+	path = ext/ImNodeFlow
+	url = https://github.com/Fattorino/ImNodeFlow.git
+[submodule "ext/implot"]
+	path = ext/implot
+	url = https://github.com/epezent/implot.git
+[submodule "ext/ImGuiFileDialog"]
+	path = ext/ImGuiFileDialog
+	url = https://github.com/aiekick/ImGuiFileDialog.git
+[submodule "ext/imgInspect"]
+	path = ext/imgInspect
+	url = https://github.com/CedricGuillemet/imgInspect.git
+[submodule "ext/ImGuizmo"]
+	path = ext/ImGuizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo.git
+[submodule "ext/imgui-notify"]
+	path = ext/imgui-notify
+	url = https://github.com/patrickcjk/imgui-notify.git
+[submodule "ext/MetricsGui"]
+	path = ext/MetricsGui
+	url = https://github.com/GameTechDev/MetricsGui.git
