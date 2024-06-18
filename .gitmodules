@@ -31,3 +31,9 @@
 [submodule "ext/entt"]
 	path = ext/entt
 	url = https://github.com/skypjack/entt.git
+[submodule "ext/eigen"]
+	path = ext/eigen
+	url = https://gitlab.com/libeigen/eigen.git
+[submodule "ext/tinyobjloader"]
+	path = ext/tinyobjloader
+	url = https://github.com/tinyobjloader/tinyobjloader.git

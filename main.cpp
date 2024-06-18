@@ -4,15 +4,18 @@
 #include "entt/entt.hpp"
 #include "Engine.h"
 #include "PluginGlfwWindow.h"
+#include "PluginMesh.h"
 
 // The MAIN function, from here we start the application and run the game loop
 int main() {
     Bcg::Engine engine;
+    auto &plugins = Bcg::Engine::Instance()->plugins;
 
     auto window_plugin = std::make_unique<Bcg::PluginGlfwWindow>();
     window_plugin->init();
-    auto &plugins = Bcg::Engine::Instance()->plugins;
     plugins.emplace_back(std::move(window_plugin));
+    auto mesh_plugin = std::make_unique<Bcg::PluginMesh>();
+    plugins.emplace_back(std::move(mesh_plugin));
 
     for (auto &plugin: plugins) {
         plugin->activate();
