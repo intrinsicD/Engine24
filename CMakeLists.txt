@@ -3,6 +3,10 @@ project(Engine24)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(Engine24 main.cpp)
+add_executable(Engine24 main.cpp
+        Logger.cpp
+        PluginGlfwWindow.cpp
+        PluginMesh.cpp
+)
 
 add_subdirectory(ext)

@@ -1,8 +1,19 @@
 target_include_directories(Engine24 SYSTEM PUBLIC glad/include)
 target_include_directories(Engine24 SYSTEM PUBLIC imgui)
 
+
+set(GLFW_BUILD_WAYLAND OFF)
 add_subdirectory(glfw)
+target_link_libraries(Engine24 PUBLIC glfw)
+
+add_subdirectory(eigen)
+target_link_libraries(Engine24 PUBLIC Eigen3::Eigen)
+
+add_subdirectory(entt)
+target_link_libraries(Engine24 PUBLIC EnTT::EnTT)
+
 target_sources(Engine24 PRIVATE
+        glad/src/gl.c
         imgui/imgui.cpp
         imgui/misc/cpp/imgui_stdlib.cpp
         imgui/imgui_demo.cpp
@@ -15,4 +26,4 @@ target_sources(Engine24 PRIVATE
         implot/implot.cpp
         implot/implot_demo.cpp
         implot/implot_items.cpp)
-target_link_libraries(Engine24 glfw)
+

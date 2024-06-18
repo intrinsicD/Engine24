@@ -28,3 +28,6 @@
 [submodule "ext/MetricsGui"]
 	path = ext/MetricsGui
 	url = https://github.com/GameTechDev/MetricsGui.git
+[submodule "ext/entt"]
+	path = ext/entt
+	url = https://github.com/skypjack/entt.git
