@@ -8,19 +8,28 @@
 namespace Bcg {
     class Plugin {
     public:
+        explicit Plugin(const char *name);
+
         virtual ~Plugin() = default;
 
-        virtual void activate() = 0;
+        virtual void activate();
+
+        virtual void begin_frame() = 0;
 
         virtual void update() = 0;
 
-        virtual void deactivate() = 0;
+        virtual void end_frame() = 0;
+
+        virtual void deactivate();
 
         virtual void render_menu() = 0;
 
         virtual void render_gui() = 0;
 
         virtual void render() = 0;
+
+    protected:
+        const char *name;
     };
 }
 

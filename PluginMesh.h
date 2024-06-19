@@ -25,7 +25,7 @@ namespace Bcg {
 
     class PluginMesh : public Plugin {
     public:
-        PluginMesh() = default;
+        PluginMesh();
 
         ~PluginMesh() override = default;
 
@@ -43,7 +43,11 @@ namespace Bcg {
 
         void activate() override;
 
+        void begin_frame() override;
+
         void update() override;
+
+        void end_frame() override;
 
         void deactivate() override;
 

@@ -4,8 +4,11 @@ project(Engine24)
 set(CMAKE_CXX_STANDARD 20)
 
 add_executable(Engine24 main.cpp
+        Engine.cpp
+        Graphics.cpp
+        Input.cpp
         Logger.cpp
-        PluginGlfwWindow.cpp
+        Plugin.cpp
         PluginMesh.cpp
 )
 

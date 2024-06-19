@@ -6,56 +6,34 @@
 #define ENGINE24_ENGINE_H
 
 #include "entt/entt.hpp"
-
-struct GLFWwindow;
-
+#include "Plugin.h"
 
 namespace Bcg {
-    struct Plugin;
+    struct PluginRenderer;
 
     struct Engine {
-        Engine() {
-            entt::locator<Bcg::Engine *>::emplace<Bcg::Engine *>(this);
-        }
+        Engine();
 
-        static Engine *Instance() {
-            return entt::locator<Engine *>::value();
-        }
+        static Engine *Instance();
 
         //Main way to have access to the engines state
-        static auto &State() {
-            return Instance()->state;
-        }
+        static entt::registry &State();
 
         //Main way to have access to the engines state context
-        static auto &Context() {
-            return State().ctx();
-        }
+        static entt::registry::context &Context();
 
-        static auto &Dispatcher() {
-            return Instance()->dispatcher;
-        }
+        static entt::dispatcher &Dispatcher();
 
-        static void ExecuteCmdBuffer() {
-            for (auto &cmd: Bcg::Engine::Instance()->command_buffer) {
-                cmd();
-            }
-            Bcg::Engine::Instance()->command_buffer.clear();
-        }
+        static void ExecuteCmdBuffer();
 
-        static void ExecuteRenderCmdBuffer() {
-            for (auto &cmd: Bcg::Engine::Instance()->render_command_buffer) {
-                cmd();
-            }
-            Bcg::Engine::Instance()->render_command_buffer.clear();
-        }
+        static void ExecuteRenderCmdBuffer();
 
         entt::registry state;
         entt::dispatcher dispatcher;
-        GLFWwindow *window = nullptr;
         std::vector<std::function<void()>> command_buffer;
         std::vector<std::function<void()>> render_command_buffer;
         std::vector<std::unique_ptr<Plugin>> plugins;
+        PluginRenderer *renderer = nullptr;
     };
 }
 

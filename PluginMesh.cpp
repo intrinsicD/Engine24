@@ -268,7 +268,13 @@ namespace Bcg {
         mesh.indices = newIndices;
     }
 
+    PluginMesh::PluginMesh() : Plugin("PluginMesh") {}
+
     void PluginMesh::activate() {
+        Plugin::activate();
+    }
+
+    void PluginMesh::begin_frame() {
 
     }
 
@@ -276,8 +282,12 @@ namespace Bcg {
 
     }
 
-    void PluginMesh::deactivate() {
+    void PluginMesh::end_frame() {
 
+    }
+
+    void PluginMesh::deactivate() {
+        Plugin::deactivate();
     }
 
     void PluginMesh::render_menu() {
@@ -286,7 +296,8 @@ namespace Bcg {
                 if (ImGui::MenuItem("Load Mesh")) {
                     IGFD::FileDialogConfig config;
                     config.path = ".";
-                    ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".obj,.off,.stl, .ply", config);
+                    config.path = "/home/alex/Dropbox/Work/Datasets";
+                    ImGuiFileDialog::Instance()->OpenDialog("Load Mesh", "Choose File", ".obj,.off,.stl,.ply", config);
                 }
                 ImGui::EndMenu();
             }
@@ -295,7 +306,7 @@ namespace Bcg {
     }
 
     void PluginMesh::render_gui() {
-        if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey")) {
+        if (ImGuiFileDialog::Instance()->Display("Load Mesh", ImGuiWindowFlags_NoCollapse, ImVec2(200, 100))) {
             if (ImGuiFileDialog::Instance()->IsOk()) { // action if OK
                 std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
                 std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();

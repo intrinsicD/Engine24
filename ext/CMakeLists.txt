@@ -50,6 +50,9 @@ add_library(imgui STATIC
         imgui/backends/imgui_impl_glfw.cpp
         imgui/backends/imgui_impl_opengl3.cpp
 )
-target_include_directories(imgui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/imgui)
+target_include_directories(imgui PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/imgui
+        ${CMAKE_CURRENT_SOURCE_DIR}/glfw/include)
+
 target_link_libraries(Engine24 PUBLIC imgui)
 

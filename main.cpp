@@ -1,30 +1,38 @@
 #include <vector>
 
-#include "GLFW/glfw3.h"
 #include "entt/entt.hpp"
 #include "Engine.h"
-#include "PluginGlfwWindow.h"
+#include "Input.h"
+#include "Graphics.h"
 #include "PluginMesh.h"
 
-// The MAIN function, from here we start the application and run the game loop
 int main() {
     Bcg::Engine engine;
-    auto &plugins = Bcg::Engine::Instance()->plugins;
+    Bcg::Graphics graphics;
+    if(!graphics.init()){
+        return -1;
+    }
 
-    auto window_plugin = std::make_unique<Bcg::PluginGlfwWindow>();
-    window_plugin->init();
-    plugins.emplace_back(std::move(window_plugin));
+    auto &plugins = Bcg::Engine::Instance()->plugins;
+    plugins.emplace_back(std::make_unique<Bcg::Input>());
+
     auto mesh_plugin = std::make_unique<Bcg::PluginMesh>();
     plugins.emplace_back(std::move(mesh_plugin));
+
 
     for (auto &plugin: plugins) {
         plugin->activate();
     }
 
+    Bcg::Engine::Dispatcher().update();
+
     // Game loop
-    while (!glfwWindowShouldClose(Bcg::Engine::Instance()->window)) {
+    while (!graphics.should_close()) {
+        for (auto &plugin: plugins) {
+            plugin->begin_frame();
+        }
         // Check if any events have been activated (key pressed, mouse moved etc.) and call corresponding response functions
-        glfwPollEvents();
+        graphics.poll_events();
 
         {
             for (auto &plugin: plugins) {
@@ -34,7 +42,7 @@ int main() {
 
         Bcg::Engine::ExecuteCmdBuffer();
 
-        window_plugin->clear_framebuffer();
+        graphics.clear_framebuffer();
         {
             for (auto &plugin: plugins) {
                 plugin->render();
@@ -44,7 +52,7 @@ int main() {
         Bcg::Engine::ExecuteRenderCmdBuffer();
 
         {
-            window_plugin->start_gui();
+            graphics.start_gui();
             for (auto &plugin: plugins) {
                 plugin->render_menu();
             }
@@ -52,18 +60,20 @@ int main() {
             for (auto &plugin: plugins) {
                 plugin->render_gui();
             }
-            window_plugin->end_gui();
+            graphics.render_menu();
+            graphics.render_gui();
+            graphics.end_gui();
         }
 
         // Swap the screen buffers
-        glfwSwapBuffers(Bcg::Engine::Instance()->window);
+        graphics.swap_buffers();
+        for (auto &plugin: plugins) {
+            plugin->end_frame();
+        }
     }
 
     for (auto &plugin: plugins) {
         plugin->deactivate();
     }
-    // Terminates GLFW, clearing any resources allocated by GLFW.
-    glfwDestroyWindow(Bcg::Engine::Instance()->window);
-    glfwTerminate();
     return 0;
 }
