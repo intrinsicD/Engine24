@@ -28,11 +28,7 @@ namespace Bcg {
 
         void render_gui() override;
 
-        static void render_gui(const Keyboard::Key &key);
-
         static void render_gui(const Keyboard &keyboard);
-
-        static void render_gui(const Mouse::Button &button);
 
         static void render_gui(const Mouse::Cursor &cursor);
 

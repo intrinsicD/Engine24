@@ -6,25 +6,20 @@
 #define ENGINE24_KEYBAORD_H
 
 #include <vector>
+#include <set>
 
 namespace Bcg {
     struct Keyboard {
-        struct Key {
-            const char *name;
-            int key;
-            int scancode;
-            int action;
-            int mode;
+        bool shift() const;
 
-            operator bool() const { return action; }
-        };
+        bool strg() const;
 
-        Key shift;
-        Key strg;
-        Key alt;
-        Key esc;
+        bool alt() const;
 
-        std::vector<unsigned int> pressed;
+        bool esc() const;
+
+        std::vector<int> pressed;
+        std::set<int> current;
     };
 }
 #endif //ENGINE24_KEYBAORD_H

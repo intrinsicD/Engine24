@@ -23,6 +23,11 @@ namespace Bcg::Events::Callback {
         int button, action, mods;
     };
 
+    struct MouseScroll {
+        GLFWwindow *window;
+        double xoffset, yoffset;
+    };
+
     struct WindowResize {
         GLFWwindow *window;
         int width, height;

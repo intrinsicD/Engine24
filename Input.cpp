@@ -7,6 +7,7 @@
 #include "Keybaord.h"
 #include "Mouse.h"
 #include "imgui.h"
+#include "GLFWUtils.h"
 
 namespace Bcg {
     static bool show_input_gui;
@@ -18,6 +19,7 @@ namespace Bcg {
         }
         if (!Engine::Context().find<Mouse>()) {
             auto &mouse = Engine::Context().emplace<Mouse>();
+            mouse.pressed.resize(5);
         }
     }
 
@@ -37,6 +39,7 @@ namespace Bcg {
     void Input::end_frame() {
         auto &keyboard = Engine::Context().get<Keyboard>();
         auto &mouse = Engine::Context().get<Mouse>();
+        mouse.scrolling = false;
     }
 
     void Input::deactivate() {
@@ -53,7 +56,11 @@ namespace Bcg {
     void Input::render_gui() {
         if (show_input_gui) {
             if (ImGui::Begin("Input", &show_input_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
+                ImGui::Text("Keyboard:");
+                ImGui::Separator();
                 render_gui(Engine::Context().get<Keyboard>());
+                ImGui::Separator();
+                ImGui::Text("Mouse:");
                 ImGui::Separator();
                 render_gui(Engine::Context().get<Mouse>());
             }
@@ -61,23 +68,18 @@ namespace Bcg {
         }
     }
 
-    void Input::render_gui(const Keyboard::Key &key) {
-        ImGui::Text("%s: %d Scancode: %d Action: %d Mode: %d", key.name, key.key, key.scancode,
-                    key.action, key.mode);
-    }
-
     void Input::render_gui(const Keyboard &keyboard) {
-        render_gui(keyboard.shift);
-        ImGui::Separator();
-        render_gui(keyboard.strg);
-        ImGui::Separator();
-        render_gui(keyboard.alt);
-        ImGui::Separator();
-        render_gui(keyboard.esc);
-    }
-
-    void Input::render_gui(const Mouse::Button &button) {
-        ImGui::Text("Button: %d Action: %d Mods: %d", button.button, button.action, button.mods);
+        ImGui::Text("Shift: %d", keyboard.shift());
+        ImGui::Text("Strg: %d", keyboard.strg());
+        ImGui::Text("Alt: %d", keyboard.alt());
+        ImGui::Text("Esc: %d", keyboard.esc());
+        ImGui::Text("Current Keys: {");
+        ImGui::SameLine();
+        for (const auto key: keyboard.current) {
+            ImGui::Text("%s", KeyName(key));
+            ImGui::SameLine();
+        }
+        ImGui::Text("}");
     }
 
     void Input::render_gui(const Mouse::Cursor &cursor) {
@@ -85,13 +87,18 @@ namespace Bcg {
     }
 
     void Input::render_gui(const Mouse &mouse) {
-        render_gui(mouse.left);
-        ImGui::Separator();
-        render_gui(mouse.right);
-        ImGui::Separator();
-        render_gui(mouse.middle);
-        ImGui::Separator();
+        ImGui::Text("Left: %d", mouse.left());
+        ImGui::Text("Middle: %d", mouse.middle());
+        ImGui::Text("Right: %d", mouse.right());
+        ImGui::Text("Scrolling: %d", mouse.scrolling);
         render_gui(mouse.cursor);
+        ImGui::Text("Current Buttons: {");
+        ImGui::SameLine();
+        for (const auto button: mouse.current) {
+            ImGui::Text("%d", button);
+            ImGui::SameLine();
+        }
+        ImGui::Text("}");
     }
 
     void Input::render() {

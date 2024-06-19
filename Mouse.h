@@ -6,27 +6,28 @@
 #define ENGINE24_MOUSE_H
 
 #include <vector>
+#include <set>
 
 namespace Bcg {
     struct Mouse {
-        struct Button {
-            int button;
-            int action;
-            int mods;
-
-            operator bool() const { return action; }
-        };
-
         struct Cursor {
             double xpos, ypos;
         };
 
-        Button left;
-        Button middle;
-        Button right;
-        Cursor cursor;
+        bool left() const;
 
-        bool any() const { return left || middle || right; }
+        bool middle() const;
+
+        bool right() const;
+
+        bool any() const;
+
+        bool scrolling = false;
+
+        std::vector<int> pressed;
+        std::set<int> current;
+
+        Cursor cursor;
     };
 }
 

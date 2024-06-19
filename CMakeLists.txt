@@ -6,6 +6,9 @@ set(CMAKE_CXX_STANDARD 20)
 add_executable(Engine24 main.cpp
         Engine.cpp
         Graphics.cpp
+        Keyboard.cpp
+        Mouse.cpp
+        GLFWUtils.cpp
         Input.cpp
         Logger.cpp
         Plugin.cpp
