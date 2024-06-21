@@ -11,6 +11,11 @@
 #include <sstream>
 #include "imgui.h"
 #include "ImGuiFileDialog.h"
+#include "Engine.h"
+#include "EventsCallbacks.h"
+#include "MeshCompute.h"
+#include <iostream>
+#include "Eigen/Core"
 
 namespace Bcg {
     MeshComponent PluginMesh::load(const char *path) {
@@ -268,9 +273,24 @@ namespace Bcg {
         mesh.indices = newIndices;
     }
 
+    void on_drop_file(const Events::Callback::Drop &event) {
+        PluginMesh plugin;
+        for (int i = 0; i < event.count; ++i) {
+            auto mesh = plugin.load(event.paths[i]);
+            auto face_normals = ComputeFaceNormals(mesh);
+            auto T = Eigen::Map<Eigen::Matrix<unsigned int, 3, -1>>(mesh.indices.data(), 3, mesh.indices.size() / 3);
+            auto FN = Eigen::Map<Eigen::Matrix<float, 3, -1>>(face_normals.data(), 3, face_normals.size() / 3);
+            Log::Info("Comp Face Normals: ");
+            std::cout << FN.transpose().block(0, 0, 6, 3) << std::endl;
+            Log::Info("Ref Triangles: ");
+            std::cout << T.transpose().block(0, 0, 6, 3) << std::endl;
+        }
+    }
+
     PluginMesh::PluginMesh() : Plugin("PluginMesh") {}
 
     void PluginMesh::activate() {
+        Engine::Dispatcher().sink<Events::Callback::Drop>().connect<&on_drop_file>();
         Plugin::activate();
     }
 
@@ -287,6 +307,7 @@ namespace Bcg {
     }
 
     void PluginMesh::deactivate() {
+        Engine::Dispatcher().sink<Events::Callback::Drop>().disconnect<&on_drop_file>();
         Plugin::deactivate();
     }
 

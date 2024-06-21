@@ -319,6 +319,7 @@ namespace Bcg {
 
     bool Shader::load(const char *path) {
         source = ReadTextFile(path).c_str();
+        this->path = path;
         return compile();
     }
 
@@ -335,7 +336,7 @@ namespace Bcg {
         return true;
     }
 
-    Program::Program() : id(-1) {}
+    Program::Program(const char *name) : id(-1), name(name) {}
 
     bool Program::load(const char *v_path,
                        const char *f_path,
@@ -399,6 +400,7 @@ namespace Bcg {
         shaders.emplace_back(cs);
         return link();
     }
+
 
     bool Program::link() {
         id = glCreateProgram();

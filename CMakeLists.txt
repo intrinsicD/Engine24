@@ -8,6 +8,8 @@ add_executable(Engine24 main.cpp
         Graphics.cpp
         Keyboard.cpp
         Mouse.cpp
+        FileWatcher.cpp
+        MeshCompute.cpp
         GLFWUtils.cpp
         Input.cpp
         Logger.cpp

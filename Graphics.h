@@ -29,18 +29,6 @@ namespace Bcg {
         void end_gui() const;
 
         void swap_buffers() const;
-
-        unsigned int load_shader(const char *path, unsigned int type);
-
-        unsigned int compile_shader(const char *source, unsigned int type);
-
-        unsigned int load_program(const char *v_path,
-                                  const char *f_path,
-                                  const char *g_path = "",
-                                  const char *tc_path = "",
-                                  const char *te_path = "");
-
-        unsigned int load_compute(const char *path);
     };
 
     class Shader {
@@ -68,11 +56,12 @@ namespace Bcg {
         unsigned int id = -1;
         unsigned int type;
         const char *source;
+        const char *path;
     };
 
     class Program {
     public:
-        Program();
+        Program(const char *name);
 
         bool load(const char *v_path, const char *f_path, const char *g_path, const char *tc_path, const char *te_path);
 
@@ -90,7 +79,29 @@ namespace Bcg {
         operator bool() const { return id != -1; }
 
         unsigned int id = -1;
+        const char *name;
         std::vector<Shader> shaders;
+    };
+
+    class Buffer {
+    public:
+        Buffer(const char *name);
+
+        void create();
+
+        void destroy();
+
+        void bind() const;
+
+        void unbind() const;
+
+        void set_data(const void *data, unsigned int size_bytes);
+
+        void set_subdata(const void *data, unsigned int offset_bytes, unsigned int total_bytes);
+
+        const char *name;
+        unsigned int id = -1;
+        unsigned int size_bytes;
     };
 }
 
