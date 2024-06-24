@@ -7,22 +7,11 @@
 
 #include "Plugin.h"
 #include <vector>
+#include <string>
+#include <unordered_map>
+#include "MeshComponent.h"
 
 namespace Bcg {
-    struct MeshComponent {
-        unsigned int vao;
-        unsigned int vbo;
-        unsigned int ebo;
-
-        struct Material {
-            unsigned int diffuse_texid;
-        };
-
-        std::vector<float> vertices;
-        std::vector<unsigned int> indices;
-        std::vector<Material> materials;
-    };
-
     class PluginMesh : public Plugin {
     public:
         PluginMesh();

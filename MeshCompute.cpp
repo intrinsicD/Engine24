@@ -41,17 +41,16 @@ namespace Bcg {
     const char *computeShaderSource = R"(
         #version 430 core
         layout (local_size_x = 1) in;
-        layout (std430, binding = 0) readonly buffer VertexPositions { vec3 positions[]; };
+        layout (std430, binding = 0) readonly buffer VertexPositions { vec4 positions[]; };
         layout (std430, binding = 1) readonly buffer Indices { uvec3 indices[]; };
-        layout (std430, binding = 2) writeonly buffer FaceNormals { vec3 normals[]; };
+        layout (std430, binding = 2) writeonly buffer FaceNormals { vec4 normals[]; };
         void main() {
             uint index = gl_GlobalInvocationID.x;
             uvec3 vertexIndices = indices[index];
-            vec3 v0 = positions[vertexIndices.x];
-            vec3 v1 = positions[vertexIndices.y];
-            vec3 v2 = positions[vertexIndices.z];
-            normals[index] = normalize(cross(v1 - v0, v2 - v0));
-            normals[index] = vec3(index);
+            vec3 v0 = positions[vertexIndices.x].xyz;
+            vec3 v1 = positions[vertexIndices.y].xyz;
+            vec3 v2 = positions[vertexIndices.z].xyz;
+            normals[index].xyz = normalize(cross(v1 - v0, v2 - v0));
         }
     )";
 
@@ -61,17 +60,17 @@ namespace Bcg {
 // Vertex buffer (single precision positions)
         glGenBuffers(1, &vertexBuffer);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, vertexBuffer);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, mesh.vertices.size() * sizeof(mesh.vertices[0]), mesh.vertices.data(),
+        glBufferData(GL_SHADER_STORAGE_BUFFER, mesh.positions.size() * sizeof(mesh.positions[0]), mesh.positions.data(),
                      GL_STATIC_DRAW);
 
 // Index buffer (unsigned int indices)
         glGenBuffers(1, &indexBuffer);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, indexBuffer);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, mesh.indices.size() * sizeof(mesh.indices[0]), mesh.indices.data(),
+        glBufferData(GL_SHADER_STORAGE_BUFFER, mesh.triangles.size() * sizeof(mesh.triangles[0]), mesh.triangles.data(),
                      GL_STATIC_DRAW);
 
 // Normal buffer (single precision normals)
-        std::vector<float> result(mesh.indices.size());
+        std::vector<float> result(mesh.triangles.size() / 3 * 4);
         glGenBuffers(1, &normalBuffer);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, normalBuffer);
         glBufferData(GL_SHADER_STORAGE_BUFFER, result.size() * sizeof(result[0]), nullptr,
@@ -90,7 +89,7 @@ namespace Bcg {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, normalBuffer);
 
 // Dispatch compute shader
-        glDispatchCompute(mesh.indices.size() / 3, 1, 1);
+        glDispatchCompute(mesh.triangles.size() / 3, 1, 1);
 
 // Ensure all computations are done
         //glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);

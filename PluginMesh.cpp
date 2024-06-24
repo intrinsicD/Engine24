@@ -15,7 +15,9 @@
 #include "EventsCallbacks.h"
 #include "MeshCompute.h"
 #include <iostream>
+#include <chrono>
 #include "Eigen/Core"
+#include "HalfedgeMesh.h"
 
 namespace Bcg {
     MeshComponent PluginMesh::load(const char *path) {
@@ -62,22 +64,22 @@ namespace Bcg {
         MeshComponent mesh;
         for (const auto &shape: shapes) {
             for (const auto &index: shape.mesh.indices) {
-                mesh.vertices.push_back(attrib.vertices[3 * index.vertex_index + 0]);
-                mesh.vertices.push_back(attrib.vertices[3 * index.vertex_index + 1]);
-                mesh.vertices.push_back(attrib.vertices[3 * index.vertex_index + 2]);
+                mesh.positions.push_back(attrib.vertices[3 * index.vertex_index + 0]);
+                mesh.positions.push_back(attrib.vertices[3 * index.vertex_index + 1]);
+                mesh.positions.push_back(attrib.vertices[3 * index.vertex_index + 2]);
 
                 if (!attrib.normals.empty()) {
-                    mesh.vertices.push_back(attrib.normals[3 * index.normal_index + 0]);
-                    mesh.vertices.push_back(attrib.normals[3 * index.normal_index + 1]);
-                    mesh.vertices.push_back(attrib.normals[3 * index.normal_index + 2]);
+                    mesh.positions.push_back(attrib.normals[3 * index.normal_index + 0]);
+                    mesh.positions.push_back(attrib.normals[3 * index.normal_index + 1]);
+                    mesh.positions.push_back(attrib.normals[3 * index.normal_index + 2]);
                 }
 
                 if (!attrib.texcoords.empty()) {
-                    mesh.vertices.push_back(attrib.texcoords[2 * index.texcoord_index + 0]);
-                    mesh.vertices.push_back(attrib.texcoords[2 * index.texcoord_index + 1]);
+                    mesh.positions.push_back(attrib.texcoords[2 * index.texcoord_index + 0]);
+                    mesh.positions.push_back(attrib.texcoords[2 * index.texcoord_index + 1]);
                 }
 
-                mesh.indices.push_back(mesh.indices.size());
+                mesh.triangles.push_back(mesh.triangles.size());
             }
         }
         return std::move(mesh);
@@ -103,15 +105,15 @@ namespace Bcg {
 
         MeshComponent mesh;
 
-        mesh.vertices.reserve(numVertices * 3);
-        mesh.indices.reserve(numFaces * 3);
+        mesh.positions.reserve(numVertices * 3);
+        mesh.triangles.reserve(numFaces * 3);
 
         for (int i = 0; i < numVertices; ++i) {
             float x, y, z;
             file >> x >> y >> z;
-            mesh.vertices.push_back(x);
-            mesh.vertices.push_back(y);
-            mesh.vertices.push_back(z);
+            mesh.positions.push_back(x);
+            mesh.positions.push_back(y);
+            mesh.positions.push_back(z);
         }
 
         for (int i = 0; i < numFaces; ++i) {
@@ -124,9 +126,9 @@ namespace Bcg {
 
             unsigned int a, b, c;
             file >> a >> b >> c;
-            mesh.indices.push_back(a);
-            mesh.indices.push_back(b);
-            mesh.indices.push_back(c);
+            mesh.triangles.push_back(a);
+            mesh.triangles.push_back(b);
+            mesh.triangles.push_back(c);
         }
 
         file.close();
@@ -154,8 +156,8 @@ namespace Bcg {
         MeshComponent mesh;
 
         unsigned int numTriangles = *reinterpret_cast<unsigned int *>(&buffer[80]);
-        mesh.vertices.reserve(numTriangles * 9);
-        mesh.indices.reserve(numTriangles * 3);
+        mesh.positions.reserve(numTriangles * 9);
+        mesh.triangles.reserve(numTriangles * 3);
 
         for (unsigned int i = 0; i < numTriangles; ++i) {
             unsigned int offset = 84 + i * 50;
@@ -163,13 +165,13 @@ namespace Bcg {
                 float x = *reinterpret_cast<float *>(&buffer[offset + 12 + j * 12]);
                 float y = *reinterpret_cast<float *>(&buffer[offset + 16 + j * 12]);
                 float z = *reinterpret_cast<float *>(&buffer[offset + 20 + j * 12]);
-                mesh.vertices.push_back(x);
-                mesh.vertices.push_back(y);
-                mesh.vertices.push_back(z);
+                mesh.positions.push_back(x);
+                mesh.positions.push_back(y);
+                mesh.positions.push_back(z);
             }
-            mesh.indices.push_back(i * 3);
-            mesh.indices.push_back(i * 3 + 1);
-            mesh.indices.push_back(i * 3 + 2);
+            mesh.triangles.push_back(i * 3);
+            mesh.triangles.push_back(i * 3 + 1);
+            mesh.triangles.push_back(i * 3 + 2);
         }
 
         file.close();
@@ -211,15 +213,15 @@ namespace Bcg {
 
         MeshComponent mesh;
 
-        mesh.vertices.reserve(numVertices * 3);
-        mesh.indices.reserve(numFaces * 3);
+        mesh.positions.reserve(numVertices * 3);
+        mesh.triangles.reserve(numFaces * 3);
 
         for (int i = 0; i < numVertices; ++i) {
             float x, y, z;
             file >> x >> y >> z;
-            mesh.vertices.push_back(x);
-            mesh.vertices.push_back(y);
-            mesh.vertices.push_back(z);
+            mesh.positions.push_back(x);
+            mesh.positions.push_back(y);
+            mesh.positions.push_back(z);
         }
 
         for (int i = 0; i < numFaces; ++i) {
@@ -232,16 +234,16 @@ namespace Bcg {
 
             unsigned int a, b, c;
             file >> a >> b >> c;
-            mesh.indices.push_back(a);
-            mesh.indices.push_back(b);
-            mesh.indices.push_back(c);
+            mesh.triangles.push_back(a);
+            mesh.triangles.push_back(b);
+            mesh.triangles.push_back(c);
         }
 
         file.close();
         return mesh;
     }
 
-    void PluginMesh::merge_vertices(MeshComponent &mesh, float tol) {
+    void PluginMesh::merge_vertices(Bcg::MeshComponent &mesh, float tol) {
         std::unordered_map<size_t, unsigned int> vertexMap;
         std::vector<float> newVertices;
         std::vector<unsigned int> newIndices;
@@ -254,10 +256,10 @@ namespace Bcg {
             return h1 ^ h2 ^ h3;
         };
 
-        for (size_t i = 0; i < mesh.vertices.size(); i += stride) {
-            float x = mesh.vertices[i];
-            float y = mesh.vertices[i + 1];
-            float z = mesh.vertices[i + 2];
+        for (size_t i = 0; i < mesh.positions.size(); i += stride) {
+            float x = mesh.positions[i];
+            float y = mesh.positions[i + 1];
+            float z = mesh.positions[i + 2];
             size_t vertexHash = hashVertex(x, y, z);
 
             if (vertexMap.find(vertexHash) == vertexMap.end()) {
@@ -269,8 +271,8 @@ namespace Bcg {
             newIndices.push_back(vertexMap[vertexHash]);
         }
 
-        mesh.vertices = newVertices;
-        mesh.indices = newIndices;
+        mesh.positions = newVertices;
+        mesh.triangles = newIndices;
     }
 
     void on_drop_file(const Events::Callback::Drop &event) {
@@ -278,12 +280,23 @@ namespace Bcg {
         for (int i = 0; i < event.count; ++i) {
             auto mesh = plugin.load(event.paths[i]);
             auto face_normals = ComputeFaceNormals(mesh);
-            auto T = Eigen::Map<Eigen::Matrix<unsigned int, 3, -1>>(mesh.indices.data(), 3, mesh.indices.size() / 3);
-            auto FN = Eigen::Map<Eigen::Matrix<float, 3, -1>>(face_normals.data(), 3, face_normals.size() / 3);
+            auto T = Eigen::Map<Eigen::Matrix<unsigned int, 3, -1>>(mesh.triangles.data(), 3,
+                                                                    mesh.triangles.size() / 3);
+            auto FN = Eigen::Map<Eigen::Matrix<float, 4, -1>>(face_normals.data(), 4, face_normals.size() / 4);
             Log::Info("Comp Face Normals: ");
             std::cout << FN.transpose().block(0, 0, 6, 3) << std::endl;
+
             Log::Info("Ref Triangles: ");
             std::cout << T.transpose().block(0, 0, 6, 3) << std::endl;
+
+            HalfedgeMesh hmesh;
+            auto start_time = std::chrono::high_resolution_clock::now();
+            hmesh.build(mesh.positions.size() / 3, mesh.triangles);
+            auto end_time = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<double> build_duration = end_time - start_time;
+
+            Log::Info("Build Hmesh in " + std::to_string(build_duration.count()) + " seconds");
+
         }
     }
 
