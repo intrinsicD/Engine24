@@ -17,10 +17,15 @@
 #include <iostream>
 #include <chrono>
 #include "Eigen/Core"
-#include "HalfedgeMesh.h"
+#include "pmp/surface_mesh.h"
+#include "pmp/io/io.h"
+#include "pmp/io/read_obj.h"
+#include "pmp/io/read_off.h"
+#include "pmp/io/read_stl.h"
+#include "pmp/io/read_pmp.h"
 
 namespace Bcg {
-    MeshComponent PluginMesh::load(const char *path) {
+    pmp::SurfaceMesh PluginMesh::load(const char *path) {
         std::string ext = path;
         ext = ext.substr(ext.find_last_of('.') + 1);
         if (ext == "obj") {
@@ -31,155 +36,34 @@ namespace Bcg {
             return load_stl(path);
         } else if (ext == "ply") {
             return load_ply(path);
+        } else if (ext == "pmp") {
+            return load_pmp(path);
         } else {
             Log::Error((std::string("Unsupported file format: ") + ext).c_str());
             return {};
         }
     }
 
-    MeshComponent PluginMesh::load_obj(const char *path) {
-        struct Vertex {
-            float position[3];
-            float normal[3];
-            float texcoord[2];
-        };
-
-        tinyobj::attrib_t attrib;
-        std::vector<tinyobj::shape_t> shapes;
-        std::vector<tinyobj::material_t> materials;
-        std::string warn;
-        std::string err;
-
-        bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, path);
-        if (!warn.empty()) {
-            Log::Warn(warn.c_str());
-        }
-        if (!err.empty()) {
-            Log::Error(err.c_str());
-        }
-        if (!ret) {
-            return {};
-        }
-
-        MeshComponent mesh;
-        for (const auto &shape: shapes) {
-            for (const auto &index: shape.mesh.indices) {
-                mesh.positions.push_back(attrib.vertices[3 * index.vertex_index + 0]);
-                mesh.positions.push_back(attrib.vertices[3 * index.vertex_index + 1]);
-                mesh.positions.push_back(attrib.vertices[3 * index.vertex_index + 2]);
-
-                if (!attrib.normals.empty()) {
-                    mesh.positions.push_back(attrib.normals[3 * index.normal_index + 0]);
-                    mesh.positions.push_back(attrib.normals[3 * index.normal_index + 1]);
-                    mesh.positions.push_back(attrib.normals[3 * index.normal_index + 2]);
-                }
-
-                if (!attrib.texcoords.empty()) {
-                    mesh.positions.push_back(attrib.texcoords[2 * index.texcoord_index + 0]);
-                    mesh.positions.push_back(attrib.texcoords[2 * index.texcoord_index + 1]);
-                }
-
-                mesh.triangles.push_back(mesh.triangles.size());
-            }
-        }
-        return std::move(mesh);
+    pmp::SurfaceMesh PluginMesh::load_obj(const char *path) {
+        pmp::SurfaceMesh mesh;
+        pmp::read_obj(mesh, path);
+        return mesh;
     }
 
-    MeshComponent PluginMesh::load_off(const char *path) {
-        std::ifstream file(path);
-        if (!file.is_open()) {
-            Log::Error((std::string("Failed to open OFF file: ") + path).c_str());
-            return {};
-        }
-
-        std::string line;
-        std::getline(file, line); // OFF header
-
-        if (line != "OFF") {
-            Log::Error((std::string("Not a valid OFF file: ") + path).c_str());
-            return {};
-        }
-
-        int numVertices, numFaces, numEdges;
-        file >> numVertices >> numFaces >> numEdges;
-
-        MeshComponent mesh;
-
-        mesh.positions.reserve(numVertices * 3);
-        mesh.triangles.reserve(numFaces * 3);
-
-        for (int i = 0; i < numVertices; ++i) {
-            float x, y, z;
-            file >> x >> y >> z;
-            mesh.positions.push_back(x);
-            mesh.positions.push_back(y);
-            mesh.positions.push_back(z);
-        }
-
-        for (int i = 0; i < numFaces; ++i) {
-            int numVerticesInFace;
-            file >> numVerticesInFace;
-            if (numVerticesInFace != 3) {
-                Log::Error("Only triangular faces are supported.");
-                return {};
-            }
-
-            unsigned int a, b, c;
-            file >> a >> b >> c;
-            mesh.triangles.push_back(a);
-            mesh.triangles.push_back(b);
-            mesh.triangles.push_back(c);
-        }
-
-        file.close();
-        return std::move(mesh);
+    pmp::SurfaceMesh PluginMesh::load_off(const char *path) {
+        pmp::SurfaceMesh mesh;
+        pmp::read_off(mesh, path);
+        return mesh;
     }
 
-    MeshComponent PluginMesh::load_stl(const char *path) {
-        std::ifstream file(path, std::ios::binary);
-        if (!file.is_open()) {
-            Log::Error((std::string("Failed to open STL file: ") + path).c_str());
-            return {};
-        }
-
-        file.seekg(0, std::ios::end);
-        std::streampos fileSize = file.tellg();
-        file.seekg(0, std::ios::beg);
-
-        std::vector<char> buffer(fileSize);
-        file.read(buffer.data(), fileSize);
-
-        if (buffer.size() < 84) {
-            Log::Error((std::string("Invalid STL file: ") + path).c_str());
-        }
-
-        MeshComponent mesh;
-
-        unsigned int numTriangles = *reinterpret_cast<unsigned int *>(&buffer[80]);
-        mesh.positions.reserve(numTriangles * 9);
-        mesh.triangles.reserve(numTriangles * 3);
-
-        for (unsigned int i = 0; i < numTriangles; ++i) {
-            unsigned int offset = 84 + i * 50;
-            for (unsigned int j = 0; j < 3; ++j) {
-                float x = *reinterpret_cast<float *>(&buffer[offset + 12 + j * 12]);
-                float y = *reinterpret_cast<float *>(&buffer[offset + 16 + j * 12]);
-                float z = *reinterpret_cast<float *>(&buffer[offset + 20 + j * 12]);
-                mesh.positions.push_back(x);
-                mesh.positions.push_back(y);
-                mesh.positions.push_back(z);
-            }
-            mesh.triangles.push_back(i * 3);
-            mesh.triangles.push_back(i * 3 + 1);
-            mesh.triangles.push_back(i * 3 + 2);
-        }
-
-        file.close();
+    pmp::SurfaceMesh PluginMesh::load_stl(const char *path) {
+        pmp::SurfaceMesh mesh;
+        pmp::read_stl(mesh, path);
         merge_vertices(mesh, 0.0001f);
         return mesh;
     }
 
-    MeshComponent PluginMesh::load_ply(const char *path) {
+    pmp::SurfaceMesh PluginMesh::load_ply(const char *path) {
         std::ifstream file(path);
         if (!file.is_open()) {
             Log::Error((std::string("Failed to open PLY file: ") + path).c_str());
@@ -211,17 +95,12 @@ namespace Bcg {
             }
         }
 
-        MeshComponent mesh;
-
-        mesh.positions.reserve(numVertices * 3);
-        mesh.triangles.reserve(numFaces * 3);
+        pmp::SurfaceMesh mesh;
 
         for (int i = 0; i < numVertices; ++i) {
             float x, y, z;
             file >> x >> y >> z;
-            mesh.positions.push_back(x);
-            mesh.positions.push_back(y);
-            mesh.positions.push_back(z);
+            mesh.add_vertex(pmp::Point(x, y, z));
         }
 
         for (int i = 0; i < numFaces; ++i) {
@@ -234,69 +113,128 @@ namespace Bcg {
 
             unsigned int a, b, c;
             file >> a >> b >> c;
-            mesh.triangles.push_back(a);
-            mesh.triangles.push_back(b);
-            mesh.triangles.push_back(c);
+            mesh.add_triangle(pmp::Vertex(a), pmp::Vertex(b), pmp::Vertex(c));
         }
 
         file.close();
         return mesh;
     }
 
-    void PluginMesh::merge_vertices(Bcg::MeshComponent &mesh, float tol) {
-        std::unordered_map<size_t, unsigned int> vertexMap;
-        std::vector<float> newVertices;
-        std::vector<unsigned int> newIndices;
-        size_t stride = 3;
+    pmp::SurfaceMesh PluginMesh::load_pmp(const char *path) {
+        pmp::SurfaceMesh mesh;
+        pmp::read_pmp(mesh, path);
+        return mesh;
+    }
 
-        auto hashVertex = [tol](float x, float y, float z) {
-            auto h1 = std::hash<float>{}(std::floor(x / tol));
-            auto h2 = std::hash<float>{}(std::floor(y / tol));
-            auto h3 = std::hash<float>{}(std::floor(z / tol));
-            return h1 ^ h2 ^ h3;
+    void PluginMesh::merge_vertices(pmp::SurfaceMesh &mesh, float tol) {
+        struct VertexHash {
+            size_t operator()(const pmp::Point &p) const {
+                auto h1 = std::hash<float>{}(p[0]);
+                auto h2 = std::hash<float>{}(p[1]);
+                auto h3 = std::hash<float>{}(p[2]);
+                return h1 ^ h2 ^ h3;
+            }
         };
 
-        for (size_t i = 0; i < mesh.positions.size(); i += stride) {
-            float x = mesh.positions[i];
-            float y = mesh.positions[i + 1];
-            float z = mesh.positions[i + 2];
-            size_t vertexHash = hashVertex(x, y, z);
-
-            if (vertexMap.find(vertexHash) == vertexMap.end()) {
-                vertexMap[vertexHash] = newVertices.size() / stride;
-                newVertices.push_back(x);
-                newVertices.push_back(y);
-                newVertices.push_back(z);
+        struct VertexEqual {
+            bool operator()(const pmp::Point &p1, const pmp::Point &p2) const {
+                return pmp::norm(p1 - p2) < tol;
             }
-            newIndices.push_back(vertexMap[vertexHash]);
+
+            float tol;
+
+            VertexEqual(float t) : tol(t) {}
+        };
+
+        std::unordered_map<pmp::Point, pmp::Vertex, VertexHash, VertexEqual> vertexMap(10, VertexHash(),
+                                                                                       VertexEqual(tol));
+
+        // Map to store the new vertex positions
+        auto vertexReplacementMap = mesh.vertex_property<pmp::Vertex>("v:replacement");
+
+        // Iterate over all vertices in the mesh
+        for (auto v: mesh.vertices()) {
+            pmp::Point p = mesh.position(v);
+
+            auto it = vertexMap.find(p);
+            if (it == vertexMap.end()) {
+                // Add unique vertex
+                vertexMap[p] = v;
+                vertexReplacementMap[v] = v;
+            } else {
+                // Update to point to the existing unique vertex
+                vertexReplacementMap[v] = it->second;
+            }
         }
 
-        mesh.positions = newVertices;
-        mesh.triangles = newIndices;
+        // Update the halfedges to use the new vertex indices
+        for (auto v: mesh.vertices()) {
+            if (vertexReplacementMap[v] != v) {
+                continue;  // Skip already updated vertices
+            }
+
+            for (auto h: mesh.halfedges(v)) {
+                pmp::Vertex to = mesh.to_vertex(h);
+                mesh.set_vertex(h, vertexReplacementMap[to]);
+            }
+        }
+
+        // Remove duplicate vertices
+        std::vector<pmp::Vertex> vertices_to_delete;
+        for (auto v: mesh.vertices()) {
+            if (vertexReplacementMap[v] != v) {
+                vertices_to_delete.push_back(v);
+            }
+        }
+
+        for (auto v: vertices_to_delete) {
+            mesh.delete_vertex(v);
+        }
+
+        // Remove degenerate faces
+        for (auto f: mesh.faces()) {
+            if (mesh.is_deleted(f)) {
+                continue;
+            }
+
+            auto h = mesh.halfedge(f);
+            if (mesh.to_vertex(h) == mesh.to_vertex(mesh.next_halfedge(h)) ||
+                mesh.to_vertex(h) == mesh.to_vertex(mesh.next_halfedge(mesh.next_halfedge(h))) ||
+                mesh.to_vertex(mesh.next_halfedge(h)) == mesh.to_vertex(mesh.next_halfedge(mesh.next_halfedge(h)))) {
+                mesh.delete_face(f);
+            }
+        }
+
+        // Finalize the changes
+        mesh.garbage_collection();
     }
 
     void on_drop_file(const Events::Callback::Drop &event) {
         PluginMesh plugin;
         for (int i = 0; i < event.count; ++i) {
-            auto mesh = plugin.load(event.paths[i]);
-            auto face_normals = ComputeFaceNormals(mesh);
-            auto T = Eigen::Map<Eigen::Matrix<unsigned int, 3, -1>>(mesh.triangles.data(), 3,
-                                                                    mesh.triangles.size() / 3);
-            auto FN = Eigen::Map<Eigen::Matrix<float, 4, -1>>(face_normals.data(), 4, face_normals.size() / 4);
-            Log::Info("Comp Face Normals: ");
-            std::cout << FN.transpose().block(0, 0, 6, 3) << std::endl;
-
-            Log::Info("Ref Triangles: ");
-            std::cout << T.transpose().block(0, 0, 6, 3) << std::endl;
-
-            HalfedgeMesh hmesh;
             auto start_time = std::chrono::high_resolution_clock::now();
-            hmesh.build(mesh.positions.size() / 3, mesh.triangles);
+
+            pmp::SurfaceMesh smesh = PluginMesh::load(event.paths[i]);
             auto end_time = std::chrono::high_resolution_clock::now();
+
             std::chrono::duration<double> build_duration = end_time - start_time;
+            Log::Info("Build Smesh in " + std::to_string(build_duration.count()) + " seconds");
 
-            Log::Info("Build Hmesh in " + std::to_string(build_duration.count()) + " seconds");
+            start_time = std::chrono::high_resolution_clock::now();
+            auto f_normals = ComputeFaceNormals(smesh);
+            end_time = std::chrono::high_resolution_clock::now();
+            build_duration = end_time - start_time;
+            Log::Info("ComputeFaceNormals Smesh in " + std::to_string(build_duration.count()) + " seconds");
+/*
+            for(auto f : smesh.faces()){
+                std::cout << f_normals[f] << std::endl;
+            }*/
 
+            start_time = std::chrono::high_resolution_clock::now();
+            auto v_normals = ComputeVertexNormals(smesh);
+            end_time = std::chrono::high_resolution_clock::now();
+            build_duration = end_time - start_time;
+            Log::Info("ComputeVertexNormals Smesh in " + std::to_string(build_duration.count()) + " seconds");
         }
     }
 
@@ -331,7 +269,8 @@ namespace Bcg {
                     IGFD::FileDialogConfig config;
                     config.path = ".";
                     config.path = "/home/alex/Dropbox/Work/Datasets";
-                    ImGuiFileDialog::Instance()->OpenDialog("Load Mesh", "Choose File", ".obj,.off,.stl,.ply", config);
+                    ImGuiFileDialog::Instance()->OpenDialog("Load Mesh", "Choose File", ".obj,.off,.stl,.ply",
+                                                            config);
                 }
                 ImGui::EndMenu();
             }

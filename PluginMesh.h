@@ -9,7 +9,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
-#include "MeshComponent.h"
+#include "pmp/surface_mesh.h"
 
 namespace Bcg {
     class PluginMesh : public Plugin {
@@ -18,17 +18,19 @@ namespace Bcg {
 
         ~PluginMesh() override = default;
 
-        MeshComponent load(const char *path);
+        static pmp::SurfaceMesh load(const char *path);
 
-        MeshComponent load_obj(const char *path);
+        static pmp::SurfaceMesh load_obj(const char *path);
 
-        MeshComponent load_off(const char *path);
+        static pmp::SurfaceMesh load_off(const char *path);
 
-        MeshComponent load_stl(const char *path);
+        static pmp::SurfaceMesh load_stl(const char *path);
 
-        MeshComponent load_ply(const char *path);
+        static pmp::SurfaceMesh load_ply(const char *path);
 
-        void merge_vertices(MeshComponent &mesh, float tol);
+        static pmp::SurfaceMesh load_pmp(const char *path);
+
+        static void merge_vertices(pmp::SurfaceMesh &mesh, float tol);
 
         void activate() override;
 
