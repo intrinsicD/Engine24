@@ -15,6 +15,7 @@ add_executable(Engine24 main.cpp
         Logger.cpp
         Plugin.cpp
         PluginMesh.cpp
+        PluginOpenGLRenderer.cpp
 )
 
 add_subdirectory(ext)

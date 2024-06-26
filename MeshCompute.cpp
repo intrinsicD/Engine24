@@ -170,7 +170,7 @@ namespace Bcg {
             normals[pmp::Vertex(i)][0] = result[i][0];
             normals[pmp::Vertex(i)][1] = result[i][1];
             normals[pmp::Vertex(i)][2] = result[i][2];
-            std::cout << result[i][0] << ", " << result[i][1] << ", " << result[i][2] << "  v:" << result[i][3] << "\n";
+           // std::cout << result[i][0] << ", " << result[i][1] << ", " << result[i][2] << "  v:" << result[i][3] << "\n";
         }
         return normals;
     }

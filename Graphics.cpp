@@ -92,7 +92,7 @@ namespace Bcg {
 
     static void drop_callback(GLFWwindow *window, int count, const char **paths) {
         for (int i = 0; i < count; ++i) {
-            Log::Info(paths[i]);
+            Log::Info("Dropped: " + std::string(paths[i]));
         }
 
         Engine::Dispatcher().trigger<Events::Callback::Drop>({window, count, paths});

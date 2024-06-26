@@ -24,12 +24,14 @@ int main() {
         plugin->activate();
     }
 
-    Bcg::Engine::Dispatcher().update();
+    Bcg::Engine::ExecuteCmdBuffer();
 
     // Game loop
     while (!graphics.should_close()) {
-        for (auto &plugin: plugins) {
-            plugin->begin_frame();
+        {
+            for (auto &plugin: plugins) {
+                plugin->begin_frame();
+            }
         }
         // Check if any events have been activated (key pressed, mouse moved etc.) and call corresponding response functions
         graphics.poll_events();
@@ -43,16 +45,17 @@ int main() {
         Bcg::Engine::ExecuteCmdBuffer();
 
         graphics.clear_framebuffer();
+
         {
             for (auto &plugin: plugins) {
                 plugin->render();
             }
         }
 
-        Bcg::Engine::ExecuteRenderCmdBuffer();
+        Bcg::Engine::ExecuteCmdBuffer();
 
+        graphics.start_gui();
         {
-            graphics.start_gui();
             for (auto &plugin: plugins) {
                 plugin->render_menu();
             }
@@ -60,16 +63,20 @@ int main() {
             for (auto &plugin: plugins) {
                 plugin->render_gui();
             }
-            graphics.render_menu();
-            graphics.render_gui();
-            graphics.end_gui();
         }
+        graphics.render_menu();
+        graphics.render_gui();
+        graphics.end_gui();
 
+        Bcg::Engine::ExecuteCmdBuffer();
+
+        {
+            for (auto &plugin: plugins) {
+                plugin->end_frame();
+            }
+        }
         // Swap the screen buffers
         graphics.swap_buffers();
-        for (auto &plugin: plugins) {
-            plugin->end_frame();
-        }
     }
 
     for (auto &plugin: plugins) {

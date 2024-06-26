@@ -3,20 +3,16 @@
 //
 
 #include "PluginMesh.h"
-#include "tiny_obj_loader.h"
 #include "Logger.h"
 #include <fstream>
 #include <unordered_map>
-#include <cmath>
 #include <sstream>
 #include "imgui.h"
 #include "ImGuiFileDialog.h"
 #include "Engine.h"
 #include "EventsCallbacks.h"
 #include "MeshCompute.h"
-#include <iostream>
 #include <chrono>
-#include "Eigen/Core"
 #include "pmp/surface_mesh.h"
 #include "pmp/io/io.h"
 #include "pmp/io/read_obj.h"
@@ -28,20 +24,28 @@ namespace Bcg {
     pmp::SurfaceMesh PluginMesh::load(const char *path) {
         std::string ext = path;
         ext = ext.substr(ext.find_last_of('.') + 1);
+        pmp::SurfaceMesh mesh;
         if (ext == "obj") {
-            return load_obj(path);
+            mesh = load_obj(path);
         } else if (ext == "off") {
-            return load_off(path);
+            mesh = load_off(path);
         } else if (ext == "stl") {
-            return load_stl(path);
+            mesh = load_stl(path);
         } else if (ext == "ply") {
-            return load_ply(path);
+            mesh = load_ply(path);
         } else if (ext == "pmp") {
-            return load_pmp(path);
+            mesh = load_pmp(path);
         } else {
             Log::Error((std::string("Unsupported file format: ") + ext).c_str());
             return {};
         }
+        std::string message = "Loaded Mesh";
+        message += " #v: " + std::to_string(mesh.n_vertices());
+        message += " #e: " + std::to_string(mesh.n_edges());
+        message += " #h: " + std::to_string(mesh.n_halfedges());
+        message += " #f: " + std::to_string(mesh.n_faces());
+        Log::Info(message);
+        return mesh;
     }
 
     pmp::SurfaceMesh PluginMesh::load_obj(const char *path) {

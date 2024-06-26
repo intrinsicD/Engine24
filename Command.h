@@ -8,7 +8,7 @@
 #include <functional>
 #include <memory>
 
-namespace Bcg::Command {
+namespace Bcg {
     struct AbstractCommand {
         explicit AbstractCommand(const char *name) : name(name) {}
 

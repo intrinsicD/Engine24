@@ -9,8 +9,6 @@
 #include "Plugin.h"
 
 namespace Bcg {
-    struct PluginRenderer;
-
     struct Engine {
         Engine();
 
@@ -26,14 +24,9 @@ namespace Bcg {
 
         static void ExecuteCmdBuffer();
 
-        static void ExecuteRenderCmdBuffer();
-
         entt::registry state;
         entt::dispatcher dispatcher;
-        std::vector<std::function<void()>> command_buffer;
-        std::vector<std::function<void()>> render_command_buffer;
         std::vector<std::unique_ptr<Plugin>> plugins;
-        PluginRenderer *renderer = nullptr;
     };
 }
 

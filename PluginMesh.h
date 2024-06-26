@@ -10,6 +10,7 @@
 #include <string>
 #include <unordered_map>
 #include "pmp/surface_mesh.h"
+#include "pmp/algorithms/curvature.h"
 
 namespace Bcg {
     class PluginMesh : public Plugin {

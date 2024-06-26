@@ -28,16 +28,7 @@ namespace Bcg {
     }
 
     void Engine::ExecuteCmdBuffer() {
-        for (auto &cmd: Bcg::Engine::Instance()->command_buffer) {
-            cmd();
-        }
-        Bcg::Engine::Instance()->command_buffer.clear();
-    }
-
-    void Engine::ExecuteRenderCmdBuffer() {
-        for (auto &cmd: Bcg::Engine::Instance()->render_command_buffer) {
-            cmd();
-        }
-        Bcg::Engine::Instance()->render_command_buffer.clear();
+        Dispatcher().update();
+        Dispatcher().clear();
     }
 }
