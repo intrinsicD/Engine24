@@ -5,15 +5,16 @@
 #ifndef ENGINE24_MESH_H
 #define ENGINE24_MESH_H
 
-#include "pmp/surface_mesh.h"
+#include "SurfaceMesh/SurfaceMesh.h"
+#include "Logger.h"
 
 namespace Bcg {
-    using Mesh = pmp::SurfaceMesh;
+    using Mesh = SurfaceMesh;
 
-    pmp::FaceProperty<pmp::Vector<unsigned int, 3>> extract_triangle_list(pmp::SurfaceMesh &mesh) {
-        auto triangles = mesh.get_face_property<pmp::Vector<unsigned int, 3>>("f:indices");
+    FaceProperty<Vector<unsigned int, 3>> extract_triangle_list(SurfaceMesh &mesh) {
+        auto triangles = mesh.get_face_property<Vector<unsigned int, 3>>("f:indices");
         if (!triangles) {
-            triangles = mesh.add_face_property<pmp::Vector<unsigned int, 3>>("f:indices");
+            triangles = mesh.add_face_property<Vector<unsigned int, 3>>("f:indices");
         }
         for (auto f: mesh.faces()) {
             std::vector<unsigned int> faceIndices;
@@ -31,7 +32,7 @@ namespace Bcg {
     }
 
     void
-    extract_triangle_list(pmp::SurfaceMesh &mesh, std::vector<float> &vertices, std::vector<unsigned int> &indices) {
+    extract_triangle_list(SurfaceMesh &mesh, std::vector<float> &vertices, std::vector<unsigned int> &indices) {
         vertices.clear();
         indices.clear();
 
@@ -41,7 +42,7 @@ namespace Bcg {
 
         // Extract vertex positions
         for (auto v: mesh.vertices()) {
-            pmp::Point p = mesh.position(v);
+            Point p = mesh.position(v);
             vertices.push_back(p[0]);
             vertices.push_back(p[1]);
             vertices.push_back(p[2]);
@@ -59,7 +60,7 @@ namespace Bcg {
                 indices.push_back(faceIndices[1]);
                 indices.push_back(faceIndices[2]);
             } else {
-                std::cerr << "Warning: Non-triangular face encountered. Ignoring face." << std::endl;
+                Log::Error("Warning: Non-triangular face encountered. Ignoring face.");
             }
         }
 

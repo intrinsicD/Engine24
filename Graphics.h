@@ -10,25 +10,25 @@
 namespace Bcg {
     class Graphics {
     public:
-        bool init();
+        static bool init();
 
-        bool should_close() const;
+        static bool should_close();
 
-        void poll_events() const;
+        static void poll_events();
 
-        void set_clear_color(const float *color);
+        static void set_clear_color(const float *color);
 
-        void clear_framebuffer() const;
+        static void clear_framebuffer();
 
-        void start_gui() const;
+        static void start_gui();
 
-        void render_menu() const;
+        static void render_menu();
 
-        void render_gui() const;
+        static void render_gui();
 
-        void end_gui() const;
+        static void end_gui();
 
-        void swap_buffers() const;
+        static void swap_buffers();
     };
 
     class Shader {

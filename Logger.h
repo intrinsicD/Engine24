@@ -14,6 +14,8 @@ namespace Bcg::Log {
 
     void Error(const std::string &message);
 
+    void TODO(const std::string &message);
+
     void Progress(unsigned int iter, unsigned int size, unsigned int bar_width = 50);
 
     void Progress(float progress, unsigned int bar_width = 50);

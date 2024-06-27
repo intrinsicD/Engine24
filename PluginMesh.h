@@ -9,8 +9,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
-#include "pmp/surface_mesh.h"
-#include "pmp/algorithms/curvature.h"
+#include "SurfaceMesh/SurfaceMesh.h"
 
 namespace Bcg {
     class PluginMesh : public Plugin {
@@ -19,19 +18,19 @@ namespace Bcg {
 
         ~PluginMesh() override = default;
 
-        static pmp::SurfaceMesh load(const char *path);
+        static SurfaceMesh load(const char *path);
 
-        static pmp::SurfaceMesh load_obj(const char *path);
+        static SurfaceMesh load_obj(const char *path);
 
-        static pmp::SurfaceMesh load_off(const char *path);
+        static SurfaceMesh load_off(const char *path);
 
-        static pmp::SurfaceMesh load_stl(const char *path);
+        static SurfaceMesh load_stl(const char *path);
 
-        static pmp::SurfaceMesh load_ply(const char *path);
+        static SurfaceMesh load_ply(const char *path);
 
-        static pmp::SurfaceMesh load_pmp(const char *path);
+        static SurfaceMesh load_pmp(const char *path);
 
-        static void merge_vertices(pmp::SurfaceMesh &mesh, float tol);
+        static void merge_vertices(SurfaceMesh &mesh, float tol);
 
         void activate() override;
 

@@ -3,6 +3,7 @@
 //
 
 #include "MeshCompute.h"
+#include "Graphics.h"
 #include "Mesh.h"
 #include "glad/gl.h"
 #include "Logger.h"
@@ -11,7 +12,10 @@
 namespace Bcg {
 
     unsigned int CompileComputeShader(const char *source) {
-        unsigned int program = glCreateProgram();
+        Program program1("ComputeShader");
+        program1.load(source);
+        return program1.id;
+        /*unsigned int program = glCreateProgram();
         unsigned int shader = glCreateShader(GL_COMPUTE_SHADER);
 
         glShaderSource(shader, 1, &source, nullptr);
@@ -36,10 +40,10 @@ namespace Bcg {
         }
 
         glDeleteShader(shader);
-        return program;
+        return program;*/
     }
 
-    pmp::VertexProperty<pmp::Vector<float, 3>> ComputeVertexNormals(pmp::SurfaceMesh &mesh) {
+    VertexProperty<Vector<float, 3>> ComputeVertexNormals(SurfaceMesh &mesh) {
         const char *computeShaderSource = R"(
         #version 430 core
         layout (local_size_x = 1) in;
@@ -102,7 +106,7 @@ namespace Bcg {
         auto &vconn = mesh.vconn_.vector();
         auto &hconn = mesh.hconn_.vector();
         auto &fconn = mesh.fconn_.vector();
-        auto normals = mesh.add_vertex_property<pmp::Vector<float, 3>>("v:normal");
+        auto normals = mesh.add_vertex_property<Vector<float, 3>>("v:normal");
 
         Eigen::Matrix<float, 4, -1> P = Eigen::Matrix<float, 4, -1>::Zero(4, vpoint.size());
         P.block(0, 0, 3, vpoint.size()) = Eigen::Map<Eigen::Matrix<float, 3, -1>>(vpoint[0].data(), 3, vpoint.size());
@@ -128,7 +132,7 @@ namespace Bcg {
         glBufferData(GL_SHADER_STORAGE_BUFFER, fconn.size() * sizeof(unsigned int), fconn.data(),
                      GL_STATIC_DRAW);
 
-        std::vector<pmp::Vector<float, 4>> result(mesh.vertices_size());
+        std::vector<Vector<float, 4>> result(mesh.vertices_size());
         glGenBuffers(1, &normalBuffer);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, normalBuffer);
         glBufferData(GL_SHADER_STORAGE_BUFFER, result.size() * 4 * sizeof(float), nullptr,
@@ -167,16 +171,16 @@ namespace Bcg {
         glDeleteProgram(program);
 
         for (size_t i = 0; i < result.size(); ++i) {
-            normals[pmp::Vertex(i)][0] = result[i][0];
-            normals[pmp::Vertex(i)][1] = result[i][1];
-            normals[pmp::Vertex(i)][2] = result[i][2];
+            normals[Vertex(i)][0] = result[i][0];
+            normals[Vertex(i)][1] = result[i][1];
+            normals[Vertex(i)][2] = result[i][2];
            // std::cout << result[i][0] << ", " << result[i][1] << ", " << result[i][2] << "  v:" << result[i][3] << "\n";
         }
         return normals;
     }
 
 
-    pmp::FaceProperty<pmp::Vector<float, 3>> ComputeFaceNormals(pmp::SurfaceMesh &mesh) {
+    FaceProperty<Vector<float, 3>> ComputeFaceNormals(SurfaceMesh &mesh) {
         const char *computeShaderSource = R"(
         #version 430 core
         layout (local_size_x = 1) in;
@@ -195,7 +199,7 @@ namespace Bcg {
 
         std::vector<float> positions;
         std::vector<unsigned int> triangles;
-        auto normals = mesh.add_face_property<pmp::Vector<float, 3>>("f:normal");
+        auto normals = mesh.add_face_property<Vector<float, 3>>("f:normal");
         extract_triangle_list(mesh, positions, triangles);
 
         GLuint vertexBuffer, indexBuffer, normalBuffer;
@@ -248,8 +252,8 @@ namespace Bcg {
         glDeleteProgram(program);
 
         for (size_t i = 0; i < result.size() / 4; ++i) {
-            pmp::vec3 normal(result[i * 4], result[i * 4 + 1], result[i * 4 + 2]);
-            normals[pmp::Face(i)] = normal;
+            Vector<float, 3> normal(result[i * 4], result[i * 4 + 1], result[i * 4 + 2]);
+            normals[Face(i)] = normal;
         }
         return normals;
     }

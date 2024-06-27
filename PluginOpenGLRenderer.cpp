@@ -21,11 +21,29 @@ namespace Bcg {
     }
 
     void linkUniformBlockToUBO(unsigned int program, const char *blockName,
-                                                     unsigned int bindingPoint) {
+                               unsigned int bindingPoint) {
         GLuint blockIndex = glGetUniformBlockIndex(program, blockName);
         if (blockIndex != GL_INVALID_INDEX) {
             glUniformBlockBinding(program, blockIndex, bindingPoint);
         }
+    }
+
+    struct Hide {
+
+    };
+
+    struct Show{
+
+    };
+
+    void PluginOpenGLRenderer::unhide_entity(entt::entity entity_id) {
+        Engine::State().remove<Hide>(entity_id);
+        Engine::State().emplace<Show>(entity_id);
+    }
+
+    void PluginOpenGLRenderer::hide_entity(entt::entity entity_id) {
+        Engine::State().remove<Show>(entity_id);
+        Engine::State().emplace_or_replace<Hide>(entity_id);
     }
 
     void PluginOpenGLRenderer::activate() {
@@ -60,10 +78,42 @@ namespace Bcg {
             camera->dirty = false;
         }
         //determine visibility of all visual entities (Frustum Culling)
+        //figure out on which primitives to work and if a hierarchy is even better
+        std::vector<entt::entity> visibleMeshes;
+        std::vector<entt::entity> visibleGraphs;
+        std::vector<entt::entity> visiblePointClouds;
+/*
+        for (auto &entity: Engine::State().view<Show>()) {
+            if (isEntityVisible(camera, entity)) {
+                switch (entity.type()) {
+                    case EntityType::Mesh:
+                        visibleMeshes.push_back(static_cast<Mesh *>(&entity));
+                        break;
+                    case EntityType::Graph:
+                        visibleGraphs.push_back(static_cast<Graph *>(&entity));
+                        break;
+                    case EntityType::PointCloud:
+                        visiblePointClouds.push_back(static_cast<PointCloud *>(&entity));
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
 
+        // Render all visible meshes
+        for (auto entity_id: visibleMeshes) {
+            renderMesh(entity_id);
+        }
 
-        //render all visible meshes
-        //render all visible graphs
-        //render all visible point clouds
+        // Render all visible graphs
+        for (auto entity_id: visibleGraphs) {
+            renderGraph(entity_id);
+        }
+
+        // Render all visible point clouds
+        for (auto entity_id: visiblePointClouds) {
+            renderPointCloud(entity_id);
+        }*/
     }
 }

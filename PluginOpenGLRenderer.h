@@ -10,6 +10,7 @@
 #include <vector>
 #include <string>
 #include "MatVec.h"
+#include "entt/fwd.hpp"
 
 namespace Bcg {
     class PluginOpenGLRenderer : public Plugin {
@@ -17,6 +18,10 @@ namespace Bcg {
         PluginOpenGLRenderer();
 
         ~PluginOpenGLRenderer() override = default;
+
+        static void unhide_entity(entt::entity entity_id);
+
+        static void hide_entity(entt::entity entity_id);
 
         void activate() override;
 

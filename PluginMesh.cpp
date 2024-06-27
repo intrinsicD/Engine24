@@ -13,18 +13,18 @@
 #include "EventsCallbacks.h"
 #include "MeshCompute.h"
 #include <chrono>
-#include "pmp/surface_mesh.h"
-#include "pmp/io/io.h"
-#include "pmp/io/read_obj.h"
-#include "pmp/io/read_off.h"
-#include "pmp/io/read_stl.h"
-#include "pmp/io/read_pmp.h"
+#include "SurfaceMesh/SurfaceMesh.h"
+#include "SurfaceMesh/io/io.h"
+#include "SurfaceMesh/io/read_obj.h"
+#include "SurfaceMesh/io/read_off.h"
+#include "SurfaceMesh/io/read_stl.h"
+#include "SurfaceMesh/io/read_pmp.h"
 
 namespace Bcg {
-    pmp::SurfaceMesh PluginMesh::load(const char *path) {
+    SurfaceMesh PluginMesh::load(const char *path) {
         std::string ext = path;
         ext = ext.substr(ext.find_last_of('.') + 1);
-        pmp::SurfaceMesh mesh;
+        SurfaceMesh mesh;
         if (ext == "obj") {
             mesh = load_obj(path);
         } else if (ext == "off") {
@@ -48,26 +48,26 @@ namespace Bcg {
         return mesh;
     }
 
-    pmp::SurfaceMesh PluginMesh::load_obj(const char *path) {
-        pmp::SurfaceMesh mesh;
-        pmp::read_obj(mesh, path);
+    SurfaceMesh PluginMesh::load_obj(const char *path) {
+        SurfaceMesh mesh;
+        read_obj(mesh, path);
         return mesh;
     }
 
-    pmp::SurfaceMesh PluginMesh::load_off(const char *path) {
-        pmp::SurfaceMesh mesh;
-        pmp::read_off(mesh, path);
+    SurfaceMesh PluginMesh::load_off(const char *path) {
+        SurfaceMesh mesh;
+        read_off(mesh, path);
         return mesh;
     }
 
-    pmp::SurfaceMesh PluginMesh::load_stl(const char *path) {
-        pmp::SurfaceMesh mesh;
-        pmp::read_stl(mesh, path);
+    SurfaceMesh PluginMesh::load_stl(const char *path) {
+        SurfaceMesh mesh;
+        read_stl(mesh, path);
         merge_vertices(mesh, 0.0001f);
         return mesh;
     }
 
-    pmp::SurfaceMesh PluginMesh::load_ply(const char *path) {
+    SurfaceMesh PluginMesh::load_ply(const char *path) {
         std::ifstream file(path);
         if (!file.is_open()) {
             Log::Error((std::string("Failed to open PLY file: ") + path).c_str());
@@ -99,12 +99,12 @@ namespace Bcg {
             }
         }
 
-        pmp::SurfaceMesh mesh;
+        SurfaceMesh mesh;
 
         for (int i = 0; i < numVertices; ++i) {
             float x, y, z;
             file >> x >> y >> z;
-            mesh.add_vertex(pmp::Point(x, y, z));
+            mesh.add_vertex(Point(x, y, z));
         }
 
         for (int i = 0; i < numFaces; ++i) {
@@ -117,22 +117,22 @@ namespace Bcg {
 
             unsigned int a, b, c;
             file >> a >> b >> c;
-            mesh.add_triangle(pmp::Vertex(a), pmp::Vertex(b), pmp::Vertex(c));
+            mesh.add_triangle(Vertex(a), Vertex(b), Vertex(c));
         }
 
         file.close();
         return mesh;
     }
 
-    pmp::SurfaceMesh PluginMesh::load_pmp(const char *path) {
-        pmp::SurfaceMesh mesh;
-        pmp::read_pmp(mesh, path);
+    SurfaceMesh PluginMesh::load_pmp(const char *path) {
+        SurfaceMesh mesh;
+        read_pmp(mesh, path);
         return mesh;
     }
 
-    void PluginMesh::merge_vertices(pmp::SurfaceMesh &mesh, float tol) {
+    void PluginMesh::merge_vertices(SurfaceMesh &mesh, float tol) {
         struct VertexHash {
-            size_t operator()(const pmp::Point &p) const {
+            size_t operator()(const Point &p) const {
                 auto h1 = std::hash<float>{}(p[0]);
                 auto h2 = std::hash<float>{}(p[1]);
                 auto h3 = std::hash<float>{}(p[2]);
@@ -141,8 +141,8 @@ namespace Bcg {
         };
 
         struct VertexEqual {
-            bool operator()(const pmp::Point &p1, const pmp::Point &p2) const {
-                return pmp::norm(p1 - p2) < tol;
+            bool operator()(const Point &p1, const Point &p2) const {
+                return (p1 - p2).norm() < tol;
             }
 
             float tol;
@@ -150,15 +150,15 @@ namespace Bcg {
             VertexEqual(float t) : tol(t) {}
         };
 
-        std::unordered_map<pmp::Point, pmp::Vertex, VertexHash, VertexEqual> vertexMap(10, VertexHash(),
+        std::unordered_map<Point, Vertex, VertexHash, VertexEqual> vertexMap(10, VertexHash(),
                                                                                        VertexEqual(tol));
 
         // Map to store the new vertex positions
-        auto vertexReplacementMap = mesh.vertex_property<pmp::Vertex>("v:replacement");
+        auto vertexReplacementMap = mesh.vertex_property<Vertex>("v:replacement");
 
         // Iterate over all vertices in the mesh
         for (auto v: mesh.vertices()) {
-            pmp::Point p = mesh.position(v);
+            Point p = mesh.position(v);
 
             auto it = vertexMap.find(p);
             if (it == vertexMap.end()) {
@@ -178,13 +178,13 @@ namespace Bcg {
             }
 
             for (auto h: mesh.halfedges(v)) {
-                pmp::Vertex to = mesh.to_vertex(h);
+                Vertex to = mesh.to_vertex(h);
                 mesh.set_vertex(h, vertexReplacementMap[to]);
             }
         }
 
         // Remove duplicate vertices
-        std::vector<pmp::Vertex> vertices_to_delete;
+        std::vector<Vertex> vertices_to_delete;
         for (auto v: mesh.vertices()) {
             if (vertexReplacementMap[v] != v) {
                 vertices_to_delete.push_back(v);
@@ -218,7 +218,7 @@ namespace Bcg {
         for (int i = 0; i < event.count; ++i) {
             auto start_time = std::chrono::high_resolution_clock::now();
 
-            pmp::SurfaceMesh smesh = PluginMesh::load(event.paths[i]);
+            SurfaceMesh smesh = PluginMesh::load(event.paths[i]);
             auto end_time = std::chrono::high_resolution_clock::now();
 
             std::chrono::duration<double> build_duration = end_time - start_time;

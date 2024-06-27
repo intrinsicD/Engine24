@@ -2,85 +2,44 @@
 
 #include "entt/entt.hpp"
 #include "Engine.h"
-#include "Input.h"
 #include "Graphics.h"
-#include "PluginMesh.h"
+#include "Plugins.h"
 
 int main() {
     Bcg::Engine engine;
-    Bcg::Graphics graphics;
-    if(!graphics.init()){
+    if (!Bcg::Graphics::init()) {
         return -1;
     }
 
-    auto &plugins = Bcg::Engine::Instance()->plugins;
-    plugins.emplace_back(std::make_unique<Bcg::Input>());
-
-    auto mesh_plugin = std::make_unique<Bcg::PluginMesh>();
-    plugins.emplace_back(std::move(mesh_plugin));
-
-
-    for (auto &plugin: plugins) {
-        plugin->activate();
-    }
-
+    Bcg::Plugins::init();
+    Bcg::Plugins::activate_all();
     Bcg::Engine::ExecuteCmdBuffer();
 
     // Game loop
-    while (!graphics.should_close()) {
+    while (!Bcg::Graphics::should_close()) {
         {
-            for (auto &plugin: plugins) {
-                plugin->begin_frame();
-            }
+            Bcg::Graphics::poll_events();
+            Bcg::Plugins::begin_frame_all();
+            Bcg::Plugins::update_all();
+            Bcg::Engine::ExecuteCmdBuffer();
         }
-        // Check if any events have been activated (key pressed, mouse moved etc.) and call corresponding response functions
-        graphics.poll_events();
-
         {
-            for (auto &plugin: plugins) {
-                plugin->update();
-            }
+            Bcg::Graphics::clear_framebuffer();
+            Bcg::Plugins::render_all();
+            Bcg::Engine::ExecuteCmdBuffer();
+            Bcg::Graphics::start_gui();
+            Bcg::Plugins::render_menu();
+            Bcg::Plugins::render_gui();
+            Bcg::Graphics::render_menu();
+            Bcg::Graphics::render_gui();
+            Bcg::Graphics::end_gui();
+            Bcg::Engine::ExecuteCmdBuffer();
+            Bcg::Plugins::end_frame();
+            Bcg::Graphics::swap_buffers();
         }
-
-        Bcg::Engine::ExecuteCmdBuffer();
-
-        graphics.clear_framebuffer();
-
-        {
-            for (auto &plugin: plugins) {
-                plugin->render();
-            }
-        }
-
-        Bcg::Engine::ExecuteCmdBuffer();
-
-        graphics.start_gui();
-        {
-            for (auto &plugin: plugins) {
-                plugin->render_menu();
-            }
-
-            for (auto &plugin: plugins) {
-                plugin->render_gui();
-            }
-        }
-        graphics.render_menu();
-        graphics.render_gui();
-        graphics.end_gui();
-
-        Bcg::Engine::ExecuteCmdBuffer();
-
-        {
-            for (auto &plugin: plugins) {
-                plugin->end_frame();
-            }
-        }
-        // Swap the screen buffers
-        graphics.swap_buffers();
     }
 
-    for (auto &plugin: plugins) {
-        plugin->deactivate();
-    }
+    Bcg::Plugins::deactivate_all();
+
     return 0;
 }

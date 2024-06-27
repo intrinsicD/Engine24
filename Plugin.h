@@ -28,7 +28,6 @@ namespace Bcg {
 
         virtual void render() = 0;
 
-    protected:
         const char *name;
     };
 }

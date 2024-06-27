@@ -7,16 +7,36 @@
 #include <string>
 
 namespace Bcg::Log {
+    std::string RED() {
+        return "\033[1;31m";
+    }
+
+    std::string GREEN() {
+        return "\033[1;32m";
+    }
+
+    std::string YELLOW() {
+        return "\033[1;33m";
+    }
+
+    std::string WHITE() {
+        return "\033[0m";
+    }
+
     void Info(const std::string &message) {
-        std::cout << "Info:  " << message << "\n";
+        std::cout << GREEN() << "Info:  " << WHITE() << message << "\n";
     }
 
     void Warn(const std::string &message) {
-        std::cout << "Warn:  " << message << "\n";
+        std::cout << YELLOW() << "Warn:  " << WHITE() << message << "\n";
     }
 
     void Error(const std::string &message) {
-        std::cerr << "Error: " << message << "\n";
+        std::cout << RED() << "Error: " << WHITE() << message << "\n";
+    }
+
+    void TODO(const std::string &message) {
+        std::cout << RED() << "TODO:  " << YELLOW() << message << WHITE() << "\n";
     }
 
     void Progress(unsigned int iter, unsigned int size, unsigned int bar_width) {

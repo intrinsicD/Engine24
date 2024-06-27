@@ -13,9 +13,12 @@ add_executable(Engine24 main.cpp
         GLFWUtils.cpp
         Input.cpp
         Logger.cpp
+        Plugins.cpp
         Plugin.cpp
         PluginMesh.cpp
         PluginOpenGLRenderer.cpp
+        FrustumCulling.cpp
 )
 
 add_subdirectory(ext)
+add_subdirectory(SurfaceMesh)

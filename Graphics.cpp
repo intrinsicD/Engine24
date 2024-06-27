@@ -181,11 +181,11 @@ namespace Bcg {
         return true;
     }
 
-    bool Graphics::should_close() const {
+    bool Graphics::should_close() {
         return glfwWindowShouldClose(global_window);
     }
 
-    void Graphics::poll_events() const {
+    void Graphics::poll_events() {
         glfwPollEvents();
     }
 
@@ -193,11 +193,11 @@ namespace Bcg {
         glClearColor(clear_color[0], clear_color[1], clear_color[2], 1.0f);
     }
 
-    void Graphics::clear_framebuffer() const {
+    void Graphics::clear_framebuffer() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    void Graphics::start_gui() const {
+    void Graphics::start_gui() {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -205,14 +205,14 @@ namespace Bcg {
         ImGui::BeginMainMenuBar();
     }
 
-    void Graphics::render_menu() const {
+    void Graphics::render_menu() {
         if (ImGui::BeginMenu("Graphics")) {
             ImGui::MenuItem("Window", nullptr, &show_window_gui);
             ImGui::EndMenu();
         }
     }
 
-    void Graphics::render_gui() const {
+    void Graphics::render_gui() {
         if (show_window_gui) {
             if (ImGui::Begin("Window", &show_window_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
                 if (ImGui::ColorEdit3("clear_color", clear_color)) {
@@ -223,7 +223,7 @@ namespace Bcg {
         }
     }
 
-    void Graphics::end_gui() const {
+    void Graphics::end_gui() {
         ImGui::EndMainMenuBar();
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -236,8 +236,8 @@ namespace Bcg {
         }
     }
 
-    void Graphics::swap_buffers() const {
-        glfwSwapBuffers(Bcg::global_window);
+    void Graphics::swap_buffers() {
+        glfwSwapBuffers(global_window);
     }
 
     static std::string ReadTextFile(const char *path) {
