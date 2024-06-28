@@ -15,19 +15,6 @@ target_link_libraries(Engine24 PUBLIC EnTT::EnTT)
 add_subdirectory(tinyobjloader)
 target_link_libraries(Engine24 PRIVATE tinyobjloader)
 
-target_include_directories(Engine24 SYSTEM PUBLIC pmp-library/src)
-target_sources(Engine24 PRIVATE pmp-library/src/pmp/surface_mesh.cpp
-        pmp-library/src/pmp/io/io.cpp
-        pmp-library/src/pmp/io/read_obj.cpp
-        pmp-library/src/pmp/io/read_off.cpp
-        pmp-library/src/pmp/io/read_pmp.cpp
-        pmp-library/src/pmp/io/read_stl.cpp
-        pmp-library/src/pmp/io/write_obj.cpp
-        pmp-library/src/pmp/io/write_off.cpp
-        pmp-library/src/pmp/io/write_pmp.cpp
-        pmp-library/src/pmp/io/write_stl.cpp
-)
-
 add_subdirectory(ImGuiFileDialog)
 target_include_directories(ImGuiFileDialog PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/imgui)
 target_link_libraries(ImGuiFileDialog PUBLIC imgui)
