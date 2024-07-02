@@ -9,10 +9,20 @@
 #include "Keybaord.h"
 #include "Mouse.h"
 
+struct GLFWwindow;
+
 namespace Bcg {
     class Input : public Plugin {
     public:
         Input();
+
+        static Keyboard &set_keyboard(GLFWwindow *window, int key, int scancode, int action, int mode);
+
+        static Mouse &set_mouse_cursor_position(GLFWwindow *window, double xpos, double ypos);
+
+        static Mouse &set_mouse_button(GLFWwindow *window, int button, int action, int mods);
+
+        static Mouse &set_mouse_scrolling(GLFWwindow *window, double xoffset, double yoffset);
 
         void activate() override;
 

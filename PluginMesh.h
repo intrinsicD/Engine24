@@ -5,7 +5,7 @@
 #ifndef ENGINE24_PLUGINMESH_H
 #define ENGINE24_PLUGINMESH_H
 
-#include "Plugin.h"
+#include "Core/Plugin.h"
 #include <vector>
 #include <string>
 #include <unordered_map>

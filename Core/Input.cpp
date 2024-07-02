@@ -7,7 +7,7 @@
 #include "Keybaord.h"
 #include "Mouse.h"
 #include "imgui.h"
-#include "GLFWUtils.h"
+#include "../GLFWUtils.h"
 
 namespace Bcg {
     static bool show_input_gui;
@@ -21,6 +21,48 @@ namespace Bcg {
             auto &mouse = Engine::Context().emplace<Mouse>();
             mouse.pressed.resize(5);
         }
+    }
+
+
+    Keyboard &Input::set_keyboard(GLFWwindow *window, int key, int scancode, int action, int mode) {
+        auto &keyboard = Engine::Context().get<Keyboard>();
+
+        while (key >= keyboard.pressed.size()) {
+            keyboard.pressed.emplace_back(0);
+        }
+        keyboard.pressed[key] = action;
+        if (action) {
+            keyboard.current.emplace(key);
+        } else {
+            keyboard.current.erase(key);
+        }
+        return keyboard;
+    }
+
+    Mouse &Input::set_mouse_cursor_position(GLFWwindow *window, double xpos, double ypos) {
+        auto &mouse = Engine::Context().get<Mouse>();
+        mouse.cursor = {xpos, ypos};
+        return mouse;
+    }
+
+    Mouse &Input::set_mouse_button(GLFWwindow *window, int button, int action, int mods) {
+        auto &mouse = Engine::Context().get<Mouse>();
+        while (button >= mouse.pressed.size()) {
+            mouse.pressed.emplace_back(0);
+        }
+        mouse.pressed[button] = action;
+        if (action) {
+            mouse.current.emplace(button);
+        } else {
+            mouse.current.erase(button);
+        }
+        return mouse;
+    }
+
+    Mouse &Input::set_mouse_scrolling(GLFWwindow *window, double xoffset, double yoffset) {
+        auto &mouse = Engine::Context().get<Mouse>();
+        mouse.scrolling = true;
+        return mouse;
     }
 
     void Input::activate() {

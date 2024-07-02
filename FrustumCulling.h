@@ -5,7 +5,7 @@
 #ifndef ENGINE24_FRUSTUMCULLING_H
 #define ENGINE24_FRUSTUMCULLING_H
 
-#include "Plugin.h"
+#include "Core/Plugin.h"
 #include "entt/fwd.hpp"
 
 namespace Bcg {

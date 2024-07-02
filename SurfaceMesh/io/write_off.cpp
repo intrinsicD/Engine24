@@ -7,7 +7,7 @@
 #include <fstream>
 #include <ios>
 #include "../../Exceptions.h"
-#include "../../Types.h"
+#include "../../Core/Types.h"
 #include "helpers.h"
 
 namespace Bcg {

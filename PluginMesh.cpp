@@ -3,14 +3,14 @@
 //
 
 #include "PluginMesh.h"
-#include "Logger.h"
+#include "Core/Logger.h"
 #include <fstream>
 #include <unordered_map>
 #include <sstream>
 #include "imgui.h"
 #include "ImGuiFileDialog.h"
-#include "Engine.h"
-#include "EventsCallbacks.h"
+#include "Core/Engine.h"
+#include "Core/EventsCallbacks.h"
 #include "MeshCompute.h"
 #include <chrono>
 #include "SurfaceMesh/SurfaceMesh.h"

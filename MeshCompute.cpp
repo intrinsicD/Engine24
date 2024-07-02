@@ -3,10 +3,10 @@
 //
 
 #include "MeshCompute.h"
-#include "Graphics.h"
+#include "Core/Graphics.h"
 #include "Mesh.h"
 #include "glad/gl.h"
-#include "Logger.h"
+#include "Core/Logger.h"
 #include <string>
 
 namespace Bcg {

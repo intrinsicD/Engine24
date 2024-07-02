@@ -6,7 +6,7 @@
 #define ENGINE24_TYPES_H
 
 #include <cstdint>
-#include "MatVec.h"
+#include "../MatVec.h"
 
 namespace Bcg {
     //! Scalar type

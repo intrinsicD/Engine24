@@ -5,7 +5,7 @@
 #include "Plugins.h"
 #include "Input.h"
 #include "Logger.h"
-#include "PluginMesh.h"
+#include "../PluginMesh.h"
 #include <unordered_map>
 
 namespace Bcg {

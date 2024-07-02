@@ -1,8 +1,8 @@
 #include <vector>
 
 #include "entt/entt.hpp"
-#include "Engine.h"
-#include "Graphics.h"
+#include "Core/Engine.h"
+#include "Core/Graphics.h"
 #include "Plugins.h"
 
 int main() {

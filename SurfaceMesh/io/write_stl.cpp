@@ -5,7 +5,7 @@
 
 #include "../../Exceptions.h"
 
-#include "../../Types.h"
+#include "../../Core/Types.h"
 #include <fstream>
 #include <ios>
 #include <iterator>

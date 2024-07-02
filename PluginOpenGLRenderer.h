@@ -6,7 +6,7 @@
 #define ENGINE24_PLUGINOPENGLRENDERER_H
 
 
-#include "Plugin.h"
+#include "Core/Plugin.h"
 #include <vector>
 #include <string>
 #include "MatVec.h"

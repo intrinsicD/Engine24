@@ -6,7 +6,7 @@
 #define ENGINE24_MESH_H
 
 #include "SurfaceMesh/SurfaceMesh.h"
-#include "Logger.h"
+#include "Core/Logger.h"
 
 namespace Bcg {
     using Mesh = SurfaceMesh;

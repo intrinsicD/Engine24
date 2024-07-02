@@ -8,7 +8,7 @@
 #include "EventsCallbacks.h"
 #include "Logger.h"
 #include "Keybaord.h"
-#include "Mouse.h"
+#include "Input.h"
 #include "glad/gl.h"
 #include "GLFW/glfw3.h"
 #include "imgui.h"
@@ -29,19 +29,8 @@ namespace Bcg {
         Log::Error(message.c_str());
     }
 
-// Is called whenever a key is pressed/released via GLFW
     static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode) {
-        auto &keyboard = Engine::Context().get<Keyboard>();
-
-        while (key >= keyboard.pressed.size()) {
-            keyboard.pressed.emplace_back(0);
-        }
-        keyboard.pressed[key] = action;
-        if (action) {
-            keyboard.current.emplace(key);
-        } else {
-            keyboard.current.erase(key);
-        }
+        auto &keyboard = Input::set_keyboard(window, key, scancode, action, mode);
 
         Engine::Dispatcher().trigger<Events::Callback::Key>({window, key, scancode, action, mode});
         if (keyboard.esc()) {
@@ -50,30 +39,19 @@ namespace Bcg {
     }
 
     static void mouse_cursor_callback(GLFWwindow *window, double xpos, double ypos) {
-        auto &mouse = Engine::Context().get<Mouse>();
-        mouse.cursor = {xpos, ypos};
+        Input::set_mouse_cursor_position(window, xpos, ypos);
 
         Engine::Dispatcher().trigger<Events::Callback::MouseCursor>({window, xpos, ypos});
     }
 
     static void mouse_button_callback(GLFWwindow *window, int button, int action, int mods) {
-        auto &mouse = Engine::Context().get<Mouse>();
-        while (button >= mouse.pressed.size()) {
-            mouse.pressed.emplace_back(0);
-        }
-        mouse.pressed[button] = action;
-        if (action) {
-            mouse.current.emplace(button);
-        } else {
-            mouse.current.erase(button);
-        }
+        Input::set_mouse_button(window, button, action, mods);
 
         Engine::Dispatcher().trigger<Events::Callback::MouseButton>({window, button, action, mods});
     }
 
     static void mouse_scrolling(GLFWwindow *window, double xoffset, double yoffset) {
-        auto &mouse = Engine::Context().get<Mouse>();
-        mouse.scrolling = true;
+        Input::set_mouse_scrolling(window, xoffset, yoffset);
 
         Engine::Dispatcher().trigger<Events::Callback::MouseScroll>({window, xoffset, yoffset});
     }
@@ -190,7 +168,7 @@ namespace Bcg {
     }
 
     void Graphics::set_clear_color(const float *color) {
-        glClearColor(clear_color[0], clear_color[1], clear_color[2], 1.0f);
+        glClearColor(color[0], color[1], color[2], 1.0f);
     }
 
     void Graphics::clear_framebuffer() {

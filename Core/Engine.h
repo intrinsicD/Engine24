@@ -6,7 +6,7 @@
 #define ENGINE24_ENGINE_H
 
 #include "entt/entt.hpp"
-#include "Plugin.h"
+#include "Command.h"
 
 namespace Bcg {
     struct Engine {
@@ -26,7 +26,6 @@ namespace Bcg {
 
         entt::registry state;
         entt::dispatcher dispatcher;
-        std::vector<std::unique_ptr<Plugin>> plugins;
     };
 }
 
