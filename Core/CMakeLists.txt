@@ -6,7 +6,9 @@ target_sources(Engine24 PRIVATE
         Input.cpp
         Keyboard.cpp
         Logger.cpp
+        Materials.cpp
         Mouse.cpp
+        Picker.cpp
         Plugin.cpp
         Plugins.cpp
 )

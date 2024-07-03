@@ -22,6 +22,7 @@ namespace Bcg {
     static float dpi = 1.5;
     static ImGuiContext *imgui_context = nullptr;
     static bool show_window_gui = false;
+    static bool show_buffer_gui = false;
     float clear_color[3] = {0.2f, 0.3f, 0.3f};
 
     static void glfw_error_callback(int error, const char *description) {
@@ -156,6 +157,8 @@ namespace Bcg {
 
         glViewport(0, 0, WIDTH, HEIGHT);
         glClearColor(clear_color[0], clear_color[1], clear_color[2], 1.0f);
+
+        Engine::Context().emplace<BufferContainer>();
         return true;
     }
 
@@ -186,6 +189,7 @@ namespace Bcg {
     void Graphics::render_menu() {
         if (ImGui::BeginMenu("Graphics")) {
             ImGui::MenuItem("Window", nullptr, &show_window_gui);
+            ImGui::MenuItem("Buffer", nullptr, &show_buffer_gui);
             ImGui::EndMenu();
         }
     }
@@ -196,6 +200,12 @@ namespace Bcg {
                 if (ImGui::ColorEdit3("clear_color", clear_color)) {
                     glClearColor(clear_color[0], clear_color[1], clear_color[2], 1.0);
                 }
+            }
+            ImGui::End();
+        }
+        if (show_buffer_gui) {
+            if (ImGui::Begin("Buffers", &show_window_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
+                render_gui(Engine::Context().get<BufferContainer>());
             }
             ImGui::End();
         }
@@ -217,6 +227,83 @@ namespace Bcg {
     void Graphics::swap_buffers() {
         glfwSwapBuffers(global_window);
     }
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    size_t Graphics::remove_buffer(const std::string &name) {
+        auto &buffers = Engine::Context().get<BufferContainer>();
+        return buffers.erase(name);
+    }
+
+    size_t Graphics::remove_buffer(unsigned int id) {
+        auto &buffers = Engine::Context().get<BufferContainer>();
+        size_t counter_erased = 0;
+        for (auto &item: buffers) {
+            if (item.second == id) {
+                counter_erased += buffers.erase(item.first);
+            }
+        }
+        return counter_erased;
+    }
+
+    size_t Graphics::buffer_size(unsigned int id, unsigned int target) {
+        GLint buffer_size = 0;
+        glBindBuffer(target, id);
+        glGetBufferParameteriv(target, GL_BUFFER_SIZE, &buffer_size);
+        return buffer_size;
+    }
+
+    unsigned int Graphics::get_or_add_buffer(const std::string &name) {
+        auto &buffers = Engine::Context().get<BufferContainer>();
+        auto iter = buffers.find(name);
+        if (iter != buffers.end()) {
+            return iter->second;
+        }
+        unsigned int id = 0;
+        glGenBuffers(1, &id);
+        if (id == 0) {
+            Log::Error("OpenGL failed to generate a vaild buffer id!");
+        } else {
+            buffers[name] = id;
+        }
+        return id;
+    }
+
+    void Graphics::upload(unsigned int id, unsigned int target, const void *data, size_t size_bytes,
+                          size_t offset) {
+        glBindBuffer(target, id);
+        if (offset > 0) {
+            if (offset + size_bytes <= buffer_size(id, target)) {
+                glBufferSubData(target, offset, size_bytes, data);
+                return;
+            }
+        }
+        glBufferData(target, size_bytes, data, GL_STATIC_DRAW);
+    }
+
+    void Graphics::upload_vbo(unsigned int id, const void *data, size_t size_bytes, size_t offset) {
+        upload(id, GL_ARRAY_BUFFER, data, size_bytes, offset);
+    }
+
+    void Graphics::upload_ebo(unsigned int id, const void *data, size_t size_bytes, size_t offset) {
+        upload(id, GL_ELEMENT_ARRAY_BUFFER, data, size_bytes, offset);
+    }
+
+    void Graphics::upload_ssbo(unsigned int id, const void *data, size_t size_bytes, size_t offset) {
+        upload(id, GL_SHADER_STORAGE_BUFFER, data, size_bytes, offset);
+    }
+
+    void Graphics::upload_ubo(unsigned int id, const void *data, size_t size_bytes, size_t offset) {
+        upload(id, GL_UNIFORM_BUFFER, data, size_bytes, offset);
+    }
+
+    void Graphics::render_gui(const BufferContainer &buffers) {
+        for (const auto &item: buffers) {
+            ImGui::Text("%s: %u", item.first.c_str(), item.second);
+        }
+    }
+
+    //------------------------------------------------------------------------------------------------------------------
 
     static std::string ReadTextFile(const char *path) {
         if (!path) {

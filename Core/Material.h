@@ -7,10 +7,14 @@
 
 #include <unordered_map>
 #include <string>
-#include "MatVec.h"
+#include "../MatVec.h"
 
 namespace Bcg {
     struct Material {
+        struct Attribute{
+            std::string name;
+            unsigned int location;
+        };
         virtual ~Material() = default;
 
         unsigned int vao = -1;
@@ -18,33 +22,35 @@ namespace Bcg {
         unsigned int offset = 0;
         unsigned int size = -1;
 
+        std::vector<Attribute> attributes;
+
         std::unordered_map<std::string, unsigned int> textures;
 
         virtual void update_uniforms() = 0;
     };
 
     struct MeshMaterial : public Material {
-        virtual ~MeshMaterial();
+        ~MeshMaterial() override = default;
 
         Vector<float, 3> base_color = Vector<float, 3>(1.0f, 1.0f, 1.0f);
 
-        void update_uniforms() override;
+        void update_uniforms() override{}
     };
 
     struct GraphMaterial : public Material {
-        virtual ~GraphMaterial();
+        ~GraphMaterial() override = default;
 
         Vector<float, 3> base_color = Vector<float, 3>(1.0f, 1.0f, 1.0f);;
 
-        void update_uniforms() override;
+        void update_uniforms() override{}
     };
 
     struct PointCloudMaterial : public Material {
-        virtual ~PointCloudMaterial();
+        ~PointCloudMaterial() override = default;
 
         Vector<float, 3> base_color = Vector<float, 3>(1.0f, 1.0f, 1.0f);;
 
-        void update_uniforms() override;
+        void update_uniforms() override{}
     };
 
 }

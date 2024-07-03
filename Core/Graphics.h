@@ -5,9 +5,24 @@
 #ifndef ENGINE24_GRAPHICS_H
 #define ENGINE24_GRAPHICS_H
 
+#include <unordered_map>
 #include <vector>
+#include <string>
 
 namespace Bcg {
+
+    struct BufferContainer : public std::unordered_map<std::string, unsigned int> {
+        using std::unordered_map<std::string, unsigned int>::unordered_map;
+    };
+
+    struct ShaderContainer : public std::unordered_map<std::string, unsigned int> {
+        using std::unordered_map<std::string, unsigned int>::unordered_map;
+    };
+
+    struct ProgramContainer : public std::unordered_map<std::string, unsigned int> {
+        using std::unordered_map<std::string, unsigned int>::unordered_map;
+    };
+
     class Graphics {
     public:
         static bool init();
@@ -29,6 +44,33 @@ namespace Bcg {
         static void end_gui();
 
         static void swap_buffers();
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        static size_t remove_buffer(const std::string &name);
+
+        static size_t remove_buffer(unsigned int id);
+
+        static size_t buffer_size(unsigned int id, unsigned int target);
+
+        static unsigned int get_or_add_buffer(const std::string &name);
+
+        static void
+        upload(unsigned int id, unsigned int target, const void *data, size_t size_bytes, size_t offset = 0);
+
+        static void upload_vbo(unsigned int id, const void *data, size_t size_bytes, size_t offset = 0);
+
+        static void upload_ebo(unsigned int id, const void *data, size_t size_bytes, size_t offset = 0);
+
+        static void upload_ssbo(unsigned int id, const void *data, size_t size_bytes, size_t offset = 0);
+
+        static void upload_ubo(unsigned int id, const void *data, size_t size_bytes, size_t offset = 0);
+
+        static void render_gui(const BufferContainer &buffers);
+
+        //--------------------------------------------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------------------------------------------
     };
 
     class Shader {
@@ -81,27 +123,6 @@ namespace Bcg {
         unsigned int id = -1;
         const char *name;
         std::vector<Shader> shaders;
-    };
-
-    class Buffer {
-    public:
-        Buffer(const char *name);
-
-        void create();
-
-        void destroy();
-
-        void bind() const;
-
-        void unbind() const;
-
-        void set_data(const void *data, unsigned int size_bytes);
-
-        void set_subdata(const void *data, unsigned int offset_bytes, unsigned int total_bytes);
-
-        const char *name;
-        unsigned int id = -1;
-        unsigned int size_bytes;
     };
 }
 
