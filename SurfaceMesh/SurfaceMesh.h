@@ -15,7 +15,7 @@
 #include <vector>
 
 #include "../Core/Types.h"
-#include "../Properties.h"
+#include "Properties.h"
 
 namespace Bcg {
 

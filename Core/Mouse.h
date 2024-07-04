@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <set>
+#include "GuiUtils.h"
 
 namespace Bcg {
     struct Mouse {
@@ -28,6 +29,13 @@ namespace Bcg {
         std::set<int> current;
 
         Cursor cursor;
+    };
+
+
+    namespace Gui {
+        void Show(const Mouse &mouse);
+
+        void Show(const Mouse::Cursor &cursor);
     };
 }
 

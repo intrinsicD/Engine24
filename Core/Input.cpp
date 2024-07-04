@@ -4,10 +4,9 @@
 
 #include "Input.h"
 #include "Engine.h"
-#include "Keybaord.h"
+#include "Keyboard.h"
 #include "Mouse.h"
 #include "imgui.h"
-#include "../GLFWUtils.h"
 
 namespace Bcg {
     static bool show_input_gui;
@@ -100,47 +99,14 @@ namespace Bcg {
             if (ImGui::Begin("Input", &show_input_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
                 ImGui::Text("Keyboard:");
                 ImGui::Separator();
-                render_gui(Engine::Context().get<Keyboard>());
+                Gui::Show(Engine::Context().get<Keyboard>());
                 ImGui::Separator();
                 ImGui::Text("Mouse:");
                 ImGui::Separator();
-                render_gui(Engine::Context().get<Mouse>());
+                Gui::Show(Engine::Context().get<Mouse>());
             }
             ImGui::End();
         }
-    }
-
-    void Input::render_gui(const Keyboard &keyboard) {
-        ImGui::Text("Shift: %d", keyboard.shift());
-        ImGui::Text("Strg: %d", keyboard.strg());
-        ImGui::Text("Alt: %d", keyboard.alt());
-        ImGui::Text("Esc: %d", keyboard.esc());
-        ImGui::Text("Current Keys: {");
-        ImGui::SameLine();
-        for (const auto key: keyboard.current) {
-            ImGui::Text("%s", KeyName(key));
-            ImGui::SameLine();
-        }
-        ImGui::Text("}");
-    }
-
-    void Input::render_gui(const Mouse::Cursor &cursor) {
-        ImGui::Text("Position: %lf, %lf", cursor.xpos, cursor.ypos);
-    }
-
-    void Input::render_gui(const Mouse &mouse) {
-        ImGui::Text("Left: %d", mouse.left());
-        ImGui::Text("Middle: %d", mouse.middle());
-        ImGui::Text("Right: %d", mouse.right());
-        ImGui::Text("Scrolling: %d", mouse.scrolling);
-        render_gui(mouse.cursor);
-        ImGui::Text("Current Buttons: {");
-        ImGui::SameLine();
-        for (const auto button: mouse.current) {
-            ImGui::Text("%d", button);
-            ImGui::SameLine();
-        }
-        ImGui::Text("}");
     }
 
     void Input::render() {

@@ -9,7 +9,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
-#include "SurfaceMesh/SurfaceMesh.h"
+#include "SurfaceMesh.h"
 
 namespace Bcg {
     class PluginMesh : public Plugin {
@@ -45,6 +45,8 @@ namespace Bcg {
         void render_menu() override;
 
         void render_gui() override;
+
+        void render_gui(SurfaceMesh &mesh);
 
         void render() override;
     };

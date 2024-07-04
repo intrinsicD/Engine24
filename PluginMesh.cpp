@@ -9,8 +9,8 @@
 #include <sstream>
 #include "imgui.h"
 #include "ImGuiFileDialog.h"
-#include "Core/Engine.h"
-#include "Core/EventsCallbacks.h"
+#include "Engine.h"
+#include "EventsCallbacks.h"
 #include "MeshCompute.h"
 #include <chrono>
 #include "SurfaceMesh/SurfaceMesh.h"
@@ -19,6 +19,9 @@
 #include "SurfaceMesh/io/read_off.h"
 #include "SurfaceMesh/io/read_stl.h"
 #include "SurfaceMesh/io/read_pmp.h"
+#include "Resources.h"
+#include "GuiUtils.h"
+#include "PropertiesGui.h"
 
 namespace Bcg {
     SurfaceMesh PluginMesh::load(const char *path) {
@@ -151,7 +154,7 @@ namespace Bcg {
         };
 
         std::unordered_map<Point, Vertex, VertexHash, VertexEqual> vertexMap(10, VertexHash(),
-                                                                                       VertexEqual(tol));
+                                                                             VertexEqual(tol));
 
         // Map to store the new vertex positions
         auto vertexReplacementMap = mesh.vertex_property<Vertex>("v:replacement");
@@ -219,6 +222,8 @@ namespace Bcg {
             auto start_time = std::chrono::high_resolution_clock::now();
 
             SurfaceMesh smesh = PluginMesh::load(event.paths[i]);
+            Resources<SurfaceMesh> meshes;
+            meshes.create_from(smesh);
             auto end_time = std::chrono::high_resolution_clock::now();
 
             std::chrono::duration<double> build_duration = end_time - start_time;
@@ -294,6 +299,11 @@ namespace Bcg {
             // close
             ImGuiFileDialog::Instance()->Close();
         }
+    }
+
+    void PluginMesh::render_gui(SurfaceMesh &mesh) {
+        static std::pair<int, std::string> curr_property;
+        Gui::Combo("Vertices", curr_property, mesh.vprops_);
     }
 
     void PluginMesh::render() {

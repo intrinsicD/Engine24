@@ -7,6 +7,7 @@
 
 #include "Plugin.h"
 #include "Material.h"
+#include "entt/fwd.hpp"
 
 namespace Bcg {
     class Materials : public Plugin {
@@ -15,13 +16,11 @@ namespace Bcg {
 
         ~Materials() override = default;
 
-        static void render_gui(const Material &material);
+        static void setup(entt::entity entity, MeshMaterial &material);
 
-        static void render_gui(MeshMaterial &material);
+        static void setup(entt::entity entity, GraphMaterial &material);
 
-        static void render_gui(GraphMaterial &material);
-
-        static void render_gui(PointCloudMaterial &material);
+        static void setup(entt::entity entity, PointCloudMaterial &material);
 
         void activate() override;
 

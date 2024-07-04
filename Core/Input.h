@@ -6,7 +6,7 @@
 #define ENGINE24_INPUT_H
 
 #include "Plugin.h"
-#include "Keybaord.h"
+#include "Keyboard.h"
 #include "Mouse.h"
 
 struct GLFWwindow;
@@ -37,12 +37,6 @@ namespace Bcg {
         void render_menu() override;
 
         void render_gui() override;
-
-        static void render_gui(const Keyboard &keyboard);
-
-        static void render_gui(const Mouse::Cursor &cursor);
-
-        static void render_gui(const Mouse &mouse);
 
         void render() override;
     };

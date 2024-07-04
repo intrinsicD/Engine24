@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 add_executable(Engine24 main.cpp
         MeshCompute.cpp
         GLFWUtils.cpp
+        GLUtils.cpp
         PluginMesh.cpp
         PluginOpenGLRenderer.cpp
         FrustumCulling.cpp

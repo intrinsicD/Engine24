@@ -2,8 +2,10 @@
 // Created by alex on 19.06.24.
 //
 
-#include "Keybaord.h"
+#include "Keyboard.h"
 #include "GLFW/glfw3.h"
+#include "../GLFWUtils.h"
+#include "imgui.h"
 
 namespace Bcg{
     bool Keyboard::shift() const{
@@ -20,5 +22,20 @@ namespace Bcg{
 
     bool Keyboard::esc() const{
         return pressed[GLFW_KEY_ESCAPE];
+    }
+
+
+    void Gui::Show(const Keyboard &keyboard) {
+        ImGui::Text("Shift: %d", keyboard.shift());
+        ImGui::Text("Strg: %d", keyboard.strg());
+        ImGui::Text("Alt: %d", keyboard.alt());
+        ImGui::Text("Esc: %d", keyboard.esc());
+        ImGui::Text("Current Keys: {");
+        ImGui::SameLine();
+        for (const auto key: keyboard.current) {
+            ImGui::Text("%s", KeyName(key));
+            ImGui::SameLine();
+        }
+        ImGui::Text("}");
     }
 }

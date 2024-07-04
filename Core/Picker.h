@@ -8,6 +8,7 @@
 #include "entt/fwd.hpp"
 #include "../MatVec.h"
 #include "Plugin.h"
+#include "GuiUtils.h"
 
 namespace Bcg {
     struct Picked {
@@ -32,6 +33,12 @@ namespace Bcg {
         static Picked &pick(double x, double y);
 
         static Picked &last_picked();
+    };
+
+    namespace Gui {
+        void Show(const Picked &picked);
+
+        void Show(const Picked::Entity &entity);
     };
 }
 

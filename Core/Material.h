@@ -8,13 +8,20 @@
 #include <unordered_map>
 #include <string>
 #include "../MatVec.h"
+#include "GuiUtils.h"
 
 namespace Bcg {
     struct Material {
-        struct Attribute{
+        struct Attribute {
             std::string name;
-            unsigned int location;
+            unsigned int index;
+            unsigned int size;
+            unsigned int type;
+            bool normalized;
+            unsigned int stride;
+            const void *pointer;
         };
+
         virtual ~Material() = default;
 
         unsigned int vao = -1;
@@ -34,7 +41,7 @@ namespace Bcg {
 
         Vector<float, 3> base_color = Vector<float, 3>(1.0f, 1.0f, 1.0f);
 
-        void update_uniforms() override{}
+        void update_uniforms() override {}
     };
 
     struct GraphMaterial : public Material {
@@ -42,7 +49,7 @@ namespace Bcg {
 
         Vector<float, 3> base_color = Vector<float, 3>(1.0f, 1.0f, 1.0f);;
 
-        void update_uniforms() override{}
+        void update_uniforms() override {}
     };
 
     struct PointCloudMaterial : public Material {
@@ -50,9 +57,20 @@ namespace Bcg {
 
         Vector<float, 3> base_color = Vector<float, 3>(1.0f, 1.0f, 1.0f);;
 
-        void update_uniforms() override{}
+        void update_uniforms() override {}
     };
 
+    namespace Gui {
+        void Show(Material &material);
+
+        void Show(Material::Attribute &attribute);
+
+        void Show(MeshMaterial &material);
+
+        void Show(GraphMaterial &material);
+
+        void Show(PointCloudMaterial &material);
+    }
 }
 
 #endif //ENGINE24_MATERIAL_H
