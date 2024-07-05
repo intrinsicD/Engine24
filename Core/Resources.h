@@ -86,25 +86,25 @@ namespace Bcg {
         ~ResourcesModule() override = default;
 
         template<typename T>
-        static void render_gui(const Resources<T> &container){
+        static void render_gui(const Resources<T> &container) {
 
         }
 
-        void activate();
+        void activate() override;
 
-        void begin_frame();
+        void begin_frame() override;
 
-        void update();
+        void update() override;
 
-        void end_frame();
+        void end_frame() override;
 
-        void deactivate();
+        void deactivate() override;
 
-        void render_menu();
+        void render_menu() override;
 
-        void render_gui();
+        void render_gui() override;
 
-        void render();
+        void render() override;
     };
 }
 
