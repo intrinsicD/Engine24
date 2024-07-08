@@ -7,6 +7,7 @@
 namespace Bcg {
     Engine::Engine() {
         entt::locator<Bcg::Engine *>::emplace<Bcg::Engine *>(this);
+        assert(Instance() == this);
     }
 
     Engine *Engine::Instance() {

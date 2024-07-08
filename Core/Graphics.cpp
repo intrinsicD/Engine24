@@ -83,6 +83,33 @@ namespace Bcg {
         io.Fonts->Build();
     }
 
+    GLFWwindow *Graphics::request_window() {
+        if (!global_window) {
+            if (!glfwInit()) {
+                Log::Error("Failed to initialize GLFW context");
+                return nullptr;
+            }
+
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+            glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+            global_window = glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL", NULL, NULL);
+        }
+        glfwMakeContextCurrent(global_window);
+        glfwSwapInterval(1);
+        glfwSetWindowUserPointer(global_window, Engine::Instance());
+        return global_window;
+    }
+
+    bool Graphics::should_close(GLFWwindow *window) {
+        return glfwWindowShouldClose(window);
+    }
+
+    void Graphics::swap_buffers(GLFWwindow *window) {
+        glfwSwapBuffers(window);
+    }
+
     bool Graphics::init() {
         if (global_window) {
             Log::Info("GLFW context already initialized");

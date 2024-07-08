@@ -7,6 +7,8 @@ add_library(Engine24 main.cpp
         MeshCompute.cpp
         GLFWUtils.cpp
         GLUtils.cpp
+        Mesh.cpp
+        PluginCamera.cpp
         PluginMesh.cpp
         PluginOpenGLRenderer.cpp
         FrustumCulling.cpp

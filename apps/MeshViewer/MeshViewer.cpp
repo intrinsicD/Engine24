@@ -9,42 +9,43 @@
 
 namespace Bcg {
     MeshViewer::MeshViewer() {
-        Engine engine;
+
     }
 
     void MeshViewer::run() {
-        if (!Graphics::init()) {
+        Bcg::Engine engine;
+        if (!Bcg::Graphics::init()) {
             return ;
         }
 
-        Plugins::init();
-        Plugins::activate_all();
-        Engine::ExecuteCmdBuffer();
+        Bcg::Plugins::init();
+        Bcg::Plugins::activate_all();
+        Bcg::Engine::ExecuteCmdBuffer();
 
         // Game loop
-        while (!Graphics::should_close()) {
+        while (!Bcg::Graphics::should_close()) {
             {
-                Graphics::poll_events();
-                Plugins::begin_frame_all();
-                Plugins::update_all();
-                Engine::ExecuteCmdBuffer();
+                Bcg::Graphics::poll_events();
+                Bcg::Plugins::begin_frame_all();
+                Bcg::Plugins::update_all();
+                Bcg::Engine::ExecuteCmdBuffer();
             }
             {
-                Graphics::clear_framebuffer();
-                Plugins::render_all();
-                Engine::ExecuteCmdBuffer();
-                Graphics::start_gui();
-                Plugins::render_menu();
-                Plugins::render_gui();
-                Graphics::render_menu();
-                Graphics::render_gui();
-                Graphics::end_gui();
-                Engine::ExecuteCmdBuffer();
-                Plugins::end_frame();
-                Graphics::swap_buffers();
+                Bcg::Graphics::clear_framebuffer();
+                Bcg::Plugins::render_all();
+                Bcg::Engine::ExecuteCmdBuffer();
+                Bcg::Graphics::start_gui();
+                Bcg::Plugins::render_menu();
+                Bcg::Plugins::render_gui();
+                Bcg::Graphics::render_menu();
+                Bcg::Graphics::render_gui();
+                Bcg::Graphics::end_gui();
+                Bcg::Engine::ExecuteCmdBuffer();
+                Bcg::Plugins::end_frame();
+                Bcg::Graphics::swap_buffers();
             }
         }
 
-        Plugins::deactivate_all();
+        Bcg::Plugins::deactivate_all();
     }
 }

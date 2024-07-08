@@ -9,6 +9,8 @@
 #include <vector>
 #include <string>
 
+struct GLFWwindow;
+
 namespace Bcg {
 
     struct BufferContainer : public std::unordered_map<std::string, unsigned int> {
@@ -25,6 +27,12 @@ namespace Bcg {
 
     class Graphics {
     public:
+        static GLFWwindow *request_window();
+
+        static bool should_close(GLFWwindow *window);
+
+        static void swap_buffers(GLFWwindow *window);
+
         static bool init();
 
         static bool should_close();

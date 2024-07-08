@@ -19,11 +19,94 @@
 #include "SurfaceMesh/io/read_off.h"
 #include "SurfaceMesh/io/read_stl.h"
 #include "SurfaceMesh/io/read_pmp.h"
+#include "Mesh.h"
 #include "Resources.h"
 #include "GuiUtils.h"
 #include "PropertiesGui.h"
+#include "glad/gl.h"
 
 namespace Bcg {
+    struct MeshView {
+        unsigned int vao, vbo, ebo;
+        unsigned int program;
+        unsigned int num_indices;
+    };
+
+    static MeshView setup(SurfaceMesh &mesh) {
+        MeshView mw;
+        mw.num_indices = mesh.n_faces() * 3;
+        glGenVertexArrays(1, &mw.vao);
+        glBindVertexArray(mw.vao);
+
+        glGenBuffers(1, &mw.vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, mw.vbo);
+        glBufferData(GL_ARRAY_BUFFER, mesh.n_vertices() * sizeof(Point), mesh.positions().data(), GL_STATIC_DRAW);
+
+        auto triangles = extract_triangle_list(mesh);
+        glGenBuffers(1, &mw.ebo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mw.ebo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, mw.num_indices * sizeof(unsigned int), triangles.data(), GL_STATIC_DRAW);
+
+        mw.program = glCreateProgram();
+        const char *vertex_shader_src = "#version 330 core\n"
+                                        "layout (location = 0) in vec3 aPos;\n"
+                                        "void main()\n"
+                                        "{\n"
+                                        "   gl_Position = vec4(aPos, 1.0);\n"
+                                        "}\0";
+
+        const char *fragment_shader_src = "#version 330 core\n"
+                                          "out vec4 FragColor;\n"
+                                          "void main()\n"
+                                          "{\n"
+                                          "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+                                          "}\n\0";
+
+        unsigned int vertex_shader;
+        vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+        glShaderSource(vertex_shader, 1, &vertex_shader_src, nullptr);
+        glCompileShader(vertex_shader);
+
+        int success;
+        char infoLog[512];
+        glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &success);
+        if (!success) {
+            glGetShaderInfoLog(vertex_shader, 512, nullptr, infoLog);
+            Log::Error("ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" + std::string(infoLog));
+        }
+
+        unsigned int fragment_shader;
+        fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+        glShaderSource(fragment_shader, 1, &fragment_shader_src, nullptr);
+        glCompileShader(fragment_shader);
+
+        glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
+        if (!success) {
+            glGetShaderInfoLog(fragment_shader, 512, nullptr, infoLog);
+            Log::Error("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" + std::string(infoLog));
+        }
+
+        glAttachShader(mw.program, vertex_shader);
+        glAttachShader(mw.program, fragment_shader);
+
+        glLinkProgram(mw.program);
+
+        glGetProgramiv(mw.program, GL_LINK_STATUS, &success);
+
+        if (!success) {
+            glGetProgramInfoLog(mw.program, 512, nullptr, infoLog);
+            Log::Error("ERROR::SHADER::PROGRAM::LINKING_FAILED\n" + std::string(infoLog));
+        }
+
+        glDeleteShader(vertex_shader);
+        glDeleteShader(fragment_shader);
+
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *) 0);
+        glEnableVertexAttribArray(0);
+
+        return mw;
+    }
+
     SurfaceMesh PluginMesh::load(const char *path) {
         std::string ext = path;
         ext = ext.substr(ext.find_last_of('.') + 1);
@@ -48,6 +131,10 @@ namespace Bcg {
         message += " #h: " + std::to_string(mesh.n_halfedges());
         message += " #f: " + std::to_string(mesh.n_faces());
         Log::Info(message);
+
+        auto mw = setup(mesh);
+        auto entity_id = Engine::State().create();
+        Engine::State().emplace<MeshView>(entity_id, mw);
         return mesh;
     }
 
@@ -307,6 +394,14 @@ namespace Bcg {
     }
 
     void PluginMesh::render() {
+        auto mesh_view = Engine::State().view<MeshView>();
 
+        for (auto entity_id: mesh_view) {
+            auto &mw = Engine::State().get<MeshView>(entity_id);
+
+            glBindVertexArray(mw.vao);
+            glUseProgram(mw.program);
+            glDrawElements(GL_TRIANGLES, mw.num_indices, GL_UNSIGNED_INT, 0);
+        }
     }
 }
