@@ -14,7 +14,7 @@ namespace Bcg {
             float aspect = 1.0f;
             float zNear = 0.1f;
             float zFar = 100.0f;
-            bool dirty = false;
+            bool dirty = true;
         } p_params;
         struct OrthoParameters {
             float left = -1.0f;
@@ -26,17 +26,23 @@ namespace Bcg {
             bool dirty = false;
         } o_params;
         struct ViewParameters {
-            Vector<float, 3> eye = {0.0f, 0.0f, 1.0f};
+            Vector<float, 3> eye = {0.0f, 0.0f, 3.0f};
             Vector<float, 3> center = {0.0f, 0.0f, 0.0f};
             Vector<float, 3> up = {0.0f, 1.0f, 0.0f};
-            bool dirty = false;
+            bool dirty = true;
         } v_params;
         enum class ProjectionType {
             PERSPECTIVE, ORTHOGRAPHIC
         } proj_type = ProjectionType::PERSPECTIVE;
         Matrix<float, 4, 4> view;
         Matrix<float, 4, 4> proj;
-        bool dirty = false;
+        bool dirty_view = true;
+        bool dirty_proj = true;
+    };
+
+    struct CameraUniformBuffer {
+        unsigned int id = 0;
+        unsigned int binding_point = 0;
     };
 
 //! OpenGL viewport matrix with parameters left, bottom, width, height

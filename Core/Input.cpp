@@ -69,7 +69,11 @@ namespace Bcg {
     }
 
     void Input::begin_frame() {
+        auto &mouse = Engine::Context().get<Mouse>();
+        mouse.gui_captured = ImGui::GetIO().WantCaptureMouse;
 
+        auto &keyboard = Engine::Context().get<Keyboard>();
+        keyboard.gui_captured = ImGui::GetIO().WantCaptureKeyboard;
     }
 
     void Input::update() {

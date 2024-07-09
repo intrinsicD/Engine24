@@ -7,13 +7,14 @@
 #include "Engine.h"
 #include "EventsCallbacks.h"
 #include "Logger.h"
-#include "Keyboard.h"
 #include "Input.h"
 #include "glad/gl.h"
 #include "GLFW/glfw3.h"
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
+#include "config.h"
+#include <filesystem>
 
 namespace Bcg {
     const GLuint WIDTH = 800, HEIGHT = 600;
@@ -33,34 +34,44 @@ namespace Bcg {
     static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode) {
         auto &keyboard = Input::set_keyboard(window, key, scancode, action, mode);
 
-        Engine::Dispatcher().trigger<Events::Callback::Key>({window, key, scancode, action, mode});
-        if (keyboard.esc()) {
-            glfwSetWindowShouldClose(window, true);
+        if(!keyboard.gui_captured){
+            Engine::Dispatcher().trigger<Events::Callback::Key>({window, key, scancode, action, mode});
+            if (keyboard.esc()) {
+                glfwSetWindowShouldClose(window, true);
+            }
         }
     }
 
     static void mouse_cursor_callback(GLFWwindow *window, double xpos, double ypos) {
         Input::set_mouse_cursor_position(window, xpos, ypos);
 
-        Engine::Dispatcher().trigger<Events::Callback::MouseCursor>({window, xpos, ypos});
+        if(!ImGui::GetIO().WantCaptureMouse){
+            Engine::Dispatcher().trigger<Events::Callback::MouseCursor>({window, xpos, ypos});
+        }
     }
 
     static void mouse_button_callback(GLFWwindow *window, int button, int action, int mods) {
         Input::set_mouse_button(window, button, action, mods);
 
-        Engine::Dispatcher().trigger<Events::Callback::MouseButton>({window, button, action, mods});
+        if(!ImGui::GetIO().WantCaptureMouse) {
+            Engine::Dispatcher().trigger<Events::Callback::MouseButton>({window, button, action, mods});
+        }
     }
 
     static void mouse_scrolling(GLFWwindow *window, double xoffset, double yoffset) {
         Input::set_mouse_scrolling(window, xoffset, yoffset);
 
-        Engine::Dispatcher().trigger<Events::Callback::MouseScroll>({window, xoffset, yoffset});
+        if(!ImGui::GetIO().WantCaptureMouse) {
+            Engine::Dispatcher().trigger<Events::Callback::MouseScroll>({window, xoffset, yoffset});
+        }
     }
 
     static void resize_callback(GLFWwindow *window, int width, int height) {
         glViewport(0, 0, width, height);
 
-        Engine::Dispatcher().trigger<Events::Callback::WindowResize>({window, width, height});
+        if(!ImGui::GetIO().WantCaptureMouse) {
+            Engine::Dispatcher().trigger<Events::Callback::WindowResize>({window, width, height});
+        }
     }
 
     static void close_callback(GLFWwindow *window) {
@@ -79,35 +90,13 @@ namespace Bcg {
 
     static void load_fonts(ImGuiIO &io, float dpi) {
         io.Fonts->Clear();
-        io.Fonts->AddFontFromFileTTF("../ext/imgui/misc/fonts/ProggyClean.ttf", 16.0f * dpi);
-        io.Fonts->Build();
-    }
-
-    GLFWwindow *Graphics::request_window() {
-        if (!global_window) {
-            if (!glfwInit()) {
-                Log::Error("Failed to initialize GLFW context");
-                return nullptr;
-            }
-
-            glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-            glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-            glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-            global_window = glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL", NULL, NULL);
+        if (std::filesystem::exists(IMGUI_FONTS_PATH_APPS)) {
+            io.Fonts->AddFontFromFileTTF((std::string(IMGUI_FONTS_PATH_APPS) + "/ProggyClean.ttf").c_str(),
+                                         16.0f * dpi);
+        } else {
+            io.Fonts->AddFontFromFileTTF((std::string(IMGUI_FONTS_PATH) + "/ProggyClean.ttf").c_str(), 16.0f * dpi);
         }
-        glfwMakeContextCurrent(global_window);
-        glfwSwapInterval(1);
-        glfwSetWindowUserPointer(global_window, Engine::Instance());
-        return global_window;
-    }
-
-    bool Graphics::should_close(GLFWwindow *window) {
-        return glfwWindowShouldClose(window);
-    }
-
-    void Graphics::swap_buffers(GLFWwindow *window) {
-        glfwSwapBuffers(window);
+        io.Fonts->Build();
     }
 
     bool Graphics::init() {
@@ -184,7 +173,16 @@ namespace Bcg {
 
         glViewport(0, 0, WIDTH, HEIGHT);
         glClearColor(clear_color[0], clear_color[1], clear_color[2], 1.0f);
-
+        // Enable depth testing
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS); // Default depth function
+        // Enable face culling
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK); // Cull back faces
+        glFrontFace(GL_CCW); // Counter-clockwise front faces
+// Enable blending for transparency
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         Engine::Context().emplace<BufferContainer>();
         return true;
     }
@@ -195,6 +193,10 @@ namespace Bcg {
 
     void Graphics::poll_events() {
         glfwPollEvents();
+    }
+
+    void Graphics::set_window_title(const char *title) {
+        glfwSetWindowTitle(global_window, title);
     }
 
     void Graphics::set_clear_color(const float *color) {
@@ -253,6 +255,23 @@ namespace Bcg {
 
     void Graphics::swap_buffers() {
         glfwSwapBuffers(global_window);
+    }
+
+    Vector<int, 4> Graphics::get_viewport(){
+        Vector<int, 4> viewport;
+        glGetIntegerv(GL_VIEWPORT, viewport.data());
+        return std::move(viewport);
+    }
+
+    bool Graphics::read_depth_buffer(int x, int y, float &zf) {
+        Vector<int, 4> viewport = get_viewport();
+
+        // in OpenGL y=0 is at the 'bottom'
+        y = viewport[3] - y;
+
+        // read depth buffer value at (x, y_new)
+        glReadPixels(x, y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &zf);
+        return zf != 1.0f;
     }
 
     //------------------------------------------------------------------------------------------------------------------

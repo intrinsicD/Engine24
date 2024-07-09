@@ -12,11 +12,11 @@ namespace Bcg {
     }
 
     bool Mouse::middle() const {
-        return pressed[GLFW_MOUSE_BUTTON_2];
+        return pressed[GLFW_MOUSE_BUTTON_3];
     }
 
     bool Mouse::right() const {
-        return pressed[GLFW_MOUSE_BUTTON_3];
+        return pressed[GLFW_MOUSE_BUTTON_2];
     }
 
     bool Mouse::any() const { return left() || middle() || right(); }

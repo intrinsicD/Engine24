@@ -14,6 +14,11 @@ add_library(Engine24 main.cpp
         FrustumCulling.cpp
 )
 
+set(IMGUI_FONTS_PATH "../ext/imgui/misc/fonts")
+set(IMGUI_FONTS_PATH_APPS "../../../ext/imgui/misc/fonts")
+configure_file(config.h.in config.h @ONLY)
+target_include_directories(Engine24 PRIVATE ${CMAKE_BINARY_DIR})
+
 add_executable(Engine24Main main.cpp)
 target_link_libraries(Engine24Main PUBLIC Engine24)
 

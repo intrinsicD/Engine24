@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <vector>
 #include <string>
+#include "../MatVec.h"
 
 struct GLFWwindow;
 
@@ -27,17 +28,13 @@ namespace Bcg {
 
     class Graphics {
     public:
-        static GLFWwindow *request_window();
-
-        static bool should_close(GLFWwindow *window);
-
-        static void swap_buffers(GLFWwindow *window);
-
         static bool init();
 
         static bool should_close();
 
         static void poll_events();
+
+        static void set_window_title(const char *title);
 
         static void set_clear_color(const float *color);
 
@@ -52,6 +49,10 @@ namespace Bcg {
         static void end_gui();
 
         static void swap_buffers();
+
+        static Vector<int, 4> get_viewport();
+
+        static bool read_depth_buffer(int x, int y, float &z);
 
         //--------------------------------------------------------------------------------------------------------------
 

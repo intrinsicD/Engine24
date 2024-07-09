@@ -6,6 +6,8 @@
 #include "Input.h"
 #include "Logger.h"
 #include "../PluginMesh.h"
+#include "Picker.h"
+#include "../PluginCamera.h"
 #include <unordered_map>
 
 namespace Bcg {
@@ -14,6 +16,8 @@ namespace Bcg {
     void Plugins::init() {
         add_plugin(std::make_unique<Input>());
         add_plugin(std::make_unique<PluginMesh>());
+        add_plugin(std::make_unique<Picker>());
+        add_plugin(std::make_unique<PluginCamera>());
     }
 
     void Plugins::init_user_plugin(const std::string &name) {

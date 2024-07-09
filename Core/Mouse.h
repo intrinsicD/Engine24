@@ -25,6 +25,7 @@ namespace Bcg {
 
         bool scrolling = false;
 
+        bool gui_captured = false;
         std::vector<int> pressed;
         std::set<int> current;
 

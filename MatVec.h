@@ -217,11 +217,11 @@ namespace Bcg {
     template<typename Scalar>
     Matrix<Scalar, 4, 4> rotation_matrix(const Vector<Scalar, 3> &axis, Scalar angle) {
         Matrix<Scalar, 4, 4> m(Matrix<Scalar, 4, 4>::Zero());
-        Scalar a = angle * Scalar(std::numbers::pi / 180.0f);
+        Scalar a = angle * Scalar(std::numbers::pi / 180.0);
         Scalar c = cosf(a);
         Scalar s = sinf(a);
         Scalar one_m_c = Scalar(1) - c;
-        Vector<Scalar, 3> ax = normalize(axis);
+        Vector<Scalar, 3> ax = axis.normalized();
 
         m(0, 0) = ax[0] * ax[0] * one_m_c + c;
         m(0, 1) = ax[0] * ax[1] * one_m_c - ax[2] * s;

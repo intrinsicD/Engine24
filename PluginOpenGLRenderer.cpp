@@ -69,14 +69,6 @@ namespace Bcg {
         if (!camera) {
             return;
         }
-        //upload uniform buffer objects like camera
-        if (camera->dirty) {
-            glBindBuffer(GL_UNIFORM_BUFFER, uboCamera);
-            glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(camera->view), camera->view.data());
-            glBufferSubData(GL_UNIFORM_BUFFER, sizeof(camera->view), sizeof(camera->proj), camera->proj.data());
-            glBindBuffer(GL_UNIFORM_BUFFER, 0);
-            camera->dirty = false;
-        }
         //determine visibility of all visual entities (Frustum Culling)
         //figure out on which primitives to work and if a hierarchy is even better
         std::vector<entt::entity> visibleMeshes;

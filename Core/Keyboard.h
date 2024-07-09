@@ -19,6 +19,15 @@ namespace Bcg {
 
         bool esc() const;
 
+        bool w() const;
+
+        bool a() const;
+
+        bool s() const;
+
+        bool d() const;
+
+        bool gui_captured = false;
         std::vector<int> pressed;
         std::set<int> current;
     };

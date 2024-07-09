@@ -15,8 +15,7 @@ namespace Bcg {
 
         ~PluginCamera() override = default;
 
-
-
+        static void transform(Camera &camera, const Matrix<float, 4, 4> &transformation);
 
         void activate() override;
 
@@ -30,12 +29,14 @@ namespace Bcg {
 
         void render_menu() override;
 
-        static void render_gui(Camera &camera);
-
         void render_gui() override;
 
         void render() override;
     };
+
+    namespace Gui {
+        void Show(Camera &camera);
+    }
 }
 
 #endif //ENGINE24_PLUGINCAMERA_H

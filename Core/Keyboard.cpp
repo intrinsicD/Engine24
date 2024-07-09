@@ -24,6 +24,22 @@ namespace Bcg{
         return pressed[GLFW_KEY_ESCAPE];
     }
 
+    bool Keyboard::w() const{
+        return pressed[GLFW_KEY_W];
+    }
+
+    bool Keyboard::a() const{
+        return pressed[GLFW_KEY_A];
+    }
+
+    bool Keyboard::s() const{
+        return pressed[GLFW_KEY_S];
+    }
+
+    bool Keyboard::d() const{
+        return pressed[GLFW_KEY_D];
+    }
+
 
     void Gui::Show(const Keyboard &keyboard) {
         ImGui::Text("Shift: %d", keyboard.shift());

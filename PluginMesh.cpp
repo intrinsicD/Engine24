@@ -21,6 +21,7 @@
 #include "SurfaceMesh/io/read_pmp.h"
 #include "Mesh.h"
 #include "Resources.h"
+#include "Camera.h"
 #include "GuiUtils.h"
 #include "PropertiesGui.h"
 #include "glad/gl.h"
@@ -40,7 +41,13 @@ namespace Bcg {
 
         glGenBuffers(1, &mw.vbo);
         glBindBuffer(GL_ARRAY_BUFFER, mw.vbo);
-        glBufferData(GL_ARRAY_BUFFER, mesh.n_vertices() * sizeof(Point), mesh.positions().data(), GL_STATIC_DRAW);
+        size_t size_in_bytes_vertices = mesh.n_vertices() * sizeof(Point);
+        glBufferData(GL_ARRAY_BUFFER, 2 * size_in_bytes_vertices, NULL, GL_STATIC_DRAW);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, size_in_bytes_vertices, mesh.positions().data());
+
+        auto v_normals = ComputeVertexNormals(mesh);
+        glBufferSubData(GL_ARRAY_BUFFER, size_in_bytes_vertices, size_in_bytes_vertices, v_normals.data());
+
 
         auto triangles = extract_triangle_list(mesh);
         glGenBuffers(1, &mw.ebo);
@@ -50,16 +57,34 @@ namespace Bcg {
         mw.program = glCreateProgram();
         const char *vertex_shader_src = "#version 330 core\n"
                                         "layout (location = 0) in vec3 aPos;\n"
+                                        "layout (location = 1) in vec3 aNormal;\n"
+                                        "layout (std140) uniform Camera {\n"
+                                        "    mat4 view;\n"
+                                        "    mat4 projection;\n"
+                                        "};\n"
+                                        "out vec3 f_normal;\n"
+                                        "out vec3 f_color;\n"
                                         "void main()\n"
                                         "{\n"
-                                        "   gl_Position = vec4(aPos, 1.0);\n"
+                                        "   f_normal = mat3(transpose(inverse(view))) * aNormal;\n"
+                                        "   gl_Position = projection * view * vec4(aPos, 1.0);\n"
                                         "}\0";
 
         const char *fragment_shader_src = "#version 330 core\n"
+                                          "in vec3 f_normal;\n"
                                           "out vec4 FragColor;\n"
+                                          "uniform vec3 lightDir;\n"
                                           "void main()\n"
                                           "{\n"
-                                          "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+                                          "   // Normalize the input normal\n"
+                                          "   vec3 normal = normalize(f_normal);\n"
+                                          "   // Calculate the diffuse intensity\n"
+                                          "   float diff = max(dot(normal, normalize(lightDir)), 0.0);\n"
+                                          "   // Define the base color\n"
+                                          "   vec3 baseColor = vec3(1.0f, 0.5f, 0.2f);\n"
+                                          "   // Calculate the final color\n"
+                                          "   vec3 finalColor = diff * baseColor;\n"
+                                          "   FragColor = vec4(normal, 1.0f);\n"
                                           "}\n\0";
 
         unsigned int vertex_shader;
@@ -103,6 +128,14 @@ namespace Bcg {
 
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *) 0);
         glEnableVertexAttribArray(0);
+
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *) size_in_bytes_vertices);
+        glEnableVertexAttribArray(1);
+
+        // Get the index of the uniform block
+        GLuint blockIndex = glGetUniformBlockIndex(mw.program, "Camera");
+        auto &camera_ubi = Engine::Context().get<CameraUniformBuffer>();
+        glUniformBlockBinding(mw.program, blockIndex, camera_ubi.binding_point);
 
         return mw;
     }
@@ -395,12 +428,18 @@ namespace Bcg {
 
     void PluginMesh::render() {
         auto mesh_view = Engine::State().view<MeshView>();
+        auto &camera = Engine::Context().get<Camera>();
+        auto lightDirection = (camera.v_params.center - camera.v_params.eye).normalized();
 
         for (auto entity_id: mesh_view) {
             auto &mw = Engine::State().get<MeshView>(entity_id);
 
             glBindVertexArray(mw.vao);
             glUseProgram(mw.program);
+            GLint lightDirLoc = glGetUniformLocation(mw.program, "lightDir");
+
+            // Set the uniform
+            glUniform3fv(lightDirLoc, 1, lightDirection.data());
             glDrawElements(GL_TRIANGLES, mw.num_indices, GL_UNSIGNED_INT, 0);
         }
     }
