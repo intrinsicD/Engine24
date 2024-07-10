@@ -8,6 +8,7 @@
 #include "EventsCallbacks.h"
 #include "Logger.h"
 #include "Input.h"
+#include "HandleKeyEvents.h"
 #include "glad/gl.h"
 #include "GLFW/glfw3.h"
 #include "imgui.h"
@@ -34,18 +35,21 @@ namespace Bcg {
     static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode) {
         auto &keyboard = Input::set_keyboard(window, key, scancode, action, mode);
 
-        if(!keyboard.gui_captured){
-            Engine::Dispatcher().trigger<Events::Callback::Key>({window, key, scancode, action, mode});
+        if (!keyboard.gui_captured) {
+            auto &dispatcher = Engine::Dispatcher();
+
+            dispatcher.trigger<Events::Callback::Key>({window, key, scancode, action, mode});
             if (keyboard.esc()) {
                 glfwSetWindowShouldClose(window, true);
             }
+            handle(key, action);
         }
     }
 
     static void mouse_cursor_callback(GLFWwindow *window, double xpos, double ypos) {
         Input::set_mouse_cursor_position(window, xpos, ypos);
 
-        if(!ImGui::GetIO().WantCaptureMouse){
+        if (!ImGui::GetIO().WantCaptureMouse) {
             Engine::Dispatcher().trigger<Events::Callback::MouseCursor>({window, xpos, ypos});
         }
     }
@@ -53,7 +57,7 @@ namespace Bcg {
     static void mouse_button_callback(GLFWwindow *window, int button, int action, int mods) {
         Input::set_mouse_button(window, button, action, mods);
 
-        if(!ImGui::GetIO().WantCaptureMouse) {
+        if (!ImGui::GetIO().WantCaptureMouse) {
             Engine::Dispatcher().trigger<Events::Callback::MouseButton>({window, button, action, mods});
         }
     }
@@ -61,7 +65,7 @@ namespace Bcg {
     static void mouse_scrolling(GLFWwindow *window, double xoffset, double yoffset) {
         Input::set_mouse_scrolling(window, xoffset, yoffset);
 
-        if(!ImGui::GetIO().WantCaptureMouse) {
+        if (!ImGui::GetIO().WantCaptureMouse) {
             Engine::Dispatcher().trigger<Events::Callback::MouseScroll>({window, xoffset, yoffset});
         }
     }
@@ -69,7 +73,7 @@ namespace Bcg {
     static void resize_callback(GLFWwindow *window, int width, int height) {
         glViewport(0, 0, width, height);
 
-        if(!ImGui::GetIO().WantCaptureMouse) {
+        if (!ImGui::GetIO().WantCaptureMouse) {
             Engine::Dispatcher().trigger<Events::Callback::WindowResize>({window, width, height});
         }
     }
@@ -257,7 +261,7 @@ namespace Bcg {
         glfwSwapBuffers(global_window);
     }
 
-    Vector<int, 4> Graphics::get_viewport(){
+    Vector<int, 4> Graphics::get_viewport() {
         Vector<int, 4> viewport;
         glGetIntegerv(GL_VIEWPORT, viewport.data());
         return std::move(viewport);

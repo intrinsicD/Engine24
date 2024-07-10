@@ -4,6 +4,7 @@ target_sources(Engine24 PRIVATE
         FileWatcher.cpp
         Graphics.cpp
         GuiUtils.cpp
+        HandleKeyEvents.cpp
         Input.cpp
         Keyboard.cpp
         Logger.cpp
@@ -12,6 +13,7 @@ target_sources(Engine24 PRIVATE
         Mouse.cpp
         Picker.cpp
         Plugin.cpp
+        PluginFrameTimer.cpp
         Plugins.cpp
         PropertiesGui.cpp
         Resources.cpp

@@ -7,7 +7,6 @@
 
 #include <vector>
 #include <set>
-#include "GuiUtils.h"
 
 namespace Bcg {
     struct Keyboard {

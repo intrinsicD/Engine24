@@ -10,6 +10,7 @@
 #include "Timer.h"
 #include "Mouse.h"
 #include "Graphics.h"
+#include "PluginFrameTimer.h"
 #include "MatVec.h"
 #include "Eigen/Geometry"
 #include "glad/gl.h"
@@ -165,23 +166,23 @@ namespace Bcg {
     void PluginCamera::begin_frame() {
         auto &camera = Engine::Context().get<Camera>();
         auto &keyboard = Engine::Context().get<Keyboard>();
-        auto &frame_timer = Engine::Context().get<FrameTimer>();
+        auto dt = PluginFrameTimer::delta();
         Vector<float, 3> front = (camera.v_params.center - camera.v_params.eye).normalized();
         if (keyboard.w()) {
-            translate(camera, -front * frame_timer.delta);
+            translate(camera, -front * dt);
             camera.v_params.dirty = true;
         }
         if (keyboard.s()) {
-            translate(camera, front * frame_timer.delta);
+            translate(camera, front * dt);
             camera.v_params.dirty = true;
         }
         Vector<float, 3> right = cross(front, camera.v_params.up).normalized();
         if (keyboard.a()) {
-            translate(camera, right * frame_timer.delta);
+            translate(camera, right * dt);
             camera.v_params.dirty = true;
         }
         if (keyboard.d()) {
-            translate(camera, -right * frame_timer.delta);
+            translate(camera, -right * dt);
             camera.v_params.dirty = true;
         }
     }

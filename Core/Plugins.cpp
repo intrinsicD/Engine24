@@ -7,6 +7,7 @@
 #include "Logger.h"
 #include "../PluginMesh.h"
 #include "Picker.h"
+#include "PluginFrameTimer.h"
 #include "../PluginCamera.h"
 #include <unordered_map>
 
@@ -18,6 +19,7 @@ namespace Bcg {
         add_plugin(std::make_unique<PluginMesh>());
         add_plugin(std::make_unique<Picker>());
         add_plugin(std::make_unique<PluginCamera>());
+        add_plugin(std::make_unique<PluginFrameTimer>());
     }
 
     void Plugins::init_user_plugin(const std::string &name) {

@@ -15,27 +15,28 @@ namespace Bcg {
     struct Timer {
         Timer() : m_start(Clock::now()), delta(0) {}
 
-        void start() {
+        Timer &start() {
             m_start = Clock::now();
+            return *this;
         }
 
-        void stop() {
+        Timer &stop() {
             m_end = Clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(m_end - m_start);
             delta = duration.count() * 1e-9f;
+            return *this;
         }
 
-        void update() {
+        Timer &update() {
             stop();
             m_start = m_end;
+            return *this;
         }
 
         TimePoint m_start;
         TimePoint m_end;
         float delta;
     };
-
-    using FrameTimer = Timer;
 }
 
 #endif //ENGINE24_TIMER_H

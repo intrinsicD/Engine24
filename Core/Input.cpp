@@ -7,6 +7,7 @@
 #include "Keyboard.h"
 #include "Mouse.h"
 #include "imgui.h"
+#include "EventsKeys.h"
 
 namespace Bcg {
     static bool show_input_gui;
