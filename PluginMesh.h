@@ -10,6 +10,8 @@
 #include <string>
 #include <unordered_map>
 #include "SurfaceMesh.h"
+#include "Graphics.h"
+#include "entt/entity/entity.hpp"
 
 namespace Bcg {
     class PluginMesh : public Plugin {
@@ -17,6 +19,8 @@ namespace Bcg {
         PluginMesh();
 
         ~PluginMesh() override = default;
+
+        static void setup(SurfaceMesh &mesh, entt::entity entity_id = entt::null);
 
         static SurfaceMesh load(const char *path);
 

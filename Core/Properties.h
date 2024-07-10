@@ -122,6 +122,8 @@ namespace Bcg {
 
         explicit operator bool() const { return parray_ != nullptr; }
 
+        const std::string &name() const { return parray_->name(); }
+
         reference operator[](size_t i) {
             assert(parray_ != nullptr);
             return (*parray_)[i];

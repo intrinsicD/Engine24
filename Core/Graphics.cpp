@@ -280,6 +280,24 @@ namespace Bcg {
 
     //------------------------------------------------------------------------------------------------------------------
 
+    void Graphics::setup_batched_buffer(BatchedBuffer &batched_buffer) {
+        if(batched_buffer.buffer_id == -1){
+            glGenBuffers(1, &batched_buffer.buffer_id);
+        }
+        glBindBuffer(batched_buffer.target, batched_buffer.buffer_id);
+        int current_buffer_size;
+        glGetBufferParameteriv(batched_buffer.target, GL_BUFFER_SIZE, &current_buffer_size);
+        int required_buffer_size = batched_buffer.total_size_bytes();
+        if(required_buffer_size != current_buffer_size){
+            glBufferData(batched_buffer.target, required_buffer_size, NULL, batched_buffer.usage);
+        }
+
+        for (const auto &item: batched_buffer.layout) {
+            glBufferSubData(batched_buffer.target, item.offset, item.size_in_bytes, item.data);
+        }
+        glBindBuffer(batched_buffer.target, 0);
+    }
+
     size_t Graphics::remove_buffer(const std::string &name) {
         auto &buffers = Engine::Context().get<BufferContainer>();
         return buffers.erase(name);
@@ -355,6 +373,110 @@ namespace Bcg {
 
     //------------------------------------------------------------------------------------------------------------------
 
+    static bool CheckCompileStatus(unsigned int shader_id) {
+        int success;
+        glGetShaderiv(shader_id, GL_COMPILE_STATUS, &success);
+
+        if (!success) {
+            char infoLog[512];
+            glGetShaderInfoLog(shader_id, 512, nullptr, infoLog);
+            Log::Error(("Shader Compilation Failed: " + std::string(infoLog)).c_str());
+            return false;
+        }
+        return true;
+    }
+
+    static bool CheckLinkStatus(unsigned int program_id) {
+        int success;
+        glLinkProgram(program_id);
+        // check for linking errors
+        glGetProgramiv(program_id, GL_LINK_STATUS, &success);
+
+        if (!success) {
+            char infoLog[512];
+            glGetProgramInfoLog(program_id, 512, nullptr, infoLog);
+
+            Log::Error(("Program Linking Failed: " + std::string(infoLog)).c_str());
+            return false;
+        }
+        return true;
+    }
+
+    static unsigned int create_shader(unsigned int type, const char *source) {
+        unsigned int shader_id;
+        shader_id = glCreateShader(type);
+        glShaderSource(shader_id, 1, &source, nullptr);
+        glCompileShader(shader_id);
+        if (!CheckCompileStatus(shader_id)) {
+            glDeleteShader(shader_id);
+            shader_id = -1;
+        }
+        return shader_id;
+    }
+
+    unsigned int Graphics::create_program(const char *vs_source, const char *fs_source,
+                                          const char *gs_source, const char *tc_source,
+                                          const char *te_source) {
+        if (!vs_source) return -1;
+        if (!fs_source) return -1;
+
+        auto vertex_shader = create_shader(GL_VERTEX_SHADER, vs_source);
+        auto fragment_shader = create_shader(GL_FRAGMENT_SHADER, fs_source);
+
+        if (vertex_shader == -1 | fragment_shader == -1) {
+            return -1;
+        }
+
+        auto program = glCreateProgram();
+
+        glAttachShader(program, vertex_shader);
+        glAttachShader(program, fragment_shader);
+
+        unsigned int geometry_shader = -1;
+        if (gs_source) {
+            geometry_shader = create_shader(GL_GEOMETRY_SHADER, gs_source);
+            if (geometry_shader != -1) {
+                glAttachShader(program, geometry_shader);
+            }
+        }
+
+        unsigned int tc_shader = -1;
+        if (tc_source) {
+            tc_shader = create_shader(GL_TESS_CONTROL_SHADER, tc_source);
+            if (tc_shader != -1) {
+                glAttachShader(program, tc_shader);
+            }
+        }
+
+        unsigned int te_shader = -1;
+        if (te_source) {
+            te_shader = create_shader(GL_TESS_EVALUATION_SHADER, te_source);
+            if (te_shader != -1) {
+                glAttachShader(program, te_shader);
+            }
+        }
+
+        glLinkProgram(program);
+
+        if (!CheckLinkStatus(program)) {
+            glDeleteProgram(program);
+            program = -1;
+        }
+
+        glDeleteShader(vertex_shader);
+        glDeleteShader(fragment_shader);
+        if (geometry_shader) {
+            glDeleteShader(geometry_shader);
+        }
+        if (tc_shader) {
+            glDeleteShader(tc_shader);
+        }
+        if (te_shader) {
+            glDeleteShader(te_shader);
+        }
+        return program;
+    }
+
     static std::string ReadTextFile(const char *path) {
         if (!path) {
             return "";
@@ -377,34 +499,14 @@ namespace Bcg {
         return result_text;
     }
 
-    bool CheckCompileStatus(unsigned int shader_id) {
-        int success;
-        glGetShaderiv(shader_id, GL_COMPILE_STATUS, &success);
-
-        if (!success) {
-            char infoLog[512];
-            glGetShaderInfoLog(shader_id, 512, nullptr, infoLog);
-            Log::Error(("Shader Compilation Failed: " + std::string(infoLog)).c_str());
-            return false;
-        }
-        return true;
+    const char *Graphics::load_shader(const char *filepath) {
+        return ReadTextFile(filepath).c_str();
     }
 
-    bool CheckLinkStatus(unsigned int program_id) {
-        int success;
-        glLinkProgram(program_id);
-        // check for linking errors
-        glGetProgramiv(program_id, GL_LINK_STATUS, &success);
+    //------------------------------------------------------------------------------------------------------------------
 
-        if (!success) {
-            char infoLog[512];
-            glGetProgramInfoLog(program_id, 512, nullptr, infoLog);
 
-            Log::Error(("Program Linking Failed: " + std::string(infoLog)).c_str());
-            return false;
-        }
-        return true;
-    }
+
 
     Shader::Shader(unsigned int type) : type(type), id(-1) {}
 

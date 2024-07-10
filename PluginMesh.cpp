@@ -10,6 +10,7 @@
 #include "imgui.h"
 #include "ImGuiFileDialog.h"
 #include "Engine.h"
+#include "Graphics.h"
 #include "EventsCallbacks.h"
 #include "MeshCompute.h"
 #include <chrono>
@@ -33,28 +34,74 @@ namespace Bcg {
         unsigned int num_indices;
     };
 
-    static MeshView setup(SurfaceMesh &mesh) {
+    void PluginMesh::setup(SurfaceMesh &mesh, entt::entity entity_id) {
+        if (entity_id == entt::null) {
+            entity_id = Engine::State().create();
+        }
+
+        auto *mw = Engine::State().try_get<MeshView>(entity_id);
+
+        if (!mw) {
+            mw = &Engine::State().emplace<MeshView>(entity_id);
+            glGenVertexArrays(1, &mw->vao);
+            glGenBuffers(1, &mw->vbo);
+            glGenBuffers(1, &mw->ebo);
+        }
+
+
+    }
+
+    static MeshView Setup(SurfaceMesh &mesh) {
         MeshView mw;
         mw.num_indices = mesh.n_faces() * 3;
+
         glGenVertexArrays(1, &mw.vao);
         glBindVertexArray(mw.vao);
 
+        auto v_normals = ComputeVertexNormals(mesh);
+        size_t size_in_bytes_vertices = mesh.n_vertices() * sizeof(Point);
+/*
         glGenBuffers(1, &mw.vbo);
         glBindBuffer(GL_ARRAY_BUFFER, mw.vbo);
-        size_t size_in_bytes_vertices = mesh.n_vertices() * sizeof(Point);
+
         glBufferData(GL_ARRAY_BUFFER, 2 * size_in_bytes_vertices, NULL, GL_STATIC_DRAW);
         glBufferSubData(GL_ARRAY_BUFFER, 0, size_in_bytes_vertices, mesh.positions().data());
 
-        auto v_normals = ComputeVertexNormals(mesh);
-        glBufferSubData(GL_ARRAY_BUFFER, size_in_bytes_vertices, size_in_bytes_vertices, v_normals.data());
 
+        glBufferSubData(GL_ARRAY_BUFFER, size_in_bytes_vertices, size_in_bytes_vertices, v_normals.data());
+*/
+
+
+
+        BatchedBuffer batched_buffer;
+        batched_buffer.usage = GL_STATIC_DRAW;
+        batched_buffer.target = GL_ARRAY_BUFFER;
+        batched_buffer.type = GL_FLOAT;
+
+        auto &gpu_pos = batched_buffer.get_or_add(mesh.vpoint_.name().c_str());
+        gpu_pos.size_in_bytes = size_in_bytes_vertices;
+        gpu_pos.dims = 3;
+        gpu_pos.size = sizeof(float);
+        gpu_pos.normalized = GL_FALSE;
+        gpu_pos.offset = 0;
+        gpu_pos.data = mesh.positions().data();
+
+        auto &gpu_v_normals = batched_buffer.get_or_add(v_normals.name().c_str());
+        gpu_v_normals.size_in_bytes = size_in_bytes_vertices;
+        gpu_v_normals.dims = 3;
+        gpu_v_normals.size = sizeof(float);
+        gpu_v_normals.normalized = GL_FALSE;
+        gpu_v_normals.offset = size_in_bytes_vertices;
+        gpu_v_normals.data = v_normals.data();
+
+        Graphics::setup_batched_buffer(batched_buffer);
+        glBindBuffer(batched_buffer.target, batched_buffer.buffer_id);
 
         auto triangles = extract_triangle_list(mesh);
         glGenBuffers(1, &mw.ebo);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mw.ebo);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, mw.num_indices * sizeof(unsigned int), triangles.data(), GL_STATIC_DRAW);
 
-        mw.program = glCreateProgram();
         const char *vertex_shader_src = "#version 330 core\n"
                                         "layout (location = 0) in vec3 aPos;\n"
                                         "layout (location = 1) in vec3 aNormal;\n"
@@ -86,45 +133,7 @@ namespace Bcg {
                                           "   vec3 finalColor = diff * baseColor;\n"
                                           "   FragColor = vec4(normal, 1.0f);\n"
                                           "}\n\0";
-
-        unsigned int vertex_shader;
-        vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-        glShaderSource(vertex_shader, 1, &vertex_shader_src, nullptr);
-        glCompileShader(vertex_shader);
-
-        int success;
-        char infoLog[512];
-        glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &success);
-        if (!success) {
-            glGetShaderInfoLog(vertex_shader, 512, nullptr, infoLog);
-            Log::Error("ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" + std::string(infoLog));
-        }
-
-        unsigned int fragment_shader;
-        fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-        glShaderSource(fragment_shader, 1, &fragment_shader_src, nullptr);
-        glCompileShader(fragment_shader);
-
-        glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
-        if (!success) {
-            glGetShaderInfoLog(fragment_shader, 512, nullptr, infoLog);
-            Log::Error("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" + std::string(infoLog));
-        }
-
-        glAttachShader(mw.program, vertex_shader);
-        glAttachShader(mw.program, fragment_shader);
-
-        glLinkProgram(mw.program);
-
-        glGetProgramiv(mw.program, GL_LINK_STATUS, &success);
-
-        if (!success) {
-            glGetProgramInfoLog(mw.program, 512, nullptr, infoLog);
-            Log::Error("ERROR::SHADER::PROGRAM::LINKING_FAILED\n" + std::string(infoLog));
-        }
-
-        glDeleteShader(vertex_shader);
-        glDeleteShader(fragment_shader);
+        mw.program = Graphics::create_program(vertex_shader_src, fragment_shader_src);
 
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *) 0);
         glEnableVertexAttribArray(0);
@@ -136,7 +145,7 @@ namespace Bcg {
         GLuint blockIndex = glGetUniformBlockIndex(mw.program, "Camera");
         auto &camera_ubi = Engine::Context().get<CameraUniformBuffer>();
         glUniformBlockBinding(mw.program, blockIndex, camera_ubi.binding_point);
-
+        glBindVertexArray(0);
         return mw;
     }
 
@@ -165,7 +174,7 @@ namespace Bcg {
         message += " #f: " + std::to_string(mesh.n_faces());
         Log::Info(message);
 
-        auto mw = setup(mesh);
+        auto mw = Setup(mesh);
         auto entity_id = Engine::State().create();
         Engine::State().emplace<MeshView>(entity_id, mw);
         return mesh;
