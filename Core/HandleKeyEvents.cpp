@@ -8,215 +8,84 @@
 #include "GLFW/glfw3.h"
 
 namespace Bcg {
-    void handle(int key, int action) {
-        auto &dispatcher = Engine::Dispatcher();
-        switch (key) {
-            case GLFW_KEY_A:
-                dispatcher.trigger<Bcg::Events::Key::A>(action);
-                break;
-            case GLFW_KEY_B:
-                dispatcher.trigger<Bcg::Events::Key::B>(action);
-                break;
-            case GLFW_KEY_C:
-                dispatcher.trigger<Bcg::Events::Key::C>(action);
-                break;
-            case GLFW_KEY_D:
-                dispatcher.trigger<Bcg::Events::Key::D>(action);
-                break;
-            case GLFW_KEY_E:
-                dispatcher.trigger<Bcg::Events::Key::E>(action);
-                break;
-            case GLFW_KEY_F:
-                dispatcher.trigger<Bcg::Events::Key::F>(action);
-                break;
-            case GLFW_KEY_G:
-                dispatcher.trigger<Bcg::Events::Key::G>(action);
-                break;
-            case GLFW_KEY_H:
-                dispatcher.trigger<Bcg::Events::Key::H>(action);
-                break;
-            case GLFW_KEY_I:
-                dispatcher.trigger<Bcg::Events::Key::I>(action);
-                break;
-            case GLFW_KEY_J:
-                dispatcher.trigger<Bcg::Events::Key::J>(action);
-                break;
-            case GLFW_KEY_K:
-                dispatcher.trigger<Bcg::Events::Key::K>(action);
-                break;
-            case GLFW_KEY_L:
-                dispatcher.trigger<Bcg::Events::Key::L>(action);
-                break;
-            case GLFW_KEY_M:
-                dispatcher.trigger<Bcg::Events::Key::M>(action);
-                break;
-            case GLFW_KEY_N:
-                dispatcher.trigger<Bcg::Events::Key::N>(action);
-                break;
-            case GLFW_KEY_O:
-                dispatcher.trigger<Bcg::Events::Key::O>(action);
-                break;
-            case GLFW_KEY_P:
-                dispatcher.trigger<Bcg::Events::Key::P>(action);
-                break;
-            case GLFW_KEY_Q:
-                dispatcher.trigger<Bcg::Events::Key::Q>(action);
-                break;
-            case GLFW_KEY_R:
-                dispatcher.trigger<Bcg::Events::Key::R>(action);
-                break;
-            case GLFW_KEY_S:
-                dispatcher.trigger<Bcg::Events::Key::S>(action);
-                break;
-            case GLFW_KEY_T:
-                dispatcher.trigger<Bcg::Events::Key::T>(action);
-                break;
-            case GLFW_KEY_U:
-                dispatcher.trigger<Bcg::Events::Key::U>(action);
-                break;
-            case GLFW_KEY_V:
-                dispatcher.trigger<Bcg::Events::Key::V>(action);
-                break;
-            case GLFW_KEY_W:
-                dispatcher.trigger<Bcg::Events::Key::W>(action);
-                break;
-            case GLFW_KEY_X:
-                dispatcher.trigger<Bcg::Events::Key::X>(action);
-                break;
-            case GLFW_KEY_Y:
-                dispatcher.trigger<Bcg::Events::Key::Y>(action);
-                break;
-            case GLFW_KEY_Z:
-                dispatcher.trigger<Bcg::Events::Key::Z>(action);
-                break;
-            case GLFW_KEY_0:
-                dispatcher.trigger<Bcg::Events::Key::Zero>(action);
-                break;
-            case GLFW_KEY_1:
-                dispatcher.trigger<Bcg::Events::Key::One>(action);
-                break;
-            case GLFW_KEY_2:
-                dispatcher.trigger<Bcg::Events::Key::Two>(action);
-                break;
-            case GLFW_KEY_3:
-                dispatcher.trigger<Bcg::Events::Key::Three>(action);
-                break;
-            case GLFW_KEY_4:
-                dispatcher.trigger<Bcg::Events::Key::Four>(action);
-                break;
-            case GLFW_KEY_5:
-                dispatcher.trigger<Bcg::Events::Key::Five>(action);
-                break;
-            case GLFW_KEY_6:
-                dispatcher.trigger<Bcg::Events::Key::Six>(action);
-                break;
-            case GLFW_KEY_7:
-                dispatcher.trigger<Bcg::Events::Key::Seven>(action);
-                break;
-            case GLFW_KEY_8:
-                dispatcher.trigger<Bcg::Events::Key::Eight>(action);
-                break;
-            case GLFW_KEY_9:
-                dispatcher.trigger<Bcg::Events::Key::Nine>(action);
-                break;
-            case GLFW_KEY_ESCAPE:
-                dispatcher.trigger<Bcg::Events::Key::Esc>(action);
-                break;
-            case GLFW_KEY_SPACE:
-                dispatcher.trigger<Bcg::Events::Key::Space>(action);
-                break;
-            case GLFW_KEY_ENTER:
-                dispatcher.trigger<Bcg::Events::Key::Enter>(action);
-                break;
-            case GLFW_KEY_BACKSPACE:
-                dispatcher.trigger<Bcg::Events::Key::Backspace>(action);
-                break;
-            case GLFW_KEY_DELETE:
-                dispatcher.trigger<Bcg::Events::Key::Delete>(action);
-                break;
-            case GLFW_KEY_LEFT_SHIFT:
-            case GLFW_KEY_RIGHT_SHIFT:
-                dispatcher.trigger<Bcg::Events::Key::Shift>(action);
-                break;
-            case GLFW_KEY_LEFT_CONTROL:
-            case GLFW_KEY_RIGHT_CONTROL:
-                dispatcher.trigger<Bcg::Events::Key::Ctrl>(action);
-                break;
-            case GLFW_KEY_LEFT_ALT:
-            case GLFW_KEY_RIGHT_ALT:
-                dispatcher.trigger<Bcg::Events::Key::Alt>(action);
-                break;
-            case GLFW_KEY_TAB:
-                dispatcher.trigger<Bcg::Events::Key::Tab>(action);
-                break;
-            case GLFW_KEY_CAPS_LOCK:
-                dispatcher.trigger<Bcg::Events::Key::CapsLock>(action);
-                break;
-            case GLFW_KEY_UP:
-                dispatcher.trigger<Bcg::Events::Key::ArrowUp>(action);
-                break;
-            case GLFW_KEY_DOWN:
-                dispatcher.trigger<Bcg::Events::Key::ArrowDown>(action);
-                break;
-            case GLFW_KEY_LEFT:
-                dispatcher.trigger<Bcg::Events::Key::ArrowLeft>(action);
-                break;
-            case GLFW_KEY_RIGHT:
-                dispatcher.trigger<Bcg::Events::Key::ArrowRight>(action);
-                break;
-            case GLFW_KEY_HOME:
-                dispatcher.trigger<Bcg::Events::Key::Home>(action);
-                break;
-            case GLFW_KEY_END:
-                dispatcher.trigger<Bcg::Events::Key::End>(action);
-                break;
-            case GLFW_KEY_PAGE_UP:
-                dispatcher.trigger<Bcg::Events::Key::PageUp>(action);
-                break;
-            case GLFW_KEY_PAGE_DOWN:
-                dispatcher.trigger<Bcg::Events::Key::PageDown>(action);
-                break;
-            case GLFW_KEY_INSERT:
-                dispatcher.trigger<Bcg::Events::Key::Insert>(action);
-                break;
-            case GLFW_KEY_F1:
-                dispatcher.trigger<Bcg::Events::Key::F1>(action);
-                break;
-            case GLFW_KEY_F2:
-                dispatcher.trigger<Bcg::Events::Key::F2>(action);
-                break;
-            case GLFW_KEY_F3:
-                dispatcher.trigger<Bcg::Events::Key::F3>(action);
-                break;
-            case GLFW_KEY_F4:
-                dispatcher.trigger<Bcg::Events::Key::F4>(action);
-                break;
-            case GLFW_KEY_F5:
-                dispatcher.trigger<Bcg::Events::Key::F5>(action);
-                break;
-            case GLFW_KEY_F6:
-                dispatcher.trigger<Bcg::Events::Key::F6>(action);
-                break;
-            case GLFW_KEY_F7:
-                dispatcher.trigger<Bcg::Events::Key::F7>(action);
-                break;
-            case GLFW_KEY_F8:
-                dispatcher.trigger<Bcg::Events::Key::F8>(action);
-                break;
-            case GLFW_KEY_F9:
-                dispatcher.trigger<Bcg::Events::Key::F9>(action);
-                break;
-            case GLFW_KEY_F10:
-                dispatcher.trigger<Bcg::Events::Key::F10>(action);
-                break;
-            case GLFW_KEY_F11:
-                dispatcher.trigger<Bcg::Events::Key::F11>(action);
-                break;
-            case GLFW_KEY_F12:
-                dispatcher.trigger<Bcg::Events::Key::F12>(action);
-                break;
-            default:
-                break;
+    using TriggerFunction = void(*)(int, entt::dispatcher &); // pointer to the trigger function
+
+    static std::unordered_map<int, TriggerFunction> keyTrigger_map {
+            { GLFW_KEY_A, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::A{action}); }},
+            { GLFW_KEY_B, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::B{action}); }},
+            { GLFW_KEY_C, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::C{action}); }},
+            { GLFW_KEY_D, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::D{action}); }},
+            { GLFW_KEY_E, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::E{action}); }},
+            { GLFW_KEY_F, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::F{action}); }},
+            { GLFW_KEY_G, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::G{action}); }},
+            { GLFW_KEY_H, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::H{action}); }},
+            { GLFW_KEY_I, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::I{action}); }},
+            { GLFW_KEY_J, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::J{action}); }},
+            { GLFW_KEY_K, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::K{action}); }},
+            { GLFW_KEY_L, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::L{action}); }},
+            { GLFW_KEY_M, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::M{action}); }},
+            { GLFW_KEY_N, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::N{action}); }},
+            { GLFW_KEY_O, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::O{action}); }},
+            { GLFW_KEY_P, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::P{action}); }},
+            { GLFW_KEY_Q, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::Q{action}); }},
+            { GLFW_KEY_R, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::R{action}); }},
+            { GLFW_KEY_S, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::S{action}); }},
+            { GLFW_KEY_T, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::T{action}); }},
+            { GLFW_KEY_U, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::U{action}); }},
+            { GLFW_KEY_V, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::V{action}); }},
+            { GLFW_KEY_W, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::W{action}); }},
+            { GLFW_KEY_X, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::X{action}); }},
+            { GLFW_KEY_Y, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::Y{action}); }},
+            { GLFW_KEY_Z, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::Z{action}); }},
+            { GLFW_KEY_0, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::Zero{action}); }},
+            { GLFW_KEY_1, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::One{action}); }},
+            { GLFW_KEY_2, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::Two{action}); }},
+            { GLFW_KEY_3, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::Three{action}); }},
+            { GLFW_KEY_4, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::Four{action}); }},
+            { GLFW_KEY_5, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::Five{action}); }},
+            { GLFW_KEY_6, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::Six{action}); }},
+            { GLFW_KEY_7, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::Seven{action}); }},
+            { GLFW_KEY_8, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::Eight{action}); }},
+            { GLFW_KEY_9, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::Nine{action}); }},
+            { GLFW_KEY_ESCAPE, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::Esc{action}); }},
+            { GLFW_KEY_SPACE, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::Space{action}); }},
+            { GLFW_KEY_ENTER, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::Enter{action}); }},
+            { GLFW_KEY_BACKSPACE, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::Backspace{action}); }},
+            { GLFW_KEY_DELETE, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::Delete{action}); }},
+            { GLFW_KEY_LEFT_SHIFT, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::Shift{action}); }},
+            { GLFW_KEY_RIGHT_SHIFT, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::Shift{action}); }},
+            { GLFW_KEY_LEFT_CONTROL, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::Ctrl{action}); }},
+            { GLFW_KEY_RIGHT_CONTROL, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::Ctrl{action}); }},
+            { GLFW_KEY_LEFT_ALT, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::Alt{action}); }},
+            { GLFW_KEY_RIGHT_ALT, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::Alt{action}); }},
+            { GLFW_KEY_TAB, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::Tab{action}); }},
+            { GLFW_KEY_CAPS_LOCK, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::CapsLock{action}); }},
+            { GLFW_KEY_UP, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::ArrowUp{action}); }},
+            { GLFW_KEY_DOWN, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::ArrowDown{action}); }},
+            { GLFW_KEY_LEFT, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::ArrowLeft{action}); }},
+            { GLFW_KEY_RIGHT, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::ArrowRight{action}); }},
+            { GLFW_KEY_HOME, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::Home{action}); }},
+            { GLFW_KEY_END, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::End{action}); }},
+            { GLFW_KEY_PAGE_UP, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::PageUp{action}); }},
+            { GLFW_KEY_PAGE_DOWN, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::PageDown{action}); }},
+            { GLFW_KEY_INSERT, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::Insert{action}); }},
+            { GLFW_KEY_F1, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::F1{action}); }},
+            { GLFW_KEY_F2, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::F2{action}); }},
+            { GLFW_KEY_F3, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::F3{action}); }},
+            { GLFW_KEY_F4, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::F4{action}); }},
+            { GLFW_KEY_F5, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::F5{action}); }},
+            { GLFW_KEY_F6, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::F6{action}); }},
+            { GLFW_KEY_F7, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::F7{action}); }},
+            { GLFW_KEY_F8, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::F8{action}); }},
+            { GLFW_KEY_F9, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::F9{action}); }},
+            { GLFW_KEY_F10, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::F10{action}); }},
+            { GLFW_KEY_F11, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::F11{action}); }},
+            { GLFW_KEY_F12, [](int action, entt::dispatcher &dispatcher){ dispatcher.trigger(Events::Key::F12{action}); }},
+    };
+
+    void handle(int key, int action, entt::dispatcher &dispatcher) {
+        if (keyTrigger_map.count(key)){
+            keyTrigger_map[key](action, dispatcher);
         }
     }
 }

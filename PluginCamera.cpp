@@ -7,11 +7,14 @@
 #include "Engine.h"
 #include "Keyboard.h"
 #include "EventsCallbacks.h"
+#include "EventsKeys.h"
 #include "Timer.h"
 #include "Mouse.h"
+#include "Picker.h"
 #include "Graphics.h"
 #include "PluginFrameTimer.h"
 #include "MatVec.h"
+#include "Logger.h"
 #include "Eigen/Geometry"
 #include "glad/gl.h"
 
@@ -86,13 +89,19 @@ namespace Bcg {
         }
     }
 
-    static void translate(Camera &camera, const Vector<float, 3> &t) {
+/*    static void translate(Camera &camera, const Vector<float, 3> &t) {
         camera.view = translation_matrix(t) * camera.view;
         Matrix<float, 4, 4> inv_view = camera.view.inverse();
         camera.dirty_view = true;
 
         camera.v_params.eye = inv_view.block<3, 1>(0, 3);
         camera.v_params.center -= t;
+    }*/
+
+    static void translate(Camera &camera, const Vector<float, 3> &t) {
+        camera.v_params.eye = (translation_matrix(t) * camera.v_params.eye.homogeneous()).head<3>();
+        camera.v_params.center = (translation_matrix(t) * camera.v_params.center.homogeneous()).head<3>();
+        camera.v_params.dirty = true;
     }
 
     static void translate(Camera &camera, int x, int y) {
@@ -145,6 +154,16 @@ namespace Bcg {
         camera.p_params.dirty = true;
     }
 
+    static void on_key_focus(const Events::Key::F &event) {
+        if(event.action){
+            auto &picked = Engine::Context().get<Picked>();
+            auto &camera = Engine::Context().get<Camera>();
+            translate(camera, -camera.v_params.center);
+            translate(camera, picked.world_space_point);
+            Log::Info("Focus onto: (" + std::to_string(camera.v_params.center[0]) + ", " + std::to_string(camera.v_params.center[1]) + ", " + std::to_string(camera.v_params.center[2]) + ")");
+        }
+    }
+
     void PluginCamera::activate() {
         if (!Engine::Context().find<Camera>()) {
             Engine::Context().emplace<Camera>();
@@ -160,6 +179,7 @@ namespace Bcg {
         }
         Engine::Dispatcher().sink<Events::Callback::MouseCursor>().connect<&on_mouse_cursor>();
         Engine::Dispatcher().sink<Events::Callback::MouseScroll>().connect<&on_mouse_scroll>();
+        Engine::Dispatcher().sink<Events::Key::F>().connect<&on_key_focus>();
         Plugin::activate();
     }
 
@@ -169,20 +189,20 @@ namespace Bcg {
         auto dt = PluginFrameTimer::delta();
         Vector<float, 3> front = (camera.v_params.center - camera.v_params.eye).normalized();
         if (keyboard.w()) {
-            translate(camera, -front * dt);
+            translate(camera, front * dt);
             camera.v_params.dirty = true;
         }
         if (keyboard.s()) {
-            translate(camera, front * dt);
+            translate(camera, -front * dt);
             camera.v_params.dirty = true;
         }
         Vector<float, 3> right = cross(front, camera.v_params.up).normalized();
         if (keyboard.a()) {
-            translate(camera, right * dt);
+            translate(camera, -right * dt);
             camera.v_params.dirty = true;
         }
         if (keyboard.d()) {
-            translate(camera, -right * dt);
+            translate(camera, right * dt);
             camera.v_params.dirty = true;
         }
     }
@@ -237,6 +257,7 @@ namespace Bcg {
         Engine::Context().erase<CameraUniformBuffer>();
         Engine::Dispatcher().sink<Events::Callback::MouseCursor>().disconnect<&on_mouse_cursor>();
         Engine::Dispatcher().sink<Events::Callback::MouseScroll>().disconnect<&on_mouse_scroll>();
+        Engine::Dispatcher().sink<Events::Key::F>().disconnect<&on_key_focus>();
         Plugin::deactivate();
     }
 

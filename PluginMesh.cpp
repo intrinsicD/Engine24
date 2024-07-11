@@ -25,6 +25,7 @@
 #include "Camera.h"
 #include "GuiUtils.h"
 #include "PropertiesGui.h"
+#include "Picker.h"
 #include "glad/gl.h"
 
 namespace Bcg {
@@ -95,7 +96,7 @@ namespace Bcg {
         gpu_v_normals.data = v_normals.data();
 
         Graphics::setup_batched_buffer(batched_buffer);
-        glBindBuffer(batched_buffer.target, batched_buffer.buffer_id);
+        glBindBuffer(batched_buffer.target, batched_buffer.id);
 
         auto triangles = extract_triangle_list(mesh);
         glGenBuffers(1, &mw.ebo);
@@ -177,6 +178,7 @@ namespace Bcg {
         auto mw = Setup(mesh);
         auto entity_id = Engine::State().create();
         Engine::State().emplace<MeshView>(entity_id, mw);
+        Engine::Context().get<Picked>().entity.id = entity_id;
         return mesh;
     }
 

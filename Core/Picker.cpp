@@ -41,7 +41,7 @@ namespace Bcg {
 
             Matrix<float, 4, 4> vp = camera.proj * camera.view;
             Matrix<float, 4, 4> inv = vp.inverse();
-            Vector<float, 4> p = inv * picked.world_space_point.homogeneous();
+            Vector<float, 4> p = inv * picked.ndc_space_point.homogeneous();
             picked.world_space_point = p.head<3>() / p[3];
             picked.view_space_point = (camera.view * picked.world_space_point.homogeneous()).head<3>();
         }

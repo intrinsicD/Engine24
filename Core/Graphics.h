@@ -27,7 +27,7 @@ namespace Bcg {
     };
 
     struct BatchedBuffer {
-        unsigned int buffer_id = -1;
+        unsigned int id = -1;
         unsigned int usage = -1;
         unsigned int target = -1;
         unsigned int type = -1;

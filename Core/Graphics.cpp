@@ -42,7 +42,7 @@ namespace Bcg {
             if (keyboard.esc()) {
                 glfwSetWindowShouldClose(window, true);
             }
-            handle(key, action);
+            handle(key, action, dispatcher);
         }
     }
 
@@ -281,10 +281,10 @@ namespace Bcg {
     //------------------------------------------------------------------------------------------------------------------
 
     void Graphics::setup_batched_buffer(BatchedBuffer &batched_buffer) {
-        if(batched_buffer.buffer_id == -1){
-            glGenBuffers(1, &batched_buffer.buffer_id);
+        if(batched_buffer.id == -1){
+            glGenBuffers(1, &batched_buffer.id);
         }
-        glBindBuffer(batched_buffer.target, batched_buffer.buffer_id);
+        glBindBuffer(batched_buffer.target, batched_buffer.id);
         int current_buffer_size;
         glGetBufferParameteriv(batched_buffer.target, GL_BUFFER_SIZE, &current_buffer_size);
         int required_buffer_size = batched_buffer.total_size_bytes();
