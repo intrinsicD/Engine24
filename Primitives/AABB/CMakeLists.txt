@@ -1,1 +1,1 @@
-add_subdirectory(AABB)
+target_include_directories(Engine24 PUBLIC .)

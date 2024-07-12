@@ -15,6 +15,7 @@
 #include "PluginFrameTimer.h"
 #include "MatVec.h"
 #include "Logger.h"
+#include "AABB.h"
 #include "Eigen/Geometry"
 #include "glad/gl.h"
 
@@ -164,6 +165,19 @@ namespace Bcg {
         }
     }
 
+    static void on_key_center(const Events::Key::C &event) {
+        if(event.action){
+            auto &picked = Engine::Context().get<Picked>();
+            auto &camera = Engine::Context().get<Camera>();
+            if(!picked.entity.is_background){
+                auto &aabb = Engine::State().get<AABB<float>>(picked.entity.id);
+                translate(camera, -camera.v_params.center);
+                translate(camera, aabb.center());
+                Log::Info("Center onto: (" + std::to_string(camera.v_params.center[0]) + ", " + std::to_string(camera.v_params.center[1]) + ", " + std::to_string(camera.v_params.center[2]) + ")");
+            }
+        }
+    }
+
     void PluginCamera::activate() {
         if (!Engine::Context().find<Camera>()) {
             Engine::Context().emplace<Camera>();
@@ -180,6 +194,7 @@ namespace Bcg {
         Engine::Dispatcher().sink<Events::Callback::MouseCursor>().connect<&on_mouse_cursor>();
         Engine::Dispatcher().sink<Events::Callback::MouseScroll>().connect<&on_mouse_scroll>();
         Engine::Dispatcher().sink<Events::Key::F>().connect<&on_key_focus>();
+        Engine::Dispatcher().sink<Events::Key::C>().connect<&on_key_center>();
         Plugin::activate();
     }
 
@@ -258,6 +273,7 @@ namespace Bcg {
         Engine::Dispatcher().sink<Events::Callback::MouseCursor>().disconnect<&on_mouse_cursor>();
         Engine::Dispatcher().sink<Events::Callback::MouseScroll>().disconnect<&on_mouse_scroll>();
         Engine::Dispatcher().sink<Events::Key::F>().disconnect<&on_key_focus>();
+        Engine::Dispatcher().sink<Events::Key::C>().disconnect<&on_key_center>();
         Plugin::deactivate();
     }
 

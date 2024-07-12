@@ -26,6 +26,7 @@
 #include "GuiUtils.h"
 #include "PropertiesGui.h"
 #include "Picker.h"
+#include "AABB.h"
 #include "glad/gl.h"
 
 namespace Bcg {
@@ -179,6 +180,8 @@ namespace Bcg {
         auto entity_id = Engine::State().create();
         Engine::State().emplace<MeshView>(entity_id, mw);
         Engine::Context().get<Picked>().entity.id = entity_id;
+        auto &aabb = Engine::State().emplace<AABB<float>>(entity_id);
+        Build(aabb, mesh.positions());
         return mesh;
     }
 

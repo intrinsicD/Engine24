@@ -1,0 +1,7 @@
+add_subdirectory(AABB)
+add_subdirectory(Frustum)
+add_subdirectory(Line)
+add_subdirectory(OBB)
+add_subdirectory(Plane)
+add_subdirectory(Sphere)
+add_subdirectory(Triangle)
