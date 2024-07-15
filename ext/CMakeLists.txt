@@ -1,5 +1,6 @@
 target_include_directories(Engine24 SYSTEM PUBLIC glad/include)
 target_include_directories(Engine24 SYSTEM PUBLIC imgui)
+target_include_directories(Engine24 SYSTEM PUBLIC ImGuizmo)
 
 
 set(GLFW_BUILD_WAYLAND OFF)

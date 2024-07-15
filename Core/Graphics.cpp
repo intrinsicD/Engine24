@@ -12,9 +12,11 @@
 #include "glad/gl.h"
 #include "GLFW/glfw3.h"
 #include "imgui.h"
+#include "ImGuizmo.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
 #include "config.h"
+#include "EventsGui.h"
 #include <filesystem>
 
 namespace Bcg {
@@ -215,11 +217,13 @@ namespace Bcg {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+        ImGuizmo::BeginFrame();
 
         ImGui::BeginMainMenuBar();
     }
 
     void Graphics::render_menu() {
+        Engine::Dispatcher().trigger<Events::Gui::Menu::Render>();
         if (ImGui::BeginMenu("Graphics")) {
             ImGui::MenuItem("Window", nullptr, &show_window_gui);
             ImGui::MenuItem("Buffer", nullptr, &show_buffer_gui);
@@ -228,6 +232,7 @@ namespace Bcg {
     }
 
     void Graphics::render_gui() {
+        Engine::Dispatcher().trigger<Events::Gui::Render>();
         if (show_window_gui) {
             if (ImGui::Begin("Window", &show_window_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
                 if (ImGui::ColorEdit3("clear_color", clear_color)) {
@@ -281,14 +286,14 @@ namespace Bcg {
     //------------------------------------------------------------------------------------------------------------------
 
     void Graphics::setup_batched_buffer(BatchedBuffer &batched_buffer) {
-        if(batched_buffer.id == -1){
+        if (batched_buffer.id == -1) {
             glGenBuffers(1, &batched_buffer.id);
         }
         glBindBuffer(batched_buffer.target, batched_buffer.id);
         int current_buffer_size;
         glGetBufferParameteriv(batched_buffer.target, GL_BUFFER_SIZE, &current_buffer_size);
         int required_buffer_size = batched_buffer.total_size_bytes();
-        if(required_buffer_size != current_buffer_size){
+        if (required_buffer_size != current_buffer_size) {
             glBufferData(batched_buffer.target, required_buffer_size, NULL, batched_buffer.usage);
         }
 

@@ -12,6 +12,13 @@ namespace Bcg {
     struct Engine {
         Engine();
 
+        static bool valid(entt::entity &entity);
+
+        template<typename Component>
+        static bool has(entt::entity &entity) {
+            return State().all_of<Component>(entity);
+        }
+
         static Engine *Instance();
 
         //Main way to have access to the engines state

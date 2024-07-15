@@ -114,7 +114,7 @@ namespace Bcg {
         double h = vp[3];
 
         Vector<float, 4> ec = camera.view * camera.v_params.center.homogeneous();
-        float z = -(ec[2] / ec[3]);
+        float z = (ec[2] / ec[3]);
 
         float aspect = (float) w / (float) h;
         float up = tan(camera.p_params.fovy / 2.0f * std::numbers::pi / 180.f) * camera.p_params.zNear;
@@ -156,24 +156,31 @@ namespace Bcg {
     }
 
     static void on_key_focus(const Events::Key::F &event) {
-        if(event.action){
+        if (event.action) {
             auto &picked = Engine::Context().get<Picked>();
             auto &camera = Engine::Context().get<Camera>();
             translate(camera, -camera.v_params.center);
             translate(camera, picked.world_space_point);
-            Log::Info("Focus onto: (" + std::to_string(camera.v_params.center[0]) + ", " + std::to_string(camera.v_params.center[1]) + ", " + std::to_string(camera.v_params.center[2]) + ")");
+            Log::Info("Focus onto: (" + std::to_string(camera.v_params.center[0]) + ", " +
+                      std::to_string(camera.v_params.center[1]) + ", " + std::to_string(camera.v_params.center[2]) +
+                      ")");
         }
     }
 
     static void on_key_center(const Events::Key::C &event) {
-        if(event.action){
+        if (event.action) {
             auto &picked = Engine::Context().get<Picked>();
             auto &camera = Engine::Context().get<Camera>();
-            if(!picked.entity.is_background){
+            if (!picked.entity.is_background) {
                 auto &aabb = Engine::State().get<AABB<float>>(picked.entity.id);
                 translate(camera, -camera.v_params.center);
-                translate(camera, aabb.center());
-                Log::Info("Center onto: (" + std::to_string(camera.v_params.center[0]) + ", " + std::to_string(camera.v_params.center[1]) + ", " + std::to_string(camera.v_params.center[2]) + ")");
+
+                float d = aabb.diagonal().maxCoeff() / tan(camera.p_params.fovy / 2.0);
+                translate(camera, Vector<float, 3>(0.0f, 0.0f, d));
+                camera.v_params.center = aabb.center();
+                Log::Info("Center onto: (" + std::to_string(camera.v_params.center[0]) + ", " +
+                          std::to_string(camera.v_params.center[1]) + ", " + std::to_string(camera.v_params.center[2]) +
+                          ")");
             }
         }
     }
@@ -317,17 +324,23 @@ namespace Bcg {
             static int projection_type = 0;
 
             if (camera.proj_type == Camera::ProjectionType::PERSPECTIVE) {
-                ImGui::InputFloat("p_params.fovy", &camera.p_params.fovy);
-                ImGui::InputFloat("p_params.aspect", &camera.p_params.aspect);
-                ImGui::InputFloat("p_params.zNear", &camera.p_params.zNear);
-                ImGui::InputFloat("p_params.zFar", &camera.p_params.zFar);
+                bool changed = ImGui::InputFloat("p_params.fovy", &camera.p_params.fovy);
+                changed |= ImGui::InputFloat("p_params.aspect", &camera.p_params.aspect);
+                changed |= ImGui::InputFloat("p_params.zNear", &camera.p_params.zNear);
+                changed |= ImGui::InputFloat("p_params.zFar", &camera.p_params.zFar);
+                if (changed) {
+                    camera.p_params.dirty = true;
+                }
             } else {
-                ImGui::InputFloat("o_params.left", &camera.o_params.left);
-                ImGui::InputFloat("o_params.right", &camera.o_params.right);
-                ImGui::InputFloat("o_params.bottom", &camera.o_params.bottom);
-                ImGui::InputFloat("o_params.top", &camera.o_params.top);
-                ImGui::InputFloat("o_params.zNear", &camera.o_params.zNear);
-                ImGui::InputFloat("o_params.zFar", &camera.o_params.zFar);
+                bool changed = ImGui::InputFloat("o_params.left", &camera.o_params.left);
+                changed |= ImGui::InputFloat("o_params.right", &camera.o_params.right);
+                changed |= ImGui::InputFloat("o_params.bottom", &camera.o_params.bottom);
+                changed |= ImGui::InputFloat("o_params.top", &camera.o_params.top);
+                changed |= ImGui::InputFloat("o_params.zNear", &camera.o_params.zNear);
+                changed |= ImGui::InputFloat("o_params.zFar", &camera.o_params.zFar);
+                if (changed) {
+                    camera.o_params.dirty = true;
+                }
             }
             if (ImGui::RadioButton("Perspective", &projection_type, 0)) {
                 camera.proj = perspective_matrix(camera.p_params.fovy, camera.p_params.aspect,
@@ -357,6 +370,8 @@ namespace Bcg {
                 camera.proj = perspective_matrix(camera.p_params.fovy, camera.p_params.aspect,
                                                  camera.p_params.zNear,
                                                  camera.p_params.zFar);
+                camera.dirty_view = true;
+                camera.dirty_proj = true;
             }
         }
     }

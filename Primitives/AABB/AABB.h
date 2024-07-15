@@ -14,6 +14,14 @@ namespace Bcg {
         Vector<float, 3> min = Vector<float, 3>::Constant(std::numeric_limits<float>::max());
         Vector<float, 3> max = Vector<float, 3>::Constant(-std::numeric_limits<float>::max());
 
+        Vector<float, 3> diagonal() const {
+            return max - min;
+        }
+
+        Vector<float, 3> half_extent() const {
+            return diagonal() / 2;
+        }
+
         Vector<T, 3> center() const {
             return (min + max) / 2;
         }
@@ -33,7 +41,7 @@ namespace Bcg {
     template<typename T>
     AABB<T> &Build(AABB<T> &aabb, const std::vector<Vector<T, 3>> &points) {
         aabb = AABB<T>();
-        for(auto &point : points){
+        for (auto &point: points) {
             Grow(aabb, point);
         }
         return aabb;

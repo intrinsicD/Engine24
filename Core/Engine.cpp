@@ -10,6 +10,10 @@ namespace Bcg {
         assert(Instance() == this);
     }
 
+    bool Engine::valid(entt::entity &entity) {
+        return State().valid(entity);
+    }
+
     Engine *Engine::Instance() {
         return entt::locator<Engine *>::value();
     }
