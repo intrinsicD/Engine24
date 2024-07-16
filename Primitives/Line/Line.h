@@ -5,7 +5,7 @@
 #ifndef ENGINE24_LINE_H
 #define ENGINE24_LINE_H
 
-#include "../MatVec.h"
+#include "MatVec.h"
 
 namespace Bcg{
     template<typename T>

@@ -5,7 +5,7 @@
 #ifndef ENGINE24_AABB_H
 #define ENGINE24_AABB_H
 
-#include "../MatVec.h"
+#include "MatVec.h"
 #include <limits>
 
 namespace Bcg {

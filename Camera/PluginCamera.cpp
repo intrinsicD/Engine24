@@ -13,7 +13,7 @@
 #include "Picker.h"
 #include "Graphics.h"
 #include "PluginFrameTimer.h"
-#include "../MatVec.h"
+#include "MatVec.h"
 #include "Logger.h"
 #include "AABB.h"
 #include "Eigen/Geometry"

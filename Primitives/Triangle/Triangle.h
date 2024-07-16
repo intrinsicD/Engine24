@@ -5,7 +5,7 @@
 #ifndef ENGINE24_TRIANGLE_H
 #define ENGINE24_TRIANGLE_H
 
-#include "../MatVec.h"
+#include "MatVec.h"
 
 namespace Bcg {
     template<typename T>

@@ -3,7 +3,7 @@
 
 #include "write_obj.h"
 #include <limits>
-#include "../../Exceptions.h"
+#include "Exceptions.h"
 
 namespace Bcg {
 

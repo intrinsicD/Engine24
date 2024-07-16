@@ -5,7 +5,7 @@
 #ifndef ENGINE24_TRANSFORM_H
 #define ENGINE24_TRANSFORM_H
 
-#include "../MatVec.h"
+#include "MatVec.h"
 #include "Eigen/Geometry"
 
 namespace Bcg {

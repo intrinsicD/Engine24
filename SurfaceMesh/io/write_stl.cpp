@@ -3,9 +3,6 @@
 
 #include "write_stl.h"
 
-#include "../../Exceptions.h"
-
-#include "../../Core/Types.h"
 #include <fstream>
 #include <ios>
 #include <iterator>

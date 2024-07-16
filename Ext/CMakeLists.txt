@@ -17,8 +17,8 @@ add_subdirectory(tinyobjloader)
 target_link_libraries(Engine24 PRIVATE tinyobjloader)
 
 add_subdirectory(ImGuiFileDialog)
-target_include_directories(ImGuiFileDialog SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/imgui)
-target_link_libraries(ImGuiFileDialog PUBLIC  imgui)
+target_include_directories(ImGuiFileDialog PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/imgui)
+target_link_libraries(ImGuiFileDialog PUBLIC imgui)
 target_link_libraries(Engine24 PUBLIC ImGuiFileDialog)
 
 target_sources(Engine24 PRIVATE
