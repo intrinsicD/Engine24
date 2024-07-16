@@ -44,39 +44,6 @@ namespace Bcg {
 
     Vector<float, 3> screen_to_ndc(const Vector<int, 4> &viewport, float x, float y, float z /*depth_buffer_value*/);
 
-
-    class Picker : public Plugin {
-    public:
-        Picker();
-
-        ~Picker() override = default;
-
-        static Picked &pick(double x, double y);
-
-        static Picked &last_picked();
-
-        void activate() override;
-
-        void begin_frame() override;
-
-        void update() override;
-
-        void end_frame() override;
-
-        void deactivate() override;
-
-        void render_menu() override;
-
-        void render_gui() override;
-
-        void render() override;
-    };
-
-    namespace Gui {
-        void Show(const Picked &picked);
-
-        void Show(const Picked::Entity &entity);
-    };
 }
 
 #endif //ENGINE24_PICKER_H

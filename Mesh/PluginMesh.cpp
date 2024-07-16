@@ -25,14 +25,18 @@
 #include "GuiUtils.h"
 #include "PropertiesGui.h"
 #include "Picker.h"
-#include "Transform.h"
+#include "VertexArrayObject.h"
+#include "Shader.h"
+#include "Buffer.h"
 #include "AABB.h"
 #include "glad/gl.h"
 
 namespace Bcg {
     struct MeshView {
-        unsigned int vao, vbo, ebo;
-        unsigned int program;
+        VertexArrayObject vao;
+        ElementArrayBuffer ebo;
+        unsigned int vbo;
+        Program program;
         unsigned int num_indices;
     };
 
@@ -45,9 +49,9 @@ namespace Bcg {
 
         if (!mw) {
             mw = &Engine::State().emplace<MeshView>(entity_id);
-            glGenVertexArrays(1, &mw->vao);
+            mw->vao.create();
             glGenBuffers(1, &mw->vbo);
-            glGenBuffers(1, &mw->ebo);
+            mw->ebo.create();
         }
 
 
@@ -57,8 +61,8 @@ namespace Bcg {
         MeshView mw;
         mw.num_indices = mesh.n_faces() * 3;
 
-        glGenVertexArrays(1, &mw.vao);
-        glBindVertexArray(mw.vao);
+        mw.vao.create();
+        mw.vao.bind();
 
         auto v_normals = ComputeVertexNormals(mesh);
         size_t size_in_bytes_vertices = mesh.n_vertices() * sizeof(Point);
@@ -100,9 +104,10 @@ namespace Bcg {
         glBindBuffer(batched_buffer.target, batched_buffer.id);
 
         auto triangles = extract_triangle_list(mesh);
-        glGenBuffers(1, &mw.ebo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mw.ebo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, mw.num_indices * sizeof(unsigned int), triangles.data(), GL_STATIC_DRAW);
+        mw.ebo.create();
+        mw.ebo.bind();
+
+        mw.ebo.buffer_data(triangles.data(), mw.num_indices * sizeof(unsigned int), GL_STATIC_DRAW);
 
         const char *vertex_shader_src = "#version 330 core\n"
                                         "layout (location = 0) in vec3 aPos;\n"
@@ -135,19 +140,18 @@ namespace Bcg {
                                           "   vec3 finalColor = diff * baseColor;\n"
                                           "   FragColor = vec4(normal, 1.0f);\n"
                                           "}\n\0";
-        mw.program = Graphics::create_program(vertex_shader_src, fragment_shader_src);
 
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *) 0);
-        glEnableVertexAttribArray(0);
+        mw.program.create_from_source(vertex_shader_src, fragment_shader_src);
+        mw.vao.setAttribute(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *) 0);
+        mw.vao.enableAttribute(0);
 
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *) size_in_bytes_vertices);
-        glEnableVertexAttribArray(1);
+        mw.vao.setAttribute(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *) size_in_bytes_vertices);
+        mw.vao.enableAttribute(1);
 
         // Get the index of the uniform block
-        GLuint blockIndex = glGetUniformBlockIndex(mw.program, "Camera");
         auto &camera_ubi = Engine::Context().get<CameraUniformBuffer>();
-        glUniformBlockBinding(mw.program, blockIndex, camera_ubi.binding_point);
-        glBindVertexArray(0);
+        mw.program.bind_uniform_block("Camera", camera_ubi.binding_point);
+        mw.vao.unbind();
         return mw;
     }
 
@@ -448,9 +452,10 @@ namespace Bcg {
         for (auto entity_id: mesh_view) {
             auto &mw = Engine::State().get<MeshView>(entity_id);
 
-            glBindVertexArray(mw.vao);
-            glUseProgram(mw.program);
-            GLint lightDirLoc = glGetUniformLocation(mw.program, "lightDir");
+            mw.vao.bind();
+            mw.program.use();
+
+            int lightDirLoc = mw.program.get_uniform_location("lightDir");
 
             // Set the uniform
             glUniform3fv(lightDirLoc, 1, lightDirection.data());

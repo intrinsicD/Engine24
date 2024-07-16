@@ -43,7 +43,7 @@ namespace Bcg {
             return;
         }
 
-        auto &picked = Bcg::Picker::last_picked();
+        auto &picked = Engine::Context().get<Picked>();
         Gui::ShowTransform(picked.entity.id, show_gui);
     }
 

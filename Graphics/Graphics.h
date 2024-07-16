@@ -125,66 +125,6 @@ namespace Bcg {
         static void render_gui(const BufferContainer &buffers);
 
         //--------------------------------------------------------------------------------------------------------------
-
-        static unsigned int create_program(const char *vs_source, const char *fs_source,
-                                           const char *gs_source = nullptr, const char *tc_source = nullptr,
-                                           const char *te_source = nullptr);
-
-        static std::string load_shader(const char *filepath);
-
-        //--------------------------------------------------------------------------------------------------------------
-    };
-
-    class Shader {
-    public:
-        Shader(unsigned int type);
-
-        static Shader VertexShader();
-
-        static Shader FragmentShader();
-
-        static Shader GeometryShader();
-
-        static Shader TessContrlShader();
-
-        static Shader TessEvalShader();
-
-        static Shader ComputeShader();
-
-        bool load(const char *path);
-
-        bool compile();
-
-        operator bool() const { return id != -1; }
-
-        unsigned int id = -1;
-        unsigned int type;
-        const char *source;
-        const char *path;
-    };
-
-    class Program {
-    public:
-        Program(const char *name);
-
-        bool load(const char *v_path, const char *f_path, const char *g_path, const char *tc_path, const char *te_path);
-
-        bool load(const char *c_path);
-
-        bool link(const Shader &vs, const Shader &fs,
-                  const Shader &gs = Shader::GeometryShader(),
-                  const Shader &tcs = Shader::TessContrlShader(),
-                  const Shader &tes = Shader::TessEvalShader());
-
-        bool link(const Shader &cs);
-
-        bool link();
-
-        operator bool() const { return id != -1; }
-
-        unsigned int id = -1;
-        const char *name;
-        std::vector<Shader> shaders;
     };
 }
 
