@@ -33,10 +33,6 @@ namespace Bcg {
 
         void render() override;
     };
-
-    namespace Gui {
-        void Show(Camera &camera);
-    }
 }
 
 #endif //ENGINE24_PLUGINCAMERA_H

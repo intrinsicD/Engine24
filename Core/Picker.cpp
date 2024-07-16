@@ -5,7 +5,7 @@
 #include "Picker.h"
 #include "Engine.h"
 #include "imgui.h"
-#include "../Camera.h"
+#include "../Camera/Camera.h"
 #include "Graphics.h"
 #include "Mouse.h"
 #include "EventsCallbacks.h"

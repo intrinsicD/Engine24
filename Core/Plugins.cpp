@@ -8,8 +8,8 @@
 #include "../PluginMesh.h"
 #include "Picker.h"
 #include "PluginFrameTimer.h"
-#include "../PluginCamera.h"
-#include "../PluginTransform.h"
+#include "../Camera/PluginCamera.h"
+#include "../Transform/PluginTransform.h"
 #include <unordered_map>
 
 namespace Bcg {

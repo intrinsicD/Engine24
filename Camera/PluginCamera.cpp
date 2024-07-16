@@ -13,11 +13,12 @@
 #include "Picker.h"
 #include "Graphics.h"
 #include "PluginFrameTimer.h"
-#include "MatVec.h"
+#include "../MatVec.h"
 #include "Logger.h"
 #include "AABB.h"
 #include "Eigen/Geometry"
 #include "glad/gl.h"
+#include "CameraGui.h"
 
 namespace Bcg {
 
@@ -57,6 +58,7 @@ namespace Bcg {
 
     static void rotate(Camera &camera, const Vector<float, 3> &axis, float angle) {
         // center in eye coordinates
+
         Vector<float, 4> ec = camera.view * camera.v_params.center.homogeneous();
         Vector<float, 3> c(ec[0] / ec[3], ec[1] / ec[3], ec[2] / ec[3]);
         Matrix<float, 4, 4> center_matrix = translation_matrix(c);
@@ -130,10 +132,8 @@ namespace Bcg {
         if (mouse.left()) {
             //rotate camera around center like an arc ball camera
             rotation(camera, event.xpos, event.ypos);
-            //TODO figure out to rotate around which point?
         }
         if (mouse.middle()) {
-            //TODO should i translate the rotation center with me or not?
             translate(camera, event.xpos, event.ypos);
         }
 
@@ -159,8 +159,11 @@ namespace Bcg {
         if (event.action) {
             auto &picked = Engine::Context().get<Picked>();
             auto &camera = Engine::Context().get<Camera>();
-            translate(camera, -camera.v_params.center);
-            translate(camera, picked.world_space_point);
+            auto diff = camera.v_params.eye - camera.v_params.center;
+
+            camera.v_params.center = picked.world_space_point;
+            camera.v_params.eye = camera.v_params.center + diff;
+            camera.v_params.dirty = true;
             Log::Info("Focus onto: (" + std::to_string(camera.v_params.center[0]) + ", " +
                       std::to_string(camera.v_params.center[1]) + ", " + std::to_string(camera.v_params.center[2]) +
                       ")");
@@ -171,13 +174,13 @@ namespace Bcg {
         if (event.action) {
             auto &picked = Engine::Context().get<Picked>();
             auto &camera = Engine::Context().get<Camera>();
-            if (!picked.entity.is_background) {
+            if (Engine::valid(picked.entity.id)) {
                 auto &aabb = Engine::State().get<AABB<float>>(picked.entity.id);
-                translate(camera, -camera.v_params.center);
-
                 float d = aabb.diagonal().maxCoeff() / tan(camera.p_params.fovy / 2.0);
-                translate(camera, Vector<float, 3>(0.0f, 0.0f, d));
                 camera.v_params.center = aabb.center();
+                camera.v_params.eye = camera.v_params.center + Vector<float, 3>(0.0, 0.0, d);
+                camera.v_params.up = camera.v_params.center + Vector<float, 3>(0.0, 1.0, 0);
+                camera.v_params.dirty = true;
                 Log::Info("Center onto: (" + std::to_string(camera.v_params.center[0]) + ", " +
                           std::to_string(camera.v_params.center[1]) + ", " + std::to_string(camera.v_params.center[2]) +
                           ")");
@@ -185,9 +188,28 @@ namespace Bcg {
         }
     }
 
+    static void on_window_resize(const Events::Callback::WindowResize &event) {
+        auto &camera = Engine::Context().get<Camera>();
+        if (camera.proj_type == Camera::ProjectionType::PERSPECTIVE) {
+            camera.p_params.aspect = float(event.width) / float(event.height);
+            camera.p_params.dirty = true;
+        } else {
+            float half_width = event.width * 0.5f;
+            float half_height = event.height * 0.5f;
+            camera.o_params.left = -half_width;
+            camera.o_params.right = half_width;
+            camera.o_params.top = half_height;
+            camera.o_params.bottom = -half_height;
+            camera.o_params.dirty = true;
+        }
+    }
+
     void PluginCamera::activate() {
         if (!Engine::Context().find<Camera>()) {
-            Engine::Context().emplace<Camera>();
+            auto &camera = Engine::Context().emplace<Camera>();
+            auto vp = Graphics::get_viewport();
+            camera.p_params.aspect = float(vp[2]) / float(vp[3]);
+            camera.p_params.dirty = true;
         }
         if (!Engine::Context().find<CameraUniformBuffer>()) {
             auto &ubo = Engine::Context().emplace<CameraUniformBuffer>();
@@ -200,6 +222,7 @@ namespace Bcg {
         }
         Engine::Dispatcher().sink<Events::Callback::MouseCursor>().connect<&on_mouse_cursor>();
         Engine::Dispatcher().sink<Events::Callback::MouseScroll>().connect<&on_mouse_scroll>();
+        Engine::Dispatcher().sink<Events::Callback::WindowResize>().connect<&on_window_resize>();
         Engine::Dispatcher().sink<Events::Key::F>().connect<&on_key_focus>();
         Engine::Dispatcher().sink<Events::Key::C>().connect<&on_key_center>();
         Plugin::activate();
@@ -279,6 +302,7 @@ namespace Bcg {
         Engine::Context().erase<CameraUniformBuffer>();
         Engine::Dispatcher().sink<Events::Callback::MouseCursor>().disconnect<&on_mouse_cursor>();
         Engine::Dispatcher().sink<Events::Callback::MouseScroll>().disconnect<&on_mouse_scroll>();
+        Engine::Dispatcher().sink<Events::Callback::WindowResize>().disconnect<&on_window_resize>();
         Engine::Dispatcher().sink<Events::Key::F>().disconnect<&on_key_focus>();
         Engine::Dispatcher().sink<Events::Key::C>().disconnect<&on_key_center>();
         Plugin::deactivate();
@@ -304,75 +328,5 @@ namespace Bcg {
 
     void PluginCamera::render() {
 
-    }
-
-    namespace Gui {
-        void Show(Camera &camera) {
-            if (ImGui::InputFloat3("v_params.center", camera.v_params.center.data())) {
-                camera.view = look_at_matrix(camera.v_params.eye, camera.v_params.center, camera.v_params.up);
-                camera.v_params.dirty = true;
-            }
-            if (ImGui::InputFloat3("v_params.eye", camera.v_params.eye.data())) {
-                camera.view = look_at_matrix(camera.v_params.eye, camera.v_params.center, camera.v_params.up);
-                camera.v_params.dirty = true;
-            }
-            if (ImGui::InputFloat3("v_params.up", camera.v_params.up.data())) {
-                camera.view = look_at_matrix(camera.v_params.eye, camera.v_params.center, camera.v_params.up);
-                camera.v_params.dirty = true;
-            }
-
-            static int projection_type = 0;
-
-            if (camera.proj_type == Camera::ProjectionType::PERSPECTIVE) {
-                bool changed = ImGui::InputFloat("p_params.fovy", &camera.p_params.fovy);
-                changed |= ImGui::InputFloat("p_params.aspect", &camera.p_params.aspect);
-                changed |= ImGui::InputFloat("p_params.zNear", &camera.p_params.zNear);
-                changed |= ImGui::InputFloat("p_params.zFar", &camera.p_params.zFar);
-                if (changed) {
-                    camera.p_params.dirty = true;
-                }
-            } else {
-                bool changed = ImGui::InputFloat("o_params.left", &camera.o_params.left);
-                changed |= ImGui::InputFloat("o_params.right", &camera.o_params.right);
-                changed |= ImGui::InputFloat("o_params.bottom", &camera.o_params.bottom);
-                changed |= ImGui::InputFloat("o_params.top", &camera.o_params.top);
-                changed |= ImGui::InputFloat("o_params.zNear", &camera.o_params.zNear);
-                changed |= ImGui::InputFloat("o_params.zFar", &camera.o_params.zFar);
-                if (changed) {
-                    camera.o_params.dirty = true;
-                }
-            }
-            if (ImGui::RadioButton("Perspective", &projection_type, 0)) {
-                camera.proj = perspective_matrix(camera.p_params.fovy, camera.p_params.aspect,
-                                                 camera.p_params.zNear,
-                                                 camera.p_params.zFar);
-                camera.p_params.dirty = true;
-            }
-            if (ImGui::RadioButton("Orthographic", &projection_type, 1)) {
-                camera.proj = ortho_matrix(camera.o_params.left, camera.o_params.right, camera.o_params.bottom,
-                                           camera.o_params.top, camera.o_params.zNear, camera.o_params.zFar);
-                camera.o_params.dirty = true;
-            }
-
-            std::stringstream ss;
-            ss << camera.view;
-            ImGui::Text("ViewMatrix\n%s", ss.str().c_str());
-            //reuse the stringstream
-            ss.str("");
-            ss << camera.proj;
-            ImGui::Text("ProjectionMatrix\n%s", ss.str().c_str());
-            if (ImGui::Button("Reset Camera")) {
-                camera.v_params = Camera::ViewParameters();
-                camera.p_params = Camera::PerspParameters();
-                camera.o_params = Camera::OrthoParameters();
-                camera.proj_type = Camera::ProjectionType::PERSPECTIVE;
-                camera.view = look_at_matrix(camera.v_params.eye, camera.v_params.center, camera.v_params.up);
-                camera.proj = perspective_matrix(camera.p_params.fovy, camera.p_params.aspect,
-                                                 camera.p_params.zNear,
-                                                 camera.p_params.zFar);
-                camera.dirty_view = true;
-                camera.dirty_proj = true;
-            }
-        }
     }
 }

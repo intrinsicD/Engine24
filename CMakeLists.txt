@@ -8,8 +8,7 @@ add_library(Engine24 main.cpp
         GLFWUtils.cpp
         GLUtils.cpp
         Mesh.cpp
-        PluginTransform.cpp
-        PluginCamera.cpp
+        Camera/PluginCamera.cpp
         PluginMesh.cpp
         PluginOpenGLRenderer.cpp
         FrustumCulling.cpp
@@ -27,4 +26,6 @@ add_subdirectory(apps)
 add_subdirectory(ext)
 add_subdirectory(Core)
 add_subdirectory(Primitives)
+add_subdirectory(Transform)
+add_subdirectory(Camera)
 add_subdirectory(SurfaceMesh)

@@ -4,7 +4,7 @@
 
 #include "PluginOpenGLRenderer.h"
 #include "Core/Engine.h"
-#include "Camera.h"
+#include "Camera/Camera.h"
 #include "glad/gl.h"
 
 namespace Bcg {

@@ -5,37 +5,130 @@
 #ifndef ENGINE24_CAMERA_H
 #define ENGINE24_CAMERA_H
 
-#include "MatVec.h"
+#include "Transform.h"
 
 namespace Bcg {
-    struct Camera {
-        struct PerspParameters {
-            float fovy = 45.0f;
-            float aspect = 1.0f;
-            float zNear = 0.1f;
-            float zFar = 100.0f;
-            bool dirty = true;
-        } p_params;
-        struct OrthoParameters {
-            float left = -1.0f;
-            float right = 1.0f;
-            float bottom = -1.0f;
-            float top = 1.0f;
-            float zNear = -1.0f;
-            float zFar = 1.0f;
-            bool dirty = false;
-        } o_params;
-        struct ViewParameters {
-            Vector<float, 3> eye = {0.0f, 0.0f, 3.0f};
-            Vector<float, 3> center = {0.0f, 0.0f, 0.0f};
-            Vector<float, 3> up = {0.0f, 1.0f, 0.0f};
-            bool dirty = true;
-        } v_params;
+
+    struct ViewParameters {
+        Vector<float, 3> eye = {0.0, 0.0, 3.0};
+        Vector<float, 3> center = {0.0, 0.0, 0.0};
+        Vector<float, 3> up = {0.0, 1.0, 0.0};
+        bool dirty = false;
+    };
+
+    class ViewMatrix : public Transform{
+    public:
+        explicit ViewMatrix(const Transform &model) : Transform(model.inverse().matrix()) {
+
+        }
+
+        explicit ViewMatrix(const ViewParameters &params) : ViewMatrix(params.eye, params.center, params.up) {
+
+        }
+
+        explicit ViewMatrix(const Vector<float, 3> &eye, const Vector<float, 3> &center, const Vector<float, 3> &up) {
+            Transform t = Transform::Identity();
+            t.SetUp(up.normalized());
+            t.SetDir((center - eye).normalized());
+            t.SetRight(t.Up().cross(t.Dir()));
+            t.SetPosition(-eye);
+            m_matrix = t.matrix().inverse();
+        }
+
+        [[nodiscard]] Transform model() const {
+            return Transform(m_matrix.inverse().eval());
+        }
+    };
+
+    struct PerspParameters {
+        float fovy = 45.0f;
+        float aspect = 1.0f;
+        float zNear = 0.1f;
+        float zFar = 1000.0f;
+        bool dirty = true;
+    };
+
+    struct OrthoParameters {
+        float left = -1.0f;
+        float right = 1.0f;
+        float bottom = -1.0f;
+        float top = 1.0f;
+        float zNear = -1.0f;
+        float zFar = 1.0f;
+        bool dirty = false;
+    };
+
+    class ProjectionMatrix{
+    public:
+        explicit ProjectionMatrix(const PerspParameters &params) : ProjectionMatrix(params.fovy, params.aspect,
+                                                                                    params.zNear, params.zFar) {
+
+        }
+
+        explicit ProjectionMatrix(float fovy, float aspect, float zNear, float zFar) :
+                m_matrix(perspective_matrix(fovy, aspect, zNear, zFar)) {
+
+        }
+
+        explicit ProjectionMatrix(const OrthoParameters &params) : ProjectionMatrix(params.left, params.right,
+                                                                                    params.bottom, params.top,
+                                                                                    params.zNear, params.zFar) {
+
+        }
+
+        explicit ProjectionMatrix(float left, float right, float bottom, float top, float zNear, float zFar) :
+                m_matrix(frustum_matrix(left, right, bottom, top, zNear, zFar)) {
+
+        }
+
+        static Matrix<float, 4, 4> frustum_matrix(float l, float r, float b, float t, float n,
+                                                  float f) {
+            Matrix<float, 4, 4> m(Matrix<float, 4, 4>::Zero());
+
+            m(0, 0) = (n + n) / (r - l);
+            m(0, 2) = (r + l) / (r - l);
+            m(1, 1) = (n + n) / (t - b);
+            m(1, 2) = (t + b) / (t - b);
+            m(2, 2) = -(f + n) / (f - n);
+            m(2, 3) = -f * (n + n) / (f - n);
+            m(3, 2) = -1.0f;
+
+            return m;
+        }
+
+        static Matrix<float, 4, 4> perspective_matrix(float fovy, float aspect, float zNear,
+                                                      float zFar) {
+            float t = zNear * tan(fovy * float(std::numbers::pi / 360.0));
+            float b = -t;
+            float l = b * aspect;
+            float r = t * aspect;
+
+            return frustum_matrix(l, r, b, t, float(zNear), float(zFar));
+        }
+
+        auto matrix() const { return m_matrix; }
+
+        Matrix<float, 4, 4> m_matrix;
+    };
+
+    class Camera {
+    public:
+        Camera() : p_params(), o_params(), v_params() {
+            p_params.dirty = true;
+            v_params.dirty = true;
+        }
+
+        PerspParameters p_params;
+        OrthoParameters o_params;
+        ViewParameters v_params;
+
         enum class ProjectionType {
             PERSPECTIVE, ORTHOGRAPHIC
         } proj_type = ProjectionType::PERSPECTIVE;
+
         Matrix<float, 4, 4> view;
         Matrix<float, 4, 4> proj;
+
         bool dirty_view = true;
         bool dirty_proj = true;
     };

@@ -20,14 +20,19 @@
 #include <filesystem>
 
 namespace Bcg {
-    const GLuint WIDTH = 800, HEIGHT = 600;
-    static GLFWwindow *global_window = nullptr;
-    static int version = 0;
-    static float dpi = 1.5;
-    static ImGuiContext *imgui_context = nullptr;
-    static bool show_window_gui = false;
-    static bool show_buffer_gui = false;
-    float clear_color[3] = {0.2f, 0.3f, 0.3f};
+
+    struct Window{
+        int WIDTH = 800, HEIGHT = 600;
+        GLFWwindow *handle = nullptr;
+        int version = 0;
+        float dpi = 1.5;
+        ImGuiContext *imgui_context = nullptr;
+        bool show_window_gui = false;
+        bool show_buffer_gui = false;
+        float clear_color[3] = {0.2f, 0.3f, 0.3f};
+    };
+
+    static Window global_window;
 
     static void glfw_error_callback(int error, const char *description) {
         std::string message = "GLFW Error " + std::to_string(error) + ", " + description + "\n";
@@ -106,7 +111,7 @@ namespace Bcg {
     }
 
     bool Graphics::init() {
-        if (global_window) {
+        if (global_window.handle) {
             Log::Info("GLFW context already initialized");
         } else {
             glfwSetErrorCallback(glfw_error_callback);
@@ -121,49 +126,49 @@ namespace Bcg {
             glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
             glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-            global_window = glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL", NULL, NULL);
+            global_window.handle = glfwCreateWindow(global_window.WIDTH, global_window.HEIGHT, "LearnOpenGL", NULL, NULL);
 
-            if (!global_window) {
+            if (!global_window.handle) {
                 Log::Error("Failed to create GLFW window");
                 glfwTerminate();
                 return false;
             }
 
-            glfwMakeContextCurrent(global_window);
+            glfwMakeContextCurrent(global_window.handle);
             glfwSwapInterval(1);
-            glfwSetWindowUserPointer(global_window, Engine::Instance());
+            glfwSetWindowUserPointer(global_window.handle, Engine::Instance());
 
             // Set the required callback functions
-            glfwSetKeyCallback(global_window, key_callback);
-            glfwSetCursorPosCallback(global_window, mouse_cursor_callback);
-            glfwSetMouseButtonCallback(global_window, mouse_button_callback);
-            glfwSetScrollCallback(global_window, mouse_scrolling);
-            glfwSetWindowCloseCallback(global_window, close_callback);
-            glfwSetWindowSizeCallback(global_window, resize_callback);
-            glfwSetDropCallback(global_window, drop_callback);
+            glfwSetKeyCallback(global_window.handle, key_callback);
+            glfwSetCursorPosCallback(global_window.handle, mouse_cursor_callback);
+            glfwSetMouseButtonCallback(global_window.handle, mouse_button_callback);
+            glfwSetScrollCallback(global_window.handle, mouse_scrolling);
+            glfwSetWindowCloseCallback(global_window.handle, close_callback);
+            glfwSetWindowSizeCallback(global_window.handle, resize_callback);
+            glfwSetDropCallback(global_window.handle, drop_callback);
         }
 
         // Load OpenGL functions, gladLoadGL returns the loaded version, 0 on error.
-        if (version != 0) {
+        if (global_window.version != 0) {
             Log::Info("OpenGL context already initialized");
         } else {
-            version = gladLoadGL(glfwGetProcAddress);
-            if (version == 0) {
+            global_window.version = gladLoadGL(glfwGetProcAddress);
+            if (global_window.version == 0) {
                 Log::Error("Failed to initialize OpenGL context");
                 return false;
             }
 
             // Successfully loaded OpenGL
-            std::string message = "Loaded OpenGL " + std::to_string(GLAD_VERSION_MAJOR(version)) + "." +
-                                  std::to_string(GLAD_VERSION_MINOR(version));
+            std::string message = "Loaded OpenGL " + std::to_string(GLAD_VERSION_MAJOR(global_window.version)) + "." +
+                                  std::to_string(GLAD_VERSION_MINOR(global_window.version));
             Log::Info(message.c_str());
         }
 
-        if (imgui_context) {
+        if (global_window.imgui_context) {
             Log::Info("ImGui Context already initialized");
         } else {
             IMGUI_CHECKVERSION();
-            imgui_context = ImGui::CreateContext();
+            global_window.imgui_context = ImGui::CreateContext();
             auto &io = ImGui::GetIO();
             io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
             io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
@@ -173,12 +178,12 @@ namespace Bcg {
             ImGui_ImplGlfw_InitForOpenGL(glfwGetCurrentContext(), true);
             ImGui_ImplOpenGL3_Init();
 
-            load_fonts(io, dpi);
-            ImGui::GetStyle().ScaleAllSizes(dpi);
+            load_fonts(io, global_window.dpi);
+            ImGui::GetStyle().ScaleAllSizes(global_window.dpi);
         }
 
-        glViewport(0, 0, WIDTH, HEIGHT);
-        glClearColor(clear_color[0], clear_color[1], clear_color[2], 1.0f);
+        glViewport(0, 0, global_window.WIDTH, global_window.HEIGHT);
+        glClearColor(global_window.clear_color[0], global_window.clear_color[1], global_window.clear_color[2], 1.0f);
         // Enable depth testing
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS); // Default depth function
@@ -190,11 +195,12 @@ namespace Bcg {
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         Engine::Context().emplace<BufferContainer>();
+        Engine::Dispatcher().trigger(Events::Callback::WindowResize{global_window.handle, global_window.WIDTH, global_window.HEIGHT});
         return true;
     }
 
     bool Graphics::should_close() {
-        return glfwWindowShouldClose(global_window);
+        return glfwWindowShouldClose(global_window.handle);
     }
 
     void Graphics::poll_events() {
@@ -202,11 +208,12 @@ namespace Bcg {
     }
 
     void Graphics::set_window_title(const char *title) {
-        glfwSetWindowTitle(global_window, title);
+        glfwSetWindowTitle(global_window.handle, title);
     }
 
     void Graphics::set_clear_color(const float *color) {
-        glClearColor(color[0], color[1], color[2], 1.0f);
+        *global_window.clear_color = *color;
+        glClearColor(global_window.clear_color[0], global_window.clear_color[1], global_window.clear_color[2], 1.0f);
     }
 
     void Graphics::clear_framebuffer() {
@@ -225,24 +232,26 @@ namespace Bcg {
     void Graphics::render_menu() {
         Engine::Dispatcher().trigger<Events::Gui::Menu::Render>();
         if (ImGui::BeginMenu("Graphics")) {
-            ImGui::MenuItem("Window", nullptr, &show_window_gui);
-            ImGui::MenuItem("Buffer", nullptr, &show_buffer_gui);
+            ImGui::MenuItem("Window", nullptr, &global_window.show_window_gui);
+            ImGui::MenuItem("Buffer", nullptr, &global_window.show_buffer_gui);
             ImGui::EndMenu();
         }
     }
 
     void Graphics::render_gui() {
         Engine::Dispatcher().trigger<Events::Gui::Render>();
-        if (show_window_gui) {
-            if (ImGui::Begin("Window", &show_window_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
-                if (ImGui::ColorEdit3("clear_color", clear_color)) {
-                    glClearColor(clear_color[0], clear_color[1], clear_color[2], 1.0);
+        if (global_window.show_window_gui) {
+            if (ImGui::Begin("Window", &global_window.show_window_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
+                if (ImGui::ColorEdit3("clear_color", global_window.clear_color)) {
+                    glClearColor(global_window.clear_color[0], global_window.clear_color[1], global_window.clear_color[2], 1.0);
                 }
+                ImGui::Text("Width %d", global_window.WIDTH);
+                ImGui::Text("Height %d", global_window.HEIGHT);
             }
             ImGui::End();
         }
-        if (show_buffer_gui) {
-            if (ImGui::Begin("Buffers", &show_window_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
+        if (global_window.show_buffer_gui) {
+            if (ImGui::Begin("Buffers", &global_window.show_window_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
                 render_gui(Engine::Context().get<BufferContainer>());
             }
             ImGui::End();
@@ -263,7 +272,7 @@ namespace Bcg {
     }
 
     void Graphics::swap_buffers() {
-        glfwSwapBuffers(global_window);
+        glfwSwapBuffers(global_window.handle);
     }
 
     Vector<int, 4> Graphics::get_viewport() {

@@ -8,6 +8,7 @@
 #include "glad/gl.h"
 #include "Core/Logger.h"
 #include <string>
+#include "PropertyEigenMap.h"
 
 namespace Bcg {
 
@@ -40,142 +41,6 @@ namespace Bcg {
         return program;
     }
 
-    /*VertexProperty<Vector<float, 3>> ComputeVertexNormals(SurfaceMesh &mesh) {
-        const char *computeShaderSource = R"(
-        #version 430 core
-        layout (local_size_x = 1) in;
-        layout (std430, binding = 0) readonly buffer VertexPositions { vec4 positions[]; };
-        layout (std430, binding = 1) readonly buffer VertexConnectivity { uint vconn[]; };
-        layout (std430, binding = 2) readonly buffer HalfedgeConnectivity { uvec4 hconn[]; };
-        layout (std430, binding = 3) readonly buffer FaceConnectivity { uint fconn[]; };
-        layout (std430, binding = 4) writeonly buffer FaceNormals { vec4 normals[]; };
-
-        uint face(uint h) {
-            return hconn[h].x;
-        }
-
-        uint to_vertex(uint h) {
-            return hconn[h].y;
-        }
-
-        uint next_halfedge(uint h) {
-            return hconn[h].z;
-        }
-
-        uint prev_halfedge(uint h) {
-            return hconn[h].w;
-        }
-
-        uint opposite_halfedge(uint h) {
-            return ((h & 1) == 1 ? h - 1 : h + 1);
-        }
-
-        uint ccw_rotated_halfedge(uint h) {
-           return opposite_halfedge(prev_halfedge(h));
-        }
-
-        uint cw_rotated_halfedge(uint h) {
-            return next_halfedge(opposite_halfedge(h));
-        }
-
-        void main() {
-            uint v = gl_GlobalInvocationID.x;
-            uint h = vconn[v];
-            uint start = h;
-
-            vec3 normal = vec3(0.0);
-            vec3 v0 = positions[v].xyz;
-
-            do {
-                uint nh = next_halfedge(h);
-                vec3 v1 = positions[to_vertex(h)].xyz;
-                vec3 v2 = positions[to_vertex(nh)].xyz;
-                normal += normalize(cross(v1 - v0, v2 - v0));
-                h = cw_rotated_halfedge(h);
-            } while (h != start && h != uint(-1));
-
-          normals[v] = vec4(normalize(normal), 0.0);
-        }
-    )";
-        // point coordinates
-        auto &vpoint = mesh.vpoint_.vector();
-        auto &vconn = mesh.vconn_.vector();
-        auto &hconn = mesh.hconn_.vector();
-        auto &fconn = mesh.fconn_.vector();
-        mesh.vprops_.get_or_add<Vector<float, 3>>("v:normal");
-        auto normals = mesh.get_vertex_property<Vector<float, 3>>("v:normal");
-
-        Eigen::Matrix<float, 4, -1> P = Eigen::Matrix<float, 4, -1>::Zero(4, vpoint.size());
-        P.block(0, 0, 3, vpoint.size()) = Eigen::Map<Eigen::Matrix<float, 3, -1>>(vpoint[0].data(), 3, vpoint.size());
-
-        GLuint vpointBuffer, vconnBuffer, hconnBuffer, fconnBuffer, normalBuffer;
-        glGenBuffers(1, &vpointBuffer);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, vpointBuffer);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, P.size() * sizeof(float), P.data(),
-                     GL_STATIC_DRAW);
-
-        glGenBuffers(1, &vconnBuffer);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, vconnBuffer);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, vconn.size() * sizeof(unsigned int), vconn.data(),
-                     GL_STATIC_DRAW);
-
-        glGenBuffers(1, &hconnBuffer);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, hconnBuffer);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, hconn.size() * 4 * sizeof(unsigned int), hconn.data(),
-                     GL_STATIC_DRAW);
-
-        glGenBuffers(1, &fconnBuffer);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, fconnBuffer);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, fconn.size() * sizeof(unsigned int), fconn.data(),
-                     GL_STATIC_DRAW);
-
-        std::vector<Vector<float, 4>> result(mesh.vertices_size());
-        glGenBuffers(1, &normalBuffer);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, normalBuffer);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, result.size() * 4 * sizeof(float), nullptr,
-                     GL_DYNAMIC_DRAW);
-
-        auto program = CompileComputeShader(computeShaderSource);
-        if (program == 0) {
-            Log::Error("Failed to create compute shader program!\n");
-            return normals;
-        }
-        glUseProgram(program);
-
-// Bind buffers
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, vpointBuffer);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, vconnBuffer);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, hconnBuffer);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, fconnBuffer);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, normalBuffer);
-
-// Dispatch compute shader
-        glDispatchCompute(mesh.vertices_size(), 1, 1);
-
-// Ensure all computations are done
-        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-
-
-// Retrieve the computed normals
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, normalBuffer);
-        glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, result.size() * 4 * sizeof(float), result.data());
-// Process the normals...
-        glDeleteBuffers(1, &vpointBuffer);
-        glDeleteBuffers(1, &vconnBuffer);
-        glDeleteBuffers(1, &hconnBuffer);
-        glDeleteBuffers(1, &fconnBuffer);
-        glDeleteBuffers(1, &normalBuffer);
-        glDeleteProgram(program);
-
-        for (size_t i = 0; i < result.size(); ++i) {
-            normals[Vertex(i)][0] = result[i][0];
-            normals[Vertex(i)][1] = result[i][1];
-            normals[Vertex(i)][2] = result[i][2];
-           // std::cout << result[i][0] << ", " << result[i][1] << ", " << result[i][2] << "  v:" << result[i][3] << "\n";
-        }
-        return normals;
-    }*/
-
     VertexProperty<Vector<float, 3>> ComputeVertexNormals(SurfaceMesh &mesh) {
         const char *computeShaderSource = R"(
         #version 430 core
@@ -184,7 +49,7 @@ namespace Bcg {
         layout (std430, binding = 1) readonly buffer VertexConnectivity { uint vconn[]; };
         layout (std430, binding = 2) readonly buffer HalfedgeConnectivity { uvec4 hconn[]; };
         layout (std430, binding = 3) readonly buffer FaceConnectivity { uint fconn[]; };
-        layout (std430, binding = 4) writeonly buffer FaceNormals { vec4 normals[]; };
+        layout (std430, binding = 4) writeonly buffer VertexNormals { vec4 normals[]; };
 
         uint face(uint h) {
             return hconn[h].x;
@@ -242,8 +107,8 @@ namespace Bcg {
         mesh.vprops_.get_or_add<Vector<float, 3>>("v:normal");
         auto normals = mesh.get_vertex_property<Vector<float, 3>>("v:normal");
 
-        Eigen::Matrix<float, 4, -1> P = Eigen::Matrix<float, 4, -1>::Zero(4, vpoint.size());
-        P.block(0, 0, 3, vpoint.size()) = Eigen::Map<Eigen::Matrix<float, 3, -1>>(vpoint[0].data(), 3, vpoint.size());
+        Eigen::Matrix<float, 4, -1> P = Map(mesh.positions()).colwise().homogeneous();
+        Eigen::Matrix<float, 4, -1> N = Map(normals.vector()).colwise().homogeneous();
 
         GLuint vpointBuffer, vconnBuffer, hconnBuffer, fconnBuffer, normalBuffer;
         glGenBuffers(1, &vpointBuffer);
@@ -262,10 +127,9 @@ namespace Bcg {
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, fconnBuffer);
         glBufferData(GL_SHADER_STORAGE_BUFFER, fconn.size() * sizeof(unsigned int), fconn.data(), GL_STATIC_DRAW);
 
-        std::vector<Vector<float, 4>> result(mesh.vertices_size());
         glGenBuffers(1, &normalBuffer);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, normalBuffer);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, result.size() * 4 * sizeof(float), nullptr, GL_DYNAMIC_DRAW);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, N.size() * sizeof(float), nullptr, GL_DYNAMIC_DRAW);
 
         GLuint program = CompileComputeShader(computeShaderSource);
         if (program == 0) {
@@ -289,7 +153,7 @@ namespace Bcg {
 
         // Retrieve the computed normals
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, normalBuffer);
-        glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, result.size() * 4 * sizeof(float), result.data());
+        glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, N.size() * sizeof(float), N.data());
 
         // Clean up
         glDeleteBuffers(1, &vpointBuffer);
@@ -299,15 +163,9 @@ namespace Bcg {
         glDeleteBuffers(1, &normalBuffer);
         glDeleteProgram(program);
 
-        for (size_t i = 0; i < result.size(); ++i) {
-            normals[Vertex(i)][0] = result[i][0];
-            normals[Vertex(i)][1] = result[i][1];
-            normals[Vertex(i)][2] = result[i][2];
-        }
-
+        Map(normals.vector()) = N.block(0, 0, 3, normals.vector().size());
         return normals;
     }
-
 
     FaceProperty<Vector<float, 3>> ComputeFaceNormals(SurfaceMesh &mesh) {
         const char *computeShaderSource = R"(

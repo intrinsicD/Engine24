@@ -33,10 +33,6 @@ namespace Bcg {
         void render() override;
     };
 
-    namespace Gui {
-        void ShowTransform(entt::entity entity_id);
 
-        void Show(Transform &transform);
-    }
 }
 #endif //ENGINE24_PLUGINTRANSFORM_H

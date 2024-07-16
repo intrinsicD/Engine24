@@ -22,11 +22,11 @@
 #include "SurfaceMesh/io/read_pmp.h"
 #include "Mesh.h"
 #include "Resources.h"
-#include "Camera.h"
+#include "Camera/Camera.h"
 #include "GuiUtils.h"
 #include "PropertiesGui.h"
 #include "Picker.h"
-#include "Transform.h"
+#include "Transform/Transform.h"
 #include "AABB.h"
 #include "glad/gl.h"
 
