@@ -41,7 +41,7 @@ namespace Bcg {
 
     Mouse &Input::set_mouse_cursor_position(GLFWwindow *window, double xpos, double ypos) {
         auto &mouse = Engine::Context().get<Mouse>();
-        mouse.cursor = {xpos, ypos};
+        mouse.cursor.screen_space = {xpos, ypos};
         return mouse;
     }
 

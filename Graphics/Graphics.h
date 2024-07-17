@@ -99,6 +99,8 @@ namespace Bcg {
 
         static bool read_depth_buffer(int x, int y, float &z);
 
+        static float dpi_scaling();
+
         //--------------------------------------------------------------------------------------------------------------
 
         static void setup_batched_buffer(BatchedBuffer &batched_buffer);

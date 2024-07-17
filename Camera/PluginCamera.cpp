@@ -8,12 +8,10 @@
 #include "Keyboard.h"
 #include "EventsCallbacks.h"
 #include "EventsKeys.h"
-#include "Timer.h"
 #include "Mouse.h"
 #include "Picker.h"
 #include "Graphics.h"
 #include "PluginFrameTimer.h"
-#include "MatVec.h"
 #include "Logger.h"
 #include "AABB.h"
 #include "Eigen/Geometry"
@@ -107,7 +105,7 @@ namespace Bcg {
         camera.v_params.dirty = true;
     }
 
-    static void translate(Camera &camera, int x, int y) {
+/*    static void translate(Camera &camera, int x, int y) {
         float dx = x - last_point_2d_[0];
         float dy = y - last_point_2d_[1];
 
@@ -124,6 +122,43 @@ namespace Bcg {
 
         translate(camera, Vector<float, 3>(2.0 * dx / w * right / camera.p_params.zNear * z,
                                            -2.0 * dy / h * up / camera.p_params.zNear * z, 0.0f));
+    }*/
+
+    static void translate(Camera &camera, int x, int y) {
+        float dx = x - last_point_2d_[0];
+        float dy = y - last_point_2d_[1];
+
+        //translate the camera in worldspace in the image plane
+        Vector<float, 3> front = camera.v_params.front();
+        Vector<float, 3> right = camera.v_params.right(front);
+        Vector<float, 3> up = camera.v_params.up;
+        Vector<float, 3> center = camera.v_params.center;
+        Vector<float, 3> eye = camera.v_params.eye;
+
+        float distance_to_scene = (center - eye).norm();
+        // Project the change in screen coordinates to world coordinates
+        auto vp = Graphics::get_viewport();
+        float viewport_width = vp[2];
+        float viewport_height = vp[3];
+        float fov = camera.p_params.fovy; // Field of view in radians
+
+        // Compute the scale factors for screen to world space translation
+        float aspect_ratio = viewport_width / viewport_height;
+        float half_fov_y = fov / 2.0;
+        float half_fov_x = std::atan(std::tan(half_fov_y) * aspect_ratio);
+
+        float world_dx = dx / viewport_width * 2 * std::tan(half_fov_x) * distance_to_scene;
+        float world_dy = dy / viewport_height * 2 * std::tan(half_fov_y) * distance_to_scene;
+
+        // Translate the camera in world space
+        Vector<float, 3> translation = up * world_dy - right * world_dx;
+        camera.v_params.center += translation;
+        camera.v_params.eye += translation;
+        camera.v_params.dirty = true;
+
+        // Update the last_point_2d_ to the current cursor position
+        last_point_2d_[0] = x;
+        last_point_2d_[1] = y;
     }
 
     static void on_mouse_cursor(const Events::Callback::MouseCursor &event) {
@@ -159,10 +194,9 @@ namespace Bcg {
         if (event.action) {
             auto &picked = Engine::Context().get<Picked>();
             auto &camera = Engine::Context().get<Camera>();
-            auto diff = camera.v_params.eye - camera.v_params.center;
-
+            Vector<float, 3> diff = camera.v_params.center - camera.v_params.eye;
             camera.v_params.center = picked.world_space_point;
-            camera.v_params.eye = camera.v_params.center + diff;
+            camera.v_params.eye = camera.v_params.center - diff.normalized() * diff.norm();
             camera.v_params.dirty = true;
             Log::Info("Focus onto: (" + std::to_string(camera.v_params.center[0]) + ", " +
                       std::to_string(camera.v_params.center[1]) + ", " + std::to_string(camera.v_params.center[2]) +
@@ -177,9 +211,9 @@ namespace Bcg {
             if (Engine::valid(picked.entity.id)) {
                 auto &aabb = Engine::State().get<AABB<float>>(picked.entity.id);
                 float d = aabb.diagonal().maxCoeff() / tan(camera.p_params.fovy / 2.0);
+                Vector<float, 3> front = camera.v_params.front();
                 camera.v_params.center = aabb.center();
-                camera.v_params.eye = camera.v_params.center + Vector<float, 3>(0.0, 0.0, d);
-                camera.v_params.up = camera.v_params.center + Vector<float, 3>(0.0, 1.0, 0);
+                camera.v_params.eye = camera.v_params.center - front * d;
                 camera.v_params.dirty = true;
                 Log::Info("Center onto: (" + std::to_string(camera.v_params.center[0]) + ", " +
                           std::to_string(camera.v_params.center[1]) + ", " + std::to_string(camera.v_params.center[2]) +
@@ -232,7 +266,7 @@ namespace Bcg {
         auto &camera = Engine::Context().get<Camera>();
         auto &keyboard = Engine::Context().get<Keyboard>();
         auto dt = PluginFrameTimer::delta();
-        Vector<float, 3> front = (camera.v_params.center - camera.v_params.eye).normalized();
+        Vector<float, 3> front = camera.v_params.front();
         if (keyboard.w()) {
             translate(camera, front * dt);
             camera.v_params.dirty = true;
@@ -241,7 +275,7 @@ namespace Bcg {
             translate(camera, -front * dt);
             camera.v_params.dirty = true;
         }
-        Vector<float, 3> right = cross(front, camera.v_params.up).normalized();
+        Vector<float, 3> right = camera.v_params.right(front);
         if (keyboard.a()) {
             translate(camera, -right * dt);
             camera.v_params.dirty = true;

@@ -25,7 +25,6 @@ namespace Bcg {
         int WIDTH = 800, HEIGHT = 600;
         GLFWwindow *handle = nullptr;
         int version = 0;
-        float dpi = 1.5;
         ImGuiContext *imgui_context = nullptr;
         bool show_window_gui = false;
         bool show_buffer_gui = false;
@@ -178,8 +177,10 @@ namespace Bcg {
             ImGui_ImplGlfw_InitForOpenGL(glfwGetCurrentContext(), true);
             ImGui_ImplOpenGL3_Init();
 
-            load_fonts(io, global_window.dpi);
-            ImGui::GetStyle().ScaleAllSizes(global_window.dpi);
+            float dpi = dpi_scaling();
+
+            load_fonts(io, dpi);
+            ImGui::GetStyle().ScaleAllSizes(dpi);
         }
 
         glViewport(0, 0, global_window.WIDTH, global_window.HEIGHT);
@@ -290,6 +291,12 @@ namespace Bcg {
         // read depth buffer value at (x, y_new)
         glReadPixels(x, y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &zf);
         return zf != 1.0f;
+    }
+
+    float Graphics::dpi_scaling() {
+        float dpi_scaling_factor;
+        glfwGetWindowContentScale(global_window.handle, &dpi_scaling_factor, &dpi_scaling_factor);
+        return dpi_scaling_factor;
     }
 
     //------------------------------------------------------------------------------------------------------------------

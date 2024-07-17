@@ -14,9 +14,25 @@ namespace Bcg {
         Vector<float, 3> center = {0.0, 0.0, 0.0};
         Vector<float, 3> up = {0.0, 1.0, 0.0};
         bool dirty = false;
+
+        inline Vector<float, 3> front() const {
+            return (center - eye).normalized();
+        }
+
+        inline Vector<float, 3> right() const {
+            return right(front());
+        }
+
+        inline Vector<float, 3> right(const Vector<float, 3> &front_) const {
+            return cross(front_, up).normalized();
+        }
+
+        inline float distance_to_center() const {
+            return (center - eye).norm();
+        }
     };
 
-    class ViewMatrix : public Transform{
+    class ViewMatrix : public Transform {
     public:
         explicit ViewMatrix(const Transform &model) : Transform(model.inverse().matrix()) {
 
@@ -32,7 +48,7 @@ namespace Bcg {
             t.SetDir((center - eye).normalized());
             t.SetRight(t.Up().cross(t.Dir()));
             t.SetPosition(-eye);
-            m_matrix = t.matrix().inverse();
+            m_matrix = t.matrix();
         }
 
         [[nodiscard]] Transform model() const {
@@ -58,7 +74,7 @@ namespace Bcg {
         bool dirty = false;
     };
 
-    class ProjectionMatrix{
+    class ProjectionMatrix {
     public:
         explicit ProjectionMatrix(const PerspParameters &params) : ProjectionMatrix(params.fovy, params.aspect,
                                                                                     params.zNear, params.zFar) {

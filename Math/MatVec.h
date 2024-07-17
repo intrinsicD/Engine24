@@ -17,9 +17,11 @@ namespace Bcg {
     template<typename T, int M, int N>
     using Matrix = Eigen::Matrix<T, M, N>;
 
-    template<typename Scalar, typename S>
-    Scalar SafeNormalize(const Scalar &element, S length, S epsilon = 1e-8) {
-        return element / (length + epsilon);
+
+
+    template<typename T, int N>
+    Vector<T, N> SafeNormalize(const Vector<T, N> &v, T length, T epsilon = 1e-6) {
+        return v / std::max(length, epsilon);
     }
 
     //! compute perpendicular vector (rotate vector counter-clockwise by 90 degrees)
