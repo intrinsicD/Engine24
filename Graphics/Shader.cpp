@@ -218,6 +218,14 @@ namespace Bcg {
         glUniformBlockBinding(id, get_uniform_block_index(name), binding_point);
     }
 
+    void Program::set_uniform3fv(const std::string &name, const float *ptr){
+        int loc = get_uniform_location(name);
+
+        if(loc != -1){
+            glUniform3fv(loc, 1, ptr);
+        }
+    }
+
     bool ComputeShaderProgram::create_from_source(const std::string &cs) {
         if(id == -1) {
             create();

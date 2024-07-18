@@ -11,14 +11,14 @@
 namespace Bcg {
     template<typename T>
     struct AABB {
-        Vector<float, 3> min = Vector<float, 3>::Constant(std::numeric_limits<float>::max());
-        Vector<float, 3> max = Vector<float, 3>::Constant(-std::numeric_limits<float>::max());
+        Vector<T, 3> min = Vector<T, 3>::Constant(std::numeric_limits<T>::max());
+        Vector<T, 3> max = Vector<T, 3>::Constant(-std::numeric_limits<T>::max());
 
-        Vector<float, 3> diagonal() const {
+        Vector<T, 3> diagonal() const {
             return max - min;
         }
 
-        Vector<float, 3> half_extent() const {
+        Vector<T, 3> half_extent() const {
             return diagonal() / 2;
         }
 

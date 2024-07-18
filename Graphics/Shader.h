@@ -78,6 +78,8 @@ namespace Bcg {
         unsigned int get_uniform_block_index(const std::string &name);
 
         void bind_uniform_block(const std::string &name, unsigned int binding_point);
+
+        void set_uniform3fv(const std::string &name, const float *ptr);
     };
 
     struct ComputeShaderProgram : public Program {

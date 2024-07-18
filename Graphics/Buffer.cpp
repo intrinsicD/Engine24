@@ -22,7 +22,8 @@ namespace Bcg {
         glBindBuffer(target, 0);
     }
 
-    void Buffer::buffer_data(const void *data, unsigned int size_bytes, unsigned int usage) {
+    void Buffer::buffer_data(const void *data, unsigned int size_bytes, unsigned int usage_) {
+        usage = static_cast<Usage>(usage_);
         glBufferData(target, size_bytes, data, usage);
     }
 
@@ -52,5 +53,10 @@ namespace Bcg {
 
     UniformBuffer::UniformBuffer() {
         target = GL_UNIFORM_BUFFER;
+    }
+
+    void UniformBuffer::bind_base(unsigned int index) {
+        binding_point = index;
+        glBindBufferBase(target, index, id);
     }
 }

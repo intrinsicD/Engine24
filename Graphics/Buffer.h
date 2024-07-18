@@ -5,6 +5,10 @@
 #ifndef ENGINE24_BUFFER_H
 #define ENGINE24_BUFFER_H
 
+#include <unordered_map>
+#include <string>
+#include <algorithm>
+
 namespace Bcg{
     struct Buffer {
         unsigned int id = -1;
@@ -20,7 +24,7 @@ namespace Bcg{
             DYNAMIC_DRAW = 0x88E8,
             DYNAMIC_READ = 0x88E9,
             DYNAMIC_COPY = 0x88EA
-        };
+        }usage;
 
         void create();
 
@@ -52,7 +56,52 @@ namespace Bcg{
     };
 
     struct UniformBuffer : public Buffer{
+        unsigned int binding_point = -1;
+
         UniformBuffer();
+
+        void bind_base(unsigned int index);
+    };
+
+    struct BufferLayout{
+        [[nodiscard]] unsigned int total_size_bytes() const {
+            unsigned int size_in_bytes = 0;
+            for (const auto &item: layout) {
+                size_in_bytes += item.second.size_in_bytes;
+            }
+            return size_in_bytes;
+        }
+
+        struct Layout {
+            const char *name{};
+            unsigned int size_in_bytes = 0;
+            unsigned int dims = 0;          //3
+            unsigned int size = 0;          //sizeof(float)
+            unsigned int normalized = 0;
+            unsigned int offset = 0;
+            const void *data{};
+
+            [[nodiscard]] unsigned int stride() const {
+                return size * dims;
+            }
+        };
+
+        Layout &get_or_add(const char *name) {
+            auto iter = std::find_if(layout.begin(), layout.end(), [name](auto &&item) {
+                return item.second.name == name;
+            });
+
+            if (iter == layout.end()) {
+                Layout item;
+                item.name = name;
+                item.offset = total_size_bytes();
+                return layout.emplace(name, item).first->second;
+            }
+
+            return layout[name];
+        }
+
+        std::unordered_map<std::string, Layout> layout;
     };
 }
 

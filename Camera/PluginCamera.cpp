@@ -15,7 +15,6 @@
 #include "Logger.h"
 #include "AABB.h"
 #include "Eigen/Geometry"
-#include "glad/gl.h"
 #include "CameraGui.h"
 
 namespace Bcg {
@@ -89,40 +88,12 @@ namespace Bcg {
             }
         }
     }
-
-/*    static void translate(Camera &camera, const Vector<float, 3> &t) {
-        camera.view = translation_matrix(t) * camera.view;
-        Matrix<float, 4, 4> inv_view = camera.view.inverse();
-        camera.dirty_view = true;
-
-        camera.v_params.eye = inv_view.block<3, 1>(0, 3);
-        camera.v_params.center -= t;
-    }*/
-
+    
     static void translate(Camera &camera, const Vector<float, 3> &t) {
         camera.v_params.eye = (translation_matrix(t) * camera.v_params.eye.homogeneous()).head<3>();
         camera.v_params.center = (translation_matrix(t) * camera.v_params.center.homogeneous()).head<3>();
         camera.v_params.dirty = true;
     }
-
-/*    static void translate(Camera &camera, int x, int y) {
-        float dx = x - last_point_2d_[0];
-        float dy = y - last_point_2d_[1];
-
-        auto vp = Graphics::get_viewport();
-        double w = vp[2];
-        double h = vp[3];
-
-        Vector<float, 4> ec = camera.view * camera.v_params.center.homogeneous();
-        float z = (ec[2] / ec[3]);
-
-        float aspect = (float) w / (float) h;
-        float up = tan(camera.p_params.fovy / 2.0f * std::numbers::pi / 180.f) * camera.p_params.zNear;
-        float right = aspect * up;
-
-        translate(camera, Vector<float, 3>(2.0 * dx / w * right / camera.p_params.zNear * z,
-                                           -2.0 * dy / h * up / camera.p_params.zNear * z, 0.0f));
-    }*/
 
     static void translate(Camera &camera, int x, int y) {
         float dx = x - last_point_2d_[0];
@@ -247,12 +218,11 @@ namespace Bcg {
         }
         if (!Engine::Context().find<CameraUniformBuffer>()) {
             auto &ubo = Engine::Context().emplace<CameraUniformBuffer>();
-            glGenBuffers(1, &ubo.id);
-            glBindBuffer(GL_UNIFORM_BUFFER, ubo.id);
-            glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(Matrix<float, 4, 4>), NULL, GL_STATIC_DRAW);
-            glBindBuffer(GL_UNIFORM_BUFFER, 0);
-            // Bind the UBO to the binding point
-            glBindBufferBase(GL_UNIFORM_BUFFER, ubo.binding_point, ubo.id);
+            ubo.create();
+            ubo.bind();
+            ubo.buffer_data(nullptr, 2 * sizeof(Matrix<float, 4, 4>), Bcg::Buffer::Usage::STATIC_DRAW);
+            ubo.unbind();
+            ubo.bind_base(0);
         }
         Engine::Dispatcher().sink<Events::Callback::MouseCursor>().connect<&on_mouse_cursor>();
         Engine::Dispatcher().sink<Events::Callback::MouseScroll>().connect<&on_mouse_scroll>();
@@ -311,17 +281,17 @@ namespace Bcg {
             }
         }
 
-        glBindBuffer(GL_UNIFORM_BUFFER, ubo.id);
+        ubo.bind();
         if (camera.dirty_view) {
-            glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(camera.view), camera.view.data());
+            ubo.buffer_sub_data(camera.view.data(), sizeof(camera.view));
             camera.dirty_view = false;
         }
 
         if (camera.dirty_proj) {
-            glBufferSubData(GL_UNIFORM_BUFFER, sizeof(camera.view), sizeof(camera.proj), camera.proj.data());
+            ubo.buffer_sub_data(camera.proj.data(), sizeof(camera.proj), sizeof(camera.view));
             camera.dirty_proj = false;
         }
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+        ubo.unbind();
     }
 
     void PluginCamera::end_frame() {
@@ -331,7 +301,7 @@ namespace Bcg {
     void PluginCamera::deactivate() {
         if (Engine::Context().find<CameraUniformBuffer>()) {
             auto &ubo = Engine::Context().get<CameraUniformBuffer>();
-            glDeleteBuffers(1, &ubo.id);
+            ubo.destroy();
         }
         Engine::Context().erase<CameraUniformBuffer>();
         Engine::Dispatcher().sink<Events::Callback::MouseCursor>().disconnect<&on_mouse_cursor>();

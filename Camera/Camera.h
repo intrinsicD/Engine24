@@ -6,6 +6,7 @@
 #define ENGINE24_CAMERA_H
 
 #include "Transform.h"
+#include "Buffer.h"
 
 namespace Bcg {
 
@@ -149,9 +150,8 @@ namespace Bcg {
         bool dirty_proj = true;
     };
 
-    struct CameraUniformBuffer {
-        unsigned int id = 0;
-        unsigned int binding_point = 0;
+    struct CameraUniformBuffer : public UniformBuffer{
+
     };
 
 //! OpenGL viewport matrix with parameters left, bottom, width, height

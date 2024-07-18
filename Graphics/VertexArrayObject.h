@@ -9,6 +9,12 @@ namespace Bcg {
     struct VertexArrayObject {
         unsigned int id;
 
+        enum AttributeType {
+            FLOAT = 0x1406,
+            UNSIGNED_INT = 0x1405,
+            UNSIGNED_BYTE = 0x1401
+        };
+
         VertexArrayObject();
 
         void create();

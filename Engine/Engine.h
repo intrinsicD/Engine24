@@ -11,10 +11,10 @@ namespace Bcg {
     struct Engine {
         Engine();
 
-        static bool valid(entt::entity &entity);
+        static bool valid(entt::entity entity);
 
         template<typename Component>
-        static bool has(entt::entity &entity) {
+        static bool has(entt::entity entity) {
             return State().all_of<Component>(entity);
         }
 

@@ -8,8 +8,6 @@
 #include "SurfaceMesh.h"
 
 namespace Bcg {
-    using Mesh = SurfaceMesh;
-
     FaceProperty<Vector<unsigned int, 3>> extract_triangle_list(SurfaceMesh &mesh);
 
     void extract_triangle_list(SurfaceMesh &mesh, std::vector<float> &vertices,

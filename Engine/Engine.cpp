@@ -10,7 +10,7 @@ namespace Bcg {
         assert(Instance() == this);
     }
 
-    bool Engine::valid(entt::entity &entity) {
+    bool Engine::valid(entt::entity entity) {
         return State().valid(entity);
     }
 

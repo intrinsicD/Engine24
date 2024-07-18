@@ -13,10 +13,16 @@
 
 namespace Bcg{
 
+    static void on_construct_entity(entt::registry &registry, entt::entity entity_id){
+        Engine::Context().get<Picked>().entity.id = entity_id;
+    }
+
     PluginPicker::PluginPicker() : Plugin("PluginPicker") {
         if (!Engine::Context().find<Picked>()) {
             Engine::Context().emplace<Picked>();
         }
+
+        Engine::State().on_construct<entt::entity>().connect<&on_construct_entity>();
     }
 
     Picked &PluginPicker::pick(double x, double y) {

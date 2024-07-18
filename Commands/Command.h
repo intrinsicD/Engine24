@@ -10,7 +10,7 @@
 
 namespace Bcg {
     struct AbstractCommand {
-        explicit AbstractCommand(const char *name) : name(name) {}
+        explicit AbstractCommand(const std::string &name) : name(name) {}
 
         virtual ~AbstractCommand() = default;
 
@@ -18,11 +18,11 @@ namespace Bcg {
 
         virtual void execute() const = 0;
 
-        const char *name;
+        std::string name;
     };
 
     struct Task : public AbstractCommand {
-        Task(const char *name, std::function<void()> &callback) : AbstractCommand(name), callback(callback) {}
+        Task(const std::string &name, std::function<void()> &callback) : AbstractCommand(name), callback(callback) {}
 
         ~Task() override = default;
 
@@ -36,7 +36,7 @@ namespace Bcg {
     };
 
     struct CompositeCommand : public AbstractCommand {
-        explicit CompositeCommand(const char *name) : AbstractCommand(name) {}
+        explicit CompositeCommand(const std::string &name) : AbstractCommand(name) {}
 
         ~CompositeCommand() override = default;
 

@@ -5,13 +5,14 @@
 #include "VertexArrayObject.h"
 #include "glad/gl.h"
 
-namespace Bcg{
+namespace Bcg {
     VertexArrayObject::VertexArrayObject() {
         id = 0;
     }
 
     void VertexArrayObject::create() {
         glGenVertexArrays(1, &id);
+
     }
 
     void VertexArrayObject::destroy() {
@@ -26,15 +27,16 @@ namespace Bcg{
         glBindVertexArray(0);
     }
 
-    void VertexArrayObject::setAttribute(unsigned int index, unsigned int size, unsigned int type, bool normalized, unsigned int stride, const void *pointer){
+    void VertexArrayObject::setAttribute(unsigned int index, unsigned int size, unsigned int type, bool normalized,
+                                         unsigned int stride, const void *pointer) {
         glVertexAttribPointer(index, size, type, normalized, stride, pointer);
     }
 
-    void VertexArrayObject::enableAttribute(unsigned int index){
+    void VertexArrayObject::enableAttribute(unsigned int index) {
         glEnableVertexAttribArray(index);
     }
 
-    void VertexArrayObject::disableAttribute(unsigned int index){
+    void VertexArrayObject::disableAttribute(unsigned int index) {
         glDisableVertexAttribArray(index);
     }
 }

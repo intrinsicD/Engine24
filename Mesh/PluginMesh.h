@@ -22,17 +22,17 @@ namespace Bcg {
 
         static void setup(SurfaceMesh &mesh, entt::entity entity_id = entt::null);
 
-        static SurfaceMesh load(const char *path);
+        static SurfaceMesh load(const std::string &path);
 
-        static SurfaceMesh load_obj(const char *path);
+        static SurfaceMesh load_obj(const std::string &path);
 
-        static SurfaceMesh load_off(const char *path);
+        static SurfaceMesh load_off(const std::string &path);
 
-        static SurfaceMesh load_stl(const char *path);
+        static SurfaceMesh load_stl(const std::string &path);
 
-        static SurfaceMesh load_ply(const char *path);
+        static SurfaceMesh load_ply(const std::string &path);
 
-        static SurfaceMesh load_pmp(const char *path);
+        static SurfaceMesh load_pmp(const std::string &path);
 
         static void merge_vertices(SurfaceMesh &mesh, float tol);
 

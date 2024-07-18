@@ -10,7 +10,6 @@
 #include "imgui.h"
 #include "ImGuiFileDialog.h"
 #include "Engine.h"
-#include "Graphics.h"
 #include "EventsCallbacks.h"
 #include "MeshCompute.h"
 #include <chrono>
@@ -26,20 +25,11 @@
 #include "PropertiesGui.h"
 #include "Picker.h"
 #include "VertexArrayObject.h"
-#include "Shader.h"
-#include "Buffer.h"
+#include "Views.h"
 #include "AABB.h"
-#include "glad/gl.h"
+#include "MeshCommands.h"
 
 namespace Bcg {
-    struct MeshView {
-        VertexArrayObject vao;
-        ElementArrayBuffer ebo;
-        unsigned int vbo;
-        Program program;
-        unsigned int num_indices;
-    };
-
     void PluginMesh::setup(SurfaceMesh &mesh, entt::entity entity_id) {
         if (entity_id == entt::null) {
             entity_id = Engine::State().create();
@@ -50,11 +40,9 @@ namespace Bcg {
         if (!mw) {
             mw = &Engine::State().emplace<MeshView>(entity_id);
             mw->vao.create();
-            glGenBuffers(1, &mw->vbo);
+            mw->vbo.create();
             mw->ebo.create();
         }
-
-
     }
 
     static MeshView Setup(SurfaceMesh &mesh) {
@@ -77,9 +65,32 @@ namespace Bcg {
         glBufferSubData(GL_ARRAY_BUFFER, size_in_bytes_vertices, size_in_bytes_vertices, v_normals.data());
 */
 
+        BufferLayout batched_buffer;
 
+        auto &gpu_pos = batched_buffer.get_or_add(mesh.vpoint_.name().c_str());
+        gpu_pos.size_in_bytes = size_in_bytes_vertices;
+        gpu_pos.dims = 3;
+        gpu_pos.size = sizeof(float);
+        gpu_pos.normalized = false;
+        gpu_pos.offset = 0;
+        gpu_pos.data = mesh.positions().data();
 
-        BatchedBuffer batched_buffer;
+        auto &gpu_v_normals = batched_buffer.get_or_add(v_normals.name().c_str());
+        gpu_v_normals.size_in_bytes = size_in_bytes_vertices;
+        gpu_v_normals.dims = 3;
+        gpu_v_normals.size = sizeof(float);
+        gpu_v_normals.normalized = false;
+        gpu_v_normals.offset = size_in_bytes_vertices;
+        gpu_v_normals.data = v_normals.data();
+
+        mw.vbo.create();
+        mw.vbo.bind();
+        mw.vbo.buffer_data(nullptr, batched_buffer.total_size_bytes(), Buffer::Usage::STATIC_DRAW);
+        for (const auto &[name, item]: batched_buffer.layout) {
+            mw.vbo.buffer_sub_data(item.data, item.size_in_bytes, item.offset);
+        }
+
+        /*BatchedBuffer batched_buffer;
         batched_buffer.usage = GL_STATIC_DRAW;
         batched_buffer.target = GL_ARRAY_BUFFER;
         batched_buffer.type = GL_FLOAT;
@@ -101,61 +112,13 @@ namespace Bcg {
         gpu_v_normals.data = v_normals.data();
 
         Graphics::setup_batched_buffer(batched_buffer);
-        glBindBuffer(batched_buffer.target, batched_buffer.id);
+        glBindBuffer(batched_buffer.target, batched_buffer.id);*/
 
-        auto triangles = extract_triangle_list(mesh);
-        mw.ebo.create();
-        mw.ebo.bind();
 
-        mw.ebo.buffer_data(triangles.data(), mw.num_indices * sizeof(unsigned int), GL_STATIC_DRAW);
-
-        const char *vertex_shader_src = "#version 330 core\n"
-                                        "layout (location = 0) in vec3 aPos;\n"
-                                        "layout (location = 1) in vec3 aNormal;\n"
-                                        "layout (std140) uniform Camera {\n"
-                                        "    mat4 view;\n"
-                                        "    mat4 projection;\n"
-                                        "};\n"
-                                        "out vec3 f_normal;\n"
-                                        "out vec3 f_color;\n"
-                                        "void main()\n"
-                                        "{\n"
-                                        "   f_normal = mat3(transpose(inverse(view))) * aNormal;\n"
-                                        "   gl_Position = projection * view * vec4(aPos, 1.0);\n"
-                                        "}\0";
-
-        const char *fragment_shader_src = "#version 330 core\n"
-                                          "in vec3 f_normal;\n"
-                                          "out vec4 FragColor;\n"
-                                          "uniform vec3 lightDir;\n"
-                                          "void main()\n"
-                                          "{\n"
-                                          "   // Normalize the input normal\n"
-                                          "   vec3 normal = normalize(f_normal);\n"
-                                          "   // Calculate the diffuse intensity\n"
-                                          "   float diff = max(dot(normal, normalize(lightDir)), 0.0);\n"
-                                          "   // Define the base color\n"
-                                          "   vec3 baseColor = vec3(1.0f, 0.5f, 0.2f);\n"
-                                          "   // Calculate the final color\n"
-                                          "   vec3 finalColor = diff * baseColor;\n"
-                                          "   FragColor = vec4(normal, 1.0f);\n"
-                                          "}\n\0";
-
-        mw.program.create_from_source(vertex_shader_src, fragment_shader_src);
-        mw.vao.setAttribute(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *) 0);
-        mw.vao.enableAttribute(0);
-
-        mw.vao.setAttribute(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *) size_in_bytes_vertices);
-        mw.vao.enableAttribute(1);
-
-        // Get the index of the uniform block
-        auto &camera_ubi = Engine::Context().get<CameraUniformBuffer>();
-        mw.program.bind_uniform_block("Camera", camera_ubi.binding_point);
-        mw.vao.unbind();
         return mw;
     }
 
-    SurfaceMesh PluginMesh::load(const char *path) {
+    SurfaceMesh PluginMesh::load(const std::string &path) {
         std::string ext = path;
         ext = ext.substr(ext.find_last_of('.') + 1);
         SurfaceMesh mesh;
@@ -170,50 +133,53 @@ namespace Bcg {
         } else if (ext == "pmp") {
             mesh = load_pmp(path);
         } else {
-            Log::Error((std::string("Unsupported file format: ") + ext).c_str());
+            Log::Error("Unsupported file format: " + ext);
             return {};
         }
-        std::string message = "Loaded Mesh";
+        auto entity_id = Engine::State().create();
+        Engine::State().emplace_or_replace<SurfaceMesh>(entity_id, mesh);
+        Commands::Mesh::SetupForRendering(entity_id).execute();
+
+/*        std::string message = "Loaded Mesh";
         message += " #v: " + std::to_string(mesh.n_vertices());
         message += " #e: " + std::to_string(mesh.n_edges());
         message += " #h: " + std::to_string(mesh.n_halfedges());
         message += " #f: " + std::to_string(mesh.n_faces());
         Log::Info(message);
 
+
         auto mw = Setup(mesh);
-        auto entity_id = Engine::State().create();
         Engine::State().emplace<MeshView>(entity_id, mw);
         Engine::State().emplace<Transform>(entity_id, Transform::Identity());
-        Engine::Context().get<Picked>().entity.id = entity_id;
         auto &aabb = Engine::State().emplace<AABB<float>>(entity_id);
-        Build(aabb, mesh.positions());
+        Build(aabb, mesh.positions());*/
 
         return mesh;
     }
 
-    SurfaceMesh PluginMesh::load_obj(const char *path) {
+    SurfaceMesh PluginMesh::load_obj(const std::string &path) {
         SurfaceMesh mesh;
         read_obj(mesh, path);
         return mesh;
     }
 
-    SurfaceMesh PluginMesh::load_off(const char *path) {
+    SurfaceMesh PluginMesh::load_off(const std::string &path) {
         SurfaceMesh mesh;
         read_off(mesh, path);
         return mesh;
     }
 
-    SurfaceMesh PluginMesh::load_stl(const char *path) {
+    SurfaceMesh PluginMesh::load_stl(const std::string &path) {
         SurfaceMesh mesh;
         read_stl(mesh, path);
         merge_vertices(mesh, 0.0001f);
         return mesh;
     }
 
-    SurfaceMesh PluginMesh::load_ply(const char *path) {
+    SurfaceMesh PluginMesh::load_ply(const std::string &path) {
         std::ifstream file(path);
         if (!file.is_open()) {
-            Log::Error((std::string("Failed to open PLY file: ") + path).c_str());
+            Log::Error("Failed to open PLY file: " + path);
             return {};
         }
 
@@ -267,7 +233,7 @@ namespace Bcg {
         return mesh;
     }
 
-    SurfaceMesh PluginMesh::load_pmp(const char *path) {
+    SurfaceMesh PluginMesh::load_pmp(const std::string &path) {
         SurfaceMesh mesh;
         read_pmp(mesh, path);
         return mesh;
@@ -290,7 +256,7 @@ namespace Bcg {
 
             float tol;
 
-            VertexEqual(float t) : tol(t) {}
+            explicit VertexEqual(float t) : tol(t) {}
         };
 
         std::unordered_map<Point, Vertex, VertexHash, VertexEqual> vertexMap(10, VertexHash(),
@@ -431,7 +397,7 @@ namespace Bcg {
                 std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
                 std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
                 // action
-                auto mesh = PluginMesh::load(filePathName.c_str());
+                auto mesh = PluginMesh::load(filePathName);
             }
 
             // close
@@ -454,12 +420,9 @@ namespace Bcg {
 
             mw.vao.bind();
             mw.program.use();
+            mw.program.set_uniform3fv("lightDir", lightDirection.data());
 
-            int lightDirLoc = mw.program.get_uniform_location("lightDir");
-
-            // Set the uniform
-            glUniform3fv(lightDirLoc, 1, lightDirection.data());
-            glDrawElements(GL_TRIANGLES, mw.num_indices, GL_UNSIGNED_INT, 0);
+            mw.draw();
         }
     }
 }
