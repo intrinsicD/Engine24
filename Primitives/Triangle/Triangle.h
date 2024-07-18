@@ -9,8 +9,14 @@
 
 namespace Bcg {
     template<typename T>
-    struct Triangle {
-        Vector<T, 3> u, v, w;
+    struct TriangleBase {
+        union{
+            Vector<T, 3> u, v, w;
+            Matrix<T, 3, 3> matrix;
+            Vector<T, 3> array[3];
+            std::vector<Vector<T, 3>> vector;
+        }vertices;
+
 
         static T area(const Vector<T, 3> vu, const Vector<T, 3> &wu) {
             return cross(vu, wu).norm();
@@ -46,7 +52,7 @@ namespace Bcg {
             return result;
         }
 
-        static Vector<T, 3> from_barycentric_coordinites(const Vector<T, 3> &u,
+        static Vector<T, 3> from_barycentric_coordinates(const Vector<T, 3> &u,
                                                          const Vector<T, 3> &v,
                                                          const Vector<T, 3> &w,
                                                          const Vector<T, 3> &bc) {
@@ -75,70 +81,34 @@ namespace Bcg {
             }
             return clamped;
         }
+
+        std::vector<Vector<float, 3>> Edges() const {
+            return {vertices.v - vertices.u, vertices.w - vertices.v, vertices.u - vertices.w};
+        }
     };
 
-    template<typename T>
-    Vector<T, 3> vu(const Triangle<T> &triangle) {
-        return triangle.v - triangle.u;
-    }
+    using Trianglef = TriangleBase<float>;
+    using Triangle = Trianglef;
 
-    template<typename T>
-    Vector<T, 3> wu(const Triangle<T> &triangle) {
-        return triangle.w - triangle.u;
-    }
+    Vector<float, 3> VU(const Triangle &triangle);
 
-    template<typename T>
-    Vector<T, 3> wv(const Triangle<T> &triangle) {
-        return triangle.w - triangle.v;
-    }
+    Vector<float, 3> WU(const Triangle &triangle) ;
 
-    template<typename T>
-    T area(const Triangle<T> &triangle) {
-        return Triangle<T>::area(vu(triangle), wu(triangle));
-    }
+    Vector<float, 3> WV(const Triangle &triangle);
 
-    template<typename T>
-    Vector<T, 3> to_barycentric_coordinates(const Triangle<T> &triangle, const Vector<T, 3> &point) {
-        return Triangle<T>::to_barycentric_coordinates(vu(triangle), wu(triangle), point - triangle.u,
-                                                       Triangle<T>::normal(triangle));
-    }
+    float Area(const Triangle &triangle);
 
-    template<typename T>
-    Vector<T, 3> from_barycentric_coordinites(const Triangle<T> &triangle, const Vector<T, 3> &bc) {
-        return Triangle<T>::from_barycentric_coordinites(triangle.u, triangle.v, triangle.w, bc);
-    }
+    Vector<float, 3> Normal(const Triangle &triangle);
 
-    template<typename T>
-    Vector<T, 3> normal(const Triangle<T> &triangle) {
-        return Triangle<T>::normal(vu(triangle), wu(triangle));
-    }
+    Vector<float, 3> ToBarycentricCoordinates(const Triangle &triangle, const Vector<float, 3> &point) ;
 
-    template<typename T>
-    T distance(const Triangle<T> &triangle, const Vector<T, 3> &point) {
-        Vector<T, 3> vu_ = vu(triangle);
-        Vector<T, 3> wu_ = wu(triangle);
-        Vector<T, 3> n = Triangle<T>::normal(vu_, wu_);
+    Vector<float, 3> FromBarycentricCoordinates(const Triangle &triangle, const Vector<float, 3> &bc) ;
 
-        Vector<T, 3> bary = Triangle<T>::to_barycentric_coordinates(vu_, wu_, point - triangle.u, n);
-        bary = Triangle<T>::clamped_barycentric_coordinates(bary);
-        Vector<T, 3> closest = from_barycentric_coordinates(triangle, bary);
+    float Distance(const Triangle &triangle, const Vector<float, 3> &point);
 
-        Vector<T, 3> diff = point - closest;
-        T sign = n.dot(diff);
-        return sign > 0 ? diff.norm() : -diff.norm();
-    }
+    float UnsignedDistance(const Triangle &triangle, const Vector<float, 3> &point);
 
-    template<typename T>
-    T unsigned_distance(const Triangle<T> &triangle, const Vector<T, 3> &point) {
-        return std::abs(Triangle<T>::distance(triangle, point));
-    }
-
-    template<typename T>
-    Vector<T, 3> closest_point(const Triangle<T> &triangle, const Vector<T, 3> &point) {
-        Vector<T, 3> bary = to_barycentric_coordinates(triangle, point);
-        bary = Triangle<T>::clamped_barycentric_coordinates(bary);
-        return from_barycentric_coordinates(triangle, bary);
-    }
+    Vector<float, 3> ClosestPoint(const Triangle &triangle, const Vector<float, 3> &point);
 }
 
 #endif //ENGINE24_TRIANGLE_H

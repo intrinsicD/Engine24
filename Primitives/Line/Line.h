@@ -7,20 +7,28 @@
 
 #include "MatVec.h"
 
-namespace Bcg{
+namespace Bcg {
     template<typename T>
-    struct Line {
+    struct LineBase {
         Vector<T, 3> start;
-        Vector<T, 3> vec_to_end;
+        Vector<T, 3> end;
 
-        static T parameter(const Vector<T, 3> &vec_to_end, const Vector<T, 3> start_to_point) {
-            return start_to_point.dot(vec_to_end) / vec_to_end.dot(vec_to_end);
+        Vector<T, 3> vec_to_end() const {
+            return end - start;
         }
 
-        static Vector<T, 3> closest_point(const Vector<T, 3> start, const Vector<T, 3> &vec_to_end,
+        Vector<T, 3> direction() const {
+            return vec_to_end().normalized();
+        }
+
+        static T parameter(const Vector<T, 3> &diff, const Vector<T, 3> start_to_point) {
+            return start_to_point.dot(diff) / diff.dot(diff);
+        }
+
+        static Vector<T, 3> closest_point(const Vector<T, 3> start, const Vector<T, 3> &diff,
                                           const Vector<T, 3> &point, const Vector<T, 3> start_to_point) {
-            T t = std::max(T(0), std::min(T(1), parameter(vec_to_end, start_to_point)));
-            return point - (start + t * vec_to_end);
+            T t = std::max(T(0), std::min(T(1), parameter(diff, start_to_point)));
+            return point - (start + t * diff);
         }
 
         static T distance(const Vector<T, 3> start, const Vector<T, 3> &vec_to_end,
@@ -29,20 +37,16 @@ namespace Bcg{
         }
     };
 
-    template<typename T>
-    Vector<T, 3> closest_point(const Line<T> &line, const Vector<T, 3> &point) {
-        return Line<T>::closest_point(line.start, line.vec_to_end, point, point - line.start);
-    }
+    using Linef = LineBase<float>;
+    using Line = Linef;
 
-    template<typename T>
-    T distance(const Line<T> &line, const Vector<T, 3> &point, const Vector<T, 3> start_to_point) {
-        return Line<T>::distance(line.start, line.vec_to_end, point, start_to_point);
-    }
+    Vector<float, 3> ClosestPoint(const Line &line, const Vector<float, 3> &point);
 
-    template<typename T>
-    T distance(const Line<T> &line, const Vector<T, 3> &point) {
-        return distance(line, point, point - line.start);
-    }
+    float Distance(const Line &line, const Vector<float, 3> &point, const Vector<float, 3> start_to_point);
+
+    float Distance(const Line &line, const Vector<float, 3> &point);
+
+    float UnsignedDistance(const Line &line, const Vector<float, 3> &point);
 }
 
 #endif //ENGINE24_LINE_H

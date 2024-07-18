@@ -180,7 +180,7 @@ namespace Bcg {
             auto &picked = Engine::Context().get<Picked>();
             auto &camera = Engine::Context().get<Camera>();
             if (Engine::valid(picked.entity.id)) {
-                auto &aabb = Engine::State().get<AABB<float>>(picked.entity.id);
+                auto &aabb = Engine::State().get<AABB>(picked.entity.id);
                 float d = aabb.diagonal().maxCoeff() / tan(camera.p_params.fovy / 2.0);
                 Vector<float, 3> front = camera.v_params.front();
                 camera.v_params.center = aabb.center();

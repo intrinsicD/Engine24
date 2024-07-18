@@ -7,36 +7,24 @@
 
 #include "MatVec.h"
 
-namespace Bcg{
+namespace Bcg {
     template<typename T>
-    struct Sphere {
+    struct SphereBase {
         Vector<T, 3> center;
         T radius;
     };
 
-    template<typename T>
-    Vector<T, 3> closest_point(const Sphere<T> &sphere, const Vector<T, 3> &point) {
-        return sphere.center + (point - sphere.center).normalized() * sphere.radius;
-    }
+    using Spheref = SphereBase<float>;
+    using Sphere = Spheref;
 
-    template<typename T>
-    T volume(const Sphere<T> &sphere) {
-        return (4.0 / 3.0) * M_PI * std::pow(sphere.radius, 3);
-    }
+    Vector<float, 3> ClosestPoint(const Sphere &sphere, const Vector<float, 3> &point);
 
-    template<typename T>
-    T surface_area(const Sphere<T> &sphere) {
-        return 4.0 * M_PI * std::pow(sphere.radius, 2);
-    }
+    float Volume(const Sphere &sphere);
 
-    template<typename T>
-    T distance(const Sphere<T> &sphere, const Vector<T, 3> &point) {
-        return (point - sphere.center).norm() - sphere.radius;
-    }
+    float SurfaceArea(const Sphere &sphere);
 
-    template<typename T>
-    T unsigned_distance(const Sphere<T> &sphere, const Vector<T, 3> &point) {
-        return std::abs(Sphere<T>::distance(sphere, point));
-    }
+    float Distance(const Sphere &sphere, const Vector<float, 3> &point);
+
+    float UnsignedDistance(const Sphere &sphere, const Vector<float, 3> &point);
 }
 #endif //ENGINE24_SPHERE_H

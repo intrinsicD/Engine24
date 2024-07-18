@@ -22,7 +22,7 @@ namespace Bcg {
     };
 
     struct Task : public AbstractCommand {
-        Task(const std::string &name, std::function<void()> &callback) : AbstractCommand(name), callback(callback) {}
+        Task(const std::string &name, std::function<void()> callback) : AbstractCommand(name), callback(std::move(callback)) {}
 
         ~Task() override = default;
 

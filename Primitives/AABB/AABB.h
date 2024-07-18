@@ -10,57 +10,41 @@
 
 namespace Bcg {
     template<typename T>
-    struct AABB {
-        Vector<T, 3> min = Vector<T, 3>::Constant(std::numeric_limits<T>::max());
-        Vector<T, 3> max = Vector<T, 3>::Constant(-std::numeric_limits<T>::max());
+    struct AABBbase {
+        using Scalar = T;
+        Vector<Scalar, 3> min = Vector<Scalar, 3>::Constant(std::numeric_limits<Scalar>::max());
+        Vector<Scalar, 3> max = Vector<Scalar, 3>::Constant(-std::numeric_limits<Scalar>::max());
 
-        Vector<T, 3> diagonal() const {
+        Vector<Scalar, 3> diagonal() const {
             return max - min;
         }
 
-        Vector<T, 3> half_extent() const {
+        Vector<Scalar, 3> half_extent() const {
             return diagonal() / 2;
         }
 
-        Vector<T, 3> center() const {
+        Vector<Scalar, 3> center() const {
             return (min + max) / 2;
         }
 
-        static Vector<T, 3> closest_point(const Vector<T, 3> &min, const Vector<T, 3> &max, const Vector<T, 3> &point) {
+        static Vector<Scalar, 3>
+        closest_point(const Vector<Scalar, 3> &min, const Vector<Scalar, 3> &max, const Vector<Scalar, 3> &point) {
             return point.cwiseMax(min).cwiseMin(max);
         }
     };
 
-    template<typename T>
-    AABB<T> &Grow(AABB<T> &aabb, const Vector<T, 3> &point) {
-        aabb.min = aabb.min.cwiseMin(point);
-        aabb.max = aabb.max.cwiseMax(point);
-        return aabb;
-    }
+    using AABBf = AABBbase<float>;
+    using AABB = AABBf;
 
-    template<typename T>
-    AABB<T> &Build(AABB<T> &aabb, const std::vector<Vector<T, 3>> &points) {
-        aabb = AABB<T>();
-        for (auto &point: points) {
-            Grow(aabb, point);
-        }
-        return aabb;
-    }
+    AABB &Grow(AABB &aabb, const Vector<float, 3> &point);
 
-    template<typename T>
-    Vector<T, 3> closest_point(const AABB<T> &aabb, const Vector<T, 3> &point) {
-        return AABB<T>::closest_point(aabb.min, aabb.max, point);
-    }
+    AABB &Build(AABB &aabb, const std::vector<Vector<float, 3>> &points);
 
-    template<typename T>
-    T distance(const AABB<T> &aabb, const Vector<T, 3> &point) {
-        return (point - closest_point(aabb, point)).norm();
-    }
+    Vector<float, 3> ClosestPoint(const AABB &aabb, const Vector<float, 3> &point);
 
-    template<typename T>
-    T unsigned_distance(const AABB<T> &aabb, const Vector<T, 3> &point) {
-        return std::abs(AABB<T>::distance(aabb, point));
-    }
+    float Distance(const AABB &aabb, const Vector<float, 3> &point);
+
+    float UnsigendDistance(const AABB &aabb, const Vector<float, 3> &point);
 }
 
 #endif //ENGINE24_AABB_H

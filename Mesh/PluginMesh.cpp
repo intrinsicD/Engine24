@@ -28,6 +28,7 @@
 #include "Views.h"
 #include "AABB.h"
 #include "MeshCommands.h"
+#include "EntityCommands.h"
 
 namespace Bcg {
     void PluginMesh::setup(SurfaceMesh &mesh, entt::entity entity_id) {
@@ -139,6 +140,9 @@ namespace Bcg {
         auto entity_id = Engine::State().create();
         Engine::State().emplace_or_replace<SurfaceMesh>(entity_id, mesh);
         Commands::Mesh::SetupForRendering(entity_id).execute();
+        Commands::Entity::Add<SurfaceMesh>(entity_id).execute();
+        Commands::Entity::Add<Transform>(entity_id).execute();
+        Commands::Entity::Add<AABB>(entity_id).execute();
 
 /*        std::string message = "Loaded Mesh";
         message += " #v: " + std::to_string(mesh.n_vertices());

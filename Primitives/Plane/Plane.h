@@ -7,27 +7,21 @@
 
 #include "MatVec.h"
 
-namespace Bcg{
+namespace Bcg {
     template<typename T>
-    struct Plane {
+    struct PlaneBase {
         Vector<T, 3> normal;
         T d;
     };
 
-    template<typename T>
-    Vector<T, 3> closest_point(const Plane<T> &plane, const Vector<T, 3> &point) {
-        return point - distance(plane, point) * plane.normal;
-    }
+    using Planef = PlaneBase<float>;
+    using Plane = Planef;
 
-    template<typename T>
-    T distance(const Plane<T> &plane, const Vector<T, 3> &point) {
-        return plane.normal.dot(point) - plane.d;
-    }
+    float Distance(const Plane &plane, const Vector<float, 3> &point);
 
-    template<typename T>
-    T unsigned_distance(const Plane<T> &plane, const Vector<T, 3> &point) {
-        return std::abs(distance(plane, point));
-    }
+    float UnsignedDistance(const Plane &plane, const Vector<float, 3> &point);
+
+    Vector<float, 3> ClosestPoint(const Plane &plane, const Vector<float, 3> &point);
 }
 
 #endif //ENGINE24_PLANE_H

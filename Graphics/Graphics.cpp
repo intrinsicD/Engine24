@@ -27,7 +27,6 @@ namespace Bcg {
         int version = 0;
         ImGuiContext *imgui_context = nullptr;
         bool show_window_gui = false;
-        bool show_buffer_gui = false;
         float clear_color[3] = {0.2f, 0.3f, 0.3f};
     };
 
@@ -195,7 +194,6 @@ namespace Bcg {
 // Enable blending for transparency
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        Engine::Context().emplace<BufferContainer>();
         Engine::Dispatcher().trigger(Events::Callback::WindowResize{global_window.handle, global_window.WIDTH, global_window.HEIGHT});
         return true;
     }
@@ -234,7 +232,6 @@ namespace Bcg {
         Engine::Dispatcher().trigger<Events::Gui::Menu::Render>();
         if (ImGui::BeginMenu("Graphics")) {
             ImGui::MenuItem("Window", nullptr, &global_window.show_window_gui);
-            ImGui::MenuItem("Buffer", nullptr, &global_window.show_buffer_gui);
             ImGui::EndMenu();
         }
     }
@@ -248,12 +245,6 @@ namespace Bcg {
                 }
                 ImGui::Text("Width %d", global_window.WIDTH);
                 ImGui::Text("Height %d", global_window.HEIGHT);
-            }
-            ImGui::End();
-        }
-        if (global_window.show_buffer_gui) {
-            if (ImGui::Begin("Buffers", &global_window.show_window_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
-                render_gui(Engine::Context().get<BufferContainer>());
             }
             ImGui::End();
         }
@@ -298,101 +289,6 @@ namespace Bcg {
         glfwGetWindowContentScale(global_window.handle, &dpi_scaling_factor, &dpi_scaling_factor);
         return dpi_scaling_factor;
     }
-
-    //------------------------------------------------------------------------------------------------------------------
-
-    void Graphics::setup_batched_buffer(BatchedBuffer &batched_buffer) {
-        if (batched_buffer.id == -1) {
-            glGenBuffers(1, &batched_buffer.id);
-        }
-        glBindBuffer(batched_buffer.target, batched_buffer.id);
-        int current_buffer_size;
-        glGetBufferParameteriv(batched_buffer.target, GL_BUFFER_SIZE, &current_buffer_size);
-        int required_buffer_size = batched_buffer.total_size_bytes();
-        if (required_buffer_size != current_buffer_size) {
-            glBufferData(batched_buffer.target, required_buffer_size, NULL, batched_buffer.usage);
-        }
-
-        for (const auto &item: batched_buffer.layout) {
-            glBufferSubData(batched_buffer.target, item.offset, item.size_in_bytes, item.data);
-        }
-        glBindBuffer(batched_buffer.target, 0);
-    }
-
-    size_t Graphics::remove_buffer(const std::string &name) {
-        auto &buffers = Engine::Context().get<BufferContainer>();
-        return buffers.erase(name);
-    }
-
-    size_t Graphics::remove_buffer(unsigned int id) {
-        auto &buffers = Engine::Context().get<BufferContainer>();
-        size_t counter_erased = 0;
-        for (auto &item: buffers) {
-            if (item.second == id) {
-                counter_erased += buffers.erase(item.first);
-            }
-        }
-        return counter_erased;
-    }
-
-    size_t Graphics::buffer_size(unsigned int id, unsigned int target) {
-        GLint buffer_size = 0;
-        glBindBuffer(target, id);
-        glGetBufferParameteriv(target, GL_BUFFER_SIZE, &buffer_size);
-        return buffer_size;
-    }
-
-    unsigned int Graphics::get_or_add_buffer(const std::string &name) {
-        auto &buffers = Engine::Context().get<BufferContainer>();
-        auto iter = buffers.find(name);
-        if (iter != buffers.end()) {
-            return iter->second;
-        }
-        unsigned int id = 0;
-        glGenBuffers(1, &id);
-        if (id == 0) {
-            Log::Error("OpenGL failed to generate a vaild buffer id!");
-        } else {
-            buffers[name] = id;
-        }
-        return id;
-    }
-
-    void Graphics::upload(unsigned int id, unsigned int target, const void *data, size_t size_bytes,
-                          size_t offset) {
-        glBindBuffer(target, id);
-        if (offset > 0) {
-            if (offset + size_bytes <= buffer_size(id, target)) {
-                glBufferSubData(target, offset, size_bytes, data);
-                return;
-            }
-        }
-        glBufferData(target, size_bytes, data, GL_STATIC_DRAW);
-    }
-
-    void Graphics::upload_vbo(unsigned int id, const void *data, size_t size_bytes, size_t offset) {
-        upload(id, GL_ARRAY_BUFFER, data, size_bytes, offset);
-    }
-
-    void Graphics::upload_ebo(unsigned int id, const void *data, size_t size_bytes, size_t offset) {
-        upload(id, GL_ELEMENT_ARRAY_BUFFER, data, size_bytes, offset);
-    }
-
-    void Graphics::upload_ssbo(unsigned int id, const void *data, size_t size_bytes, size_t offset) {
-        upload(id, GL_SHADER_STORAGE_BUFFER, data, size_bytes, offset);
-    }
-
-    void Graphics::upload_ubo(unsigned int id, const void *data, size_t size_bytes, size_t offset) {
-        upload(id, GL_UNIFORM_BUFFER, data, size_bytes, offset);
-    }
-
-    void Graphics::render_gui(const BufferContainer &buffers) {
-        for (const auto &item: buffers) {
-            ImGui::Text("%s: %u", item.first.c_str(), item.second);
-        }
-    }
-
-    //------------------------------------------------------------------------------------------------------------------
 
     //------------------------------------------------------------------------------------------------------------------
 }

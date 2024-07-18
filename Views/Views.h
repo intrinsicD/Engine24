@@ -7,15 +7,19 @@
 
 #include "VertexArrayObject.h"
 #include "Buffer.h"
-#include "Shader.h"
+#include "Program.h"
 
-namespace Bcg{
-    struct PointView{
+namespace Bcg {
+    struct PointView {
         VertexArrayObject vao;
         ArrayBuffer vbo;
         BufferLayout layout;
         Program program;
         unsigned int num_indices;
+    };
+
+    struct PointCloudView : public PointView {
+
     };
 
     struct LineView {
@@ -25,6 +29,10 @@ namespace Bcg{
         BufferLayout layout;
         Program program;
         unsigned int num_indices;
+    };
+
+    struct GraphView : public LineView {
+
     };
 
     struct TriangleView {
@@ -38,7 +46,7 @@ namespace Bcg{
         void draw();
     };
 
-    struct MeshView : public TriangleView{
+    struct MeshView : public TriangleView {
 
     };
 }

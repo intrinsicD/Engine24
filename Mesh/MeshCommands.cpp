@@ -29,8 +29,8 @@ namespace Bcg::Commands::Mesh {
         if (!Engine::has<Transform>(entity_id)) {
             Engine::State().emplace<Transform>(entity_id, Transform::Identity());
         }
-        if (!Engine::has<AABB<float>>(entity_id)) {
-            auto &aabb = Engine::State().emplace<AABB<float>>(entity_id);
+        if (!Engine::has<AABB>(entity_id)) {
+            auto &aabb = Engine::State().emplace<AABB>(entity_id);
             Build(aabb, mesh.positions());
         }
 

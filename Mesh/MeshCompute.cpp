@@ -4,7 +4,7 @@
 
 #include "MeshCompute.h"
 #include "Buffer.h"
-#include "Shader.h"
+#include "Program.h"
 #include "Mesh.h"
 #include "glad/gl.h"
 #include "Logger.h"
