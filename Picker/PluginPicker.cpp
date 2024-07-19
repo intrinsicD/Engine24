@@ -47,7 +47,7 @@ namespace Bcg {
     static void on_mouse_button(const Events::Callback::MouseButton &event) {
         auto &mouse = Engine::Context().get<Mouse>();
         if(event.action){
-            PluginPicker::pick(mouse.cursor.raw.pos);
+            PluginPicker::pick(mouse.cursor.current.ssp);
         }
     }
 

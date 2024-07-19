@@ -6,6 +6,8 @@
 #include "Engine.h"
 #include "Keyboard.h"
 #include "Mouse.h"
+#include "Camera.h"
+#include "Graphics.h"
 #include "imgui.h"
 #include "EventsKeys.h"
 
@@ -26,7 +28,7 @@ namespace Bcg {
 
     Keyboard &Input::set_keyboard(GLFWwindow *window, int key, int scancode, int action, int mode) {
         auto &keyboard = Engine::Context().get<Keyboard>();
-
+        if (keyboard.gui_captured) return keyboard;
         while (key >= keyboard.pressed.size()) {
             keyboard.pressed.emplace_back(0);
         }
@@ -41,26 +43,57 @@ namespace Bcg {
 
     Mouse &Input::set_mouse_cursor_position(GLFWwindow *window, double xpos, double ypos) {
         auto &mouse = Engine::Context().get<Mouse>();
-        mouse.cursor.raw.pos = {xpos, ypos};
+        if (mouse.gui_captured) return mouse;
+        auto &camera = Engine::Context().get<Camera>();
+        float zf;
+        Graphics::read_depth_buffer(xpos, ypos, zf);
+        mouse.cursor.current = PointTransformer(Graphics::dpi_scaling(), Graphics::get_viewport_dpi_adjusted(),
+                                                camera.proj,
+                                                camera.view).apply(ScreenSpacePos(xpos, ypos), zf);
         return mouse;
     }
 
     Mouse &Input::set_mouse_button(GLFWwindow *window, int button, int action, int mods) {
         auto &mouse = Engine::Context().get<Mouse>();
+        if (mouse.gui_captured) return mouse;
         while (button >= mouse.pressed.size()) {
             mouse.pressed.emplace_back(0);
         }
         mouse.pressed[button] = action;
         if (action) {
-            mouse.current.emplace(button);
+            mouse.current_buttons.emplace(button);
         } else {
-            mouse.current.erase(button);
+            mouse.current_buttons.erase(button);
+        }
+        if (action) {
+            //press
+            if (button == Mouse::ButtonType::Left) {
+                mouse.cursor.last_left.press = mouse.cursor.current;
+            }
+            if (button == Mouse::ButtonType::Middle) {
+                mouse.cursor.last_middle.press = mouse.cursor.current;
+            }
+            if (button == Mouse::ButtonType::Right) {
+                mouse.cursor.last_right.press = mouse.cursor.current;
+            }
+        } else {
+            //release
+            if (button == Mouse::ButtonType::Left) {
+                mouse.cursor.last_left.release = mouse.cursor.current;
+            }
+            if (button == Mouse::ButtonType::Middle) {
+                mouse.cursor.last_middle.release = mouse.cursor.current;
+            }
+            if (button == Mouse::ButtonType::Right) {
+                mouse.cursor.last_right.release = mouse.cursor.current;
+            }
         }
         return mouse;
     }
 
     Mouse &Input::set_mouse_scrolling(GLFWwindow *window, double xoffset, double yoffset) {
         auto &mouse = Engine::Context().get<Mouse>();
+        if (mouse.gui_captured) return mouse;
         mouse.scrolling = true;
         return mouse;
     }

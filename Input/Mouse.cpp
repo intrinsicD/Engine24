@@ -3,23 +3,20 @@
 //
 
 #include "Mouse.h"
-#include "GLFW/glfw3.h"
 #include "imgui.h"
-#include "Graphics.h"
-#include "Engine.h"
-#include "Camera.h"
+#include "CoordinateSystemsGui.h"
 
 namespace Bcg {
     bool Mouse::left() const {
-        return pressed[GLFW_MOUSE_BUTTON_1];
+        return pressed[Mouse::ButtonType::Left];
     }
 
     bool Mouse::middle() const {
-        return pressed[GLFW_MOUSE_BUTTON_3];
+        return pressed[Mouse::ButtonType::Middle];
     }
 
     bool Mouse::right() const {
-        return pressed[GLFW_MOUSE_BUTTON_2];
+        return pressed[Mouse::ButtonType::Right];
     }
 
     bool Mouse::any() const { return left() || middle() || right(); }
@@ -33,7 +30,7 @@ namespace Bcg {
             Show(mouse.cursor);
             ImGui::Text("Current Buttons: {");
             ImGui::SameLine();
-            for (const auto button: mouse.current) {
+            for (const auto button: mouse.current_buttons) {
                 ImGui::Text("%d", button);
                 ImGui::SameLine();
             }
@@ -41,14 +38,39 @@ namespace Bcg {
         }
 
         void Show(const Mouse::Cursor &cursor) {
-            auto &camera = Engine::Context().get<Camera>();
-            Points points = PointTransformer(Graphics::dpi_scaling(), Graphics::get_viewport_dpi_adjusted(), camera.proj,
-                                             camera.view).apply(cursor.raw.pos);
-            ImGui::Text("ScreenSpacePos: %lf, %lf", points.ssp.x(), points.ssp.y());
-            ImGui::Text("ScreenSpacePosDpiAdjusted: %lf, %lf", points.sspda.x(), points.sspda.y());
-            ImGui::Text("NdcSpacePos: %lf, %lf, %lf", points.ndc.x(), points.ndc.y(), points.ndc.z());
-            ImGui::Text("ViewSpacePos: %lf, %lf, %lf", points.vsp.x(), points.vsp.y(), points.vsp.z());
-            ImGui::Text("WorldSpacePos: %lf, %lf, %lf", points.wsp.x(), points.wsp.y(), points.wsp.z());
+            if(ImGui::CollapsingHeader("Current")){
+                Show(cursor.current);
+            }
+            if(ImGui::CollapsingHeader("Last Left")){
+                ImGui::Text("Press");
+                ImGui::Separator();
+                Show(cursor.last_left.press);
+                ImGui::Separator();
+                ImGui::Text("Release");
+                ImGui::Separator();
+                Show(cursor.last_left.release);
+                ImGui::Separator();
+            }
+            if(ImGui::CollapsingHeader("Last Middle")){
+                ImGui::Text("Press");
+                ImGui::Separator();
+                Show(cursor.last_middle.press);
+                ImGui::Separator();
+                ImGui::Text("Release");
+                ImGui::Separator();
+                Show(cursor.last_middle.release);
+                ImGui::Separator();
+            }
+            if(ImGui::CollapsingHeader("Last Right")){
+                ImGui::Text("Press");
+                ImGui::Separator();
+                Show(cursor.last_right.press);
+                ImGui::Separator();
+                ImGui::Text("Release");
+                ImGui::Separator();
+                Show(cursor.last_right.release);
+                ImGui::Separator();
+            }
         }
     }
 }

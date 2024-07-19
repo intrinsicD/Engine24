@@ -12,11 +12,25 @@
 
 namespace Bcg {
     struct Mouse {
+        enum ButtonType{
+            Left = 0,
+            Right = 1,
+            Middle = 2
+        };
         struct Cursor {
-            union{
-                ScreenSpacePos pos;
-                float x, y;
-            }raw;
+            Points current;
+            struct {
+                Points press;
+                Points release;
+            }last_left;
+            struct {
+                Points press;
+                Points release;
+            }last_middle;
+            struct {
+                Points press;
+                Points release;
+            }last_right;
         };
 
         bool left() const;
@@ -31,13 +45,14 @@ namespace Bcg {
 
         bool gui_captured = false;
         std::vector<int> pressed;
-        std::set<int> current;
+        std::set<int> current_buttons;
 
         Cursor cursor;
     };
 
 
     namespace Gui {
+        void Show(const Mouse &mouse);
         void Show(const Mouse &mouse);
 
         void Show(const Mouse::Cursor &cursor);
