@@ -9,7 +9,6 @@
 #include "Camera.h"
 #include "Graphics.h"
 #include "imgui.h"
-#include "EventsKeys.h"
 
 namespace Bcg {
     static bool show_input_gui;
@@ -94,6 +93,7 @@ namespace Bcg {
     Mouse &Input::set_mouse_scrolling(GLFWwindow *window, double xoffset, double yoffset) {
         auto &mouse = Engine::Context().get<Mouse>();
         if (mouse.gui_captured) return mouse;
+        mouse.scroll_offset = {xoffset, yoffset};
         mouse.scrolling = true;
         return mouse;
     }
@@ -111,14 +111,13 @@ namespace Bcg {
     }
 
     void Input::update() {
-        auto &keyboard = Engine::Context().get<Keyboard>();
-        auto &mouse = Engine::Context().get<Mouse>();
+
     }
 
     void Input::end_frame() {
-        auto &keyboard = Engine::Context().get<Keyboard>();
         auto &mouse = Engine::Context().get<Mouse>();
         mouse.scrolling = false;
+        mouse.scroll_offset.setZero();
     }
 
     void Input::deactivate() {

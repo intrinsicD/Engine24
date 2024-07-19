@@ -9,7 +9,9 @@
 #include "Camera.h"
 #include "EventsCallbacks.h"
 #include "Mouse.h"
+#include "Logger.h"
 #include "imgui.h"
+#include "glad/gl.h"
 
 namespace Bcg {
 
@@ -50,6 +52,8 @@ namespace Bcg {
             PluginPicker::pick(mouse.cursor.current.ssp);
         }
     }
+
+
 
 
     void PluginPicker::activate() {

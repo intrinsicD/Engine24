@@ -27,6 +27,7 @@ namespace Bcg {
             ImGui::Text("Middle: %d", mouse.middle());
             ImGui::Text("Right: %d", mouse.right());
             ImGui::Text("Scrolling: %d", mouse.scrolling);
+            ImGui::Text("Scroll Offset: %lf, %lf", mouse.scroll_offset.x(), mouse.scroll_offset.y());
             Show(mouse.cursor);
             ImGui::Text("Current Buttons: {");
             ImGui::SameLine();
@@ -38,10 +39,10 @@ namespace Bcg {
         }
 
         void Show(const Mouse::Cursor &cursor) {
-            if(ImGui::CollapsingHeader("Current")){
+            if (ImGui::CollapsingHeader("Current")) {
                 Show(cursor.current);
             }
-            if(ImGui::CollapsingHeader("Last Left")){
+            if (ImGui::CollapsingHeader("Last Left")) {
                 ImGui::Text("Press");
                 ImGui::Separator();
                 Show(cursor.last_left.press);
@@ -51,7 +52,7 @@ namespace Bcg {
                 Show(cursor.last_left.release);
                 ImGui::Separator();
             }
-            if(ImGui::CollapsingHeader("Last Middle")){
+            if (ImGui::CollapsingHeader("Last Middle")) {
                 ImGui::Text("Press");
                 ImGui::Separator();
                 Show(cursor.last_middle.press);
@@ -61,7 +62,7 @@ namespace Bcg {
                 Show(cursor.last_middle.release);
                 ImGui::Separator();
             }
-            if(ImGui::CollapsingHeader("Last Right")){
+            if (ImGui::CollapsingHeader("Last Right")) {
                 ImGui::Text("Press");
                 ImGui::Separator();
                 Show(cursor.last_right.press);

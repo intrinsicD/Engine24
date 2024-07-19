@@ -8,6 +8,8 @@
 #include "VertexArrayObject.h"
 #include "Buffer.h"
 #include "Program.h"
+#include "MatVec.h"
+#include "entt/fwd.hpp"
 
 namespace Bcg {
     struct PointView {
@@ -42,6 +44,20 @@ namespace Bcg {
         BufferLayout layout;
         Program program;
         unsigned int num_indices;
+
+        virtual void draw();
+    };
+
+    struct PickingView{
+        VertexArrayObject vao;
+        Program program;
+        unsigned int num_indices;
+
+        Vector<float, 4> picking_color;
+
+        Vector<float, 4> encode(entt::entity entity_id);
+
+        entt::entity encode(const Vector<float, 4> &picking_color);
 
         void draw();
     };

@@ -42,6 +42,7 @@ namespace Bcg {
         bool any() const;
 
         bool scrolling = false;
+        Vector<float, 2> scroll_offset;
 
         bool gui_captured = false;
         std::vector<int> pressed;
