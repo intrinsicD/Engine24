@@ -8,15 +8,15 @@
 #include <vector>
 #include <set>
 #include "GuiUtils.h"
-#include "MatVec.h"
+#include "CoordinateSystems.h"
 
 namespace Bcg {
     struct Mouse {
         struct Cursor {
             union{
-                Vector<float, 2> screen_space;
-                float xpos, ypos;
-            };
+                ScreenSpacePos pos;
+                float x, y;
+            }raw;
         };
 
         bool left() const;

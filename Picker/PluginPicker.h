@@ -7,6 +7,7 @@
 
 #include "Picker.h"
 #include "Plugin.h"
+#include "CoordinateSystems.h"
 
 namespace Bcg{
     class PluginPicker : public Plugin {
@@ -15,7 +16,7 @@ namespace Bcg{
 
         ~PluginPicker() override = default;
 
-        static Picked &pick(double x, double y);
+        static Picked &pick(const ScreenSpacePos &pos);
 
         static Picked &last_picked();
 

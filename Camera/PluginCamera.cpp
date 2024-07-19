@@ -165,9 +165,10 @@ namespace Bcg {
         if (event.action) {
             auto &picked = Engine::Context().get<Picked>();
             auto &camera = Engine::Context().get<Camera>();
-            Vector<float, 3> diff = camera.v_params.center - camera.v_params.eye;
-            camera.v_params.center = picked.world_space_point;
-            camera.v_params.eye = camera.v_params.center - diff.normalized() * diff.norm();
+            Vector<float, 3> front = camera.v_params.front();
+            float d = camera.v_params.distance_to_center();
+            camera.v_params.center = picked.spaces.wsp;
+            camera.v_params.eye = camera.v_params.center - front * d;
             camera.v_params.dirty = true;
             Log::Info("Focus onto: (" + std::to_string(camera.v_params.center[0]) + ", " +
                       std::to_string(camera.v_params.center[1]) + ", " + std::to_string(camera.v_params.center[2]) +

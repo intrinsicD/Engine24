@@ -5,6 +5,9 @@
 #include "Mouse.h"
 #include "GLFW/glfw3.h"
 #include "imgui.h"
+#include "Graphics.h"
+#include "Engine.h"
+#include "Camera.h"
 
 namespace Bcg {
     bool Mouse::left() const {
@@ -38,7 +41,14 @@ namespace Bcg {
         }
 
         void Show(const Mouse::Cursor &cursor) {
-            ImGui::Text("Position: %lf, %lf", cursor.xpos, cursor.ypos);
+            auto &camera = Engine::Context().get<Camera>();
+            Points points = PointTransformer(Graphics::dpi_scaling(), Graphics::get_viewport_dpi_adjusted(), camera.proj,
+                                             camera.view).apply(cursor.raw.pos);
+            ImGui::Text("ScreenSpacePos: %lf, %lf", points.ssp.x(), points.ssp.y());
+            ImGui::Text("ScreenSpacePosDpiAdjusted: %lf, %lf", points.sspda.x(), points.sspda.y());
+            ImGui::Text("NdcSpacePos: %lf, %lf, %lf", points.ndc.x(), points.ndc.y(), points.ndc.z());
+            ImGui::Text("ViewSpacePos: %lf, %lf, %lf", points.vsp.x(), points.vsp.y(), points.vsp.z());
+            ImGui::Text("WorldSpacePos: %lf, %lf, %lf", points.wsp.x(), points.wsp.y(), points.wsp.z());
         }
     }
 }

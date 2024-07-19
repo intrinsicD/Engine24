@@ -21,7 +21,7 @@
 
 namespace Bcg {
 
-    struct Window{
+    struct Window {
         int WIDTH = 800, HEIGHT = 600;
         GLFWwindow *handle = nullptr;
         int version = 0;
@@ -124,7 +124,8 @@ namespace Bcg {
             glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
             glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-            global_window.handle = glfwCreateWindow(global_window.WIDTH, global_window.HEIGHT, "BCG_ENGINE", NULL, NULL);
+            global_window.handle = glfwCreateWindow(global_window.WIDTH, global_window.HEIGHT, "BCG_ENGINE", NULL,
+                                                    NULL);
 
             if (!global_window.handle) {
                 Log::Error("Failed to create GLFW window");
@@ -194,7 +195,8 @@ namespace Bcg {
 // Enable blending for transparency
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        Engine::Dispatcher().trigger(Events::Callback::WindowResize{global_window.handle, global_window.WIDTH, global_window.HEIGHT});
+        Engine::Dispatcher().trigger(
+                Events::Callback::WindowResize{global_window.handle, global_window.WIDTH, global_window.HEIGHT});
         return true;
     }
 
@@ -241,7 +243,8 @@ namespace Bcg {
         if (global_window.show_window_gui) {
             if (ImGui::Begin("Window", &global_window.show_window_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
                 if (ImGui::ColorEdit3("clear_color", global_window.clear_color)) {
-                    glClearColor(global_window.clear_color[0], global_window.clear_color[1], global_window.clear_color[2], 1.0);
+                    glClearColor(global_window.clear_color[0], global_window.clear_color[1],
+                                 global_window.clear_color[2], 1.0);
                 }
                 ImGui::Text("Width %d", global_window.WIDTH);
                 ImGui::Text("Height %d", global_window.HEIGHT);
@@ -271,6 +274,11 @@ namespace Bcg {
         Vector<int, 4> viewport;
         glGetIntegerv(GL_VIEWPORT, viewport.data());
         return std::move(viewport);
+    }
+
+    Vector<int, 4> Graphics::get_viewport_dpi_adjusted() {
+        Vector<int, 4> vp = get_viewport();
+        return vp * int(dpi_scaling());
     }
 
     bool Graphics::read_depth_buffer(int x, int y, float &zf) {

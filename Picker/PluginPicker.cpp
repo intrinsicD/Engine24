@@ -11,9 +11,9 @@
 #include "Mouse.h"
 #include "imgui.h"
 
-namespace Bcg{
+namespace Bcg {
 
-    static void on_construct_entity(entt::registry &registry, entt::entity entity_id){
+    static void on_construct_entity(entt::registry &registry, entt::entity entity_id) {
         Engine::Context().get<Picked>().entity.id = entity_id;
     }
 
@@ -25,24 +25,16 @@ namespace Bcg{
         Engine::State().on_construct<entt::entity>().connect<&on_construct_entity>();
     }
 
-    Picked &PluginPicker::pick(double x, double y) {
+    Picked &PluginPicker::pick(const ScreenSpacePos &pos) {
         auto &picked = last_picked();
-        picked.screen_space_point = {x, y};
         picked.entity.is_background = true;
         float zf;
-        if (Graphics::read_depth_buffer(picked.screen_space_point[0], picked.screen_space_point[1], zf)) {
+        if (Graphics::read_depth_buffer(pos.x(), pos.y(), zf)) {
             picked.entity.is_background = false;
-            Vector<int, 4> viewport = Graphics::get_viewport();
-            picked.ndc_space_point = screen_to_ndc(viewport, picked.screen_space_point[0], picked.screen_space_point[1],
-                                                   zf);
-
             auto &camera = Engine::Context().get<Camera>();
-
-            Matrix<float, 4, 4> vp = camera.proj * camera.view;
-            Matrix<float, 4, 4> inv = vp.inverse();
-            Vector<float, 4> p = inv * picked.ndc_space_point.homogeneous();
-            picked.world_space_point = p.head<3>() / p[3];
-            picked.view_space_point = (camera.view * picked.world_space_point.homogeneous()).head<3>();
+            auto transformer = PointTransformer(Graphics::dpi_scaling(), Graphics::get_viewport_dpi_adjusted(), camera.proj,
+                                                camera.view);
+            picked.spaces = transformer.apply(pos, zf);
         }
 
         return picked;
@@ -54,7 +46,9 @@ namespace Bcg{
 
     static void on_mouse_button(const Events::Callback::MouseButton &event) {
         auto &mouse = Engine::Context().get<Mouse>();
-        PluginPicker::pick(mouse.cursor.xpos, mouse.cursor.ypos);
+        if(event.action){
+            PluginPicker::pick(mouse.cursor.raw.pos);
+        }
     }
 
 

@@ -40,6 +40,8 @@ namespace Bcg {
 
         static Vector<int, 4> get_viewport();
 
+        static Vector<int, 4> get_viewport_dpi_adjusted();
+
         static bool read_depth_buffer(int x, int y, float &z);
 
         static float dpi_scaling();

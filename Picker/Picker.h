@@ -9,6 +9,7 @@
 #include "MatVec.h"
 #include "Plugin.h"
 #include "GuiUtils.h"
+#include "CoordinateSystems.h"
 
 namespace Bcg {
     struct Picked {
@@ -24,10 +25,7 @@ namespace Bcg {
             Vector<float, 3> model_space_point;
         } entity;
 
-        Vector<float, 3> world_space_point;
-        Vector<float, 3> view_space_point;
-        Vector<float, 3> ndc_space_point;
-        Vector<float, 2> screen_space_point;
+        Points spaces;
     };
 
     Vector<float, 3>
