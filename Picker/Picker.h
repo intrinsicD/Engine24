@@ -23,7 +23,6 @@ namespace Bcg {
             unsigned int edge_idx = -1;
             unsigned int face_idx = -1;
         } entity;
-
         Points spaces;
     };
 }

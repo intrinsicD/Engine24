@@ -32,9 +32,21 @@ namespace Bcg::Commands::Entity {
                          }
                      }) {}
 
+        Add(entt::entity entity, Component &component, std::string component_name = "") :
+                Task("Add " + component_name,
+                     [entity, component, this]() mutable {
+                         if (!Engine::valid(entity)) {
+                             return;
+                         }
+                         Engine::Dispatcher().trigger(Events::Entity::PreAdd<Component>{entity});
+                         Engine::State().emplace_or_replace<Component>(entity, component);
+                         Engine::Dispatcher().trigger(Events::Entity::PostAdd<Component>{entity});
+                         Log::Info(name + ". Done.");
+                     }) {}
+
         Add(entt::entity entity, Component &&component, std::string component_name = "") :
                 Task("Add " + component_name,
-                     [entity, this, component]() {
+                     [entity, component = std::move(component), this]() mutable {
                          if (!Engine::valid(entity)) {
                              return;
                          }

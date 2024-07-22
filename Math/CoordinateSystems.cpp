@@ -96,13 +96,10 @@ namespace Bcg {
         float xf = ((pos.x() - viewport_dpi_adjusted[0]) / static_cast<float>(viewport_dpi_adjusted[2])) * 2.0f - 1.0f;
         float yf = 1.0f - ((pos.y() - viewport_dpi_adjusted[1]) / static_cast<float>(viewport_dpi_adjusted[3])) * 2.0f; // Invert Y-axis
         float zf = z * 2.0f - 1.0f;
-        NdcSpacePos result = {xf, yf, zf};
-        assert(result.minCoeff() >= -1 && result.maxCoeff() <= 1);
-        return result;
+        return {xf, yf, zf};
     }
 
     ScreenSpacePosDpiAdjusted ndc_to_screen(const Vector<int, 4> &viewport_dpi_adjusted, const NdcSpacePos &pos, float &z_out) {
-        assert(pos.minCoeff() >= -1 && pos.maxCoeff() <= 1);
         z_out = (pos.z() + 1.0f) / 2.0f;
         float xf = (pos.x() + 1.0f) / 2.0f * static_cast<float>(viewport_dpi_adjusted[2]) + viewport_dpi_adjusted[0];
         float yf = (1.0f - pos.y()) / 2.0f * static_cast<float>(viewport_dpi_adjusted[3]) + viewport_dpi_adjusted[1]; // Invert Y-axis back
@@ -115,14 +112,11 @@ namespace Bcg {
     }
 
     ViewSpacePos ndc_to_view(const Matrix<float, 4, 4> &proj_inv, const NdcSpacePos &pos) {
-        assert(pos.minCoeff() >= -1 && pos.maxCoeff() <= 1);
         return transform_homogeneous(proj_inv, pos.homogeneous()).head<3>();
     }
 
     NdcSpacePos view_to_ndc(const Matrix<float, 4, 4> &proj, const ViewSpacePos &pos) {
-        NdcSpacePos result = transform_homogeneous(proj, pos.homogeneous()).head<3>();
-        assert(result.minCoeff() >= -1 && result.maxCoeff() <= 1);
-        return result;
+        return transform_homogeneous(proj, pos.homogeneous()).head<3>();;
     }
 
     ViewSpacePos world_to_view(const Matrix<float, 4, 4> &view, const WorldSpacePos &pos) {

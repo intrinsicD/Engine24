@@ -3,8 +3,7 @@
 //
 
 #include "MeshCommands.h"
-#include "Engine.h"
-#include "Logger.h"
+#include "EntityCommands.h"
 #include "Mesh.h"
 #include "Views.h"
 #include "Transform.h"
@@ -27,11 +26,12 @@ namespace Bcg::Commands::Mesh {
         auto &mesh = Engine::State().get<SurfaceMesh>(entity_id);
 
         if (!Engine::has<Transform>(entity_id)) {
-            Engine::State().emplace<Transform>(entity_id, Transform::Identity());
+            Commands::Entity::Add<Transform>(entity_id, Transform::Identity()).execute();
         }
         if (!Engine::has<AABB>(entity_id)) {
-            auto &aabb = Engine::State().emplace<AABB>(entity_id);
+            auto aabb = AABB();
             Build(aabb, mesh.positions());
+            Commands::Entity::Add<AABB>(entity_id, aabb).execute();
         }
 
         auto &mw = Engine::State().get_or_emplace<MeshView>(entity_id);

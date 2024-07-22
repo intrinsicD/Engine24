@@ -19,106 +19,15 @@
 #include "io/read_off.h"
 #include "io/read_stl.h"
 #include "io/read_pmp.h"
-#include "Mesh.h"
 #include "Camera.h"
 #include "GuiUtils.h"
 #include "PropertiesGui.h"
-#include "Picker.h"
 #include "VertexArrayObject.h"
 #include "Views.h"
-#include "AABB.h"
 #include "MeshCommands.h"
 #include "EntityCommands.h"
 
 namespace Bcg {
-    void PluginMesh::setup(SurfaceMesh &mesh, entt::entity entity_id) {
-        if (entity_id == entt::null) {
-            entity_id = Engine::State().create();
-        }
-
-        auto *mw = Engine::State().try_get<MeshView>(entity_id);
-
-        if (!mw) {
-            mw = &Engine::State().emplace<MeshView>(entity_id);
-            mw->vao.create();
-            mw->vbo.create();
-            mw->ebo.create();
-        }
-    }
-
-    static MeshView Setup(SurfaceMesh &mesh) {
-        MeshView mw;
-        mw.num_indices = mesh.n_faces() * 3;
-
-        mw.vao.create();
-        mw.vao.bind();
-
-        auto v_normals = ComputeVertexNormals(mesh);
-        size_t size_in_bytes_vertices = mesh.n_vertices() * sizeof(Point);
-/*
-        glGenBuffers(1, &mw.vbo);
-        glBindBuffer(GL_ARRAY_BUFFER, mw.vbo);
-
-        glBufferData(GL_ARRAY_BUFFER, 2 * size_in_bytes_vertices, NULL, GL_STATIC_DRAW);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, size_in_bytes_vertices, mesh.positions().data());
-
-
-        glBufferSubData(GL_ARRAY_BUFFER, size_in_bytes_vertices, size_in_bytes_vertices, v_normals.data());
-*/
-
-        BufferLayout batched_buffer;
-
-        auto &gpu_pos = batched_buffer.get_or_add(mesh.vpoint_.name().c_str());
-        gpu_pos.size_in_bytes = size_in_bytes_vertices;
-        gpu_pos.dims = 3;
-        gpu_pos.size = sizeof(float);
-        gpu_pos.normalized = false;
-        gpu_pos.offset = 0;
-        gpu_pos.data = mesh.positions().data();
-
-        auto &gpu_v_normals = batched_buffer.get_or_add(v_normals.name().c_str());
-        gpu_v_normals.size_in_bytes = size_in_bytes_vertices;
-        gpu_v_normals.dims = 3;
-        gpu_v_normals.size = sizeof(float);
-        gpu_v_normals.normalized = false;
-        gpu_v_normals.offset = size_in_bytes_vertices;
-        gpu_v_normals.data = v_normals.data();
-
-        mw.vbo.create();
-        mw.vbo.bind();
-        mw.vbo.buffer_data(nullptr, batched_buffer.total_size_bytes(), Buffer::Usage::STATIC_DRAW);
-        for (const auto &[name, item]: batched_buffer.layout) {
-            mw.vbo.buffer_sub_data(item.data, item.size_in_bytes, item.offset);
-        }
-
-        /*BatchedBuffer batched_buffer;
-        batched_buffer.usage = GL_STATIC_DRAW;
-        batched_buffer.target = GL_ARRAY_BUFFER;
-        batched_buffer.type = GL_FLOAT;
-
-        auto &gpu_pos = batched_buffer.get_or_add(mesh.vpoint_.name().c_str());
-        gpu_pos.size_in_bytes = size_in_bytes_vertices;
-        gpu_pos.dims = 3;
-        gpu_pos.size = sizeof(float);
-        gpu_pos.normalized = GL_FALSE;
-        gpu_pos.offset = 0;
-        gpu_pos.data = mesh.positions().data();
-
-        auto &gpu_v_normals = batched_buffer.get_or_add(v_normals.name().c_str());
-        gpu_v_normals.size_in_bytes = size_in_bytes_vertices;
-        gpu_v_normals.dims = 3;
-        gpu_v_normals.size = sizeof(float);
-        gpu_v_normals.normalized = GL_FALSE;
-        gpu_v_normals.offset = size_in_bytes_vertices;
-        gpu_v_normals.data = v_normals.data();
-
-        Graphics::setup_batched_buffer(batched_buffer);
-        glBindBuffer(batched_buffer.target, batched_buffer.id);*/
-
-
-        return mw;
-    }
-
     SurfaceMesh PluginMesh::load(const std::string &path) {
         std::string ext = path;
         ext = ext.substr(ext.find_last_of('.') + 1);
@@ -138,26 +47,8 @@ namespace Bcg {
             return {};
         }
         auto entity_id = Engine::State().create();
-        Engine::State().emplace_or_replace<SurfaceMesh>(entity_id, mesh);
+        Commands::Entity::Add<SurfaceMesh>(entity_id, mesh, "Mesh").execute();
         Commands::Mesh::SetupForRendering(entity_id).execute();
-        Commands::Entity::Add<SurfaceMesh>(entity_id).execute();
-        Commands::Entity::Add<Transform>(entity_id).execute();
-        Commands::Entity::Add<AABB>(entity_id).execute();
-
-/*        std::string message = "Loaded Mesh";
-        message += " #v: " + std::to_string(mesh.n_vertices());
-        message += " #e: " + std::to_string(mesh.n_edges());
-        message += " #h: " + std::to_string(mesh.n_halfedges());
-        message += " #f: " + std::to_string(mesh.n_faces());
-        Log::Info(message);
-
-
-        auto mw = Setup(mesh);
-        Engine::State().emplace<MeshView>(entity_id, mw);
-        Engine::State().emplace<Transform>(entity_id, Transform::Identity());
-        auto &aabb = Engine::State().emplace<AABB<float>>(entity_id);
-        Build(aabb, mesh.positions());*/
-
         return mesh;
     }
 

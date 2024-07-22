@@ -6,12 +6,9 @@
 #include "PickerGui.h"
 #include "Engine.h"
 #include "Graphics.h"
-#include "Camera.h"
 #include "EventsCallbacks.h"
 #include "Mouse.h"
-#include "Logger.h"
 #include "imgui.h"
-#include "glad/gl.h"
 
 namespace Bcg {
 
@@ -28,17 +25,10 @@ namespace Bcg {
     }
 
     Picked &PluginPicker::pick(const ScreenSpacePos &pos) {
+        auto &mouse = Engine::Context().get<Mouse>();
         auto &picked = last_picked();
-        picked.entity.is_background = true;
-        float zf;
-        if (Graphics::read_depth_buffer(pos.x(), pos.y(), zf)) {
-            picked.entity.is_background = false;
-            auto &camera = Engine::Context().get<Camera>();
-            auto transformer = PointTransformer(Graphics::dpi_scaling(), Graphics::get_viewport_dpi_adjusted(), camera.proj,
-                                                camera.view);
-            picked.spaces = transformer.apply(pos, zf);
-        }
-
+        picked.spaces = mouse.cursor.last_left.press;
+        picked.entity.is_background = picked.spaces.ndc.z() == 1.0;
         return picked;
     }
 
@@ -48,12 +38,10 @@ namespace Bcg {
 
     static void on_mouse_button(const Events::Callback::MouseButton &event) {
         auto &mouse = Engine::Context().get<Mouse>();
-        if(event.action){
+        if (event.action) {
             PluginPicker::pick(mouse.cursor.current.ssp);
         }
     }
-
-
 
 
     void PluginPicker::activate() {

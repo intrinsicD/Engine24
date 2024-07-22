@@ -20,8 +20,6 @@ namespace Bcg {
 
         ~PluginMesh() override = default;
 
-        static void setup(SurfaceMesh &mesh, entt::entity entity_id = entt::null);
-
         static SurfaceMesh load(const std::string &path);
 
         static SurfaceMesh load_obj(const std::string &path);
