@@ -91,4 +91,8 @@ namespace Bcg {
         glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &maxColorAttachments);
         return maxColorAttachments;
     }
+
+    void FrameBuffer::add_texture_2d(const Texture2D &texture2D) {
+        glFramebufferTexture2D(target, GL_COLOR_ATTACHMENT0)
+    }
 }

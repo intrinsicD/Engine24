@@ -7,23 +7,8 @@ set(GLFW_BUILD_WAYLAND OFF)
 add_subdirectory(glfw)
 target_link_libraries(Engine24 PRIVATE glfw)
 
-# Add BGFX, BX, and BIMG
-set(BX_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bx)
-set(BIMG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bimg)
-set(BGFX_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bgfx)
-
-target_include_directories(Engine24 PUBLIC
-        ${BX_DIR}/include
-        ${BIMG_DIR}/include
-        ${BGFX_DIR}/include
-)
-
-target_link_libraries(Engine24 PRIVATE
-        bgfx
-        bimg
-        bx
-)
-
+add_subdirectory(bgfx.cmake)
+target_link_libraries(Engine24 PUBLIC bgfx)
 
 add_subdirectory(eigen)
 target_link_libraries(Engine24 PUBLIC Eigen3::Eigen)

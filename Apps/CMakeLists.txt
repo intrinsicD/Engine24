@@ -1,2 +1,3 @@
 add_subdirectory(MeshViewer)
 add_subdirectory(TestBed)
+add_subdirectory(bgfx_test)

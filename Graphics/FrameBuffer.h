@@ -5,6 +5,8 @@
 #ifndef ENGINE24_FRAMEBUFFER_H
 #define ENGINE24_FRAMEBUFFER_H
 
+#include "Texture.h"
+
 namespace Bcg {
     struct FrameBuffer {
         unsigned int id = 0;
@@ -34,7 +36,7 @@ namespace Bcg {
 
         unsigned int get_max_color_attachments() const;
 
-        void add_color_attachment(unsigned int texture_id, unsigned int type);
+        void add_texture_2d(const Texture2D &texture2D);
     };
 }
 
