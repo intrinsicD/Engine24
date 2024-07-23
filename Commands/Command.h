@@ -18,11 +18,14 @@ namespace Bcg {
 
         virtual void execute() const = 0;
 
+        virtual size_t size() const { return sizeof(AbstractCommand); };
+
         std::string name;
     };
 
     struct Task : public AbstractCommand {
-        Task(const std::string &name, std::function<void()> callback) : AbstractCommand(name), callback(std::move(callback)) {}
+        Task(const std::string &name, std::function<void()> callback) : AbstractCommand(name),
+                                                                        callback(std::move(callback)) {}
 
         ~Task() override = default;
 
@@ -40,13 +43,13 @@ namespace Bcg {
 
         ~CompositeCommand() override = default;
 
-        CompositeCommand &add_command(std::shared_ptr<AbstractCommand> sptr) {
-            commands.emplace_back(sptr);
+        CompositeCommand &add_command(std::shared_ptr<AbstractCommand> command) {
+            commands.push_back(std::move(command));
             return *this;
         }
 
         void execute() const override {
-            for (auto cmd: commands) {
+            for (const auto &cmd: commands) {
                 cmd->execute();
             }
         }

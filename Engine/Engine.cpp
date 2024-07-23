@@ -3,10 +3,12 @@
 //
 
 #include "Engine.h"
+#include "CommandBuffer.h"
 
 namespace Bcg {
     Engine::Engine() {
         entt::locator<Bcg::Engine *>::emplace<Bcg::Engine *>(this);
+        state.ctx().emplace<DoubleCommandBuffer>();
         assert(Instance() == this);
     }
 
@@ -33,7 +35,9 @@ namespace Bcg {
     }
 
     void Engine::ExecuteCmdBuffer() {
-        Dispatcher().update();
-        Dispatcher().clear();
+        auto &double_cmd_buffer = Engine::Context().get<DoubleCommandBuffer>();
+        double_cmd_buffer.current().execute();
+        double_cmd_buffer.current().clear();
+        double_cmd_buffer.swap_buffers();
     }
 }
