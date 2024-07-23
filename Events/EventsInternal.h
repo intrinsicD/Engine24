@@ -1,0 +1,8 @@
+//
+// Created by alex on 23.07.24.
+//
+
+#ifndef ENGINE24_EVENTSINTERNAL_H
+#define ENGINE24_EVENTSINTERNAL_H
+
+#endif //ENGINE24_EVENTSINTERNAL_H

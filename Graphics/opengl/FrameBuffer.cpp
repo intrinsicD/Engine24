@@ -93,6 +93,6 @@ namespace Bcg {
     }
 
     void FrameBuffer::add_texture_2d(const Texture2D &texture2D) {
-        glFramebufferTexture2D(target, GL_COLOR_ATTACHMENT0)
+        //glFramebufferTexture2D(target, GL_COLOR_ATTACHMENT0)
     }
 }
