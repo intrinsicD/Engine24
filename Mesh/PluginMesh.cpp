@@ -317,6 +317,13 @@ namespace Bcg {
             mw.program.use();
             mw.program.set_uniform3fv("lightDir", lightDirection.data());
 
+            if(Engine::has<Transform>(entity_id)){
+                auto &transform = Engine::State().get<Transform>(entity_id);
+                mw.program.set_uniform4fm("model", transform.data(), false);
+            }else{
+                mw.program.set_uniform4fm("model", Transform::Identity().data(), false);
+            }
+
             mw.draw();
         }
     }

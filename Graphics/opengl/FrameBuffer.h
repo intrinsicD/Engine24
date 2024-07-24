@@ -6,6 +6,7 @@
 #define ENGINE24_FRAMEBUFFER_H
 
 #include "Texture.h"
+#include <vector>
 
 namespace Bcg {
     struct FrameBuffer {
@@ -16,6 +17,8 @@ namespace Bcg {
             READ_FRAMEBUFFER = 0x8CA8,
             DRAW_FRAMEBUFFER = 0x8CA8,
         } target = FRAMEBUFFER;
+
+        std::vector<Texture2D> attachments;
 
         void create();
 
@@ -36,7 +39,7 @@ namespace Bcg {
 
         unsigned int get_max_color_attachments() const;
 
-        void add_texture_2d(const Texture2D &texture2D);
+        bool add_texture_2d(const Texture2D &texture2D);
     };
 }
 

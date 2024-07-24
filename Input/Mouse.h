@@ -45,7 +45,7 @@ namespace Bcg {
         Vector<float, 2> scroll_offset;
 
         bool gui_captured = false;
-        std::vector<int> pressed;
+        std::vector<int> pressed{0, 0, 0};
         std::set<int> current_buttons;
 
         Cursor cursor;

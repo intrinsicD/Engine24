@@ -196,10 +196,7 @@ namespace Bcg {
 
     static void on_window_resize(const Events::Callback::WindowResize &event) {
         auto &camera = Engine::Context().get<Camera>();
-        if (camera.proj_type == Camera::ProjectionType::PERSPECTIVE) {
-            camera.p_params.aspect = float(event.width) / float(event.height);
-            camera.p_params.dirty = true;
-        } else {
+        {
             float half_width = event.width * 0.5f;
             float half_height = event.height * 0.5f;
             camera.o_params.left = -half_width;
@@ -208,15 +205,11 @@ namespace Bcg {
             camera.o_params.bottom = -half_height;
             camera.o_params.dirty = true;
         }
+        camera.p_params.set_aspect(event.width, event.height);
     }
 
     void PluginCamera::activate() {
-        if (!Engine::Context().find<Camera>()) {
-            auto &camera = Engine::Context().emplace<Camera>();
-            auto vp = Graphics::get_viewport();
-            camera.p_params.aspect = float(vp[2]) / float(vp[3]);
-            camera.p_params.dirty = true;
-        }
+        Engine::Context().emplace<Camera>();
         if (!Engine::Context().find<CameraUniformBuffer>()) {
             auto &ubo = Engine::Context().emplace<CameraUniformBuffer>();
             ubo.create();

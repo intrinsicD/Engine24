@@ -72,7 +72,8 @@ namespace Bcg {
         return complete;
     }
 
-    void FrameBuffer::blit(int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1, unsigned int mask, unsigned int filter, const FrameBuffer &other) const{
+    void FrameBuffer::blit(int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1,
+                           unsigned int mask, unsigned int filter, const FrameBuffer &other) const {
         glBindFramebuffer(GL_READ_FRAMEBUFFER, id);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, other.id);
         glBlitFramebuffer(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
@@ -80,19 +81,24 @@ namespace Bcg {
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     }
 
-    void FrameBuffer::read_pixels(int x, int y, int width, int height, unsigned int format, unsigned int type, void *data) const{
+    void FrameBuffer::read_pixels(int x, int y, int width, int height, unsigned int format, unsigned int type,
+                                  void *data) const {
         bind();
         glReadPixels(x, y, width, height, format, type, data);
         unbind();
     }
 
-    unsigned int FrameBuffer::get_max_color_attachments() const{
+    unsigned int FrameBuffer::get_max_color_attachments() const {
         GLint maxColorAttachments;
         glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &maxColorAttachments);
         return maxColorAttachments;
     }
 
-    void FrameBuffer::add_texture_2d(const Texture2D &texture2D) {
-        //glFramebufferTexture2D(target, GL_COLOR_ATTACHMENT0)
+    bool FrameBuffer::add_texture_2d(const Texture2D &texture2D) {
+        if (attachments.size() >= get_max_color_attachments()) return false;
+        glFramebufferTexture2D(target, GL_COLOR_ATTACHMENT0 + attachments.size(), texture2D.target, texture2D.id,
+                               texture2D.level);
+        attachments.push_back(texture2D);
+        return true;
     }
 }

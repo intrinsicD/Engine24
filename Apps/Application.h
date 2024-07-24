@@ -6,7 +6,6 @@
 #define ENGINE24_APPLICATION_H
 
 #include "Engine.h"
-#include "bgfx/bgfx.h"
 
 namespace Bcg {
     class Application {
@@ -20,7 +19,6 @@ namespace Bcg {
         void cleanup();
 
         Engine engine;
-        bgfx::Init bgfx;
     };
 }
 

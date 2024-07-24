@@ -25,14 +25,27 @@ namespace Bcg::Commands::Mesh {
 
         auto &mesh = Engine::State().get<SurfaceMesh>(entity_id);
 
+        if (!Engine::has<AABB>(entity_id)) {
+
+            Commands::Entity::Add<AABB>(entity_id, AABB()).execute();
+        }
+
+        auto &aabb = Engine::State().get<AABB>(entity_id);
+        Build(aabb, mesh.positions());
+
+        Vector<float, 3> center = aabb.center();
+
+        for (auto &point: mesh.positions()) {
+            point -= center;
+        }
+
+        aabb.min -= center;
+        aabb.max -= center;
+
         if (!Engine::has<Transform>(entity_id)) {
             Commands::Entity::Add<Transform>(entity_id, Transform::Identity()).execute();
         }
-        if (!Engine::has<AABB>(entity_id)) {
-            auto aabb = AABB();
-            Build(aabb, mesh.positions());
-            Commands::Entity::Add<AABB>(entity_id, aabb).execute();
-        }
+
 
         auto &mw = Engine::State().get_or_emplace<MeshView>(entity_id);
 
@@ -80,12 +93,14 @@ namespace Bcg::Commands::Mesh {
                                         "    mat4 view;\n"
                                         "    mat4 projection;\n"
                                         "};\n"
+                                        "uniform mat4 model;\n"
                                         "out vec3 f_normal;\n"
                                         "out vec3 f_color;\n"
                                         "void main()\n"
                                         "{\n"
-                                        "   f_normal = mat3(transpose(inverse(view))) * aNormal;\n"
-                                        "   gl_Position = projection * view * vec4(aPos, 1.0);\n"
+                                        "   mat4 vm = view * model;"
+                                        "   f_normal = mat3(transpose(inverse(vm))) * aNormal;\n"
+                                        "   gl_Position = projection * vm * vec4(aPos, 1.0);\n"
                                         "}\0";
 
         const char *fragment_shader_src = "#version 330 core\n"

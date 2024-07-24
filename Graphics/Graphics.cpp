@@ -76,11 +76,7 @@ namespace Bcg {
     }
 
     static void resize_callback(GLFWwindow *window, int width, int height) {
-        glViewport(0, 0, width, height);
-
-        if (!ImGui::GetIO().WantCaptureMouse) {
-            Engine::Dispatcher().trigger<Events::Callback::WindowResize>({window, width, height});
-        }
+        Graphics::set_window_size(width, height);
     }
 
     static void close_callback(GLFWwindow *window) {
@@ -183,7 +179,6 @@ namespace Bcg {
             ImGui::GetStyle().ScaleAllSizes(dpi);
         }
 
-        glViewport(0, 0, global_window.WIDTH, global_window.HEIGHT);
         glClearColor(global_window.clear_color[0], global_window.clear_color[1], global_window.clear_color[2], 1.0f);
         // Enable depth testing
         glEnable(GL_DEPTH_TEST);
@@ -195,8 +190,7 @@ namespace Bcg {
 // Enable blending for transparency
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        Engine::Dispatcher().trigger(
-                Events::Callback::WindowResize{global_window.handle, global_window.WIDTH, global_window.HEIGHT});
+        set_window_size(global_window.WIDTH, global_window.HEIGHT);
         return true;
     }
 
@@ -210,6 +204,12 @@ namespace Bcg {
 
     void Graphics::set_window_title(const char *title) {
         glfwSetWindowTitle(global_window.handle, title);
+    }
+
+    void Graphics::set_window_size(int width, int height) {
+        glfwSetWindowSize(global_window.handle, width, height);
+        glViewport(0, 0, width, height);
+        Engine::Dispatcher().trigger(Events::Callback::WindowResize{global_window.handle, width, height});
     }
 
     void Graphics::set_clear_color(const float *color) {
@@ -268,6 +268,12 @@ namespace Bcg {
 
     void Graphics::swap_buffers() {
         glfwSwapBuffers(global_window.handle);
+    }
+
+    Vector<int, 2> Graphics::get_window_size() {
+        int width, height;
+        glfwGetWindowSize(global_window.handle, &width, &height);
+        return {width, height};
     }
 
     Vector<int, 4> Graphics::get_viewport() {

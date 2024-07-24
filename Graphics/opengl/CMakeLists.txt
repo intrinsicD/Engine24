@@ -5,5 +5,6 @@ target_sources(Engine24 PRIVATE
         GLUtils.cpp
         Program.cpp
         Shader.cpp
+        Texture.cpp
         VertexArrayObject.cpp
 )

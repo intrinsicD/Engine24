@@ -63,6 +63,11 @@ namespace Bcg {
         float zNear = 0.1f;
         float zFar = 1000.0f;
         bool dirty = true;
+
+        void set_aspect(int width, int height) {
+            aspect = float(width) / float(height);
+            dirty = true;
+        }
     };
 
     struct OrthoParameters {
@@ -150,7 +155,7 @@ namespace Bcg {
         bool dirty_proj = true;
     };
 
-    struct CameraUniformBuffer : public UniformBuffer{
+    struct CameraUniformBuffer : public UniformBuffer {
 
     };
 

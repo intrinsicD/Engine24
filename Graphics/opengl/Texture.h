@@ -5,9 +5,12 @@
 #ifndef ENGINE24_TEXTURE_H
 #define ENGINE24_TEXTURE_H
 
+#include <vector>
+#include <queue>
+
 namespace Bcg {
     struct Texture {
-        unsigned int id;
+        unsigned int id = -1;
         unsigned int target;
         int level;
         unsigned int width;
@@ -128,20 +131,42 @@ namespace Bcg {
             COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT,
         };
 
+        enum Targets {
+            TEXTURE_1D,
+            PROXY_TEXTURE_1D,
+            TEXTURE_2D,
+            PROXY_TEXTURE_2D,
+            TEXTURE_1D_ARRAY,
+            PROXY_TEXTURE_1D_ARRAY,
+            TEXTURE_RECTANGLE,
+            PROXY_TEXTURE_RECTANGLE,
+            TEXTURE_CUBE_MAP_POSITIVE_X,
+            TEXTURE_CUBE_MAP_NEGATIVE_X,
+            TEXTURE_CUBE_MAP_POSITIVE_Y,
+            TEXTURE_CUBE_MAP_NEGATIVE_Y,
+            TEXTURE_CUBE_MAP_POSITIVE_Z,
+            TEXTURE_CUBE_MAP_NEGATIVE_Z,
+            PROXY_TEXTURE_CUBE_MAP,
+            TEXTURE_3D,
+            PROXY_TEXTURE_3D,
+            TEXTURE_2D_ARRAY,
+            PROXY_TEXTURE_2D_ARRAY,
+        };
+
         void create();
 
         void destroy();
     };
 
     struct Texture1D : public Texture {
-        enum Targets {
+        enum Targets1D {
             TEXTURE_1D,
             PROXY_TEXTURE_1D
         };
     };
 
     struct Texture2D : public Texture {
-        enum Targets {
+        enum Targets2D {
             TEXTURE_2D,
             PROXY_TEXTURE_2D,
             TEXTURE_1D_ARRAY,
@@ -159,12 +184,50 @@ namespace Bcg {
     };
 
     struct Texture3D : public Texture {
-        enum Targets {
+        enum Targets3D {
             TEXTURE_3D,
             PROXY_TEXTURE_3D,
             TEXTURE_2D_ARRAY,
             PROXY_TEXTURE_2D_ARRAY,
         };
+    };
+
+    struct TextureHandle {
+        unsigned int id;
+        unsigned int index;
+    };
+
+    class Textures {
+        TextureHandle createTexture() {
+            TextureHandle handle;
+            if (!freeIndices.empty()) {
+                handle.index = freeIndices.front();
+                freeIndices.pop();
+                handle.id = -1; // For simplicity, use index as id
+                textures[handle.index] = Texture();
+            } else {
+                handle.index = textures.size();
+                handle.id = handle.index; // For simplicity, use index as id
+                textures.push_back(Texture());
+            }
+            return handle;
+        }
+
+        void destroyTexture(TextureHandle handle) {
+            textures[handle.index] = Texture(); // Optional: Reset texture data
+            freeIndices.push(handle.index);
+        }
+
+        Texture &operator[](unsigned int index) {
+            return textures[index];
+        }
+
+        Texture &operator[](TextureHandle handle) {
+            return textures[handle.index];
+        }
+
+        std::vector<Texture> textures;
+        std::queue<unsigned int> freeIndices;
     };
 }
 

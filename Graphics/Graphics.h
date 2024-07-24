@@ -24,6 +24,8 @@ namespace Bcg {
 
         static void set_window_title(const char *title);
 
+        static void set_window_size(int width, int height);
+
         static void set_clear_color(const float *color);
 
         static void clear_framebuffer();
@@ -37,6 +39,8 @@ namespace Bcg {
         static void end_gui();
 
         static void swap_buffers();
+
+        static Vector<int, 2> get_window_size();
 
         static Vector<int, 4> get_viewport();
 

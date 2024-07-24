@@ -153,6 +153,14 @@ namespace Bcg {
         }
     }
 
+    void Program::set_uniform4fm(const std::string &name, const float *ptr, bool transpose) {
+        int loc = get_uniform_location(name);
+
+        if (loc != -1) {
+            glUniformMatrix4fv(loc, 1, transpose, ptr);
+        }
+    }
+
     bool ComputeShaderProgram::create_from_source(const std::string &cs) {
         if (id == -1) {
             create();
