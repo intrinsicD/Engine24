@@ -9,11 +9,16 @@
 
 namespace Bcg {
     void Program::create() {
-        id = glCreateProgram();
+        if (id == -1) {
+            id = glCreateProgram();
+        }
     }
 
     void Program::destroy() {
-        glDeleteProgram(id);
+        if (id != -1) {
+            glDeleteProgram(id);
+            id = -1;
+        }
     }
 
     void Program::create_from_source(const std::string &vs, const std::string &fs, const std::string &gs,
@@ -143,6 +148,22 @@ namespace Bcg {
 
     void Program::bind_uniform_block(const std::string &name, unsigned int binding_point) {
         glUniformBlockBinding(id, get_uniform_block_index(name), binding_point);
+    }
+
+    void Program::set_uniform1f(const std::string &name, float value){
+        int loc = get_uniform_location(name);
+
+        if (loc != -1) {
+            glUniform1f(loc, value);
+        }
+    }
+
+    void Program::set_uniform1ui(const std::string &name, unsigned int value){
+        int loc = get_uniform_location(name);
+
+        if (loc != -1) {
+            glUniform1ui(loc, value);
+        }
     }
 
     void Program::set_uniform3fv(const std::string &name, const float *ptr) {

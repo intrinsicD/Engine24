@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 #include "Exceptions.h"
+#include "MatVec.h"
 
 namespace Bcg {
 
@@ -38,7 +39,17 @@ namespace Bcg {
 
         //! Return the name of the property
         virtual const std::string &name() const = 0;
+
+        virtual std::string element_string(size_t i) const = 0;
+
+        virtual size_t size() const = 0;
     };
+
+    template<typename T, int N>
+    std::ostream &operator<<(std::ostream &os, const Vector<T, N> &vec) {
+        os << vec.transpose();
+        return os;
+    }
 
     template<class T>
     class PropertyArray : public BasePropertyArray {
@@ -93,6 +104,16 @@ namespace Bcg {
         //! Return the name of the property
         const std::string &name() const override { return name_; }
 
+        std::string element_string(size_t i) const override {
+            std::stringstream ss;
+            ss << data_[i];
+            return ss.str();
+        }
+
+        size_t size() const override {
+            return data_.size();
+        }
+
     private:
         std::string name_;
         VectorType data_;
@@ -142,6 +163,10 @@ namespace Bcg {
         std::vector<T> &vector() {
             assert(parray_ != nullptr);
             return parray_->vector();
+        }
+
+        const BasePropertyArray *base() const {
+            return parray_;
         }
 
     private:
@@ -293,6 +318,10 @@ namespace Bcg {
         void swap(size_t i0, size_t i1) const {
             for (auto parray: parrays_)
                 parray->swap(i0, i1);
+        }
+
+        const std::vector<BasePropertyArray *> &get_parray() const {
+            return parrays_;
         }
 
     private:

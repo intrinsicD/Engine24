@@ -7,15 +7,25 @@
 
 namespace Bcg {
     void Buffer::create() {
-        glGenBuffers(1, &id);
+        if (id == -1) {
+            glGenBuffers(1, &id);
+        }
     }
 
     void Buffer::destroy() {
-        glDeleteBuffers(1, &id);
+        if (id != -1) {
+            glDeleteBuffers(1, &id);
+            id = -1;
+        }
     }
 
     void Buffer::bind() {
         glBindBuffer(target, id);
+    }
+
+    void Buffer::bind_base(unsigned int index) {
+        binding_point = index;
+        glBindBufferBase(target, index, id);
     }
 
     void Buffer::unbind() {
@@ -36,27 +46,18 @@ namespace Bcg {
     }
 
     ArrayBuffer::ArrayBuffer() {
-        target = GL_ARRAY_BUFFER;
+        target = Target::ARRAY_BUFFER;
     }
 
     ElementArrayBuffer::ElementArrayBuffer() {
-        target = GL_ELEMENT_ARRAY_BUFFER;
+        target = Target::ELEMENT_ARRAY_BUFFER;
     }
 
     ShaderStorageBuffer::ShaderStorageBuffer() {
-        target = GL_SHADER_STORAGE_BUFFER;
-    }
-
-    void ShaderStorageBuffer::bind_base(unsigned int index) {
-        glBindBufferBase(target, index, id);
+        target = Target::SHADER_STORAGE_BUFFER;
     }
 
     UniformBuffer::UniformBuffer() {
-        target = GL_UNIFORM_BUFFER;
-    }
-
-    void UniformBuffer::bind_base(unsigned int index) {
-        binding_point = index;
-        glBindBufferBase(target, index, id);
+        target = Target::UNIFORM_BUFFER;
     }
 }

@@ -11,7 +11,7 @@
 #include "ImGuiFileDialog.h"
 #include "Engine.h"
 #include "EventsCallbacks.h"
-#include "MeshCompute.h"
+#include "MeshGui.h"
 #include <chrono>
 #include "SurfaceMesh.h"
 #include "io/io.h"
@@ -26,6 +26,7 @@
 #include "Views.h"
 #include "MeshCommands.h"
 #include "EntityCommands.h"
+#include "Picker.h"
 
 namespace Bcg {
     SurfaceMesh PluginMesh::load(const std::string &path) {
@@ -227,22 +228,6 @@ namespace Bcg {
 
             std::chrono::duration<double> build_duration = end_time - start_time;
             Log::Info("Build Smesh in " + std::to_string(build_duration.count()) + " seconds");
-
-            start_time = std::chrono::high_resolution_clock::now();
-            auto f_normals = ComputeFaceNormals(smesh);
-            end_time = std::chrono::high_resolution_clock::now();
-            build_duration = end_time - start_time;
-            Log::Info("ComputeFaceNormals Smesh in " + std::to_string(build_duration.count()) + " seconds");
-/*
-            for(auto f : smesh.faces()){
-                std::cout << f_normals[f] << std::endl;
-            }*/
-
-            start_time = std::chrono::high_resolution_clock::now();
-            auto v_normals = ComputeVertexNormals(smesh);
-            end_time = std::chrono::high_resolution_clock::now();
-            build_duration = end_time - start_time;
-            Log::Info("ComputeVertexNormals Smesh in " + std::to_string(build_duration.count()) + " seconds");
         }
     }
 
@@ -270,8 +255,10 @@ namespace Bcg {
         Plugin::deactivate();
     }
 
+    static bool show_mesh_gui = false;
+
     void PluginMesh::render_menu() {
-        if (ImGui::BeginMenu("Menu")) {
+        if (ImGui::BeginMenu("Entity")) {
             if (ImGui::BeginMenu("Mesh")) {
                 if (ImGui::MenuItem("Load Mesh")) {
                     IGFD::FileDialogConfig config;
@@ -280,6 +267,9 @@ namespace Bcg {
                     ImGuiFileDialog::Instance()->OpenDialog("Load Mesh", "Choose File", ".obj,.off,.stl,.ply",
                                                             config);
                 }
+                if(ImGui::MenuItem("Instance", nullptr, &show_mesh_gui)){
+
+                }
                 ImGui::EndMenu();
             }
             ImGui::EndMenu();
@@ -287,16 +277,13 @@ namespace Bcg {
     }
 
     void PluginMesh::render_gui() {
-        if (ImGuiFileDialog::Instance()->Display("Load Mesh", ImGuiWindowFlags_NoCollapse, ImVec2(200, 100))) {
-            if (ImGuiFileDialog::Instance()->IsOk()) { // action if OK
-                std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
-                std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
-                // action
-                auto mesh = PluginMesh::load(filePathName);
+        Gui::ShowLoadMesh();
+        if(show_mesh_gui){
+            auto &picked = Engine::Context().get<Picked>();
+            if (ImGui::Begin("Mesh", &show_mesh_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
+                Gui::ShowSurfaceMesh(picked.entity.id);
             }
-
-            // close
-            ImGuiFileDialog::Instance()->Close();
+            ImGui::End();
         }
     }
 

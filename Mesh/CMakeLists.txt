@@ -4,4 +4,5 @@ target_sources(Engine24 PRIVATE
         MeshCompute.cpp
         MeshCommands.cpp
         PluginMesh.cpp
+        MeshGui.cpp
 )

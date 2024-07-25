@@ -11,6 +11,10 @@ namespace Bcg {
     struct Program {
         unsigned int id = -1;
 
+        operator bool() const {
+            return id != -1;
+        }
+
         void create();
 
         void destroy();
@@ -36,6 +40,10 @@ namespace Bcg {
         unsigned int get_uniform_block_index(const std::string &name);
 
         void bind_uniform_block(const std::string &name, unsigned int binding_point);
+
+        void set_uniform1f(const std::string &name, float value);
+
+        void set_uniform1ui(const std::string &name, unsigned int value);
 
         void set_uniform3fv(const std::string &name, const float *ptr);
 

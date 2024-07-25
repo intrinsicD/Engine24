@@ -9,12 +9,24 @@
 #include <string>
 #include <algorithm>
 
-namespace Bcg{
+namespace Bcg {
     struct Buffer {
         unsigned int id = -1;
-        unsigned int target = -1;
+        unsigned int binding_point = -1;
 
-        enum Usage{
+        operator bool() const {
+            return id != -1;
+        }
+
+        enum Target : unsigned int{
+            ARRAY_BUFFER = 0x8892,
+            ELEMENT_ARRAY_BUFFER = 0x8893,
+            SHADER_STORAGE_BUFFER = 0x90D2,
+            UNIFORM_BUFFER = 0x8A11,
+            UNDEFINED = 0,
+        } target = UNDEFINED;
+
+        enum Usage {
             STREAM_DRAW = 0x88E0,
             STREAM_READ = 0x88E1,
             STREAM_COPY = 0x88E2,
@@ -24,13 +36,15 @@ namespace Bcg{
             DYNAMIC_DRAW = 0x88E8,
             DYNAMIC_READ = 0x88E9,
             DYNAMIC_COPY = 0x88EA
-        }usage;
+        } usage;
 
         void create();
 
         void destroy();
 
         void bind();
+
+        void bind_base(unsigned int index);
 
         void unbind();
 
@@ -41,29 +55,23 @@ namespace Bcg{
         void get_buffer_sub_data(void *data, unsigned int size_bytes, unsigned int offset = 0);
     };
 
-    struct ArrayBuffer : public Buffer{
+    struct ArrayBuffer : public Buffer {
         ArrayBuffer();
     };
 
-    struct ElementArrayBuffer : public Buffer{
+    struct ElementArrayBuffer : public Buffer {
         ElementArrayBuffer();
     };
 
-    struct ShaderStorageBuffer : public Buffer{
+    struct ShaderStorageBuffer : public Buffer {
         ShaderStorageBuffer();
-
-        void bind_base(unsigned int index);
     };
 
-    struct UniformBuffer : public Buffer{
-        unsigned int binding_point = -1;
-
+    struct UniformBuffer : public Buffer {
         UniformBuffer();
-
-        void bind_base(unsigned int index);
     };
 
-    struct BufferLayout{
+    struct BufferLayout {
         [[nodiscard]] unsigned int total_size_bytes() const {
             unsigned int size_in_bytes = 0;
             for (const auto &item: layout) {

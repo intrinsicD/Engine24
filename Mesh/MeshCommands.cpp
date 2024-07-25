@@ -10,6 +10,7 @@
 #include "AABB.h"
 #include "Camera.h"
 #include "MeshCompute.h"
+#include "OpenGLState.h"
 
 namespace Bcg::Commands::Mesh {
     void SetupForRendering::execute() const {
@@ -54,37 +55,55 @@ namespace Bcg::Commands::Mesh {
         mw.vao.create();
         mw.vao.bind();
 
-        auto v_normals = ComputeVertexNormals(mesh);
-        size_t size_in_bytes_vertices = mesh.n_vertices() * sizeof(Point);
+        OpenGLState openGlState(entity_id);
 
+        auto v_normals = ComputeVertexNormals(entity_id, mesh);
 
-        auto &gpu_pos = mw.layout.get_or_add(mesh.vpoint_.name().c_str());
-        gpu_pos.size_in_bytes = size_in_bytes_vertices;
-        gpu_pos.dims = 3;
-        gpu_pos.size = sizeof(float);
-        gpu_pos.normalized = false;
-        gpu_pos.offset = 0;
-        gpu_pos.data = mesh.positions().data();
-
-        auto &gpu_v_normals = mw.layout.get_or_add(v_normals.name().c_str());
-        gpu_v_normals.size_in_bytes = size_in_bytes_vertices;
-        gpu_v_normals.dims = 3;
-        gpu_v_normals.size = sizeof(float);
-        gpu_v_normals.normalized = false;
-        gpu_v_normals.offset = size_in_bytes_vertices;
-        gpu_v_normals.data = v_normals.data();
-
-        mw.vbo.create();
-        mw.vbo.bind();
-        mw.vbo.buffer_data(nullptr, mw.layout.total_size_bytes(), Buffer::Usage::STATIC_DRAW);
-        for (const auto &[name, item]: mw.layout.layout) {
-            mw.vbo.buffer_sub_data(item.data, item.size_in_bytes, item.offset);
+        auto b_position = openGlState.get_buffer(mesh.vpoint_.name());
+        if (!b_position) {
+            b_position = ArrayBuffer();
+            b_position.create();
+            b_position.bind();
+            b_position.buffer_data(mesh.positions().data(),
+                                   mesh.positions().size() * 3 * sizeof(float),
+                                   Buffer::STATIC_DRAW);
+            openGlState.register_buffer(mesh.vpoint_.name(), b_position);
+        } else {
+            b_position.bind();
         }
 
-        auto triangles = extract_triangle_list(mesh);
-        mw.ebo.create();
-        mw.ebo.bind();
-        mw.ebo.buffer_data(triangles.data(), mw.num_indices * sizeof(unsigned int), Buffer::Usage::STATIC_DRAW);
+        mw.vao.setAttribute(0, 3, VertexArrayObject::AttributeType::FLOAT, false, 3 * sizeof(float), nullptr);
+        mw.vao.enableAttribute(0);
+
+        auto b_normals = openGlState.get_buffer(v_normals.name());
+        if (!b_normals) {
+            b_normals = ArrayBuffer();
+            b_normals.create();
+            b_normals.bind();
+            b_normals.buffer_data(v_normals.data(),
+                                  v_normals.vector().size() * 3 * sizeof(float),
+                                  Buffer::STATIC_DRAW);
+            openGlState.register_buffer(v_normals.name(), b_normals);
+        } else {
+            b_normals.bind();
+        }
+
+        mw.vao.setAttribute(1, 3, VertexArrayObject::AttributeType::FLOAT, false, 3 * sizeof(float), nullptr);
+        mw.vao.enableAttribute(1);
+
+        auto f_triangles = extract_triangle_list(mesh);
+        auto b_triangles = openGlState.get_buffer(f_triangles.name());
+        if (!b_triangles) {
+            b_triangles = ElementArrayBuffer();
+            b_triangles.create();
+            b_triangles.bind();
+            b_triangles.buffer_data(f_triangles.data(),
+                                    f_triangles.vector().size() * 3 * sizeof(unsigned int),
+                                    Buffer::STATIC_DRAW);
+            openGlState.register_buffer(f_triangles.name(), b_triangles);
+        } else {
+            b_triangles.bind();
+        }
 
         const char *vertex_shader_src = "#version 330 core\n"
                                         "layout (location = 0) in vec3 aPos;\n"
@@ -120,20 +139,21 @@ namespace Bcg::Commands::Mesh {
                                           "   FragColor = vec4(normal, 1.0f);\n"
                                           "}\n\0";
 
-        mw.program.create_from_source(vertex_shader_src, fragment_shader_src);
-        mw.vao.setAttribute(0, 3, VertexArrayObject::AttributeType::FLOAT, false, 3 * sizeof(float), nullptr);
-        mw.vao.enableAttribute(0);
+        auto program = openGlState.get_program("MeshProgram");
+        if (!program) {
+            program.create_from_source(vertex_shader_src, fragment_shader_src);
+        }
+        mw.program = program;
 
-        mw.vao.setAttribute(1, 3, VertexArrayObject::AttributeType::FLOAT, false, 3 * sizeof(float),
-                            (void *) size_in_bytes_vertices);
-        mw.vao.enableAttribute(1);
 
         // Get the index of the uniform block
         auto &camera_ubi = Engine::Context().get<CameraUniformBuffer>();
         mw.program.bind_uniform_block("Camera", camera_ubi.binding_point);
         mw.vao.unbind();
-        mw.vbo.unbind();
 
+        b_position.unbind();
+        b_normals.unbind();
+        b_triangles.unbind();
 
         std::string message = name + ": ";
         message += " #v: " + std::to_string(mesh.n_vertices());

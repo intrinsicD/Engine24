@@ -9,7 +9,7 @@
 #include "entt/fwd.hpp"
 
 namespace Bcg::Gui {
-    void ShowTransform(entt::entity entity_id, bool &show_gui);
+    void ShowTransform(entt::entity entity_id);
 
     void Show(Transform &transform);
 }

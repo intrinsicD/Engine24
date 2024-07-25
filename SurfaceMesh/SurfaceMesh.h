@@ -1775,6 +1775,11 @@ namespace Bcg {
             // an outgoing halfedge per vertex (it will be a boundary halfedge
             // for boundary vertices)
             Halfedge halfedge_;
+
+            friend std::ostream &operator<<(std::ostream &os, const VertexConnectivity &vc) {
+                os << "h: " << vc.halfedge_.idx_;
+                return os;
+            }
         };
 
         struct HalfedgeConnectivity {
@@ -1782,10 +1787,23 @@ namespace Bcg {
             Vertex vertex_;          // vertex the halfedge points to
             Halfedge next_halfedge_; // next halfedge
             Halfedge prev_halfedge_; // previous halfedge
+
+            friend std::ostream &operator<<(std::ostream &os, const HalfedgeConnectivity &hc) {
+                os << "f: " << hc.face_.idx_
+                   << "v: " << hc.vertex_.idx_
+                   << "nh: " << hc.next_halfedge_.idx_
+                   << "ph: " << hc.prev_halfedge_.idx_;
+                return os;
+            }
         };
 
         struct FaceConnectivity {
             Halfedge halfedge_; // a halfedge that is part of the face
+
+            friend std::ostream &operator<<(std::ostream &os, const FaceConnectivity &fc) {
+                os << "h: " << fc.halfedge_.idx_;
+                return os;
+            }
         };
 
         // make sure that the outgoing halfedge of vertex \p v is a boundary

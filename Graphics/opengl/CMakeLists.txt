@@ -3,6 +3,7 @@ target_sources(Engine24 PRIVATE
         Buffer.cpp
         FrameBuffer.cpp
         GLUtils.cpp
+        OpenGLState.cpp
         Program.cpp
         Shader.cpp
         Texture.cpp

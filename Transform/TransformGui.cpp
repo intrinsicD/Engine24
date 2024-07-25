@@ -136,21 +136,18 @@ namespace Bcg::Gui {
         }
     }
 
-    void ShowTransform(entt::entity entity_id, bool &show_gui) {
-        if (ImGui::Begin("Transform", &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
-            if (Engine::valid(entity_id) && Engine::has<Transform>(entity_id)) {
-                auto &transform = Engine::State().get<Transform>(entity_id);
-                auto &aabb = Engine::State().get<AABB>(entity_id);
-                auto &camera = Engine::Context().get<Camera>();
-                auto &view = camera.view;
-                auto &projection = camera.proj;
-                Matrix<float, 4, 4> delta = Matrix<float, 4, 4>::Identity();
-                Matrix<float, 4, 4> matrix = Transform::Translation(aabb.center()).matrix();
-                EditTransform(view.data(), projection.data(), matrix.data(), delta.data());
-                transform.matrix() = transform * delta;
-            }
+    void ShowTransform(entt::entity entity_id) {
+        if (Engine::valid(entity_id) && Engine::has<Transform>(entity_id)) {
+            auto &transform = Engine::State().get<Transform>(entity_id);
+            auto &aabb = Engine::State().get<AABB>(entity_id);
+            auto &camera = Engine::Context().get<Camera>();
+            auto &view = camera.view;
+            auto &projection = camera.proj;
+            Matrix<float, 4, 4> delta = Matrix<float, 4, 4>::Identity();
+            Matrix<float, 4, 4> matrix = Transform::Translation(aabb.center()).matrix();
+            EditTransform(view.data(), projection.data(), matrix.data(), delta.data());
+            transform.matrix() = transform * delta;
         }
-        ImGui::End();
     }
 
     void Show(Transform &transform) {

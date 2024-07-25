@@ -8,11 +8,15 @@
 #include "PluginMesh.h"
 
 namespace Bcg {
-    unsigned int CompileComputeShader(const char *source);
+    VertexProperty<Vector<float, 3>> ComputeVertexNormals(entt::entity entity_id, SurfaceMesh &mesh);
 
-    VertexProperty<Vector<float, 3>> ComputeVertexNormals(SurfaceMesh &mesh);
+    FaceProperty<Vector<float, 3>> ComputeFaceNormals(entt::entity entity_id, SurfaceMesh &mesh);
 
-    FaceProperty<Vector<float, 3>> ComputeFaceNormals(SurfaceMesh &mesh);
+    void PT1A(entt::entity source, entt::entity target, float sigma2, float c);
+
+    void P1PX(entt::entity source, entt::entity target, float sigma2, float c);
+
+
 }
 
 #endif //ENGINE24_MESHCOMPUTE_H

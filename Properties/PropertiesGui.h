@@ -9,21 +9,17 @@
 #include "MatVec.h"
 
 namespace Bcg::Gui {
+    bool Combo(const char *label, std::pair<int, std::string> &curr, BasePropertyArray &a_property);
+
+    bool ListBox(const char *label, std::pair<int, std::string> &curr, BasePropertyArray &a_property);
+
     bool Combo(const char *label, std::pair<int, std::string> &curr, PropertyContainer &container);
 
     bool ListBox(const char *label, std::pair<int, std::string> &curr, PropertyContainer &container);
 
-    template<typename T>
-    bool Combo(const char *label, std::pair<int, std::string> &curr, Property<T> &property) {
-        return Combo(label, curr, ToStrings(property));
-    }
-
-    template<typename T>
-    bool ListBox(const char *label, std::pair<int, std::string> &curr, Property<T> &property) {
-        return ListBox(label, curr, ToStrings(property));
-    }
-
     void Show(BasePropertyArray &basePropertyArray);
+
+    void Show(PropertyContainer &container);
 }
 
 #endif //ENGINE24_PROPERTIESGUI_H

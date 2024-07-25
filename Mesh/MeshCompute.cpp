@@ -6,177 +6,28 @@
 #include "Buffer.h"
 #include "Program.h"
 #include "Mesh.h"
-#include "glad/gl.h"
 #include "Logger.h"
-#include <string>
 #include "PropertyEigenMap.h"
+#include "OpenGLState.h"
+#include "Engine.h"
 
 namespace Bcg {
-
-    unsigned int CompileComputeShader(const char *source) {
-        unsigned int program = glCreateProgram();
-        unsigned int shader = glCreateShader(GL_COMPUTE_SHADER);
-
-        glShaderSource(shader, 1, &source, nullptr);
-        glCompileShader(shader);
-
-        GLint success;
-        glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-        if (!success) {
-            char infoLog[512];
-            glGetShaderInfoLog(shader, 512, nullptr, infoLog);
-            Log::Error(("Compute shader compilation failed\n" + std::string(infoLog)).c_str());
-        }
-
-        glAttachShader(program, shader);
-        glLinkProgram(program);
-
-        glGetProgramiv(program, GL_LINK_STATUS, &success);
-        if (!success) {
-            char infoLog[512];
-            glGetProgramInfoLog(program, 512, nullptr, infoLog);
-            Log::Error(("Compute shader program linking failed\n" + std::string(infoLog)).c_str());
-        }
-
-        glDeleteShader(shader);
-        return program;
-    }
-
-    /* VertexProperty<Vector<float, 3>> ComputeVertexNormals(SurfaceMesh &mesh) {
-         const char *computeShaderSource = R"(
-         #version 430 core
-         layout (local_size_x = 1) in;
-         layout (std430, binding = 0) readonly buffer VertexPositions { vec4 positions[]; };
-         layout (std430, binding = 1) readonly buffer VertexConnectivity { uint vconn[]; };
-         layout (std430, binding = 2) readonly buffer HalfedgeConnectivity { uvec4 hconn[]; };
-         layout (std430, binding = 3) readonly buffer FaceConnectivity { uint fconn[]; };
-         layout (std430, binding = 4) writeonly buffer VertexNormals { vec4 normals[]; };
-
-         uint face(uint h) {
-             return hconn[h].x;
-         }
-
-         uint to_vertex(uint h) {
-             return hconn[h].y;
-         }
-
-         uint next_halfedge(uint h) {
-             return hconn[h].z;
-         }
-
-         uint prev_halfedge(uint h) {
-             return hconn[h].w;
-         }
-
-         uint opposite_halfedge(uint h) {
-             return ((h & 1) == 1 ? h - 1 : h + 1);
-         }
-
-         uint ccw_rotated_halfedge(uint h) {
-            return opposite_halfedge(prev_halfedge(h));
-         }
-
-         uint cw_rotated_halfedge(uint h) {
-             return next_halfedge(opposite_halfedge(h));
-         }
-
-         void main() {
-             uint v = gl_GlobalInvocationID.x;
-             uint h = vconn[v];
-             uint start = h;
-
-             vec3 normal = vec3(0.0);
-             vec3 v0 = positions[v].xyz;
-
-             do {
-                 uint nh = next_halfedge(h);
-                 vec3 v1 = positions[to_vertex(h)].xyz;
-                 vec3 v2 = positions[to_vertex(nh)].xyz;
-                 normal += normalize(cross(v1 - v0, v2 - v0));
-                 h = cw_rotated_halfedge(h);
-             } while (h != start && h != uint(-1));
-
-           normals[v] = vec4(normalize(normal), 0.0);
-         }
-     )";
-
-         // Point coordinates
-         auto &vpoint = mesh.vpoint_.vector();
-         auto &vconn = mesh.vconn_.vector();
-         auto &hconn = mesh.hconn_.vector();
-         auto &fconn = mesh.fconn_.vector();
-         mesh.vprops_.get_or_add<Vector<float, 3>>("v:normal");
-         auto normals = mesh.get_vertex_property<Vector<float, 3>>("v:normal");
-
-         Eigen::Matrix<float, 4, -1> P = Map(mesh.positions()).colwise().homogeneous();
-         Eigen::Matrix<float, 4, -1> N = Map(normals.vector()).colwise().homogeneous();
-
-         GLuint vpointBuffer, vconnBuffer, hconnBuffer, fconnBuffer, normalBuffer;
-         glGenBuffers(1, &vpointBuffer);
-         glBindBuffer(GL_SHADER_STORAGE_BUFFER, vpointBuffer);
-         glBufferData(GL_SHADER_STORAGE_BUFFER, P.size() * sizeof(float), P.data(), GL_STATIC_DRAW);
-
-         glGenBuffers(1, &vconnBuffer);
-         glBindBuffer(GL_SHADER_STORAGE_BUFFER, vconnBuffer);
-         glBufferData(GL_SHADER_STORAGE_BUFFER, vconn.size() * sizeof(unsigned int), vconn.data(), GL_STATIC_DRAW);
-
-         glGenBuffers(1, &hconnBuffer);
-         glBindBuffer(GL_SHADER_STORAGE_BUFFER, hconnBuffer);
-         glBufferData(GL_SHADER_STORAGE_BUFFER, hconn.size() * 4 * sizeof(unsigned int), hconn.data(), GL_STATIC_DRAW);
-
-         glGenBuffers(1, &fconnBuffer);
-         glBindBuffer(GL_SHADER_STORAGE_BUFFER, fconnBuffer);
-         glBufferData(GL_SHADER_STORAGE_BUFFER, fconn.size() * sizeof(unsigned int), fconn.data(), GL_STATIC_DRAW);
-
-         glGenBuffers(1, &normalBuffer);
-         glBindBuffer(GL_SHADER_STORAGE_BUFFER, normalBuffer);
-         glBufferData(GL_SHADER_STORAGE_BUFFER, N.size() * sizeof(float), nullptr, GL_DYNAMIC_DRAW);
-
-         GLuint program = CompileComputeShader(computeShaderSource);
-         if (program == 0) {
-             Log::Error("Failed to create compute shader program!\n");
-             return normals;
-         }
-         glUseProgram(program);
-
-         // Bind buffers
-         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, vpointBuffer);
-         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, vconnBuffer);
-         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, hconnBuffer);
-         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, fconnBuffer);
-         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, normalBuffer);
-
-         // Dispatch compute shader
-         glDispatchCompute(mesh.vertices_size(), 1, 1);
-
-         // Ensure all computations are done
-         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-
-         // Retrieve the computed normals
-         glBindBuffer(GL_SHADER_STORAGE_BUFFER, normalBuffer);
-         glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, N.size() * sizeof(float), N.data());
-
-         // Clean up
-         glDeleteBuffers(1, &vpointBuffer);
-         glDeleteBuffers(1, &vconnBuffer);
-         glDeleteBuffers(1, &hconnBuffer);
-         glDeleteBuffers(1, &fconnBuffer);
-         glDeleteBuffers(1, &normalBuffer);
-         glDeleteProgram(program);
-
-         Map(normals.vector()) = N.block(0, 0, 3, normals.vector().size());
-         return normals;
-     }*/
-
-    VertexProperty<Vector<float, 3>> ComputeVertexNormals(SurfaceMesh &mesh) {
+    VertexProperty<Vector<float, 3>> ComputeVertexNormals(entt::entity entity_id, SurfaceMesh &mesh) {
         const char *computeShaderSource = R"(
         #version 430 core
+
         layout (local_size_x = 1) in;
-        layout (std430, binding = 0) readonly buffer VertexPositions { vec4 positions[]; };
+
+        struct Vector3{
+            float x, y, z;
+        };
+
+        layout (std430, binding = 0) readonly buffer VertexPositions { Vector3 positions[]; };
         layout (std430, binding = 1) readonly buffer VertexConnectivity { uint vconn[]; };
         layout (std430, binding = 2) readonly buffer HalfedgeConnectivity { uvec4 hconn[]; };
         layout (std430, binding = 3) readonly buffer FaceConnectivity { uint fconn[]; };
-        layout (std430, binding = 4) writeonly buffer VertexNormals { vec4 normals[]; };
+
+        layout (std430, binding = 4) writeonly buffer VertexNormals { Vector3 normals[]; };
 
         uint face(uint h) {
             return hconn[h].x;
@@ -199,11 +50,15 @@ namespace Bcg {
         }
 
         uint ccw_rotated_halfedge(uint h) {
-           return opposite_halfedge(prev_halfedge(h));
+            return opposite_halfedge(prev_halfedge(h));
         }
 
         uint cw_rotated_halfedge(uint h) {
             return next_halfedge(opposite_halfedge(h));
+        }
+
+        vec3 Get(Vector3 p){
+            return vec3(p.x, p.y, p.z);
         }
 
         void main() {
@@ -212,17 +67,18 @@ namespace Bcg {
             uint start = h;
 
             vec3 normal = vec3(0.0);
-            vec3 v0 = positions[v].xyz;
+            vec3 v0 = Get(positions[v]);
 
             do {
                 uint nh = next_halfedge(h);
-                vec3 v1 = positions[to_vertex(h)].xyz;
-                vec3 v2 = positions[to_vertex(nh)].xyz;
+                vec3 v1 = Get(positions[to_vertex(h)]);
+                vec3 v2 = Get(positions[to_vertex(nh)]);
                 normal += normalize(cross(v1 - v0, v2 - v0));
                 h = cw_rotated_halfedge(h);
             } while (h != start && h != uint(-1));
 
-          normals[v] = vec4(normalize(normal), 0.0);
+            vec3 N = normalize(normal);
+            normals[v] = Vector3(N.x, N.y, N.z);
         }
     )";
 
@@ -234,45 +90,82 @@ namespace Bcg {
         mesh.vprops_.get_or_add<Vector<float, 3>>("v:normal");
         auto normals = mesh.get_vertex_property<Vector<float, 3>>("v:normal");
 
-        Eigen::Matrix<float, 4, -1> P = Map(mesh.positions()).colwise().homogeneous();
-        Eigen::Matrix<float, 4, -1> N = Map(normals.vector()).colwise().homogeneous();
+        OpenGLState openGlState(entity_id);
+        auto b_positions = openGlState.get_buffer(mesh.vpoint_.name());
+        if (!b_positions) {
+            b_positions = ArrayBuffer();
+            b_positions.create();
+            b_positions.bind();
+            b_positions.buffer_data(mesh.positions().data(),
+                                    mesh.positions().size() * 3 * sizeof(float),
+                                    Buffer::Usage::STATIC_DRAW);
+            openGlState.register_buffer(mesh.vpoint_.name(), b_positions);
+        }
 
-        ShaderStorageBuffer vpointBuffer, vconnBuffer, hconnBuffer, fconnBuffer, normalBuffer;
+        auto b_vconns = openGlState.get_buffer(mesh.vconn_.name());
+        if (!b_vconns) {
+            b_vconns = ShaderStorageBuffer();
+            b_vconns.create();
+            b_vconns.bind();
+            b_vconns.buffer_data(mesh.vconn_.data(),
+                                 mesh.vconn_.vector().size() * sizeof(unsigned int),
+                                 Buffer::Usage::STATIC_DRAW);
+            openGlState.register_buffer(mesh.vconn_.name(), b_vconns);
+        }
 
-        vpointBuffer.create();
-        vpointBuffer.bind();
-        vpointBuffer.buffer_data(P.data(), P.size() * sizeof(float), Buffer::Usage::STATIC_DRAW);
+        auto b_hconns = openGlState.get_buffer(mesh.hconn_.name());
+        if (!b_hconns) {
+            b_hconns = ShaderStorageBuffer();
+            b_hconns.create();
+            b_hconns.bind();
+            b_hconns.buffer_data(mesh.hconn_.data(),
+                                 mesh.hconn_.vector().size() * 4 * sizeof(unsigned int),
+                                 Buffer::Usage::STATIC_DRAW);
+            openGlState.register_buffer(mesh.hconn_.name(), b_hconns);
+        }
 
-        vconnBuffer.create();
-        vconnBuffer.bind();
-        vconnBuffer.buffer_data(vconn.data(), vconn.size() * sizeof(unsigned int), Buffer::Usage::STATIC_DRAW);
+        auto b_fconns = openGlState.get_buffer(mesh.fconn_.name());
+        if (!b_fconns) {
+            b_fconns = ShaderStorageBuffer();
+            b_fconns.create();
+            b_fconns.bind();
+            b_fconns.buffer_data(mesh.fconn_.data(),
+                                 mesh.fconn_.vector().size() * sizeof(unsigned int),
+                                 Buffer::Usage::STATIC_DRAW);
+            openGlState.register_buffer(mesh.fconn_.name(), b_fconns);
+        }
 
-        hconnBuffer.create();
-        hconnBuffer.bind();
-        hconnBuffer.buffer_data(hconn.data(), hconn.size() * 4 * sizeof(unsigned int), Buffer::Usage::STATIC_DRAW);
+        auto b_normals = openGlState.get_buffer(normals.name());
+        if (!b_normals) {
+            b_normals = ArrayBuffer();
+            b_normals.create();
+            b_normals.bind();
+            b_normals.buffer_data(normals.data(),
+                                  normals.vector().size() * 3 * sizeof(float),
+                                  Buffer::Usage::STATIC_DRAW);
+            openGlState.register_buffer(normals.name(), b_normals);
+        }
 
-        fconnBuffer.create();
-        fconnBuffer.bind();
-        fconnBuffer.buffer_data(fconn.data(), fconn.size() * sizeof(unsigned int), Buffer::Usage::STATIC_DRAW);
+        b_positions.target = Buffer::Target::SHADER_STORAGE_BUFFER;
+        b_normals.target = Buffer::Target::SHADER_STORAGE_BUFFER;
 
-        normalBuffer.create();
-        normalBuffer.bind();
-        normalBuffer.buffer_data(nullptr, N.size() * sizeof(float), Buffer::Usage::DYNAMIC_DRAW);
-
-        ComputeShaderProgram program;
-        if (!program.create_from_source(computeShaderSource)) {
-            Log::Error("Failed to create compute shader program!\n");
-            return normals;
+        auto program = openGlState.get_compute_program("ComputeHalfedgeMeshVertexNormals");
+        if (!program) {
+            if (!program.create_from_source(computeShaderSource)) {
+                Log::Error("Failed to create compute shader program!\n");
+                return normals;
+            }
+            openGlState.register_compute_program("ComputeHalfedgeMeshVertexNormals", program);
         }
 
         program.use();
 
         // Bind buffers
-        vpointBuffer.bind_base(0);
-        vconnBuffer.bind_base(1);
-        hconnBuffer.bind_base(2);
-        fconnBuffer.bind_base(3);
-        normalBuffer.bind_base(4);
+        b_positions.bind_base(0);
+        b_vconns.bind_base(1);
+        b_hconns.bind_base(2);
+        b_fconns.bind_base(3);
+        b_normals.bind_base(4);
 
         program.dispatch(mesh.vertices_size(), 1, 1);
 
@@ -280,97 +173,397 @@ namespace Bcg {
         program.memory_barrier(ComputeShaderProgram::Barrier::SHADER_STORAGE_BARRIER_BIT);
 
         // Retrieve the computed normals
-        normalBuffer.bind();
-        normalBuffer.get_buffer_sub_data(N.data(), N.size() * sizeof(float));
+        b_normals.bind();
+        b_normals.get_buffer_sub_data(normals.vector().data(), normals.vector().size() * 3 * sizeof(float));
 
-        // Clean up
-        vpointBuffer.destroy();
-        vconnBuffer.destroy();
-        hconnBuffer.destroy();
-        fconnBuffer.destroy();
-        normalBuffer.destroy();
-
-        program.destroy();
-
-        Map(normals.vector()) = N.block(0, 0, 3, normals.vector().size());
         return normals;
     }
 
-    FaceProperty<Vector<float, 3>> ComputeFaceNormals(SurfaceMesh &mesh) {
+    FaceProperty<Vector<float, 3>> ComputeFaceNormals(entt::entity entity_id, SurfaceMesh &mesh) {
         const char *computeShaderSource = R"(
         #version 430 core
         layout (local_size_x = 1) in;
-        layout (std430, binding = 0) readonly buffer VertexPositions { vec4 positions[]; };
+
+        struct Vector3{
+            float x, y, z;
+        };
+
+        layout (std430, binding = 0) readonly buffer VertexPositions { Vector3 positions[]; };
         layout (std430, binding = 1) readonly buffer Indices { uvec3 indices[]; };
-        layout (std430, binding = 2) writeonly buffer FaceNormals { vec4 normals[]; };
+        layout (std430, binding = 2) writeonly buffer FaceNormals { Vector3 normals[]; };
+
+        vec3 Get(Vector3 p){
+            return vec3(p.x, p.y, p.z);
+        }
+
         void main() {
             uint index = gl_GlobalInvocationID.x;
             uvec3 vertexIndices = indices[index];
-            vec3 v0 = positions[vertexIndices.x].xyz;
-            vec3 v1 = positions[vertexIndices.y].xyz;
-            vec3 v2 = positions[vertexIndices.z].xyz;
-            normals[index].xyz = normalize(cross(v1 - v0, v2 - v0));
+            vec3 v0 = Get(positions[vertexIndices.x]);
+            vec3 v1 = Get(positions[vertexIndices.y]);
+            vec3 v2 = Get(positions[vertexIndices.z]);
+            vec3 N = normalize(cross(v1 - v0, v2 - v0))
+            normals[index] = Vector3(N.x, N.y, N.z);
         }
     )";
 
-        std::vector<float> positions;
-        std::vector<unsigned int> triangles;
-        auto normals = mesh.add_face_property<Vector<float, 3>>("f:normal");
-        extract_triangle_list(mesh, positions, triangles);
+        auto f_normals = mesh.add_face_property<Vector<float,
+                3 >>("f:normal");
 
-        GLuint vertexBuffer, indexBuffer, normalBuffer;
-
-// Vertex buffer (single precision positions)
-        glGenBuffers(1, &vertexBuffer);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, vertexBuffer);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, positions.size() * sizeof(positions[0]), positions.data(),
-                     GL_STATIC_DRAW);
-
-// Index buffer (unsigned int indices)
-        glGenBuffers(1, &indexBuffer);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, indexBuffer);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, triangles.size() * sizeof(triangles[0]), triangles.data(),
-                     GL_STATIC_DRAW);
-
-// Normal buffer (single precision normals)
-        std::vector<float> result(triangles.size() / 3 * 4);
-        glGenBuffers(1, &normalBuffer);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, normalBuffer);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, result.size() * sizeof(result[0]), nullptr,
-                     GL_DYNAMIC_DRAW);
-
-        auto program = CompileComputeShader(computeShaderSource);
-        if (program == 0) {
-            Log::Error("Failed to create compute shader program!\n");
-            return normals;
+        OpenGLState openGlState(entity_id);
+        auto b_positions = openGlState.get_buffer(mesh.vpoint_.name());
+        if (!b_positions) {
+            b_positions = ArrayBuffer();
+            b_positions.create();
+            b_positions.bind();
+            b_positions.buffer_data(mesh.positions().data(),
+                                    mesh.positions().size() * 3 * sizeof(float),
+                                    Buffer::Usage::STATIC_DRAW);
+            openGlState.register_buffer(mesh.vpoint_.name(), b_positions);
         }
-        glUseProgram(program);
 
-// Bind buffers
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, vertexBuffer);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, indexBuffer);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, normalBuffer);
-
-// Dispatch compute shader
-        glDispatchCompute(triangles.size() / 3, 1, 1);
-
-// Ensure all computations are done
-        //glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-        glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
-// Retrieve the computed normals
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, normalBuffer);
-        glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, result.size() * sizeof(result[0]), result.data());
-// Process the normals...
-        glDeleteBuffers(1, &vertexBuffer);
-        glDeleteBuffers(1, &indexBuffer);
-        glDeleteBuffers(1, &normalBuffer);
-        glDeleteProgram(program);
-
-        for (size_t i = 0; i < result.size() / 4; ++i) {
-            Vector<float, 3> normal(result[i * 4], result[i * 4 + 1], result[i * 4 + 2]);
-            normals[Face(i)] = normal;
+        auto f_triangles = extract_triangle_list(mesh);
+        auto b_triangles = openGlState.get_buffer(f_triangles.name());
+        if (!b_triangles) {
+            b_triangles = ElementArrayBuffer();
+            b_triangles.create();
+            b_triangles.bind();
+            b_triangles.buffer_data(f_triangles.data(),
+                                    f_triangles.vector().size() * 3 * sizeof(unsigned int),
+                                    Buffer::STATIC_DRAW);
+            openGlState.register_buffer(f_triangles.name(), b_triangles);
         }
-        return normals;
+
+        auto b_normals = openGlState.get_buffer(f_normals.name());
+        if (!b_normals) {
+            b_normals = ArrayBuffer();
+            b_normals.create();
+            b_normals.bind();
+            b_normals.buffer_data(f_normals.data(),
+                                  f_normals.vector().size() * 3 * sizeof(float),
+                                  Buffer::STATIC_DRAW);
+            openGlState.register_buffer(f_normals.name(), b_normals);
+        }
+
+        b_positions.target = Buffer::Target::SHADER_STORAGE_BUFFER;
+        b_normals.target = Buffer::Target::SHADER_STORAGE_BUFFER;
+
+        auto program = openGlState.get_compute_program("ComputeHalfedgeMeshFaceNormals");
+        if (!program) {
+            if (!program.create_from_source(computeShaderSource)) {
+                Log::Error("Failed to create compute shader program!\n");
+                return f_normals;
+            }
+            openGlState.register_compute_program("ComputeHalfedgeMeshFaceNormals", program);
+        }
+
+        program.use();
+
+        // Bind buffers
+        b_positions.bind_base(0);
+        b_triangles.bind_base(1);
+        b_normals.bind_base(2);
+
+        program.dispatch(f_triangles.vector().size(), 1, 1);
+
+        // Ensure all computations are done
+        program.memory_barrier(ComputeShaderProgram::Barrier::SHADER_STORAGE_BARRIER_BIT);
+
+        // Retrieve the computed normals
+        b_normals.bind();
+        b_normals.get_buffer_sub_data(f_normals.vector().data(), f_normals.vector().size() * 3 * sizeof(float));
+
+        return f_normals;
+    }
+
+    void PT1A(entt::entity source_id, entt::entity target_id, float sigma2, float c) {
+        const char *computeShaderSource = R"(
+            #version 430 core
+            layout (local_size_x = 1) in;
+
+            struct Vector3 {
+                float x, y, z;
+            };
+
+            layout (std430, binding = 0) readonly buffer FixedPoints { Vector3 X[]; };
+            layout (std430, binding = 1) readonly buffer MovingPoints { Vector3 Y[]; };
+            layout (std430, binding = 2) writeonly buffer ResponsibilityDenominator { float a[]; };
+            layout (std430, binding = 3) writeonly buffer PT1 { float PT1[]; };
+
+            uniform float variance; // σ^2
+            uniform float constant_c; // c
+            uniform uint numMovingPoints; // M
+
+            vec3 get(Vector3 p) {
+                return vec3(p.x, p.y, p.z);
+            }
+
+            void main() {
+                uint n = gl_GlobalInvocationID.x;
+                uint N = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+
+                // Ensure we are within bounds
+                if (n >= N) return;
+
+                vec3 xn = get(X[n]);
+                float affinitySum = 0.0;
+
+                for (uint m = 0; m < numMovingPoints; ++m) {
+                    vec3 ym = get(Y[m]);
+                    float norm = distance(xn, ym);
+                    norm = norm * norm; // Compute the squared norm
+                    affinitySum += exp(-norm / (2.0 * variance));
+                }
+
+                float an = affinitySum + constant_c;
+                a[n] = an;
+                PT1[n] = affinitySum / an;
+            }
+        )";
+
+        // Use the compute shader program
+        auto openGlState = OpenGLState(source_id);
+        auto program = openGlState.get_compute_program("PT1A");
+        if (!program) {
+            if (!program.create_from_source(computeShaderSource)) {
+                Log::Error("Failed to create compute shader program!\n");
+                return;
+            }
+            openGlState.register_compute_program("PT1A", program);
+        }
+
+        // Set up FixedPoints
+        auto &target = Engine::State().get<SurfaceMesh>(target_id);
+        auto b_fixed_points = openGlState.get_buffer(target.vpoint_.name());
+        if (!b_fixed_points) {
+            b_fixed_points = ArrayBuffer();
+            b_fixed_points.create();
+            b_fixed_points.bind();
+            b_fixed_points.buffer_data(target.positions().data(),
+                                       target.positions().size() * 3 * sizeof(float),
+                                       Buffer::Usage::STATIC_DRAW);
+            openGlState.register_buffer(target.vpoint_.name(), b_fixed_points);
+        }
+
+        // Set up MovingPoints
+        auto &source = Engine::State().get<SurfaceMesh>(source_id);
+        auto b_moving_points = openGlState.get_buffer(source.vpoint_.name());
+        if (!b_moving_points) {
+            b_moving_points = ArrayBuffer();
+            b_moving_points.create();
+            b_moving_points.bind();
+            b_moving_points.buffer_data(source.positions().data(),
+                                        source.positions().size() * 3 * sizeof(float),
+                                        Buffer::Usage::STATIC_DRAW);
+            openGlState.register_buffer(source.vpoint_.name(), b_moving_points);
+        }
+
+        // Set up ResponsibilityDenominator buffer
+        auto responsibilityDenominator = target.vprops_.get_or_add<float>("v:ResponsibilityDenominator", 0);
+        auto b_responsibility_denominator = openGlState.get_buffer(responsibilityDenominator.name());
+        if (!b_responsibility_denominator) {
+            b_responsibility_denominator = ArrayBuffer();
+            b_responsibility_denominator.create();
+            b_responsibility_denominator.bind();
+            b_responsibility_denominator.buffer_data(responsibilityDenominator.data(),
+                                                     responsibilityDenominator.vector().size() * sizeof(float),
+                                                     Buffer::Usage::STATIC_DRAW);
+            openGlState.register_buffer(responsibilityDenominator.name(), b_responsibility_denominator);
+        }
+
+        // Set up PT1 buffer
+        auto pt1 = target.vprops_.get_or_add<float>("v:PT1", 0);
+        auto b_pt1 = openGlState.get_buffer(pt1.name());
+        if (!b_pt1) {
+            b_pt1 = ArrayBuffer();
+            b_pt1.create();
+            b_pt1.bind();
+            b_pt1.buffer_data(pt1.data(),
+                              pt1.vector().size() * sizeof(float),
+                              Buffer::Usage::STATIC_DRAW);
+            openGlState.register_buffer(pt1.name(), b_pt1);
+        }
+
+        // Bind buffers to shader storage binding points
+        b_fixed_points.bind_base(0);
+        b_moving_points.bind_base(1);
+        b_responsibility_denominator.bind_base(2);
+        b_pt1.bind_base(3);
+
+        program.use();
+
+// Set uniform values
+        program.set_uniform1f("variance", sigma2);
+        program.set_uniform1f("constant_c", c);
+        program.set_uniform1ui("numMovingPoints", source.positions().size());
+
+
+// Dispatch the compute shader
+        program.dispatch(target.positions().size(), 1, 1);
+
+
+// Make sure the computation is done before accessing the results
+        program.memory_barrier(ComputeShaderProgram::SHADER_STORAGE_BARRIER_BIT);
+
+
+// Read back results from ResponsibilityDenominator and PT1 buffers if needed...
+        b_responsibility_denominator.bind();
+        b_responsibility_denominator.get_buffer_sub_data(responsibilityDenominator.vector().data(),
+                                                         responsibilityDenominator.vector().size() * sizeof(float));
+
+        b_pt1.bind();
+        b_pt1.get_buffer_sub_data(pt1.vector().data(), pt1.vector().size() * sizeof(float));
+    }
+
+    void P1PX(entt::entity source_id, entt::entity target_id, float sigma2, float c) {
+        const char *computeShaderSource = R"(
+        #version 430 core
+        layout (local_size_x = 1) in;
+
+        struct Vector3 {
+            float x, y, z;
+        };
+
+        layout (std430, binding = 0) readonly buffer FixedPoints { Vector3 X[]; };
+        layout (std430, binding = 1) readonly buffer MovingPoints { Vector3 Y[]; };
+        layout (std430, binding = 2) readonly buffer ResponsibilityDenominator { float a[]; };
+        layout (std430, binding = 3) writeonly buffer P1 { float P1[]; };
+        layout (std430, binding = 4) writeonly buffer PX { Vector3 PX[]; };
+
+        uniform float variance; // σ^2
+        uniform float constant_c; // c
+        uniform uint numFixedPoints; // N
+
+        vec3 get(Vector3 p) {
+            return vec3(p.x, p.y, p.z);
+        }
+
+        void main() {
+            uint m = gl_GlobalInvocationID.x;
+            uint M = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+
+            // Ensure we are within bounds
+            if (m >= M) return;
+
+            vec3 ym = get(Y[m]);
+            float rowSum = 0.0;
+            vec3 rowSumX = vec3(0.0);
+
+            for (uint n = 0; n < numFixedPoints; ++n) {
+                vec3 xn = get(X[n]);
+                float norm = distance(xn, ym);
+                norm = norm * norm; // Compute the squared norm
+                float responsibility = exp(-norm / (2.0 * variance));
+                rowSum += responsibility;
+                rowSumX += responsibility * xn;
+            }
+
+            P1[m] = rowSum;
+            PX[m] = rowSumX;
+        }
+    )";
+
+        // Use the compute shader program
+        auto openGlState = OpenGLState(source_id);
+        auto program = openGlState.get_compute_program("P1PX");
+        if (!program) {
+            if (!program.create_from_source(computeShaderSource)) {
+                Log::Error("Failed to create compute shader program!\n");
+                return;
+            }
+            openGlState.register_compute_program("P1PX", program);
+        }
+
+        program.use();
+
+        // Set up FixedPoints
+        auto &target = Engine::State().get<SurfaceMesh>(target_id);
+        auto b_fixed_points = openGlState.get_buffer(target.vpoint_.name());
+        if (!b_fixed_points) {
+            b_fixed_points = ArrayBuffer();
+            b_fixed_points.create();
+            b_fixed_points.bind();
+            b_fixed_points.buffer_data(target.positions().data(),
+                                       target.positions().size() * 3 * sizeof(float),
+                                       Buffer::Usage::STATIC_DRAW);
+            openGlState.register_buffer(target.vpoint_.name(), b_fixed_points);
+        }
+
+        // Set up MovingPoints
+        auto &source = Engine::State().get<SurfaceMesh>(source_id);
+        auto b_moving_points = openGlState.get_buffer(source.vpoint_.name());
+        if (!b_moving_points) {
+            b_moving_points = ArrayBuffer();
+            b_moving_points.create();
+            b_moving_points.bind();
+            b_moving_points.buffer_data(source.positions().data(),
+                                        source.positions().size() * 3 * sizeof(float),
+                                        Buffer::Usage::STATIC_DRAW);
+            openGlState.register_buffer(source.vpoint_.name(), b_moving_points);
+        }
+
+        // Set up ResponsibilityDenominator buffer
+        auto responsibilityDenominator = target.vprops_.get_or_add<float>("v:ResponsibilityDenominator", 0);
+        auto b_responsibility_denominator = openGlState.get_buffer(responsibilityDenominator.name());
+        if (!b_responsibility_denominator) {
+            b_responsibility_denominator = ArrayBuffer();
+            b_responsibility_denominator.create();
+            b_responsibility_denominator.bind();
+            b_responsibility_denominator.buffer_data(responsibilityDenominator.data(),
+                                                     responsibilityDenominator.vector().size() * sizeof(float),
+                                                     Buffer::Usage::STATIC_DRAW);
+            openGlState.register_buffer(responsibilityDenominator.name(), b_responsibility_denominator);
+        }
+
+        // Set up P1 buffer
+        auto p1 = source.vprops_.get_or_add<float>("v:P1", 0);
+        auto b_p1 = openGlState.get_buffer(p1.name());
+        if (!b_p1) {
+            b_p1 = ArrayBuffer();
+            b_p1.create();
+            b_p1.bind();
+            b_p1.buffer_data(p1.data(),
+                             p1.vector().size() * sizeof(float),
+                             Buffer::Usage::STATIC_DRAW);
+            openGlState.register_buffer(p1.name(), b_p1);
+        }
+
+        // Set up PX buffer
+        auto px = source.vprops_.get_or_add<Vector<float, 3>>("v:PX", Vector<float, 3>::Zero());
+        auto b_px = openGlState.get_buffer(px.name());
+        if (!b_px) {
+            b_px = ArrayBuffer();
+            b_px.create();
+            b_px.bind();
+            b_px.buffer_data(px.data(),
+                             px.vector().size() * 3 * sizeof(float),
+                             Buffer::Usage::STATIC_DRAW);
+            openGlState.register_buffer(px.name(), b_px);
+        }
+
+        // Bind buffers to shader storage binding points
+        b_fixed_points.bind_base(0);
+        b_moving_points.bind_base(1);
+        b_responsibility_denominator.bind_base(2);
+        b_p1.bind_base(3);
+        b_px.bind_base(4);
+
+        // Set uniform values
+        program.set_uniform1f("variance", sigma2);
+        program.set_uniform1f("constant_c", c);
+        program.set_uniform1ui("numFixedPoints", target.positions().size());
+
+        // Dispatch the compute shader
+        program.dispatch(source.positions().size(), 1, 1);
+
+        // Make sure the computation is done before accessing the results
+        program.memory_barrier(ComputeShaderProgram::SHADER_STORAGE_BARRIER_BIT);
+
+        // Optionally, read back results from P1 and PX buffers if needed
+        b_p1.bind();
+        b_p1.get_buffer_sub_data(p1.vector().data(), p1.vector().size() * sizeof(float));
+
+        b_px.bind();
+        b_px.get_buffer_sub_data(px.vector().data(), px.vector().size() * 3 * sizeof(float));
     }
 }

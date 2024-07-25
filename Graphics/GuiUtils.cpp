@@ -6,32 +6,51 @@
 #include "imgui.h"
 
 namespace Bcg::Gui {
-    static auto VectorGetter = [](void *vec, int idx, const char **out_text) {
-        auto &vector = *static_cast<std::vector<std::string> *>(vec);
-        if (idx < 0 || idx >= static_cast<int>(vector.size())) {
-            return false;
+    bool Combo(const char *combo_label, std::pair<int, std::string> &curr, std::vector<std::string> &labels) {
+        bool changed = false;
+        if (ImGui::BeginCombo(combo_label, labels[curr.first].c_str())) {
+            ImGuiListClipper clipper;
+            clipper.Begin(labels.size(), ImGui::GetTextLineHeightWithSpacing());
+            while (clipper.Step()) {
+                for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; ++i) {
+                    bool is_selected = (curr.first == i);
+                    if (ImGui::Selectable(labels[i].c_str(), is_selected)) {
+                        curr.first = i;
+                        changed = true;
+                    }
+                    if (is_selected) {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+            }
+            clipper.End();
+            ImGui::EndCombo();
         }
-        *out_text = vector.at(idx).c_str();
-        return true;
-    };
-
-    bool Combo(const char *label, std::pair<int, std::string> &curr, std::vector<std::string> &labels) {
-        auto result = ImGui::Combo(label, &curr.first, VectorGetter, static_cast<void *>(&labels),
-                                   static_cast<int>(labels.size()));
-        if (result) {
-            curr.second = labels[curr.first];
-        }
-        return result;
+        return changed;
     }
 
 
-    bool ListBox(const char *label, std::pair<int, std::string> &curr, std::vector<std::string> &labels) {
-        auto result = ImGui::ListBox(label, &curr.first, VectorGetter, static_cast<void *>(&labels),
-                                     static_cast<int>(labels.size()));
-        if (result) {
-            curr.second = labels[curr.first];
+    bool ListBox(const char *listbox_label, std::pair<int, std::string> &curr, std::vector<std::string> &labels) {
+        bool changed = false;
+        if (ImGui::BeginListBox(listbox_label, ImVec2(-FLT_MIN, 3 * ImGui::GetTextLineHeightWithSpacing()))) {
+            ImGuiListClipper clipper;
+            clipper.Begin(labels.size(), ImGui::GetTextLineHeightWithSpacing());
+            while (clipper.Step()) {
+                for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; ++i) {
+                    bool is_selected = (curr.first == i);
+                    if (ImGui::Selectable(labels[i].c_str(), is_selected)) {
+                        curr.first = i;
+                        changed = true;
+                    }
+                    if (is_selected) {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+            }
+            clipper.End();
+            ImGui::EndListBox();
         }
-        return result;
+        return changed;
     }
 
 }

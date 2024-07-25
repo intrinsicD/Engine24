@@ -309,7 +309,7 @@ namespace Bcg {
     static bool show_gui = false;
 
     void PluginCamera::render_menu() {
-        if (ImGui::BeginMenu("Menu")) {
+        if (ImGui::BeginMenu("Graphics")) {
             ImGui::MenuItem(name, nullptr, &show_gui);
             ImGui::EndMenu();
         }

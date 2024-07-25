@@ -12,6 +12,13 @@
 #include "entt/fwd.hpp"
 
 namespace Bcg {
+    struct EntityView{
+        VertexArrayObject vao;
+        Program program;
+        unsigned int num_elements;
+        //and then a mapping which attributes are set to which buffer
+    };
+
     struct PointView {
         VertexArrayObject vao;
         ArrayBuffer vbo;
@@ -39,16 +46,16 @@ namespace Bcg {
 
     struct TriangleView {
         VertexArrayObject vao;
-        ElementArrayBuffer ebo;
+/*        ElementArrayBuffer ebo;
         ArrayBuffer vbo;
-        BufferLayout layout;
+        BufferLayout layout;*/
         Program program;
         unsigned int num_indices;
 
         virtual void draw();
     };
 
-    struct PickingView{
+    struct PickingView {
         VertexArrayObject vao;
         Program program;
         unsigned int num_indices;

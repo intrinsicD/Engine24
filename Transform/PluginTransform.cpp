@@ -44,11 +44,14 @@ namespace Bcg {
         }
 
         auto &picked = Engine::Context().get<Picked>();
-        Gui::ShowTransform(picked.entity.id, show_gui);
+        if (ImGui::Begin("Transform", &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
+            Gui::ShowTransform(picked.entity.id);
+        }
+        ImGui::End();
     }
 
     void PluginTransform::render_menu() {
-        if (ImGui::BeginMenu("Menu")) {
+        if (ImGui::BeginMenu("Entity")) {
             if (ImGui::MenuItem(name, nullptr, &show_gui)) {
                 Engine::Dispatcher().sink<Events::Gui::Render>().connect<on_gui_render>();
             }
