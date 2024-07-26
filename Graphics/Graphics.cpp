@@ -53,6 +53,7 @@ namespace Bcg {
 
     static void mouse_cursor_callback(GLFWwindow *window, double xpos, double ypos) {
         Input::set_mouse_cursor_position(window, xpos, ypos);
+        //TODO figure out how to either control the camera or on strg space control the selected object...
 
         if (!ImGui::GetIO().WantCaptureMouse) {
             Engine::Dispatcher().trigger<Events::Callback::MouseCursor>({window, xpos, ypos});

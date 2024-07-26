@@ -11,6 +11,7 @@
 #include "Hierarchy.h"
 
 namespace Bcg {
+
     PluginTransform::PluginTransform() : Plugin("Transform") {}
 
     void PluginTransform::activate() {

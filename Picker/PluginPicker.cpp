@@ -9,6 +9,8 @@
 #include "EventsCallbacks.h"
 #include "Mouse.h"
 #include "imgui.h"
+#include "Intersections.h"
+#include "Transform.h"
 
 namespace Bcg {
 
@@ -29,6 +31,15 @@ namespace Bcg {
         auto &picked = last_picked();
         picked.spaces = mouse.cursor.last_left.press;
         picked.entity.is_background = picked.spaces.ndc.z() == 1.0;
+        auto view = Engine::State().view<AABB, Transform>();
+        for (const auto entity_id: view) {
+            auto &aabb = Engine::State().get<AABB>(entity_id);
+            auto &transform = Engine::State().get<Transform>(entity_id);
+            if (Intersect(aabb, (transform.matrix().inverse() * picked.spaces.wsp.homogeneous()).head<3>())) {
+                picked.entity.id = entity_id;
+                return picked;
+            }
+        }
         return picked;
     }
 
