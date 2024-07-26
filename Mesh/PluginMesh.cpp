@@ -27,6 +27,7 @@
 #include "MeshCommands.h"
 #include "EntityCommands.h"
 #include "Picker.h"
+#include "Transform.h"
 
 namespace Bcg {
     SurfaceMesh PluginMesh::load(const std::string &path) {
@@ -308,7 +309,7 @@ namespace Bcg {
                 auto &transform = Engine::State().get<Transform>(entity_id);
                 mw.program.set_uniform4fm("model", transform.data(), false);
             }else{
-                mw.program.set_uniform4fm("model", Transform::Identity().data(), false);
+                mw.program.set_uniform4fm("model", Transform().data(), false);
             }
 
             mw.draw();

@@ -194,7 +194,7 @@ namespace Bcg {
         }
     }
 
-    static void on_window_resize(const Events::Callback::WindowResize &event) {
+    static void on_framebuffer_resize(const Events::Callback::FramebufferResize &event) {
         auto &camera = Engine::Context().get<Camera>();
         {
             float half_width = event.width * 0.5f;
@@ -220,7 +220,7 @@ namespace Bcg {
         }
         Engine::Dispatcher().sink<Events::Callback::MouseCursor>().connect<&on_mouse_cursor>();
         Engine::Dispatcher().sink<Events::Callback::MouseScroll>().connect<&on_mouse_scroll>();
-        Engine::Dispatcher().sink<Events::Callback::WindowResize>().connect<&on_window_resize>();
+        Engine::Dispatcher().sink<Events::Callback::FramebufferResize>().connect<&on_framebuffer_resize>();
         Engine::Dispatcher().sink<Events::Key::F>().connect<&on_key_focus>();
         Engine::Dispatcher().sink<Events::Key::C>().connect<&on_key_center>();
         Plugin::activate();
@@ -300,7 +300,7 @@ namespace Bcg {
         Engine::Context().erase<CameraUniformBuffer>();
         Engine::Dispatcher().sink<Events::Callback::MouseCursor>().disconnect<&on_mouse_cursor>();
         Engine::Dispatcher().sink<Events::Callback::MouseScroll>().disconnect<&on_mouse_scroll>();
-        Engine::Dispatcher().sink<Events::Callback::WindowResize>().disconnect<&on_window_resize>();
+        Engine::Dispatcher().sink<Events::Callback::FramebufferResize>().disconnect<&on_framebuffer_resize>();
         Engine::Dispatcher().sink<Events::Key::F>().disconnect<&on_key_focus>();
         Engine::Dispatcher().sink<Events::Key::C>().disconnect<&on_key_center>();
         Plugin::deactivate();

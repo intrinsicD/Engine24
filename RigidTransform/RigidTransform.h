@@ -2,8 +2,8 @@
 // Created by alex on 15.07.24.
 //
 
-#ifndef ENGINE24_TRANSFORM_H
-#define ENGINE24_TRANSFORM_H
+#ifndef ENGINE24_RIGIDTRANSFORM_H
+#define ENGINE24_RIGIDTRANSFORM_H
 
 #include "MatVec.h"
 #include "Eigen/Geometry"
@@ -15,25 +15,25 @@ namespace Bcg {
         Vector<float, 3> position;
     };
 
-    class Transform : public Eigen::Transform<float, 3, Eigen::Affine> {
+    class RigidTransform : public Eigen::Transform<float, 3, Eigen::Affine> {
     public:
         using Base = Eigen::Transform<float, 3, Eigen::Affine>;
 
-        Transform() : Base() {
+        RigidTransform() : Base() {
 
         }
 
-        explicit Transform(const Matrix<float, 4, 4> &matrix) : Base(matrix) {
+        explicit RigidTransform(const Matrix<float, 4, 4> &matrix) : Base(matrix) {
 
         }
 
-        explicit Transform(const Matrix<float, 3, 3> &matrix) : Base(Identity()) {
+        explicit RigidTransform(const Matrix<float, 3, 3> &matrix) : Base(Identity()) {
             Vector<float, 3> scale_vector(matrix.colwise().norm());
             linear() = Eigen::AngleAxisf((matrix.array().colwise() / scale_vector.array()).matrix()).toRotationMatrix();
             scale(scale_vector);
         }
 
-        explicit Transform(const TransformParameters &params) : Base(Identity()) {
+        explicit RigidTransform(const TransformParameters &params) : Base(Identity()) {
             float angle = params.angle_axis.norm();
             linear() = Eigen::AngleAxisf(angle, params.angle_axis / angle).toRotationMatrix();
             scale(params.scale);
@@ -65,50 +65,50 @@ namespace Bcg {
             return m_matrix.col(3).head<3>();
         }
 
-        Transform &SetRight(const Vector<float, 3> &v) {
+        RigidTransform &SetRight(const Vector<float, 3> &v) {
             m_matrix.col(0) = v.homogeneous();
             return *this;
         }
 
-        Transform &SetUp(const Vector<float, 3> &v) {
+        RigidTransform &SetUp(const Vector<float, 3> &v) {
             m_matrix.col(1) = v.homogeneous();
             return *this;
         }
 
-        Transform &SetDir(const Vector<float, 3> &v) {
+        RigidTransform &SetDir(const Vector<float, 3> &v) {
             m_matrix.col(2) = v.homogeneous();
             return *this;
         }
 
-        Transform &SetPosition(const Vector<float, 3> &v) {
+        RigidTransform &SetPosition(const Vector<float, 3> &v) {
             m_matrix.col(3) = v.homogeneous();
             return *this;
         }
 
-        static Transform Identity() {
-            Transform t;
+        static RigidTransform Identity() {
+            RigidTransform t;
             t.setIdentity();
             return t;
         }
 
-        static Transform Translation(const Vector<float, 3> &vt) {
-            auto t = Transform::Identity();
+        static RigidTransform Translation(const Vector<float, 3> &vt) {
+            auto t = RigidTransform();
             t.SetPosition(vt);
             return t;
         }
 
-        static Transform Scale(const Vector<float, 3> &vt) {
-            auto t = Transform::Identity();
+        static RigidTransform Scale(const Vector<float, 3> &vt) {
+            auto t = RigidTransform();
             t.linear() = vt.asDiagonal();
             return t;
         }
 
-        static Transform Rotation(const Vector<float, 3> &angle_axis) {
-            auto t = Transform::Identity();
+        static RigidTransform Rotation(const Vector<float, 3> &angle_axis) {
+            auto t = RigidTransform();
             t.linear() = Eigen::AngleAxisf(angle_axis.norm(), angle_axis.normalized()).toRotationMatrix();
             return t;
         }
     };
 }
 
-#endif //ENGINE24_TRANSFORM_H
+#endif //ENGINE24_RIGIDTRANSFORM_H

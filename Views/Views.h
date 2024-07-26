@@ -9,6 +9,7 @@
 #include "Buffer.h"
 #include "Program.h"
 #include "MatVec.h"
+#include "DrawCall.h"
 #include "entt/fwd.hpp"
 
 namespace Bcg {
@@ -46,9 +47,6 @@ namespace Bcg {
 
     struct TriangleView {
         VertexArrayObject vao;
-/*        ElementArrayBuffer ebo;
-        ArrayBuffer vbo;
-        BufferLayout layout;*/
         Program program;
         unsigned int num_indices;
 

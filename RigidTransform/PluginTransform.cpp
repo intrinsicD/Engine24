@@ -4,13 +4,11 @@
 
 #include "PluginTransform.h"
 #include "imgui.h"
-#include "ImGuizmo.h"
 #include "Engine.h"
 #include "EventsGui.h"
 #include "Picker.h"
-#include "TransformGui.h"
-#include "../Camera/Camera.h"
-#include "Graphics.h"
+#include "RigidTransformGui.h"
+#include "Hierarchy.h"
 
 namespace Bcg {
     PluginTransform::PluginTransform() : Plugin("Transform") {}
@@ -44,8 +42,24 @@ namespace Bcg {
         }
 
         auto &picked = Engine::Context().get<Picked>();
+        auto entity_id = picked.entity.id;
         if (ImGui::Begin("Transform", &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
-            Gui::ShowTransform(picked.entity.id);
+            if (Engine::valid(entity_id) && Engine::State().all_of<Transform>(entity_id)) {
+                auto &transform = Engine::State().get<Transform>(entity_id);
+                if (Gui::Show(transform)) {
+                    if (Engine::State().all_of<Hierarchy>(entity_id)) {
+                        auto &hierarchy = Engine::State().get<Hierarchy>(entity_id);
+                        if (Engine::valid(hierarchy.parent) && Engine::State().all_of<Transform>(hierarchy.parent)) {
+                            auto &parent_transform = Engine::State().get<Transform>(hierarchy.parent);
+                            transform.update(parent_transform.matrix());
+                        }else{
+                            transform.update(Matrix<float, 4, 4>::Identity());
+                        }
+                    }else{
+                        transform.update(Matrix<float, 4, 4>::Identity());
+                    }
+                }
+            }
         }
         ImGui::End();
     }

@@ -75,8 +75,13 @@ namespace Bcg {
         }
     }
 
-    static void resize_callback(GLFWwindow *window, int width, int height) {
-        Graphics::set_window_size(width, height);
+    static void window_resize_callback(GLFWwindow *window, int width, int height) {
+        Engine::Dispatcher().trigger(Events::Callback::WindowResize{global_window.handle, width, height});
+    }
+
+    static void framebuffer_resize_callback(GLFWwindow *window, int width, int height) {
+        glViewport(0, 0, width, height);
+        Engine::Dispatcher().trigger(Events::Callback::FramebufferResize{global_window.handle, width, height});
     }
 
     static void close_callback(GLFWwindow *window) {
@@ -139,7 +144,8 @@ namespace Bcg {
             glfwSetMouseButtonCallback(global_window.handle, mouse_button_callback);
             glfwSetScrollCallback(global_window.handle, mouse_scrolling);
             glfwSetWindowCloseCallback(global_window.handle, close_callback);
-            glfwSetWindowSizeCallback(global_window.handle, resize_callback);
+            glfwSetWindowSizeCallback(global_window.handle, window_resize_callback);
+            glfwSetFramebufferSizeCallback(global_window.handle, framebuffer_resize_callback);
             glfwSetDropCallback(global_window.handle, drop_callback);
         }
 
@@ -178,7 +184,7 @@ namespace Bcg {
             load_fonts(io, dpi);
             ImGui::GetStyle().ScaleAllSizes(dpi);
         }
-
+        glViewport(0, 0, global_window.WIDTH, global_window.HEIGHT);
         glClearColor(global_window.clear_color[0], global_window.clear_color[1], global_window.clear_color[2], 1.0f);
         // Enable depth testing
         glEnable(GL_DEPTH_TEST);
@@ -190,7 +196,8 @@ namespace Bcg {
 // Enable blending for transparency
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        set_window_size(global_window.WIDTH, global_window.HEIGHT);
+        Vector<int, 2> fbs = Graphics::get_framebuffer_size();
+        Engine::Dispatcher().enqueue(Events::Callback::FramebufferResize{global_window.handle, fbs.x(), fbs.y()});
         return true;
     }
 
@@ -204,12 +211,6 @@ namespace Bcg {
 
     void Graphics::set_window_title(const char *title) {
         glfwSetWindowTitle(global_window.handle, title);
-    }
-
-    void Graphics::set_window_size(int width, int height) {
-        glfwSetWindowSize(global_window.handle, width, height);
-        glViewport(0, 0, width, height);
-        Engine::Dispatcher().trigger(Events::Callback::WindowResize{global_window.handle, width, height});
     }
 
     void Graphics::set_clear_color(const float *color) {
@@ -270,9 +271,21 @@ namespace Bcg {
         glfwSwapBuffers(global_window.handle);
     }
 
+    Vector<int, 2> Graphics::get_window_pos() {
+        int windowPosX, windowPosY;
+        glfwGetWindowPos(global_window.handle, &windowPosX, &windowPosY);
+        return {windowPosX, windowPosY};
+    }
+
     Vector<int, 2> Graphics::get_window_size() {
         int width, height;
         glfwGetWindowSize(global_window.handle, &width, &height);
+        return {width, height};
+    }
+
+    Vector<int, 2> Graphics::get_framebuffer_size() {
+        int width, height;
+        glfwGetFramebufferSize(global_window.handle, &width, &height);
         return {width, height};
     }
 

@@ -5,7 +5,7 @@
 #ifndef ENGINE24_CAMERA_H
 #define ENGINE24_CAMERA_H
 
-#include "Transform.h"
+#include "RigidTransform.h"
 #include "Buffer.h"
 
 namespace Bcg {
@@ -33,9 +33,9 @@ namespace Bcg {
         }
     };
 
-    class ViewMatrix : public Transform {
+    class ViewMatrix : public RigidTransform {
     public:
-        explicit ViewMatrix(const Transform &model) : Transform(model.inverse().matrix()) {
+        explicit ViewMatrix(const RigidTransform &model) : RigidTransform(model.inverse().matrix()) {
 
         }
 
@@ -44,7 +44,7 @@ namespace Bcg {
         }
 
         explicit ViewMatrix(const Vector<float, 3> &eye, const Vector<float, 3> &center, const Vector<float, 3> &up) {
-            Transform t = Transform::Identity();
+            RigidTransform t = RigidTransform::Identity();
             t.SetUp(up.normalized());
             t.SetDir((center - eye).normalized());
             t.SetRight(t.Up().cross(t.Dir()));
@@ -52,8 +52,8 @@ namespace Bcg {
             m_matrix = t.matrix();
         }
 
-        [[nodiscard]] Transform model() const {
-            return Transform(m_matrix.inverse().eval());
+        [[nodiscard]] RigidTransform model() const {
+            return RigidTransform(m_matrix.inverse().eval());
         }
     };
 

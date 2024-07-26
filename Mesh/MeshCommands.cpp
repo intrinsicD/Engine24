@@ -9,6 +9,7 @@
 #include "Transform.h"
 #include "AABB.h"
 #include "Camera.h"
+#include "CameraCommands.h"
 #include "MeshCompute.h"
 #include "OpenGLState.h"
 
@@ -28,7 +29,7 @@ namespace Bcg::Commands::Mesh {
 
         if (!Engine::has<AABB>(entity_id)) {
 
-            Commands::Entity::Add<AABB>(entity_id, AABB()).execute();
+            Commands::Entity::Add<AABB>(entity_id, AABB(), "AABB").execute();
         }
 
         auto &aabb = Engine::State().get<AABB>(entity_id);
@@ -44,7 +45,7 @@ namespace Bcg::Commands::Mesh {
         aabb.max -= center;
 
         if (!Engine::has<Transform>(entity_id)) {
-            Commands::Entity::Add<Transform>(entity_id, Transform::Identity()).execute();
+            Commands::Entity::Add<Transform>(entity_id, Transform(), "Transform").execute();
         }
 
 
@@ -142,6 +143,7 @@ namespace Bcg::Commands::Mesh {
         auto program = openGlState.get_program("MeshProgram");
         if (!program) {
             program.create_from_source(vertex_shader_src, fragment_shader_src);
+            openGlState.register_program("MeshProgram", program);
         }
         mw.program = program;
 
@@ -163,5 +165,22 @@ namespace Bcg::Commands::Mesh {
         message += " Done.";
 
         Log::Info(message);
+        CenterCamera(entity_id).execute();
+    }
+
+    void ComputeFaceNormals::execute() const {
+        if (!Engine::valid(entity_id)) {
+            Log::Warn(name + "Entity is not valid. Abort Command");
+            return;
+        }
+
+        if (!Engine::has<SurfaceMesh>(entity_id)) {
+            Log::Warn(name + "Entity does not have a SurfaceMesh. Abort Command");
+            return;
+        }
+
+        auto &mesh = Engine::State().get<SurfaceMesh>(entity_id);
+
+        auto v_normals = ComputeVertexNormals(entity_id, mesh);
     }
 }

@@ -39,5 +39,7 @@ namespace Bcg {
         double_cmd_buffer.current().execute();
         double_cmd_buffer.current().clear();
         double_cmd_buffer.swap_buffers();
+        Engine::Dispatcher().update();
+        Engine::Dispatcher().clear();
     }
 }

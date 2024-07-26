@@ -16,7 +16,6 @@ namespace Bcg{
 
     void Application::init(int width, int height, const char *title){
         Bcg::Graphics::set_window_title(title);
-        Bcg::Graphics::set_window_size(width, height);
         Bcg::Plugins::init();
         Bcg::Plugins::activate_all();
         Bcg::Engine::ExecuteCmdBuffer();

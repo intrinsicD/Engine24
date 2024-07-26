@@ -33,6 +33,11 @@ namespace Bcg::Events::Callback {
         int width, height;
     };
 
+    struct FramebufferResize {
+        GLFWwindow *window;
+        int width, height;
+    };
+
     struct WindowClose {
         GLFWwindow *window;
     };

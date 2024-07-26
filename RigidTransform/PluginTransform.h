@@ -6,7 +6,7 @@
 #define ENGINE24_PLUGINTRANSFORM_H
 
 #include "Plugin.h"
-#include "Transform.h"
+#include "RigidTransform.h"
 #include "entt/fwd.hpp"
 
 namespace Bcg {
