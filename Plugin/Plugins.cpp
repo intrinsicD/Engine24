@@ -5,6 +5,7 @@
 #include "Plugins.h"
 #include "Input.h"
 #include "Logger.h"
+#include "PluginAABB.h"
 #include "PluginMesh.h"
 #include "PluginPicker.h"
 #include "PluginFrameTimer.h"
@@ -17,6 +18,7 @@ namespace Bcg {
 
     void Plugins::init() {
         add_plugin(std::make_unique<Input>());
+        add_plugin(std::make_unique<PluginAABB>());
         add_plugin(std::make_unique<PluginMesh>());
         add_plugin(std::make_unique<PluginPicker>());
         add_plugin(std::make_unique<PluginCamera>());

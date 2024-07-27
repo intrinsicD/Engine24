@@ -7,7 +7,7 @@
 #include "Mesh.h"
 #include "Views.h"
 #include "Transform.h"
-#include "AABB.h"
+#include "AABBPool.h"
 #include "Camera.h"
 #include "CameraCommands.h"
 #include "MeshCompute.h"
@@ -27,13 +27,19 @@ namespace Bcg::Commands::Mesh {
 
         auto &mesh = Engine::State().get<SurfaceMesh>(entity_id);
 
-        if (!Engine::has<AABB>(entity_id)) {
-
-            Commands::Entity::Add<AABB>(entity_id, AABB(), "AABB").execute();
+        auto &aabb_pool = Engine::Context().get<AABBPool>();
+        if (!Engine::has<AABBHandle>(entity_id)) {
+            auto aabb_handle = aabb_pool.create();
+            auto &aabb = *aabb_handle;
+            Build(aabb, mesh.positions());
+            Engine::State().emplace<AABBHandle>(entity_id, aabb_handle);
         }
 
-        auto &aabb = Engine::State().get<AABB>(entity_id);
-        Build(aabb, mesh.positions());
+
+
+
+        auto &aabb_handle = Engine::State().get<AABBHandle>(entity_id);
+        auto &aabb = *aabb_handle;
 
         Vector<float, 3> center = aabb.center();
 

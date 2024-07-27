@@ -22,6 +22,7 @@
 namespace Bcg {
 
     struct Window {
+        const char *title = nullptr;
         int WIDTH = 800, HEIGHT = 600;
         GLFWwindow *handle = nullptr;
         int version = 0;
@@ -110,7 +111,7 @@ namespace Bcg {
         io.Fonts->Build();
     }
 
-    bool Graphics::init() {
+    bool Graphics::init(int width, int height, const char *title) {
         if (global_window.handle) {
             Log::Info("GLFW context already initialized");
         } else {
@@ -126,8 +127,11 @@ namespace Bcg {
             glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
             glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-            global_window.handle = glfwCreateWindow(global_window.WIDTH, global_window.HEIGHT, "BCG_ENGINE", NULL,
-                                                    NULL);
+            global_window.WIDTH = width;
+            global_window.HEIGHT = height;
+            global_window.title = title;
+            global_window.handle = glfwCreateWindow(global_window.WIDTH, global_window.HEIGHT, global_window.title,
+                                                    NULL, NULL);
 
             if (!global_window.handle) {
                 Log::Error("Failed to create GLFW window");

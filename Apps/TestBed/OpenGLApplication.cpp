@@ -9,16 +9,16 @@
 
 namespace Bcg{
     Application::Application(){
-        if (Bcg::Graphics::init()) {
 
-        }
     }
 
     void Application::init(int width, int height, const char *title){
-        Bcg::Graphics::set_window_title(title);
-        Bcg::Plugins::init();
-        Bcg::Plugins::activate_all();
-        Bcg::Engine::ExecuteCmdBuffer();
+        if (Bcg::Graphics::init(width, height, title)) {
+            Bcg::Graphics::set_window_title(title);
+            Bcg::Plugins::init();
+            Bcg::Plugins::activate_all();
+            Bcg::Engine::ExecuteCmdBuffer();
+        }
     }
 
     void Application::run(){

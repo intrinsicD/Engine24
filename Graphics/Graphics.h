@@ -16,7 +16,7 @@ namespace Bcg {
 
     class Graphics {
     public:
-        static bool init();
+        static bool init(int width, int height, const char *title);
 
         static bool should_close();
 
