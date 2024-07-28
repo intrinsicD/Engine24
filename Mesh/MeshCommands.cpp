@@ -7,7 +7,8 @@
 #include "Mesh.h"
 #include "Views.h"
 #include "Transform.h"
-#include "AABBPool.h"
+#include "AABB.h"
+#include "Hierarchy.h"
 #include "Camera.h"
 #include "CameraCommands.h"
 #include "MeshCompute.h"
@@ -27,19 +28,13 @@ namespace Bcg::Commands::Mesh {
 
         auto &mesh = Engine::State().get<SurfaceMesh>(entity_id);
 
-        auto &aabb_pool = Engine::Context().get<AABBPool>();
-        if (!Engine::has<AABBHandle>(entity_id)) {
-            auto aabb_handle = aabb_pool.create();
-            auto &aabb = *aabb_handle;
+        if (!Engine::has<AABB>(entity_id)) {
+            auto &aabb = Engine::State().emplace<AABB>(entity_id);
             Build(aabb, mesh.positions());
-            Engine::State().emplace<AABBHandle>(entity_id, aabb_handle);
         }
 
 
-
-
-        auto &aabb_handle = Engine::State().get<AABBHandle>(entity_id);
-        auto &aabb = *aabb_handle;
+        auto &aabb = Engine::State().get<AABB>(entity_id);
 
         Vector<float, 3> center = aabb.center();
 
@@ -52,6 +47,10 @@ namespace Bcg::Commands::Mesh {
 
         if (!Engine::has<Transform>(entity_id)) {
             Commands::Entity::Add<Transform>(entity_id, Transform(), "Transform").execute();
+        }
+
+        if (!Engine::has<Hierarchy>(entity_id)) {
+            Commands::Entity::Add<Hierarchy>(entity_id, Hierarchy(), "Hierarchy").execute();
         }
 
 

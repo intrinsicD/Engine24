@@ -8,6 +8,7 @@
 #include "EventsGui.h"
 #include "Picker.h"
 #include "RigidTransformGui.h"
+#include "PluginHierarchy.h"
 #include "Hierarchy.h"
 
 namespace Bcg {
@@ -51,12 +52,23 @@ namespace Bcg {
                     if (Engine::State().all_of<Hierarchy>(entity_id)) {
                         auto &hierarchy = Engine::State().get<Hierarchy>(entity_id);
                         if (Engine::valid(hierarchy.parent) && Engine::State().all_of<Transform>(hierarchy.parent)) {
-                            auto &parent_transform = Engine::State().get<Transform>(hierarchy.parent);
-                            transform.update(parent_transform.matrix());
-                        }else{
+                            /*         auto &parent_transform = Engine::State().get<Transform>(hierarchy.parent);
+                                     transform.update(parent_transform.matrix());*/
+                            auto &p_hierarchy = Engine::State().get_or_emplace<Hierarchy>(hierarchy.parent);
+                            auto &p_transform = Engine::State().get_or_emplace<Transform>(hierarchy.parent);
+
+                            for (auto child: p_hierarchy.children) {
+                                auto &c_transform = Engine::State().get_or_emplace<Transform>(child);
+                                c_transform.update(p_transform.world.matrix());
+
+                                // Recursively update children's children
+                                //TODO check if this is actually working, Hierarchy and Transforms.
+                                PluginHierarchy::update_transforms(child);
+                            }
+                        } else {
                             transform.update(Matrix<float, 4, 4>::Identity());
                         }
-                    }else{
+                    } else {
                         transform.update(Matrix<float, 4, 4>::Identity());
                     }
                 }

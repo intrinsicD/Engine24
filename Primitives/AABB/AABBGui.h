@@ -5,15 +5,11 @@
 #ifndef ENGINE24_AABBGUI_H
 #define ENGINE24_AABBGUI_H
 
-#include "AABBPool.h"
+#include "AABB.h"
 #include "entt/fwd.hpp"
 
 namespace Bcg::Gui {
     void Show(const AABB &aabb);
-
-    void Show(const AABBHandle &handle);
-
-    void Show(AABBPool &pool);
 
     void Show(entt::entity entity_id);
 }

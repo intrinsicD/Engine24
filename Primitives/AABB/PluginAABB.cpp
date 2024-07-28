@@ -32,12 +32,10 @@ namespace Bcg {
     }
 
     static bool show_gui = false;
-    static bool show_pool = false;
 
     void PluginAABB::render_menu() {
         if (ImGui::BeginMenu("Entity")) {
             ImGui::MenuItem(name, nullptr, &show_gui);
-            ImGui::MenuItem("Pool##AABB", nullptr, &show_pool);
             ImGui::EndMenu();
         }
     }
@@ -47,13 +45,6 @@ namespace Bcg {
             auto &picked = Engine::Context().get<Picked>();
             if (ImGui::Begin("AABB", &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
                 Gui::Show(picked.entity.id);
-            }
-            ImGui::End();
-        }
-        if (show_pool) {
-            auto &pool = Engine::Context().get<AABBPool>();
-            if (ImGui::Begin("AABB Pool", &show_pool, ImGuiWindowFlags_AlwaysAutoResize)) {
-                Gui::Show(pool);
             }
             ImGui::End();
         }

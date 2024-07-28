@@ -18,6 +18,7 @@ namespace Bcg {
     class RigidTransform : public Eigen::Transform<float, 3, Eigen::Affine> {
     public:
         using Base = Eigen::Transform<float, 3, Eigen::Affine>;
+        using Base::operator=;
 
         RigidTransform() : Base() {
 

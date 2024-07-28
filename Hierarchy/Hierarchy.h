@@ -11,6 +11,7 @@ namespace Bcg {
     struct Hierarchy {
         entt::entity parent = entt::null;
         std::vector<entt::entity> children;
+        std::vector<entt::entity> overlays;
     };
 }
 

@@ -4,13 +4,11 @@
 
 #include "Engine.h"
 #include "CommandBuffer.h"
-#include "AABBPool.h"
 
 namespace Bcg {
     Engine::Engine() {
         entt::locator<Bcg::Engine *>::emplace<Bcg::Engine *>(this);
         state.ctx().emplace<DoubleCommandBuffer>();
-        state.ctx().emplace<AABBPool>();
         assert(Instance() == this);
     }
 
