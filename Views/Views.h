@@ -22,8 +22,6 @@ namespace Bcg {
 
     struct PointView {
         VertexArrayObject vao;
-        ArrayBuffer vbo;
-        BufferLayout layout;
         Program program;
         unsigned int num_indices;
     };
@@ -34,9 +32,6 @@ namespace Bcg {
 
     struct LineView {
         VertexArrayObject vao;
-        ElementArrayBuffer ebo;
-        ArrayBuffer vbo;
-        BufferLayout layout;
         Program program;
         unsigned int num_indices;
     };
