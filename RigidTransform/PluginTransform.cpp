@@ -52,7 +52,7 @@ namespace Bcg {
                 if (Gui::Show(transform)) {
                     PluginHierarchy::mark_transforms_dirty(entity_id);
                     auto &double_cmd_buffer = Engine::Context().get<DoubleCommandBuffer>();
-                    double_cmd_buffer.current().add_command(UpdateTransforms(entity_id));
+                    double_cmd_buffer.current().add_command(UpdateTransformsDeferred(entity_id));
                 }
             }
         }

@@ -6,7 +6,7 @@
 #include "PluginHierarchy.h"
 
 namespace Bcg {
-    void UpdateTransforms::execute() const {
+    void UpdateTransformsDeferred::execute() const {
         PluginHierarchy::update_transforms(entity_id);
     }
 }

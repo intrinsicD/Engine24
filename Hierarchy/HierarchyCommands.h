@@ -9,8 +9,8 @@
 #include "entt/fwd.hpp"
 
 namespace Bcg {
-    struct UpdateTransforms : public AbstractCommand {
-        explicit UpdateTransforms(entt::entity entity_id) : AbstractCommand("UpdateTransfroms"), entity_id(entity_id) {}
+    struct UpdateTransformsDeferred : public AbstractCommand {
+        explicit UpdateTransformsDeferred(entt::entity entity_id) : AbstractCommand("UpdateTransformsDeferred"), entity_id(entity_id) {}
 
         void execute() const override;
 
