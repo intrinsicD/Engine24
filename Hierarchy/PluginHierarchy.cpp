@@ -11,170 +11,251 @@
 #include "imgui.h"
 
 namespace Bcg {
-    void PluginHierarchy::add_child(entt::entity parent, entt::entity child) {
+    void PluginHierarchy::attach_child(entt::entity parent, entt::entity child) {
+        if (!Engine::valid(parent) || !Engine::valid(child)) return;
+
         if (parent == child) {
             Log::Error("Parent and child are the same entity");
             return;
         }
-        auto &p_hierarchy = Engine::State().get_or_emplace<Hierarchy>(parent);
+
         auto &c_hierarchy = Engine::State().get_or_emplace<Hierarchy>(child);
+        //Check if child is already a child of parent
+        if (c_hierarchy.parent == parent) {
+            Log::Error("Parent and child are already related");
+            return;
+        }
+
+        auto &p_hierarchy = Engine::State().get_or_emplace<Hierarchy>(parent);
+
+        assert(!p_hierarchy.has_child(child));
+
+        if (Engine::valid(c_hierarchy.parent)) {
+            //TODO what happens if child already has a parent which is different from parent?
+            PluginHierarchy::detach_child(c_hierarchy.parent, child);
+        }
+
         c_hierarchy.parent = parent;
         p_hierarchy.children.push_back(child);
 
         //Setup the transform of the child entity
-        auto &p_transform = Engine::State().get_or_emplace<Transform>(parent);
-        auto &c_transform = Engine::State().get_or_emplace<Transform>(child);
+        auto &p_transform = Engine::State().get<Transform>(parent);
+        auto &c_transform = Engine::State().get<Transform>(child);
 
-        //update the child transform to be relative to the parent
-        c_transform.local = p_transform.world.inverse() * c_transform.world; // Compute local transform
-        c_transform.dirty = true;
+        if(false){
+            //old way, changed the local transform resulted in repositioned guizmo
 
-        // Update the child's world transform
-        c_transform.update(p_transform.world.matrix());
+            //update the child transform to be relative to the parent
+            c_transform.set_local(p_transform.world().inverse() * c_transform.world().matrix());
+
+            // Update the child's world transform
+            c_transform.update_world(p_transform.world());
+        }else{
+            //update the child transform to be relative to the parent
+            c_transform.set_local(p_transform.world().inverse() * c_transform.world().matrix());
+
+            // Update the child's world transform
+            c_transform.update_world(p_transform.world());
+        }
+
+
+        PluginHierarchy::mark_transforms_dirty(child);
     }
 
-    bool PluginHierarchy::remove_child(entt::entity parent, entt::entity child) {
+    bool PluginHierarchy::detach_child(entt::entity parent, entt::entity child) {
         if (parent == child) {
             Log::Error("Parent and child are the same entity");
             return false;
         }
-        auto &p_hierarchy = Engine::State().get_or_emplace<Hierarchy>(parent);
-        auto &c_hierarchy = Engine::State().get_or_emplace<Hierarchy>(child);
-        auto iter = std::find(p_hierarchy.children.begin(), p_hierarchy.children.end(), child);
-        if (iter != p_hierarchy.children.end()) {
-            c_hierarchy.parent = entt::null;
-            p_hierarchy.children.erase(iter);
 
-            auto &c_transform = Engine::State().get_or_emplace<Transform>(child);
-            c_transform.local = c_transform.world; // Detach from parent
-            c_transform.dirty = true;
-            return true;
+        if (!Engine::valid(child) || !Engine::has<Hierarchy>(child)) return false;
+
+        auto &c_hierarchy = Engine::State().get<Hierarchy>(child);
+        if (c_hierarchy.parent != parent) {
+            Log::Error("Parent and child are not related");
+            return false;
         }
-        return false;
+
+        return detach_parent(child);
     }
 
-    void PluginHierarchy::add_overlay(entt::entity parent, entt::entity overlay) {
+    void PluginHierarchy::attach_overlay(entt::entity parent, entt::entity overlay) {
+        if (!Engine::valid(parent) || !Engine::valid(overlay)) return;
+
         if (parent == overlay) {
             Log::Error("Parent and overlay are the same entity");
             return;
         }
-        auto &p_hierarchy = Engine::State().get_or_emplace<Hierarchy>(parent);
+
         auto &o_hierarchy = Engine::State().get_or_emplace<Hierarchy>(overlay);
+        //Check if child is already a child of parent
+        if (o_hierarchy.parent == parent) {
+            Log::Error("Parent and overlay are already related");
+            return;
+        }
+
+        auto &p_hierarchy = Engine::State().get_or_emplace<Hierarchy>(parent);
+
+        assert(p_hierarchy.has_overlay(overlay));
+
+        if (Engine::valid(o_hierarchy.parent)) {
+            PluginHierarchy::detach_child(o_hierarchy.parent, overlay);
+        }
+
         o_hierarchy.parent = parent;
-        p_hierarchy.overlays.push_back(overlay);
+        p_hierarchy.children.push_back(overlay);
 
-        // Setup the transform of the overlay entity
-        auto &p_transform = Engine::State().get_or_emplace<Transform>(parent);
-        auto &o_transform = Engine::State().get_or_emplace<Transform>(overlay);
-        o_transform.update(p_transform.world.matrix());
-        o_transform.dirty = true;
+        //Setup the transform of the child entity
+        auto &p_transform = Engine::State().get<Transform>(parent);
+        auto &c_transform = Engine::State().get<Transform>(overlay);
+
+        //update the child transform to be relative to the parent
+        c_transform.set_local(p_transform.world().inverse() * c_transform.world().matrix());
+
+        // Update the child's world transform
+        c_transform.update_world(p_transform.world());
+        PluginHierarchy::mark_transforms_dirty(overlay);
     }
 
-    void PluginHierarchy::remove_overlay(entt::entity parent, entt::entity overlay) {
+    bool PluginHierarchy::detach_overlay(entt::entity parent, entt::entity overlay) {
         if (parent == overlay) {
             Log::Error("Parent and overlay are the same entity");
-            return;
+            return false;
         }
-        auto &p_hierarchy = Engine::State().get_or_emplace<Hierarchy>(parent);
-        auto &o_hierarchy = Engine::State().get_or_emplace<Hierarchy>(overlay);
-        auto iter = std::find(p_hierarchy.overlays.begin(), p_hierarchy.overlays.end(), overlay);
-        if (iter != p_hierarchy.overlays.end()) {
-            o_hierarchy.parent = entt::null;
-            p_hierarchy.overlays.erase(iter);
 
-            // Update the overlay's world transform to be independent of the parent
-            auto &o_transform = Engine::State().get_or_emplace<Transform>(overlay);
-            o_transform.local = o_transform.world; // Detach from parent
-            o_transform.dirty = true;
+        if (!Engine::valid(overlay) || !Engine::has<Hierarchy>(overlay)) return false;
+
+        auto &o_hierarchy = Engine::State().get<Hierarchy>(overlay);
+        if (o_hierarchy.parent != parent) {
+            Log::Error("Parent and overlay are not related");
+            return false;
         }
+
+        o_hierarchy.parent = entt::null;
+
+        if (Engine::valid(parent) && Engine::has<Hierarchy>(parent)) {
+            auto &p_hierarchy = Engine::State().get<Hierarchy>(parent);
+            auto iter = std::find(p_hierarchy.overlays.begin(), p_hierarchy.overlays.end(), overlay);
+            if (iter != p_hierarchy.overlays.end()) {
+                p_hierarchy.overlays.erase(iter);
+            } else {
+                Log::Error("Parent and overlay were not related. Check how this could happend!");
+            }
+
+            // Update the child's world transform to be independent of the parent
+            auto &o_transform = Engine::State().get<Transform>(overlay);
+            o_transform.set_local(o_transform.world());
+            o_transform.update_world(Matrix<float, 4, 4>::Identity());
+        } else {
+            Log::Warn("Called detach overlay on entity with Hierarchy component but parent is not set.");
+            return false;
+        }
+        return true;
     }
 
-    void PluginHierarchy::clear_children(entt::entity parent) {
-        auto &p_hierarchy = Engine::State().get_or_emplace<Hierarchy>(parent);
+    void PluginHierarchy::detach_children(entt::entity parent) {
+        if (!Engine::valid(parent) || !Engine::has<Hierarchy>(parent)) return;
+        auto &p_hierarchy = Engine::State().get<Hierarchy>(parent);
         for (auto child: p_hierarchy.children) {
-            auto &c_hierarchy = Engine::State().get_or_emplace<Hierarchy>(child);
+            auto &c_hierarchy = Engine::State().get<Hierarchy>(child);
             c_hierarchy.parent = entt::null;
 
             // Update the child's world transform to be independent of the parent
-            auto &c_transform = Engine::State().get_or_emplace<Transform>(child);
-            c_transform.local = c_transform.world; // Detach from parent
-            c_transform.dirty = true;
+            auto &c_transform = Engine::State().get<Transform>(child);
+            c_transform.set_local(c_transform.world());
+            c_transform.update_world(Matrix<float, 4, 4>::Identity());
         }
         p_hierarchy.children.clear();
     }
 
-    void PluginHierarchy::clear_overlays(entt::entity parent) {
-        auto &p_hierarchy = Engine::State().get_or_emplace<Hierarchy>(parent);
+    void PluginHierarchy::detach_overlays(entt::entity parent) {
+        if (!Engine::valid(parent) || !Engine::has<Hierarchy>(parent)) return;
+        auto &p_hierarchy = Engine::State().get<Hierarchy>(parent);
         for (auto overlay: p_hierarchy.overlays) {
-            auto &o_hierarchy = Engine::State().get_or_emplace<Hierarchy>(overlay);
+            auto &o_hierarchy = Engine::State().get<Hierarchy>(overlay);
             o_hierarchy.parent = entt::null;
 
             // Update the overlay's world transform to be independent of the parent
-            auto &o_transform = Engine::State().get_or_emplace<Transform>(overlay);
-            o_transform.local = o_transform.world; // Detach from parent
-            o_transform.dirty = true;
+            auto &o_transform = Engine::State().get<Transform>(overlay);
+            o_transform.set_local(o_transform.world());
+            o_transform.update_world(Matrix<float, 4, 4>::Identity());
         }
         p_hierarchy.overlays.clear();
     }
 
-    void PluginHierarchy::clear(entt::entity parent) {
-        clear_children(parent);
-        clear_overlays(parent);
+    void PluginHierarchy::detach_all(entt::entity parent) {
+        detach_children(parent);
+        detach_overlays(parent);
     }
 
-    void PluginHierarchy::set_parent(entt::entity child, entt::entity new_parent) {
-        if (child == new_parent) {
-            Log::Error("Parent and child are the same entity");
-            return;
-        }
-        auto &c_hierarchy = Engine::State().get_or_emplace<Hierarchy>(child);
-        auto &p_hierarchy = Engine::State().get_or_emplace<Hierarchy>(new_parent);
-        if (c_hierarchy.parent != entt::null) {
-            auto &old_parent_hierarchy = Engine::State().get_or_emplace<Hierarchy>(c_hierarchy.parent);
-            auto iter = std::find(old_parent_hierarchy.children.begin(), old_parent_hierarchy.children.end(), child);
-            if (iter != old_parent_hierarchy.children.end()) {
-                old_parent_hierarchy.children.erase(iter);
-            }
-        }
-        c_hierarchy.parent = new_parent;
-        p_hierarchy.children.push_back(child);
-
-        // Update the child's transform to be relative to the new parent
-        auto &p_transform = Engine::State().get_or_emplace<Transform>(new_parent);
-        auto &c_transform = Engine::State().get_or_emplace<Transform>(child);
-        c_transform.update(p_transform.world.matrix());
-        c_transform.dirty = true;
+    void PluginHierarchy::attach_parent(entt::entity child, entt::entity new_parent) {
+        attach_child(new_parent, child);
     }
 
-    void PluginHierarchy::remove_parent(entt::entity child) {
-        auto &c_hierarchy = Engine::State().get_or_emplace<Hierarchy>(child);
-        if (c_hierarchy.parent != entt::null) {
-            auto &p_hierarchy = Engine::State().get_or_emplace<Hierarchy>(c_hierarchy.parent);
+    bool PluginHierarchy::detach_parent(entt::entity child) {
+        if (!Engine::valid(child) || !Engine::has<Hierarchy>(child)) return false;
+        auto &c_hierarchy = Engine::State().get<Hierarchy>(child);
+        auto parent = c_hierarchy.parent;
+        c_hierarchy.parent = entt::null;
+
+        if (Engine::valid(parent) && Engine::has<Hierarchy>(parent)) {
+            auto &p_hierarchy = Engine::State().get<Hierarchy>(parent);
             auto iter = std::find(p_hierarchy.children.begin(), p_hierarchy.children.end(), child);
             if (iter != p_hierarchy.children.end()) {
                 p_hierarchy.children.erase(iter);
+            } else {
+                Log::Error("Parent and child were not related. Check how this could happend!");
             }
-            c_hierarchy.parent = entt::null;
 
             // Update the child's world transform to be independent of the parent
-            auto &c_transform = Engine::State().get_or_emplace<Transform>(child);
-            c_transform.local = c_transform.world; // Detach from parent
-            c_transform.dirty = true;
+            auto &c_transform = Engine::State().get<Transform>(child);
+            c_transform.set_local(c_transform.world());
+            c_transform.update_world(Matrix<float, 4, 4>::Identity());
+        } else {
+            Log::Warn("Called detach child on entity with Hierarchy component but parent is not set.");
+            return false;
+        }
+        return true;
+    }
+
+    void PluginHierarchy::mark_transforms_dirty(entt::entity entity) {
+        if (!Engine::valid(entity) || !Engine::has<Transform>(entity)) return;
+
+        auto &p_transform = Engine::State().get<Transform>(entity);
+        p_transform.mark_dirty();
+
+        if (!Engine::has<Hierarchy>(entity)) return;
+
+        auto &p_hierarchy = Engine::State().get<Hierarchy>(entity);
+        for (auto child: p_hierarchy.children) {
+            auto &c_transform = Engine::State().get<Transform>(child);
+            if (c_transform.is_dirty()) continue;
+            PluginHierarchy::mark_transforms_dirty(child);
         }
     }
 
 
-    void PluginHierarchy::update_transforms(entt::entity parent) {
-        auto &p_hierarchy = Engine::State().get_or_emplace<Hierarchy>(parent);
-        auto &p_transform = Engine::State().get_or_emplace<Transform>(parent);
+    void PluginHierarchy::update_transforms(entt::entity entity) {
+        if (!Engine::valid(entity) || !Engine::has<Hierarchy>(entity)) return;
+        auto &e_transform = Engine::State().get<Transform>(entity);
+        if (!e_transform.is_dirty()) return;
 
-        for (auto child: p_hierarchy.children) {
-            auto &c_transform = Engine::State().get_or_emplace<Transform>(child);
-            c_transform.update(p_transform.world.matrix());
+        if (!Engine::has<Hierarchy>(entity)) {
+            e_transform.update_world(Matrix<float, 4, 4>::Identity());
+        } else {
+            auto &e_hierarchy = Engine::State().get<Hierarchy>(entity);
+            if (Engine::valid(e_hierarchy.parent)) {
+                auto &p_transform = Engine::State().get<Transform>(e_hierarchy.parent);
+                e_transform.update_world(p_transform.world());
+            } else {
+                e_transform.update_world(Matrix<float, 4, 4>::Identity());
+            }
 
-            // Recursively update children's children
-            update_transforms(child);
+            for (auto child: e_hierarchy.children) {
+                PluginHierarchy::update_transforms(child);
+            }
         }
+        e_transform.mark_clean();
     }
 
     void PluginHierarchy::activate() {
@@ -182,12 +263,15 @@ namespace Bcg {
     }
 
     void PluginHierarchy::begin_frame() {
+
     }
 
     void PluginHierarchy::update() {
+
     }
 
     void PluginHierarchy::end_frame() {
+
     }
 
     void PluginHierarchy::deactivate() {

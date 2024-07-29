@@ -12,6 +12,14 @@ namespace Bcg {
         entt::entity parent = entt::null;
         std::vector<entt::entity> children;
         std::vector<entt::entity> overlays;
+
+        bool has_child(entt::entity child) {
+            return std::find(children.begin(), children.end(), child) != children.end();
+        }
+
+        bool has_overlay(entt::entity overlay) {
+            return std::find(overlays.begin(), overlays.end(), overlay) != overlays.end();
+        }
     };
 }
 

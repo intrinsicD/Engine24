@@ -15,11 +15,11 @@ namespace Bcg::Gui {
 
     bool Show(Transform &transform);
 
-    bool ShowGuizmo(RigidTransform &transform);
+    bool ShowGuizmo(const RigidTransform &transform, RigidTransform &delta, bool &is_scaling);
 
     bool ShowLocal(RigidTransform &transform);
 
-    void ShowWorld(RigidTransform &transform);
+    void ShowWorld(const RigidTransform &transform);
 }
 
 #endif //ENGINE24_TRANSFORMGUI_H

@@ -8,11 +8,10 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "ImGuizmo.h"
-#include "AABB.h"
 #include "Graphics.h"
 
 namespace Bcg::Gui {
-    void Show(RigidTransform &transform) {
+    void Show(const RigidTransform &transform) {
         float matrixTranslation[3], matrixRotation[3], matrixScale[3];
         ImGuizmo::DecomposeMatrixToComponents(transform.matrix().data(),
                                               matrixTranslation,
@@ -21,10 +20,6 @@ namespace Bcg::Gui {
         ImGui::Text("Tr: %f %f %f", matrixTranslation[0], matrixTranslation[1], matrixTranslation[2]);
         ImGui::Text("Rt: %f %f %f", matrixRotation[0], matrixRotation[1], matrixRotation[2]);
         ImGui::Text("Sc: %f %f %f", matrixScale[0], matrixScale[1], matrixScale[2]);
-        ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation,
-                                                matrixRotation,
-                                                matrixScale,
-                                                transform.matrix().data());
     }
 
     bool Edit(RigidTransform &transform) {
@@ -41,19 +36,38 @@ namespace Bcg::Gui {
     }
 
     bool Show(Transform &transform) {
-        bool dirty = transform.dirty;
+        bool dirty = transform.is_dirty();
         ImGui::Checkbox("dirty", &dirty);
         bool changed = false;
+        static bool guizmo = false;
+        ImGui::Checkbox("Guizmo", &guizmo);
+        if (guizmo) {
+            RigidTransform delta = RigidTransform::Identity();
+            bool is_scaling = false;
+            if (ShowGuizmo(transform.world(), delta, is_scaling)) {
+                //Todo think how to handle scaling a parent and what to do with a child...
+                transform.set_local(transform.local.matrix() * delta.matrix());
+
+                changed = true;
+            }
+        }
         if (ImGui::CollapsingHeader("Local")) {
-            changed = ShowLocal(transform.local);
+            if (ImGui::Button("Reset Identity")) {
+                transform.set_local_identity();
+                changed = true;
+            }
+            if (ShowLocal(transform.local)) {
+                transform.set_local(transform.local.matrix());
+                changed = true;
+            }
         }
         if (ImGui::CollapsingHeader("CachedWorld")) {
-            ShowWorld(transform.world);
+            ShowWorld(transform.world());
         }
         return changed;
     }
 
-    bool ShowGuizmo(RigidTransform &transform) {
+    bool ShowGuizmo(const RigidTransform &transform, RigidTransform &delta, bool &is_scaling) {
         static ImGuizmo::MODE currentGizmoMode(ImGuizmo::LOCAL);
         static ImGuizmo::OPERATION currentGizmoOperation(ImGuizmo::ROTATE);
 
@@ -70,12 +84,16 @@ namespace Bcg::Gui {
 
         ImGui::Separator();
 
+        is_scaling = true;
         if (currentGizmoOperation != ImGuizmo::SCALE) {
-            if (ImGui::RadioButton("Local", currentGizmoMode == ImGuizmo::LOCAL))
+            if (ImGui::RadioButton("Local", currentGizmoMode == ImGuizmo::LOCAL)) {
                 currentGizmoMode = ImGuizmo::LOCAL;
+            }
             ImGui::SameLine();
-            if (ImGui::RadioButton("World", currentGizmoMode == ImGuizmo::WORLD))
+            if (ImGui::RadioButton("World", currentGizmoMode == ImGuizmo::WORLD)) {
                 currentGizmoMode = ImGuizmo::WORLD;
+            }
+            is_scaling = false;
         }
 
         static bool use_snap = false;
@@ -108,23 +126,20 @@ namespace Bcg::Gui {
         auto win_size = Graphics::get_window_size();
         ImGuizmo::SetRect(win_pos.x(), win_pos.y(), io.DisplaySize.x, io.DisplaySize.y);
         auto &camera = Engine::Context().get<Camera>();
-        return ImGuizmo::Manipulate(camera.view.data(), camera.proj.data(), currentGizmoOperation, currentGizmoMode,
-                                    transform.data(), nullptr,
-                                    use_snap ? &snap[0] : nullptr, use_bound_sizing ? bounds : nullptr,
-                                    use_bound_sizing_snap ? bounds_snap : nullptr);
+        Matrix<float, 4, 4> mat = transform.matrix();
+        ImGuizmo::Manipulate(camera.view.data(), camera.proj.data(), currentGizmoOperation, currentGizmoMode,
+                             mat.data(), nullptr,
+                             use_snap ? &snap[0] : nullptr, use_bound_sizing ? bounds : nullptr,
+                             use_bound_sizing_snap ? bounds_snap : nullptr);
+        delta = transform.inverse() * mat;
+        return delta.matrix() != Matrix<float, 4, 4>::Identity();
     }
 
-    bool ShowLocal(RigidTransform &local) {
-        bool changed = Edit(local);
-        static bool guizmo = false;
-        ImGui::Checkbox("Guizmo", &guizmo);
-        if (guizmo) {
-            changed |= ShowGuizmo(local);
-        }
-        return changed;
+    bool ShowLocal(RigidTransform &transform) {
+        return Edit(transform);
     }
 
-    void ShowWorld(RigidTransform &world) {
-        Show(world);
+    void ShowWorld(const RigidTransform &transform) {
+        Show(transform);
     }
 }

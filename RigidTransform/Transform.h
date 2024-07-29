@@ -10,10 +10,8 @@
 namespace Bcg {
     struct Transform {
         RigidTransform local;
-        RigidTransform world;
-        bool dirty = true;
 
-        Transform() : local(RigidTransform::Identity()), world(RigidTransform::Identity()) {
+        Transform() : local(RigidTransform::Identity()), m_world(RigidTransform::Identity()), dirty(false) {
 
         }
 
@@ -21,23 +19,47 @@ namespace Bcg {
             set_local(Matrix<float, 4, 4>::Identity());
         }
 
+        bool is_dirty() const {
+            return dirty;
+        }
+
+        void mark_dirty() {
+            dirty = true;
+        }
+
+        void mark_clean() {
+            dirty = false;
+        }
+
         void set_local(const Matrix<float, 4, 4> &t) {
             local.matrix() = t;
-            dirty = true;
+            mark_dirty();
         }
 
-        [[nodiscard]] const Matrix<float, 4, 4> &matrix() const {
-            return world.matrix();
+        void set_local(const RigidTransform &t) {
+            local = t;
+            mark_dirty();
         }
 
-        void update(const Matrix<float, 4, 4> &parent_world) {
-            world.matrix() = parent_world * local.matrix();
-            dirty = true;
+        [[nodiscard]] const RigidTransform &world() const {
+            return m_world;
+        }
+
+        void update_world(const Matrix<float, 4, 4> &parent_world) {
+            m_world.matrix() = parent_world * local.matrix();
+        }
+
+        void update_world(const RigidTransform &parent_world) {
+            m_world = parent_world * local;
         }
 
         [[nodiscard]] const float *data() const {
-            return world.data();
+            return m_world.data();
         }
+
+    private:
+        bool dirty;
+        RigidTransform m_world;
     };
 }
 

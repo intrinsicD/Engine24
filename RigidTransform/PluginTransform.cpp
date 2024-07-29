@@ -9,7 +9,8 @@
 #include "Picker.h"
 #include "RigidTransformGui.h"
 #include "PluginHierarchy.h"
-#include "Hierarchy.h"
+#include "CommandBuffer.h"
+#include "HierarchyCommands.h"
 
 namespace Bcg {
 
@@ -49,28 +50,9 @@ namespace Bcg {
             if (Engine::valid(entity_id) && Engine::State().all_of<Transform>(entity_id)) {
                 auto &transform = Engine::State().get<Transform>(entity_id);
                 if (Gui::Show(transform)) {
-                    if (Engine::State().all_of<Hierarchy>(entity_id)) {
-                        auto &hierarchy = Engine::State().get<Hierarchy>(entity_id);
-                        if (Engine::valid(hierarchy.parent) && Engine::State().all_of<Transform>(hierarchy.parent)) {
-                            /*         auto &parent_transform = Engine::State().get<Transform>(hierarchy.parent);
-                                     transform.update(parent_transform.matrix());*/
-                            auto &p_hierarchy = Engine::State().get_or_emplace<Hierarchy>(hierarchy.parent);
-                            auto &p_transform = Engine::State().get_or_emplace<Transform>(hierarchy.parent);
-
-                            for (auto child: p_hierarchy.children) {
-                                auto &c_transform = Engine::State().get_or_emplace<Transform>(child);
-                                c_transform.update(p_transform.world.matrix());
-
-                                // Recursively update children's children
-                                //TODO check if this is actually working, Hierarchy and Transforms.
-                                PluginHierarchy::update_transforms(child);
-                            }
-                        } else {
-                            transform.update(Matrix<float, 4, 4>::Identity());
-                        }
-                    } else {
-                        transform.update(Matrix<float, 4, 4>::Identity());
-                    }
+                    PluginHierarchy::mark_transforms_dirty(entity_id);
+                    auto &double_cmd_buffer = Engine::Context().get<DoubleCommandBuffer>();
+                    double_cmd_buffer.current().add_command(UpdateTransforms(entity_id));
                 }
             }
         }

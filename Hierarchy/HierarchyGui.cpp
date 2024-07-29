@@ -28,14 +28,14 @@ namespace Bcg ::Gui {
         }
     }
 
-    void Edit(entt::entity owner, Hierarchy &hierarchy) {
+    void Edit(entt::entity child, Hierarchy &hierarchy) {
         //Combobox of all entities which parent can be chosen from
-        if (ImGui::BeginCombo("Parent", std::to_string(static_cast<unsigned int>(hierarchy.parent)).c_str())) {
-            for (auto entity: Engine::State().view<entt::entity>()) {
-                if (entity == owner) continue;
-                bool is_selected = hierarchy.parent == entity;
-                if (ImGui::Selectable(std::to_string(static_cast<unsigned int>(entity)).c_str(), is_selected)) {
-                    PluginHierarchy::set_parent(owner, entity);
+        if (ImGui::BeginCombo("Select Parent", std::to_string(static_cast<unsigned int>(hierarchy.parent)).c_str())) {
+            for (auto parent: Engine::State().view<entt::entity>()) {
+                if (parent == child) continue;
+                bool is_selected = hierarchy.parent == parent;
+                if (ImGui::Selectable(std::to_string(static_cast<unsigned int>(parent)).c_str(), is_selected)) {
+                    PluginHierarchy::attach_parent(child, parent);
                 }
                 if (is_selected) {
                     ImGui::SetItemDefaultFocus();
@@ -44,7 +44,7 @@ namespace Bcg ::Gui {
             ImGui::EndCombo();
         }
         if (ImGui::Button("Clear Parent")) {
-            PluginHierarchy::remove_parent(owner);
+            PluginHierarchy::detach_parent(child);
         }
     }
 

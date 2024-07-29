@@ -16,25 +16,27 @@ namespace Bcg {
 
         ~PluginHierarchy() override = default;
 
-        static void add_child(entt::entity parent, entt::entity child);
+        static void attach_child(entt::entity parent, entt::entity child);
 
-        static bool remove_child(entt::entity parent, entt::entity child);
+        static bool detach_child(entt::entity parent, entt::entity child);
 
-        static void add_overlay(entt::entity parent, entt::entity overlay);
+        static void attach_overlay(entt::entity parent, entt::entity overlay);
 
-        static void remove_overlay(entt::entity parent, entt::entity overlay);
+        static bool detach_overlay(entt::entity parent, entt::entity overlay);
 
-        static void clear_children(entt::entity parent);
+        static void detach_children(entt::entity parent);
 
-        static void clear_overlays(entt::entity parent);
+        static void detach_overlays(entt::entity parent);
 
-        static void clear(entt::entity parent);
+        static void detach_all(entt::entity parent);
 
-        static void set_parent(entt::entity child, entt::entity new_parent);
+        static void attach_parent(entt::entity child, entt::entity new_parent);
 
-        static void remove_parent(entt::entity child);
+        static bool detach_parent(entt::entity child);
 
-        static void update_transforms(entt::entity parent);
+        static void mark_transforms_dirty(entt::entity entity);
+
+        static void update_transforms(entt::entity entity);
 
         void activate() override;
 
