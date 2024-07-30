@@ -46,3 +46,6 @@
 [submodule "ext/bgfx.cmake"]
 	path = ext/bgfx.cmake
 	url = https://github.com/bkaradzic/bgfx.cmake.git
+[submodule "ext/fast_float"]
+	path = ext/fast_float
+	url = https://github.com/fastfloat/fast_float.git

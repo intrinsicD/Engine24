@@ -8,6 +8,9 @@ target_link_libraries(Engine24 PRIVATE glfw)
 
 add_subdirectory(bgfx.cmake)
 
+add_subdirectory(fast_float)
+target_link_libraries(Engine24 PUBLIC fast_float)
+
 add_subdirectory(eigen)
 target_link_libraries(Engine24 PUBLIC Eigen3::Eigen)
 
