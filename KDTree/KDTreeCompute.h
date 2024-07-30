@@ -6,10 +6,11 @@
 #define ENGINE24_KDTREECOMPUTE_H
 
 #include "entt/fwd.hpp"
-#include "SurfaceMesh.h"
+#include "Properties.h"
+#include "Types.h"
 
 namespace Bcg {
-    void BuildKDTReeCompute(entt::entity entity_id, SurfaceMesh &mesh);
+    void BuildKDTReeCompute(entt::entity entity_id, Property<Point> points);
 }
 
 #endif //ENGINE24_KDTREECOMPUTE_H

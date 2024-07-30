@@ -23,7 +23,10 @@ namespace Bcg {
     struct PointView {
         VertexArrayObject vao;
         Program program;
+        unsigned int offset = 0;
         unsigned int num_indices;
+
+        virtual void draw();
     };
 
     struct PointCloudView : public PointView {

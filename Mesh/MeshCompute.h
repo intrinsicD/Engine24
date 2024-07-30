@@ -5,7 +5,8 @@
 #ifndef ENGINE24_MESHCOMPUTE_H
 #define ENGINE24_MESHCOMPUTE_H
 
-#include "PluginMesh.h"
+#include "SurfaceMesh.h"
+#include "entt/fwd.hpp"
 
 namespace Bcg {
     VertexProperty<Vector<float, 3>> ComputeVertexNormals(entt::entity entity_id, SurfaceMesh &mesh);

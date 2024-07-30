@@ -34,12 +34,17 @@ namespace Bcg {
     auto Map(std::vector<T> &p) {
         using MatrixType = typename MapTraits<T>::Type;
         if constexpr (std::is_arithmetic<T>::value) {
-            return MatrixType(p, p.size(), 1);
-        }else if constexpr (T::RowsAtCompileTime != 1){
+            return MatrixType(p.data(), p.size(), 1);
+        } else if constexpr (T::RowsAtCompileTime != 1) {
             return MatrixType(&p[0][0], T::RowsAtCompileTime, p.size());
-        }else if constexpr (T::ColsAtCompileTime != 1){
-            return MatrixType(&p[0][0],  p.size(), T::ColsAtCompileTime);
+        } else if constexpr (T::ColsAtCompileTime != 1) {
+            return MatrixType(&p[0][0], p.size(), T::ColsAtCompileTime);
         }
+    }
+
+    template<typename T, int N, int M>
+    auto Map(std::vector<T> &p, int rows, int cols) {
+        return Eigen::Map<Eigen::Matrix<T, N, M>>(p.data(), rows, cols);
     }
 }
 

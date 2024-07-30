@@ -6,12 +6,7 @@
 #define ENGINE24_PLUGINMESH_H
 
 #include "Plugin.h"
-#include <vector>
-#include <string>
-#include <unordered_map>
 #include "SurfaceMesh.h"
-#include "Graphics.h"
-#include "entt/entity/entity.hpp"
 
 namespace Bcg {
     class PluginMesh : public Plugin {
@@ -47,8 +42,6 @@ namespace Bcg {
         void render_menu() override;
 
         void render_gui() override;
-
-        void render_gui(SurfaceMesh &mesh);
 
         void render() override;
     };

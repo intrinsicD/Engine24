@@ -36,6 +36,10 @@ namespace Bcg {
         Log::TODO("Picking is not yet implemented here!");
     }
 
+    void PointView::draw() {
+        glDrawArrays(GL_POINTS, offset, num_indices);
+    }
+
     void TriangleView::draw() {
         glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, nullptr);
     }

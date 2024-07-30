@@ -21,7 +21,6 @@
 #include "io/read_pmp.h"
 #include "Camera.h"
 #include "GuiUtils.h"
-#include "PropertiesGui.h"
 #include "VertexArrayObject.h"
 #include "Views.h"
 #include "MeshCommands.h"
@@ -219,7 +218,7 @@ namespace Bcg {
         mesh.garbage_collection();
     }
 
-    void on_drop_file(const Events::Callback::Drop &event) {
+    inline void on_drop_file(const Events::Callback::Drop &event) {
         PluginMesh plugin;
         for (int i = 0; i < event.count; ++i) {
             auto start_time = std::chrono::high_resolution_clock::now();
@@ -268,7 +267,7 @@ namespace Bcg {
                     ImGuiFileDialog::Instance()->OpenDialog("Load Mesh", "Choose File", ".obj,.off,.stl,.ply",
                                                             config);
                 }
-                if(ImGui::MenuItem("Instance", nullptr, &show_mesh_gui)){
+                if (ImGui::MenuItem("Instance", nullptr, &show_mesh_gui)) {
 
                 }
                 ImGui::EndMenu();
@@ -279,18 +278,13 @@ namespace Bcg {
 
     void PluginMesh::render_gui() {
         Gui::ShowLoadMesh();
-        if(show_mesh_gui){
+        if (show_mesh_gui) {
             auto &picked = Engine::Context().get<Picked>();
             if (ImGui::Begin("Mesh", &show_mesh_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
                 Gui::ShowSurfaceMesh(picked.entity.id);
             }
             ImGui::End();
         }
-    }
-
-    void PluginMesh::render_gui(SurfaceMesh &mesh) {
-        static std::pair<int, std::string> curr_property;
-        Gui::Combo("Vertices", curr_property, mesh.vprops_);
     }
 
     void PluginMesh::render() {
@@ -305,10 +299,10 @@ namespace Bcg {
             mw.program.use();
             mw.program.set_uniform3fv("lightDir", lightDirection.data());
 
-            if(Engine::has<Transform>(entity_id)){
+            if (Engine::has<Transform>(entity_id)) {
                 auto &transform = Engine::State().get<Transform>(entity_id);
                 mw.program.set_uniform4fm("model", transform.data(), false);
-            }else{
+            } else {
                 mw.program.set_uniform4fm("model", Transform().data(), false);
             }
 
