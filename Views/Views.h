@@ -13,7 +13,7 @@
 #include "entt/fwd.hpp"
 
 namespace Bcg {
-    struct EntityView{
+    struct EntityView {
         VertexArrayObject vao;
         Program program;
         unsigned int num_elements;
@@ -25,6 +25,7 @@ namespace Bcg {
         Program program;
         unsigned int offset = 0;
         unsigned int num_indices;
+        bool hide = false;
 
         virtual void draw();
     };
@@ -37,6 +38,7 @@ namespace Bcg {
         VertexArrayObject vao;
         Program program;
         unsigned int num_indices;
+        bool hide = false;
     };
 
     struct GraphView : public LineView {
@@ -47,6 +49,7 @@ namespace Bcg {
         VertexArrayObject vao;
         Program program;
         unsigned int num_indices;
+        bool hide = false;
 
         virtual void draw();
     };
@@ -66,7 +69,16 @@ namespace Bcg {
     };
 
     struct MeshView : public TriangleView {
+        Vector<float, 3> base_color = {0.3, 0.6, 0.2};
+    };
 
+    struct VectorfieldView : public PointView {
+
+    };
+
+    struct VectorfieldViews : public std::unordered_map<std::string, VectorfieldView> {
+        using std::unordered_map<std::string, VectorfieldView>::unordered_map;
+        bool hide = false;
     };
 }
 

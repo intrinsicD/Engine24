@@ -9,6 +9,7 @@
 #include "EventsCallbacks.h"
 #include "EventsKeys.h"
 #include "Mouse.h"
+#include "Keyboard.h"
 #include "Picker.h"
 #include "Graphics.h"
 #include "PluginFrameTimer.h"
@@ -88,7 +89,7 @@ namespace Bcg {
             }
         }
     }
-    
+
     static void translate(Camera &camera, const Vector<float, 3> &t) {
         camera.v_params.eye = (translation_matrix(t) * camera.v_params.eye.homogeneous()).head<3>();
         camera.v_params.center = (translation_matrix(t) * camera.v_params.center.homogeneous()).head<3>();
@@ -149,6 +150,9 @@ namespace Bcg {
     }
 
     static void on_mouse_scroll(const Events::Callback::MouseScroll &event) {
+        auto &keyboard = Engine::Context().get<Keyboard>();
+        if (keyboard.strg()) return;
+
         auto &camera = Engine::Context().get<Camera>();
         const float min_fovy = 1.0f;   // Minimum field of view in degrees
         const float max_fovy = 45.0f;  // Maximum field of view in degrees

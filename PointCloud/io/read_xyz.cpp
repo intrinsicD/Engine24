@@ -10,7 +10,7 @@ namespace Bcg {
     void read_xyz(PointCloud &pc, const std::string &filename) {
         auto txt = ReadTextFile(filename);
         unsigned int rows, cols;
-        std::vector<float> numbers = ParseNumbers(txt, cols);
+        std::vector<float> numbers = ParseNumbers(txt, cols, "LH");
         rows = numbers.size() / cols;
 
         auto mapped = Map<float, 3, -1>(numbers, rows, cols);

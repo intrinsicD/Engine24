@@ -29,6 +29,21 @@
 #include "Transform.h"
 
 namespace Bcg {
+    namespace PluginMeshInternal{
+        void on_drop_file(const Events::Callback::Drop &event) {
+            PluginMesh plugin;
+            for (int i = 0; i < event.count; ++i) {
+                auto start_time = std::chrono::high_resolution_clock::now();
+
+                SurfaceMesh smesh = PluginMesh::load(event.paths[i]);
+                auto end_time = std::chrono::high_resolution_clock::now();
+
+                std::chrono::duration<double> build_duration = end_time - start_time;
+                Log::Info("Build Smesh in " + std::to_string(build_duration.count()) + " seconds");
+            }
+        }
+    }
+
     SurfaceMesh PluginMesh::load(const std::string &path) {
         std::string ext = path;
         ext = ext.substr(ext.find_last_of('.') + 1);
@@ -218,23 +233,10 @@ namespace Bcg {
         mesh.garbage_collection();
     }
 
-    inline void on_drop_file(const Events::Callback::Drop &event) {
-        PluginMesh plugin;
-        for (int i = 0; i < event.count; ++i) {
-            auto start_time = std::chrono::high_resolution_clock::now();
-
-            SurfaceMesh smesh = PluginMesh::load(event.paths[i]);
-            auto end_time = std::chrono::high_resolution_clock::now();
-
-            std::chrono::duration<double> build_duration = end_time - start_time;
-            Log::Info("Build Smesh in " + std::to_string(build_duration.count()) + " seconds");
-        }
-    }
-
     PluginMesh::PluginMesh() : Plugin("PluginMesh") {}
 
     void PluginMesh::activate() {
-        Engine::Dispatcher().sink<Events::Callback::Drop>().connect<&on_drop_file>();
+        Engine::Dispatcher().sink<Events::Callback::Drop>().connect<&PluginMeshInternal::on_drop_file>();
         Plugin::activate();
     }
 
@@ -251,7 +253,7 @@ namespace Bcg {
     }
 
     void PluginMesh::deactivate() {
-        Engine::Dispatcher().sink<Events::Callback::Drop>().disconnect<&on_drop_file>();
+        Engine::Dispatcher().sink<Events::Callback::Drop>().disconnect<&PluginMeshInternal::on_drop_file>();
         Plugin::deactivate();
     }
 
@@ -290,14 +292,13 @@ namespace Bcg {
     void PluginMesh::render() {
         auto mesh_view = Engine::State().view<MeshView>();
         auto &camera = Engine::Context().get<Camera>();
-        auto lightDirection = (camera.v_params.center - camera.v_params.eye).normalized();
 
         for (auto entity_id: mesh_view) {
             auto &mw = Engine::State().get<MeshView>(entity_id);
 
             mw.vao.bind();
             mw.program.use();
-            mw.program.set_uniform3fv("lightDir", lightDirection.data());
+            mw.program.set_uniform3fv("lightPosition", camera.v_params.eye.data());
 
             if (Engine::has<Transform>(entity_id)) {
                 auto &transform = Engine::State().get<Transform>(entity_id);

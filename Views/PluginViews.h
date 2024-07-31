@@ -1,21 +1,19 @@
 //
-// Created by alex on 30.07.24.
+// Created by alex on 31.07.24.
 //
 
-#ifndef ENGINE24_PLUGINCUDA_H
-#define ENGINE24_PLUGINCUDA_H
+#ifndef ENGINE24_PLUGINVIEWS_H
+#define ENGINE24_PLUGINVIEWS_H
 
 #include "Plugin.h"
 #include "entt/fwd.hpp"
 
 namespace Bcg {
-    class PluginCuda : public Plugin {
+    class PluginViews : public Plugin {
     public:
-        PluginCuda() : Plugin("Cuda") {}
+        PluginViews() : Plugin("Views") {}
 
-        ~PluginCuda() override = default;
-
-        static void init();
+        ~PluginViews() override = default;
 
         void activate() override;
 
@@ -34,5 +32,4 @@ namespace Bcg {
         void render() override;
     };
 }
-
-#endif //ENGINE24_PLUGINCUDA_H
+#endif //ENGINE24_PLUGINVIEWS_H

@@ -26,13 +26,20 @@ namespace Bcg {
         return txt;
     }
 
-    std::vector<float> ParseNumbers(const std::string &s, unsigned int &num_lines) {
+    std::vector<float> ParseNumbers(const std::string &s, unsigned int &num_lines, const char *skip_chars) {
         const char *start = s.data();
         const char *end = s.data() + s.size();
         std::vector<float> numbers;
         num_lines = 0;
         while (start < end) {
+            bool skip_line = false;
             while (start < end && (!std::isdigit(*start) && *start != '-' && *start != '.' && *start != '\n' && *start != '\t')) {
+                if (skip_chars && strchr(skip_chars, *start)) {
+                    skip_line = true;
+                    while (start < end && *start != '\n') {
+                        ++start;
+                    }
+                }
                 ++start;
             }
             // Handle newline and tab characters separately

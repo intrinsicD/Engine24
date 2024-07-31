@@ -5,9 +5,6 @@
 
 #include "PluginPointCloud.h"
 #include "Logger.h"
-#include <fstream>
-#include <unordered_map>
-#include <sstream>
 #include "imgui.h"
 #include "ImGuiFileDialog.h"
 #include "Engine.h"
@@ -26,8 +23,32 @@
 #include "EntityCommands.h"
 #include "Picker.h"
 #include "Transform.h"
+#include "Keyboard.h"
+#include "glad/gl.h"
 
 namespace Bcg {
+    namespace PluginPointCloudInternal{
+        static void on_drop_file(const Events::Callback::Drop &event) {
+            PluginPointCloud plugin;
+            for (int i = 0; i < event.count; ++i) {
+                auto start_time = std::chrono::high_resolution_clock::now();
+
+                PointCloud spc = PluginPointCloud::load(event.paths[i]);
+                auto end_time = std::chrono::high_resolution_clock::now();
+
+                std::chrono::duration<double> build_duration = end_time - start_time;
+                Log::Info("Build Spc in " + std::to_string(build_duration.count()) + " seconds");
+            }
+        }
+
+        static float point_size = 1.0f;
+        static void on_mouse_scroll(const Events::Callback::MouseScroll &event) {
+            auto &keyboard = Engine::Context().get<Keyboard>();
+            if (!keyboard.strg()) return;
+            point_size = std::max<float>(1.0f, point_size + event.yoffset);
+            glPointSize(point_size);
+        }
+    }
     PointCloud PluginPointCloud::load(const std::string &path) {
         std::string ext = path;
         ext = ext.substr(ext.find_last_of('.') + 1);
@@ -66,23 +87,13 @@ namespace Bcg {
         return pc;
     }
 
-    inline void on_drop_file(const Events::Callback::Drop &event) {
-        PluginPointCloud plugin;
-        for (int i = 0; i < event.count; ++i) {
-            auto start_time = std::chrono::high_resolution_clock::now();
 
-            PointCloud spc = PluginPointCloud::load(event.paths[i]);
-            auto end_time = std::chrono::high_resolution_clock::now();
-
-            std::chrono::duration<double> build_duration = end_time - start_time;
-            Log::Info("Build Spc in " + std::to_string(build_duration.count()) + " seconds");
-        }
-    }
 
     PluginPointCloud::PluginPointCloud() : Plugin("PluginPointCloud") {}
 
     void PluginPointCloud::activate() {
-        Engine::Dispatcher().sink<Events::Callback::Drop>().connect<&on_drop_file>();
+        Engine::Dispatcher().sink<Events::Callback::Drop>().connect<&PluginPointCloudInternal::on_drop_file>();
+        Engine::Dispatcher().sink<Events::Callback::MouseScroll>().connect<&PluginPointCloudInternal::on_mouse_scroll>();
         Plugin::activate();
     }
 
@@ -99,7 +110,8 @@ namespace Bcg {
     }
 
     void PluginPointCloud::deactivate() {
-        Engine::Dispatcher().sink<Events::Callback::Drop>().disconnect<&on_drop_file>();
+        Engine::Dispatcher().sink<Events::Callback::Drop>().disconnect<&PluginPointCloudInternal::on_drop_file>();
+        Engine::Dispatcher().sink<Events::Callback::MouseScroll>().disconnect<&PluginPointCloudInternal::on_mouse_scroll>();
         Plugin::deactivate();
     }
 

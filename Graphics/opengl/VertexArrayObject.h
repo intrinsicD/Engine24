@@ -5,15 +5,13 @@
 #ifndef ENGINE24_VERTEXARRAYOBJECT_H
 #define ENGINE24_VERTEXARRAYOBJECT_H
 
+#include <vector>
+#include "Attribute.h"
+
+
 namespace Bcg {
     struct VertexArrayObject {
         unsigned int id;
-
-        enum AttributeType {
-            FLOAT = 0x1406,
-            UNSIGNED_INT = 0x1405,
-            UNSIGNED_BYTE = 0x1401
-        };
 
         VertexArrayObject();
 
@@ -25,11 +23,14 @@ namespace Bcg {
 
         void unbind();
 
-        void setAttribute(unsigned int index, unsigned int size, unsigned int type, bool normalized, unsigned int stride, const void *pointer);
+        void setAttribute(unsigned int index, unsigned int size, unsigned int type, bool normalized,
+                          unsigned int stride, const void *pointer);
 
         void enableAttribute(unsigned int index);
 
         void disableAttribute(unsigned int index);
+
+        std::vector<Attribute> attributes;
     };
 }
 

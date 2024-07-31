@@ -82,7 +82,7 @@ namespace Bcg::Commands::Points {
             b_position.bind();
         }
 
-        pcw.vao.setAttribute(0, 3, VertexArrayObject::AttributeType::FLOAT, false, 3 * sizeof(float), nullptr);
+        pcw.vao.setAttribute(0, 3, Attribute::Type::FLOAT, false, 3 * sizeof(float), nullptr);
         pcw.vao.enableAttribute(0);
 
         auto v_indices = pc.vertex_property<unsigned int>("v:indices", 0);
