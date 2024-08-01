@@ -6,29 +6,37 @@
 #define ENGINE24_VIEWCOMMANDS_H
 
 #include "Command.h"
+#include "entt/fwd.hpp"
 
-namespace Bcg {
-    //Constructs a buffer if it does not already exist and binds it to the respective view
+namespace Bcg::Commands::View {
     struct SetupPointsView : public AbstractCommand {
-        SetupPointsView(const std::string &property_name) : AbstractCommand("SetupPointsView"),
-                                                            property_name(property_name) {
+        explicit SetupPointsView(entt::entity entity_id) : AbstractCommand("SetupPointsView"), entity_id(entity_id) {
 
         }
 
         void execute() const override;
 
-        std::string property_name;
+        entt::entity entity_id;
     };
 
     struct SetupGraphView : public AbstractCommand {
-        SetupGraphView(const std::string &property_name) : AbstractCommand("SetupGraphView"),
-                                                            property_name(property_name) {
+        SetupGraphView(entt::entity entity_id) : AbstractCommand("SetupGraphView"), entity_id(entity_id) {
 
         }
 
         void execute() const override;
 
-        std::string property_name;
+        entt::entity entity_id;
+    };
+
+    struct SetupMeshView : public AbstractCommand {
+        SetupMeshView(entt::entity entity_id) : AbstractCommand("SetupMeshView"), entity_id(entity_id) {
+
+        }
+
+        void execute() const override;
+
+        entt::entity entity_id;
     };
 }
 

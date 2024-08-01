@@ -19,7 +19,7 @@ namespace Bcg {
         Map(pc.positions()) = mapped.block(0, 0, 3, cols);
 
         if (cols == 6) {
-            auto colors = pc.vertex_property<Color>("v:color", Color::Zero());
+            auto colors = pc.vertex_property<ColorType>("v:color", ColorType::Zero());
             Map(colors.vector()) = mapped.block(3, 0, 3, cols);
         }
     }

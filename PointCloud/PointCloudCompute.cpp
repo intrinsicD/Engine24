@@ -10,7 +10,7 @@
 #include "OpenGLState.h"
 
 namespace Bcg {
-    Property<Normal> ComputeVertexNormals(entt::entity entity_id, PropertyContainer &vertices, int k) {
+    Property<NormalType> ComputeVertexNormals(entt::entity entity_id, PropertyContainer &vertices, int k) {
         const char *computeShaderSource = R"(
             #version 430 core
 
@@ -181,8 +181,8 @@ namespace Bcg {
         )";
 
         // Point coordinates
-        auto points = vertices.get<Point>("v:point");
-        auto normals = vertices.get_or_add<Normal>("v:normal");
+        auto points = vertices.get<PointType >("v:point");
+        auto normals = vertices.get_or_add<NormalType >("v:normal");
 
         auto num_points = points.vector().size();
 

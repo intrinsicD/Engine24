@@ -9,9 +9,9 @@
 #include "entt/fwd.hpp"
 
 namespace Bcg::Commands::Mesh {
-    struct SetupForRendering : public AbstractCommand {
-        explicit SetupForRendering(entt::entity entity_id) : AbstractCommand("SetupForRendering"),
-                                                             entity_id(entity_id) {}
+    struct SetupMesh : public AbstractCommand {
+        explicit SetupMesh(entt::entity entity_id) : AbstractCommand("SetupMesh"),
+                                                     entity_id(entity_id) {}
 
         void execute() const override;
 

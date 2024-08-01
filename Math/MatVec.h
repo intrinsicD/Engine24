@@ -9,15 +9,11 @@
 #include "Exceptions.h"
 
 namespace Bcg {
-    using Scalar = float;
-
     template<typename T, int N>
     using Vector = Eigen::Vector<T, N>;
 
     template<typename T, int M, int N>
     using Matrix = Eigen::Matrix<T, M, N>;
-
-
 
     template<typename T, int N>
     Vector<T, N> SafeNormalize(const Vector<T, N> &v, T length, T epsilon = 1e-6) {

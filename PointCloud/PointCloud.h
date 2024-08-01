@@ -31,7 +31,7 @@ namespace Bcg {
         PointCloud &assign(const PointCloud &rhs);
 
         //! add a new vertex with position \p p
-        Vertex add_vertex(const Point &p);
+        Vertex add_vertex(const PointType &p);
 
         //! \return number of (deleted and valid) vertices in the mesh
         inline size_t vertices_size() const { return vprops_.size(); }
@@ -128,13 +128,13 @@ namespace Bcg {
         }
 
         //! position of a vertex (read only)
-        inline const Point &position(Vertex v) const { return vpoint_[v]; }
+        inline const PointType &position(Vertex v) const { return vpoint_[v]; }
 
         //! position of a vertex
-        inline Point &position(Vertex v) { return vpoint_[v]; }
+        inline PointType &position(Vertex v) { return vpoint_[v]; }
 
         //! \return vector of point positions
-        inline std::vector<Point> &positions() { return vpoint_.vector(); }
+        inline std::vector<PointType> &positions() { return vpoint_.vector(); }
 
         inline Vertex new_vertex() {
             if (vertices_size() == BCG_MAX_INDEX - 1) {
@@ -152,7 +152,7 @@ namespace Bcg {
         PropertyContainer vprops_;
 
         // point coordinates
-        VertexProperty<Point> vpoint_;
+        VertexProperty<PointType> vpoint_;
 
         // markers for deleted entities
         VertexProperty<bool> vdeleted_;

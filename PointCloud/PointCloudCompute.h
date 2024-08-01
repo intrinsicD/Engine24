@@ -9,6 +9,6 @@
 #include "entt/fwd.hpp"
 
 namespace Bcg {
-    Property<Normal> ComputeVertexNormals(entt::entity entity_id, PropertyContainer &vertices, int k);
+    Property<NormalType> ComputeVertexNormals(entt::entity entity_id, PropertyContainer &vertices, int k);
 }
 #endif //ENGINE24_POINTCLOUDCOMPUTE_H

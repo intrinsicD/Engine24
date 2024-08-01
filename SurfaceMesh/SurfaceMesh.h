@@ -86,7 +86,7 @@ namespace Bcg {
         //!@{
 
         //! add a new vertex with position \p p
-        Vertex add_vertex(const Point &p);
+        Vertex add_vertex(const PointType &p);
 
         //! \brief Add a new face with vertex list \p vertices
         //! \throw TopologyException in case a topological error occurs.
@@ -585,7 +585,7 @@ namespace Bcg {
         //! points to \p p.
         //! \sa insert_vertex(Edge, Vertex)
         //! \sa insert_vertex(Halfedge, Vertex)
-        inline Halfedge insert_vertex(Edge e, const Point &p) {
+        inline Halfedge insert_vertex(Edge e, const PointType &p) {
             return insert_vertex(halfedge(e, 0), add_vertex(p));
         }
 
@@ -648,7 +648,7 @@ namespace Bcg {
         //! inserting edges between \p p and the vertices of \p f. For a triangle
         //! this is a standard one-to-three split.
         //! \sa split(Face, Vertex)
-        inline Vertex split(Face f, const Point &p) {
+        inline Vertex split(Face f, const PointType &p) {
             Vertex v = add_vertex(p);
             split(f, v);
             return v;
@@ -666,7 +666,7 @@ namespace Bcg {
         //!
         //! \attention This function is only valid for triangle meshes.
         //! \sa split(Edge, Vertex)
-        inline Halfedge split(Edge e, const Point &p) { return split(e, add_vertex(p)); }
+        inline Halfedge split(Edge e, const PointType &p) { return split(e, add_vertex(p)); }
 
         //! Split the edge \p e by connecting vertex \p v it to the two
         //! vertices of the adjacent triangles that are opposite to edge \c
@@ -718,13 +718,13 @@ namespace Bcg {
         //!@{
 
         //! position of a vertex (read only)
-        inline const Point &position(Vertex v) const { return vpoint_[v]; }
+        inline const PointType &position(Vertex v) const { return vpoint_[v]; }
 
         //! position of a vertex
-        inline Point &position(Vertex v) { return vpoint_[v]; }
+        inline PointType &position(Vertex v) { return vpoint_[v]; }
 
         //! \return vector of point positions
-        inline std::vector<Point> &positions() { return vpoint_.vector(); }
+        inline std::vector<PointType> &positions() { return vpoint_.vector(); }
 
         //!@}
 
@@ -861,7 +861,7 @@ namespace Bcg {
         PropertyContainer fprops_;
 
         // point coordinates
-        VertexProperty<Point> vpoint_;
+        VertexProperty<PointType> vpoint_;
 
         // connectivity information
         VertexProperty<VertexConnectivity> vconn_;

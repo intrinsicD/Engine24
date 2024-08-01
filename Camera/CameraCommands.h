@@ -6,15 +6,20 @@
 #define ENGINE24_CAMERACOMMANDS_H
 
 #include "Command.h"
+#include "MatVec.h"
 #include "entt/fwd.hpp"
 
 namespace Bcg {
-    struct CenterCamera : public AbstractCommand {
-        explicit CenterCamera(entt::entity entity_id) : AbstractCommand("CenterCamera"), entity_id(entity_id) {}
+    struct CenterCameraAtDistance : public AbstractCommand {
+        explicit CenterCameraAtDistance(const Vector<float, 3> &center, float distance = 3) :
+                AbstractCommand("CenterCamera"),
+                center(center),
+                distance(distance) {}
 
         void execute() const override;
 
-        entt::entity entity_id;
+        Vector<float, 3> center;
+        float distance;
     };
 }
 #endif //ENGINE24_CAMERACOMMANDS_H

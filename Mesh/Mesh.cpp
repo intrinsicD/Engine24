@@ -37,7 +37,7 @@ namespace Bcg{
 
         // Extract vertex positions
         for (auto v: mesh.vertices()) {
-            Point p = mesh.position(v);
+            PointType p = mesh.position(v);
             vertices.push_back(p[0]);
             vertices.push_back(p[1]);
             vertices.push_back(p[2]);

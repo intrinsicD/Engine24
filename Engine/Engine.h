@@ -18,6 +18,11 @@ namespace Bcg {
             return State().all_of<Component>(entity);
         }
 
+        template<typename Component>
+        static Component &require(entt::entity entity) {
+            return State().get_or_emplace<Component>(entity);
+        }
+
         static Engine *Instance();
 
         //Main way to have access to the engines state

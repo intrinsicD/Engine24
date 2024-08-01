@@ -10,7 +10,7 @@
 #include "Types.h"
 
 namespace Bcg {
-    void BuildKDTReeCompute(entt::entity entity_id, Property<Point> points);
+    void BuildKDTReeCompute(entt::entity entity_id, Property<PointType> points);
 }
 
 #endif //ENGINE24_KDTREECOMPUTE_H

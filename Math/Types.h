@@ -13,21 +13,21 @@ namespace Bcg {
 #ifdef BCG_SCALAR_TYPE_64
     using Scalar = double;
 #else
-    using Scalar = float;
+    using ScalarType = float;
 #endif
 
 //! Point type
-    using Point = Vector<Scalar, 3>;
+    using PointType = Vector<ScalarType, 3>;
 
 //! Normal type
-    using Normal = Vector<Scalar, 3>;
+    using NormalType = Vector<ScalarType, 3>;
 
 //! Color type
 //! \details RGB values in the range of [0,1]
-    using Color = Vector<Scalar, 3>;
+    using ColorType = Vector<ScalarType, 3>;
 
 //! Texture coordinate type
-    using TexCoord = Vector<Scalar, 2>;
+    using TexCoordType = Vector<ScalarType, 2>;
 
 // define index type to be used
 #ifdef BCG_INDEX_TYPE_64

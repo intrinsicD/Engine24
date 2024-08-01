@@ -24,6 +24,7 @@
 #include "Picker.h"
 #include "Transform.h"
 #include "Keyboard.h"
+#include "Graphics.h"
 #include "glad/gl.h"
 
 namespace Bcg {
@@ -151,13 +152,16 @@ namespace Bcg {
         auto pc_view = Engine::State().view<PointCloudView>();
         auto &camera = Engine::Context().get<Camera>();
         auto lightDirection = (camera.v_params.center - camera.v_params.eye).normalized();
-
+        auto vp = Graphics::get_viewport_dpi_adjusted();
         for (auto entity_id: pc_view) {
             auto &pcw = Engine::State().get<PointCloudView>(entity_id);
 
             pcw.vao.bind();
             pcw.program.use();
             pcw.program.set_uniform3fv("lightDir", lightDirection.data());
+            pcw.program.set_uniform1ui("width", vp[2]);
+            pcw.program.set_uniform1ui("height", vp[3]);
+            pcw.program.set_uniform1f("pointSize", PluginPointCloudInternal::point_size);
 
             if(Engine::has<Transform>(entity_id)){
                 auto &transform = Engine::State().get<Transform>(entity_id);

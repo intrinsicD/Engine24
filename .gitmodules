@@ -49,3 +49,6 @@
 [submodule "ext/fast_float"]
 	path = ext/fast_float
 	url = https://github.com/fastfloat/fast_float.git
+[submodule "ext/nanoflann"]
+	path = ext/nanoflann
+	url = https://github.com/jlblancoc/nanoflann.git

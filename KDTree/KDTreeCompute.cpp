@@ -7,7 +7,7 @@
 #include "OpenGLState.h"
 
 namespace Bcg {
-    void BuildKDTReeCompute(entt::entity entity_id, Property<Point> points) {
+    void BuildKDTReeCompute(entt::entity entity_id, Property<PointType> points) {
         /*const char *computeShaderSource = R"(
         #version 430 core
 

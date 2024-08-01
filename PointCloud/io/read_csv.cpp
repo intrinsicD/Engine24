@@ -10,12 +10,12 @@ namespace Bcg {
     void read_csv(PointCloud &pc, const std::string &filename) {
         auto txt = ReadTextFile(filename);
         unsigned int rows, cols;
-        std::vector<float> numbers = ParseNumbers(txt, rows);
+        std::vector<ScalarType> numbers = ParseNumbers(txt, rows);
         cols = numbers.size() / rows;
         assert(cols == 7);
-        auto mapped = Map<float, -1, -1>(numbers, rows, cols);
-        auto colors = pc.vertex_property<Color>("v:color", Color::Zero());
-        auto intensities = pc.vertex_property<Scalar>("v:intensity", 1);
+        auto mapped = Map<ScalarType, -1, -1>(numbers, rows, cols);
+        auto colors = pc.vertex_property<ColorType>("v:color", ColorType::Zero());
+        auto intensities = pc.vertex_property<ScalarType>("v:intensity", 1);
 
         pc.vprops_.resize(rows);
         Map(pc.positions()) = mapped.block(0, 0, rows, 3);

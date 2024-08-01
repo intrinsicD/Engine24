@@ -20,10 +20,10 @@
 #include "io/read_stl.h"
 #include "io/read_pmp.h"
 #include "Camera.h"
-#include "GuiUtils.h"
 #include "VertexArrayObject.h"
 #include "Views.h"
 #include "MeshCommands.h"
+#include "ViewCommands.h"
 #include "EntityCommands.h"
 #include "Picker.h"
 #include "Transform.h"
@@ -64,7 +64,9 @@ namespace Bcg {
         }
         auto entity_id = Engine::State().create();
         Commands::Entity::Add<SurfaceMesh>(entity_id, mesh, "Mesh").execute();
-        Commands::Mesh::SetupForRendering(entity_id).execute();
+        Commands::Mesh::SetupMesh(entity_id).execute();
+        Commands::View::SetupMeshView(entity_id).execute();
+        Commands::View::SetupPointsView(entity_id).execute();
         return mesh;
     }
 
@@ -124,7 +126,7 @@ namespace Bcg {
         for (int i = 0; i < numVertices; ++i) {
             float x, y, z;
             file >> x >> y >> z;
-            mesh.add_vertex(Point(x, y, z));
+            mesh.add_vertex(PointType (x, y, z));
         }
 
         for (int i = 0; i < numFaces; ++i) {
@@ -152,7 +154,7 @@ namespace Bcg {
 
     void PluginMesh::merge_vertices(SurfaceMesh &mesh, float tol) {
         struct VertexHash {
-            size_t operator()(const Point &p) const {
+            size_t operator()(const PointType &p) const {
                 auto h1 = std::hash<float>{}(p[0]);
                 auto h2 = std::hash<float>{}(p[1]);
                 auto h3 = std::hash<float>{}(p[2]);
@@ -161,7 +163,7 @@ namespace Bcg {
         };
 
         struct VertexEqual {
-            bool operator()(const Point &p1, const Point &p2) const {
+            bool operator()(const PointType &p1, const PointType &p2) const {
                 return (p1 - p2).norm() < tol;
             }
 
@@ -170,7 +172,7 @@ namespace Bcg {
             explicit VertexEqual(float t) : tol(t) {}
         };
 
-        std::unordered_map<Point, Vertex, VertexHash, VertexEqual> vertexMap(10, VertexHash(),
+        std::unordered_map<PointType, Vertex, VertexHash, VertexEqual> vertexMap(10, VertexHash(),
                                                                              VertexEqual(tol));
 
         // Map to store the new vertex positions
@@ -178,7 +180,7 @@ namespace Bcg {
 
         // Iterate over all vertices in the mesh
         for (auto v: mesh.vertices()) {
-            Point p = mesh.position(v);
+            PointType p = mesh.position(v);
 
             auto it = vertexMap.find(p);
             if (it == vertexMap.end()) {

@@ -5,7 +5,7 @@
 #ifndef ENGINE24_ROTATION_H
 #define ENGINE24_ROTATION_H
 
-#include "MatVec.h"
+#include "Types.h"
 #include "Eigen/Geometry"
 
 namespace Bcg {
@@ -127,13 +127,13 @@ namespace Bcg {
         }
 
         Matrix<float, 3, 3> matrix() const override {
-            Eigen::Matrix<Scalar, 3, 3> rot;
+            Eigen::Matrix<ScalarType, 3, 3> rot;
             rot.block(0, 0, 3, 2) = params;
             rot.col(2) = rot.col(0).cross(rot.col(1));
             return rot;
         }
 
-        Matrix<Scalar, 3, 2> params;
+        Matrix<ScalarType, 3, 2> params;
     };
 }
 

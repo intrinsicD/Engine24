@@ -8,7 +8,7 @@ namespace Bcg {
     PointCloud::PointCloud() {
         // allocate standard properties
         // same list is used in operator=() and assign()
-        vpoint_ = add_vertex_property<Point>("v:point");
+        vpoint_ = add_vertex_property<PointType>("v:point");
 
         vdeleted_ = add_vertex_property<bool>("v:deleted", false);
     }
@@ -18,13 +18,12 @@ namespace Bcg {
 
     //! assign \p rhs to \p *this. performs a deep copy of all properties.
     PointCloud &PointCloud::operator=(const PointCloud &rhs) {
-        if (this != &rhs)
-        {
+        if (this != &rhs) {
             // deep copy of property containers
             vprops_ = rhs.vprops_;
 
             // property handles contain pointers, have to be reassigned
-            vpoint_ = vertex_property<Point>("v:point");
+            vpoint_ = vertex_property<PointType>("v:point");
 
             vdeleted_ = vertex_property<bool>("v:deleted");
 
@@ -39,13 +38,12 @@ namespace Bcg {
 
     //! assign \p rhs to \p *this. does not copy custom properties.
     PointCloud &PointCloud::assign(const PointCloud &rhs) {
-        if (this != &rhs)
-        {
+        if (this != &rhs) {
             // clear properties
             vprops_.clear();
 
             // allocate standard properties
-            vpoint_ = add_vertex_property<Point>("v:point");
+            vpoint_ = add_vertex_property<PointType>("v:point");
 
             vdeleted_ = add_vertex_property<bool>("v:deleted", false);
 
@@ -66,7 +64,7 @@ namespace Bcg {
     }
 
     //! add a new vertex with position \p p
-    Vertex PointCloud::add_vertex(const Point &p) {
+    Vertex PointCloud::add_vertex(const PointType &p) {
         Vertex v = new_vertex();
         if (v.is_valid())
             vpoint_[v] = p;
@@ -82,7 +80,7 @@ namespace Bcg {
         free_memory();
 
         // add the standard properties back
-        vpoint_ = add_vertex_property<Point>("v:point");
+        vpoint_ = add_vertex_property<PointType>("v:point");
 
         vdeleted_ = add_vertex_property<bool>("v:deleted", false);
 
@@ -116,13 +114,11 @@ namespace Bcg {
             vmap[Vertex(i)] = Vertex(i);
 
         // remove deleted vertices
-        if (nV > 0)
-        {
+        if (nV > 0) {
             size_t i0 = 0;
             size_t i1 = nV - 1;
 
-            while (true)
-            {
+            while (true) {
                 // find first deleted and last un-deleted
                 while (!vdeleted_[Vertex(i0)] && i0 < i1)
                     ++i0;

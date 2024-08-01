@@ -106,15 +106,15 @@ namespace Bcg {
         Vertex v;
 
         // properties
-        VertexProperty<Normal> normals;
-        VertexProperty<TexCoord> texcoords;
-        VertexProperty<Color> colors;
+        VertexProperty<NormalType> normals;
+        VertexProperty<TexCoordType> texcoords;
+        VertexProperty<ColorType> colors;
         if (has_normals)
-            normals = mesh.vertex_property<Normal>("v:normal");
+            normals = mesh.vertex_property<NormalType>("v:normal");
         if (has_texcoords)
-            texcoords = mesh.vertex_property<TexCoord>("v:tex");
+            texcoords = mesh.vertex_property<TexCoordType>("v:tex");
         if (has_colors)
-            colors = mesh.vertex_property<Color>("v:color");
+            colors = mesh.vertex_property<ColorType>("v:color");
 
         // read line, but skip comment lines
         while (lp && (lp[0] == '#' || lp[0] == '\n')) {
@@ -140,13 +140,13 @@ namespace Bcg {
             // position
             items = sscanf(lp, "%f %f %f%n", &x, &y, &z, &nc);
             assert(items == 3);
-            v = mesh.add_vertex(Point(x, y, z));
+            v = mesh.add_vertex(PointType(x, y, z));
             lp += nc;
 
             // normal
             if (has_normals) {
                 if (sscanf(lp, "%f %f %f%n", &x, &y, &z, &nc) == 3) {
-                    normals[v] = Normal(x, y, z);
+                    normals[v] = NormalType(x, y, z);
                 }
                 lp += nc;
             }
@@ -159,7 +159,7 @@ namespace Bcg {
                         g /= 255.0f;
                         b /= 255.0f;
                     }
-                    colors[v] = Color(r, g, b);
+                    colors[v] = ColorType(r, g, b);
                 }
                 lp += nc;
             }
@@ -226,8 +226,8 @@ namespace Bcg {
                          const std::filesystem::path &file) {
         uint32_t i, j, idx(0);
         uint32_t nv(0), nf(0), ne(0);
-        Point p, n;
-        TexCoord t;
+        PointType p, n;
+        TexCoordType t;
         Vertex v;
 
         // binary cannot (yet) read colors
@@ -235,12 +235,12 @@ namespace Bcg {
             throw IOException("Colors not supported for binary OFF file.");
 
         // properties
-        VertexProperty<Normal> normals;
-        VertexProperty<TexCoord> texcoords;
+        VertexProperty<NormalType> normals;
+        VertexProperty<TexCoordType> texcoords;
         if (has_normals)
-            normals = mesh.vertex_property<Normal>("v:normal");
+            normals = mesh.vertex_property<NormalType>("v:normal");
         if (has_texcoords)
-            texcoords = mesh.vertex_property<TexCoord>("v:tex");
+            texcoords = mesh.vertex_property<TexCoordType>("v:tex");
 
         // #Vertices, #Faces, #Edges
         read_binary(in, nv);
@@ -263,14 +263,14 @@ namespace Bcg {
             read_binary(in, p[0], swap);
             read_binary(in, p[1], swap);
             read_binary(in, p[2], swap);
-            v = mesh.add_vertex((Point) p);
+            v = mesh.add_vertex((PointType) p);
 
             // normal
             if (has_normals) {
                 read_binary(in, n[0], swap);
                 read_binary(in, n[1], swap);
                 read_binary(in, n[2], swap);
-                normals[v] = (Normal) n;
+                normals[v] = (NormalType) n;
             }
 
             // tex coord

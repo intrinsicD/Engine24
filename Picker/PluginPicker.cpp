@@ -11,6 +11,9 @@
 #include "imgui.h"
 #include "Intersections.h"
 #include "Transform.h"
+#include "KDtree.h"
+#include "PointCloud.h"
+#include "Mesh.h"
 
 namespace Bcg {
 
@@ -37,9 +40,35 @@ namespace Bcg {
             auto &transform = Engine::State().get<Transform>(entity_id);
             if (Intersect(aabb, (transform.world().inverse() * picked.spaces.wsp.homogeneous()).head<3>())) {
                 picked.entity.id = entity_id;
-                return picked;
+                break;
             }
         }
+
+        auto entity_id = picked.entity.id;
+        if (Engine::valid(entity_id) && !picked.entity.is_background) {
+            if (Engine::has<Transform>(entity_id)) {
+                auto &transform = Engine::State().get<Transform>(entity_id);
+                picked.spaces.osp = transform.world().inverse() * picked.spaces.wsp;
+            }
+            if (!Engine::has<KDTree>(entity_id)) {
+                auto &kdtree = Engine::State().emplace<KDTree>(entity_id);
+                if (Engine::has<SurfaceMesh>(entity_id)) {
+                    auto &mesh = Engine::State().get<SurfaceMesh>(entity_id);
+                    kdtree.build(mesh.positions());
+                }/*else if(Engine::has<Graph>(entity_id)){
+                    auto &graph = Engine::State().get<Graph>(entity_id);
+                    kdtree.build(graph.positions());
+                }*/else if (Engine::has<PointCloud>(entity_id)) {
+                    auto &pc = Engine::State().get<PointCloud>(entity_id);
+                    kdtree.build(pc.positions());
+                }
+            }
+
+            auto &kdtree = Engine::State().get<KDTree>(entity_id);
+            auto result = kdtree.closest_query(picked.spaces.osp);
+            picked.entity.vertex_idx = result.indices[0];
+        }
+
         return picked;
     }
 

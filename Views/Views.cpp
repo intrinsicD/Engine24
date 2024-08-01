@@ -37,7 +37,7 @@ namespace Bcg {
     }
 
     void PointView::draw() {
-        glDrawArrays(GL_POINTS, offset, num_indices);
+        glDrawElements(GL_POINTS, num_indices, GL_UNSIGNED_INT, nullptr);
     }
 
     void TriangleView::draw() {
