@@ -74,6 +74,29 @@ namespace Bcg::Commands::View {
         b_position.unbind();
         b_indices.unbind();
 
+        pcw.vao.bind();
+        auto &normal_attribute = pcw.vao.attributes.emplace_back();
+        normal_attribute.id = BCG_GL_DEFAULT_NORMAL_LOC;
+        normal_attribute.size = 3;
+        normal_attribute.type = Attribute::Type::FLOAT;
+        normal_attribute.normalized = false;
+        normal_attribute.stride = 3 * sizeof(float);
+        normal_attribute.shader_name = "normals";
+        normal_attribute.bound_buffer_name = "";
+        normal_attribute.set(nullptr);
+
+        auto &colors_attribute = pcw.vao.attributes.emplace_back();
+        colors_attribute.id = BCG_GL_DEFAULT_COLOR_LOC;
+        colors_attribute.size = 3;
+        colors_attribute.type = Attribute::Type::FLOAT;
+        colors_attribute.normalized = false;
+        colors_attribute.stride = 3 * sizeof(float);
+        colors_attribute.shader_name = "colors";
+        colors_attribute.bound_buffer_name = "";
+        colors_attribute.set(nullptr);
+        colors_attribute.set_default(pcw.base_color.data());
+        pcw.vao.unbind();
+
         const char *vertex_shader_src = "#version 330 core\n"
                                         "layout (location = 0) in vec3 aPos;\n"
                                         "layout (location = 1) in vec3 aNormal;\n"
@@ -86,58 +109,59 @@ namespace Bcg::Commands::View {
                                         "uniform uint width;\n"
                                         "uniform uint height;\n"
                                         "uniform float pointSize;\n"
-                                        "out vec4 viewSpacePos;\n"
+                                        "out vec4 f_view;\n"
+                                        "out vec4 f_world;\n"
                                         "out vec3 f_color;\n"
                                         "out vec3 f_normal;\n"
-                                        "out float radius_view_space;\n"
+                                        "out float f_radius_view_space;\n"
                                         "void main()\n"
                                         "{\n"
                                         "   f_normal = mat3(transpose(inverse(model))) * aNormal;\n"
                                         "   f_color = aColor;\n"
-                                        "   viewSpacePos = view * model * vec4(aPos, 1.0);\n"
-                                        "   vec4 clipSpacePos = projection * viewSpacePos;\n"
+                                        "   f_world = model * vec4(aPos, 1.0);\n"
+                                        "   f_view = view * f_world;\n"
+                                        "   vec4 clipSpacePos = projection * f_view;\n"
                                         "   float radius_ndc_x = pointSize / width * 2.0;\n"
                                         "   float radius_ndc_y = pointSize / height * 2.0;\n"
                                         "   // Use the larger of the two dimensions to ensure the point remains a square\n"
                                         "   float radius_ndc_space = max(radius_ndc_x, radius_ndc_y);\n"
-                                        "   radius_view_space = radius_ndc_space * clipSpacePos.w;\n"
+                                        "   f_radius_view_space = (inverse(projection) * vec4(radius_ndc_space * clipSpacePos.w, 0, 0, 1.0)).x;\n"
                                         "   gl_Position = clipSpacePos;\n"
                                         "}\0";
 
         const char *fragment_shader_src = "#version 330 core\n"
                                           "in vec3 f_normal;\n"
                                           "in vec3 f_color;\n"
-                                          "in vec4 viewSpacePos;\n"
-                                          "in float radius_view_space;\n"
+                                          "in vec4 f_view;\n"
+                                          "in vec4 f_world;\n"
+                                          "in float f_radius_view_space;\n"
                                           "out vec4 FragColor;\n"
                                           "layout (std140) uniform Camera {\n"
                                           "    mat4 view;\n"
                                           "    mat4 projection;\n"
                                           "};\n"
-                                          "uniform vec3 lightDir;\n"
+                                          "uniform vec3 lightPosition;\n"
                                           "void main()\n"
                                           "{\n"
-
                                           "   vec2 coord = gl_PointCoord * 2.0 - 1.0; // Convert from [0,1] to [-1,1]\n"
                                           "   float dist = dot(coord, coord);\n"
                                           "   if (dist > 1.0) {\n"
                                           "        discard; // Discard fragments outside the sphere\n"
                                           "    }\n"
-                                          "   // Calculate the correct depth value\n"
                                           "   float z = sqrt(1.0 - dist); // Sphere depth\n"
-                                          "   float adjustedViewDepth = viewSpacePos.z + z * radius_view_space; // Adjust depth in view space\n"
-                                          "   // Convert adjusted view space position back to clip space\n"
-                                          "   vec4 adjustedClipSpacePos = projection * vec4(viewSpacePos.xy, adjustedViewDepth, viewSpacePos.w);\n"
+                                          "   float adjustedViewDepth = f_view.z + z * f_radius_view_space;\n"
+                                          "   vec4 adjustedClipSpacePos = projection * vec4(f_view.xy, adjustedViewDepth, f_view.w);\n"
                                           "   float ndcDepth = adjustedClipSpacePos.z / adjustedClipSpacePos.w;\n"
-                                          "   // Convert NDC depth to window space depth [0, 1]\n"
                                           "   gl_FragDepth = (ndcDepth * 0.5 + 0.5);\n"
-                                          "   // Normalize the input normal\n"
+
                                           "   vec3 normal = normalize(f_normal);\n"
-                                          "   // Calculate the diffuse intensity\n"
-                                          "   float diff = max(dot(normal, normalize(lightDir)), 0.0);\n"
-                                          "   // Calculate the final color\n"
+                                          "   float diff = max(dot(normal, normalize(lightPosition - f_world.xyz)), 0);\n"
                                           "   vec3 finalColor = diff * f_color;\n"
-                                          "   FragColor = vec4(finalColor, 1.0f);\n"
+                                          "   if(length(normal) >= 0.5){\n"
+                                          "        FragColor = vec4(finalColor, 1.0f);\n"
+                                          "   }else{\n"
+                                          "        FragColor = vec4(f_color, 1.0f);\n"
+                                          "   }\n"
                                           "}\n\0";
 
         auto program = openGlState.get_program("PointCloudProgram");
@@ -281,11 +305,8 @@ namespace Bcg::Commands::View {
                                           "uniform vec3 lightPosition;\n"
                                           "void main()\n"
                                           "{\n"
-                                          "   // Normalize the input normal\n"
                                           "   vec3 normal = normalize(f_normal);\n"
-                                          "   // Calculate the diffuse intensity\n"
-                                          "   float diff = max(dot(normal, normalize(lightPosition - f_world)), 0.01);\n"
-                                          "   // Calculate the final color\n"
+                                          "   float diff = max(dot(normal, normalize(lightPosition - f_world)), 0);\n"
                                           "   vec3 finalColor = diff * f_color;\n"
                                           "   FragColor = vec4(finalColor, 1.0f);\n"
                                           "}\n\0";

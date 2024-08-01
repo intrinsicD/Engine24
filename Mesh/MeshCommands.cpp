@@ -9,7 +9,6 @@
 #include "AABB.h"
 #include "Hierarchy.h"
 #include "CameraCommands.h"
-#include "MeshCompute.h"
 
 namespace Bcg::Commands::Mesh {
     void SetupMesh::execute() const {
