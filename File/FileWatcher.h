@@ -11,7 +11,7 @@
 
 namespace Bcg {
     struct File {
-        const char *path;
+        std::string path;
         std::function<void()> callback;
         std::chrono::file_clock::time_point last_write_time;
     };
@@ -22,11 +22,11 @@ namespace Bcg {
 
         void watch(File &file);
 
-        void remove(const File &file);
+        void remove(const std::string &filepath);
 
         std::vector<File> check(bool force = false);
 
-        std::unordered_map<const char *, File> watched;
+        std::unordered_map<std::string, File> watched;
     };
 }
 

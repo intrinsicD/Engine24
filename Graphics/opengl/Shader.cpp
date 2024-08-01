@@ -22,8 +22,8 @@ namespace Bcg {
         glShaderSource(id, 1, &src, nullptr);
     }
 
-    std::string Shader::load_file(const std::string &filename) {
-        FILE *file = fopen(filename.c_str(), "r");
+    std::string Shader::load_file(const std::string &filepath) {
+        FILE *file = fopen(filepath.c_str(), "r");
         if (!file) {
             return "";
         }
@@ -35,10 +35,11 @@ namespace Bcg {
         src[size] = 0;
         fclose(file);
         if (!success) {
-            Log::Error("Failed to load shader file: " + filename);
+            Log::Error("Failed to load shader file: " + filepath);
             delete[] src;
             return "";
         }
+        this->filepath = filepath;
         return src;
     }
 

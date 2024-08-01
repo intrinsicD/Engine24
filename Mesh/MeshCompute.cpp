@@ -151,7 +151,11 @@ namespace Bcg {
 
         auto program = openGlState.get_compute_program("ComputeHalfedgeMeshVertexNormals");
         if (!program) {
-            if (!program.create_from_source(computeShaderSource)) {
+    /*        if (!program.create_from_source(computeShaderSource)) {
+                Log::Error("Failed to create compute shader program!\n");
+                return normals;
+            }*/
+            if (!program.create_from_file("../Shaders/glsl/surface_mesh_vertex_normal_cs.glsl")) {
                 Log::Error("Failed to create compute shader program!\n");
                 return normals;
             }

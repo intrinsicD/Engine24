@@ -21,57 +21,52 @@ namespace Bcg {
         }
     }
 
-    void Program::create_from_source(const std::string &vs, const std::string &fs, const std::string &gs,
-                                     const std::string &tc, const std::string &te) {
+    void Program::create_from_source(const std::string &vs_, const std::string &fs_, const std::string &gs_,
+                                     const std::string &tc_, const std::string &te_) {
         if (id == -1) {
             create();
         }
-        if (!vs.empty() && !fs.empty()) {
-            VertexShader vertexShader;
-            vertexShader.create();
-            vertexShader.load_source(vs);
-            vertexShader.compile();
-            vertexShader.check_compile_errors();
-            attach(vertexShader);
-            vertexShader.destroy();
+        if (!vs_.empty() && !fs_.empty()) {
+            vs.create();
+            vs.load_source(vs_);
+            vs.compile();
+            vs.check_compile_errors();
+            attach(vs);
+            vs.destroy();
 
-            FragmentShader fragmentShader;
-            fragmentShader.create();
-            fragmentShader.load_source(fs);
-            fragmentShader.compile();
-            fragmentShader.check_compile_errors();
-            attach(fragmentShader);
-            fragmentShader.destroy();
+            fs.create();
+            fs.load_source(fs_);
+            fs.compile();
+            fs.check_compile_errors();
+            attach(fs);
+            fs.destroy();
         }
 
-        if (!gs.empty()) {
-            GeometryShader geometryShader;
-            geometryShader.create();
-            geometryShader.load_source(gs);
-            geometryShader.compile();
-            geometryShader.check_compile_errors();
-            attach(geometryShader);
-            geometryShader.destroy();
+        if (!gs_.empty()) {
+            gs.create();
+            gs.load_source(gs_);
+            gs.compile();
+            gs.check_compile_errors();
+            attach(gs);
+            gs.destroy();
         }
 
-        if (!tc.empty()) {
-            TessControlShader tessControlShader;
-            tessControlShader.create();
-            tessControlShader.load_source(tc);
-            tessControlShader.compile();
-            tessControlShader.check_compile_errors();
-            attach(tessControlShader);
-            tessControlShader.destroy();
+        if (!tc_.empty()) {
+            tc.create();
+            tc.load_source(tc_);
+            tc.compile();
+            tc.check_compile_errors();
+            attach(tc);
+            tc.destroy();
         }
 
-        if (!te.empty()) {
-            TessEvalShader tessEvalShader;
-            tessEvalShader.create();
-            tessEvalShader.load_source(te);
-            tessEvalShader.compile();
-            tessEvalShader.check_compile_errors();
-            attach(tessEvalShader);
-            tessEvalShader.destroy();
+        if (!te_.empty()) {
+            te.create();
+            te.load_source(te_);
+            te.compile();
+            te.check_compile_errors();
+            attach(te);
+            te.destroy();
         }
 
         link();
@@ -81,8 +76,8 @@ namespace Bcg {
         }
     }
 
-    void Program::create_from_files(const std::string &vs, const std::string &fs, const std::string &gs,
-                                    const std::string &tc, const std::string &te) {
+    void Program::create_from_files(const std::string &vs_, const std::string &fs_, const std::string &gs_,
+                                    const std::string &tc_, const std::string &te_) {
         std::string vsSource;
         std::string fsSource;
         std::string gsSource;
@@ -91,21 +86,27 @@ namespace Bcg {
 
         Shader shader;
 
-        if (!vs.empty() && !fs.empty()) {
-            vsSource = shader.load_file(vs);
-            fsSource = shader.load_file(fs);
+        if (!vs_.empty() && !fs_.empty()) {
+            vs.filepath = vs_;
+            vsSource = shader.load_file(vs_);
+            
+            fs.filepath = fs_;
+            fsSource = shader.load_file(fs_);
         }
 
-        if (!gs.empty()) {
-            gsSource = shader.load_file(gs);
+        if (!gs_.empty()) {
+            gs.filepath = gs_;
+            gsSource = shader.load_file(gs_);
         }
 
-        if (!tc.empty()) {
-            tcSource = shader.load_file(tc);
+        if (!tc_.empty()) {
+            tc.filepath = tc_;
+            tcSource = shader.load_file(tc_);
         }
 
-        if (!te.empty()) {
-            teSource = shader.load_file(te);
+        if (!te_.empty()) {
+            te.filepath = te_;
+            teSource = shader.load_file(te_);
         }
 
         create_from_source(vsSource, fsSource, gsSource, tcSource, teSource);
@@ -182,18 +183,17 @@ namespace Bcg {
         }
     }
 
-    bool ComputeShaderProgram::create_from_source(const std::string &cs) {
+    bool ComputeShaderProgram::create_from_source(const std::string &cs_) {
         if (id == -1) {
             create();
         }
-        if (!cs.empty()) {
-            ComputeShader computeShader;
-            computeShader.create();
-            computeShader.load_source(cs);
-            computeShader.compile();
-            computeShader.check_compile_errors();
-            attach(computeShader);
-            computeShader.destroy();
+        if (!cs_.empty()) {
+            cs.create();
+            cs.load_source(cs_);
+            cs.compile();
+            cs.check_compile_errors();
+            attach(cs);
+            cs.destroy();
         }
 
         link();
@@ -205,12 +205,13 @@ namespace Bcg {
         return true;
     }
 
-    bool ComputeShaderProgram::create_from_file(const std::string &cs) {
+    bool ComputeShaderProgram::create_from_file(const std::string &cs_) {
         std::string csSource;
         Shader shader;
 
-        if (!cs.empty()) {
-            csSource = shader.load_file(cs);
+        if (!cs_.empty()) {
+            cs.filepath = cs_;
+            csSource = shader.load_file(cs_);
             if (csSource.empty()) {
                 return false;
             }

@@ -10,6 +10,7 @@
 #include "Views.h"
 #include "Mesh.h"
 #include "PointCloud.h"
+#include "FileWatcher.h"
 
 
 namespace Bcg {
@@ -19,7 +20,12 @@ namespace Bcg {
 
     void PluginViews::begin_frame() {}
 
-    void PluginViews::update() {}
+    void PluginViews::update() {
+        if(Engine::Context().find<FileWatcher>()){
+            auto &watcher = Engine::Context().get<FileWatcher>();
+            watcher.check();
+        }
+    }
 
     void PluginViews::end_frame() {}
 

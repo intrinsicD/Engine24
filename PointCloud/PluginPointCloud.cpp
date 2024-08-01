@@ -151,7 +151,7 @@ namespace Bcg {
     void PluginPointCloud::render() {
         auto pc_view = Engine::State().view<PointCloudView>();
         auto &camera = Engine::Context().get<Camera>();
-        auto vp = Graphics::get_viewport_dpi_adjusted();
+        auto vp = Graphics::get_viewport();
         for (auto entity_id: pc_view) {
             auto &pcw = Engine::State().get<PointCloudView>(entity_id);
 

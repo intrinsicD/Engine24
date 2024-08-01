@@ -3,12 +3,32 @@ project(Engine24)
 
 set(CMAKE_CXX_STANDARD 20)
 
+# Set the output directories
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
 add_library(Engine24)
 
-set(IMGUI_FONTS_PATH "../ext/imgui/misc/fonts")
-set(IMGUI_FONTS_PATH_APPS "../../../ext/imgui/misc/fonts")
-configure_file(config.h.in config.h @ONLY)
-target_include_directories(Engine24 PRIVATE ${CMAKE_BINARY_DIR})
+include(${CMAKE_SOURCE_DIR}/CopyShaders.cmake)
+
+# Shader directory
+set(SHADER_DIR ${CMAKE_SOURCE_DIR}/Graphics/glsl)
+set(SHADER_OUTPUT_DIR ${CMAKE_BINARY_DIR}/Shaders/glsl)
+
+# Create the output directory
+file(MAKE_DIRECTORY ${SHADER_OUTPUT_DIR})
+
+# Copy all shader files if not present
+copy_shaders(${SHADER_DIR} ${SHADER_OUTPUT_DIR})
+
+set(FONTS_DIR ${CMAKE_SOURCE_DIR}/ext/imgui/misc/fonts)
+set(FONTS_OUTPUT_DIR ${CMAKE_BINARY_DIR}/Fonts)
+
+file(MAKE_DIRECTORY ${FONTS_OUTPUT_DIR})
+
+# Copy all shader files if not present
+copy_shaders(${FONTS_DIR} ${FONTS_OUTPUT_DIR})
 
 add_subdirectory(Apps)
 add_subdirectory(ext)

@@ -1,0 +1,8 @@
+function(copy_shaders shader_dir output_dir)
+    file(GLOB SHADER_FILES "${shader_dir}/*")
+    foreach(SHADER_FILE ${SHADER_FILES})
+        get_filename_component(FILE_NAME ${SHADER_FILE} NAME)
+        set(DEST_FILE ${output_dir}/${FILE_NAME})
+        configure_file(${SHADER_FILE} ${DEST_FILE} COPYONLY)
+    endforeach()
+endfunction()

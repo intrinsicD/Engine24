@@ -11,6 +11,7 @@
 #include "OpenGLState.h"
 #include "GLUtils.h"
 #include "GetPrimitives.h"
+#include "FileWatcher.h"
 #include <numeric>
 
 namespace Bcg::Commands::View {
@@ -166,7 +167,8 @@ namespace Bcg::Commands::View {
 
         auto program = openGlState.get_program("PointCloudProgram");
         if (!program) {
-            program.create_from_source(vertex_shader_src, fragment_shader_src);
+            //program.create_from_source(vertex_shader_src, fragment_shader_src);
+            program.create_from_files("../Shaders/glsl/impostor_spheres_vs.glsl", "../Shaders/glsl/impostor_spheres_fs.glsl");
 
             auto &camera_ubi = Engine::Context().get<CameraUniformBuffer>();
             pcw.program.bind_uniform_block("Camera", camera_ubi.binding_point);
@@ -313,7 +315,8 @@ namespace Bcg::Commands::View {
 
         auto program = openGlState.get_program("MeshProgram");
         if (!program) {
-            program.create_from_source(vertex_shader_src, fragment_shader_src);
+            //program.create_from_source(vertex_shader_src, fragment_shader_src);
+            program.create_from_files("../Shaders/glsl/surface_mesh_vs.glsl", "../Shaders/glsl/surface_mesh_fs.glsl");
             // Get the index of the uniform block
             auto &camera_ubi = Engine::Context().get<CameraUniformBuffer>();
             program.bind_uniform_block("Camera", camera_ubi.binding_point);

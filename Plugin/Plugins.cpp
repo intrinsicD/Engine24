@@ -13,6 +13,7 @@
 #include "PluginCamera.h"
 #include "PluginTransform.h"
 #include "PluginHierarchy.h"
+#include "PluginViews.h"
 #include <unordered_map>
 
 namespace Bcg {
@@ -28,6 +29,7 @@ namespace Bcg {
         add_plugin(std::make_unique<PluginFrameTimer>());
         add_plugin(std::make_unique<PluginTransform>());
         add_plugin(std::make_unique<PluginHierarchy>());
+        add_plugin(std::make_unique<PluginViews>());
     }
 
     void Plugins::init_user_plugin(const std::string &name) {

@@ -11,8 +11,8 @@ namespace Bcg {
         watched[file.path] = file;
     }
 
-    void FileWatcher::remove(const File &file) {
-        watched.erase(file.path);
+    void FileWatcher::remove(const std::string &filepath) {
+        watched.erase(filepath.c_str());
     }
 
     std::vector<File> FileWatcher::check(bool force) {

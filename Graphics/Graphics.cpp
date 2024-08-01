@@ -15,9 +15,7 @@
 #include "ImGuizmo.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
-#include "config.h"
 #include "EventsGui.h"
-#include <filesystem>
 
 namespace Bcg {
 
@@ -102,12 +100,7 @@ namespace Bcg {
 
     static void load_fonts(ImGuiIO &io, float dpi) {
         io.Fonts->Clear();
-        if (std::filesystem::exists(IMGUI_FONTS_PATH_APPS)) {
-            io.Fonts->AddFontFromFileTTF((std::string(IMGUI_FONTS_PATH_APPS) + "/ProggyClean.ttf").c_str(),
-                                         16.0f * dpi);
-        } else {
-            io.Fonts->AddFontFromFileTTF((std::string(IMGUI_FONTS_PATH) + "/ProggyClean.ttf").c_str(), 16.0f * dpi);
-        }
+        io.Fonts->AddFontFromFileTTF("../Fonts/ProggyClean.ttf", 16.0f * dpi);
         io.Fonts->Build();
     }
 

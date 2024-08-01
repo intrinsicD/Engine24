@@ -9,9 +9,14 @@
 
 namespace Bcg {
     struct Shader {
-        unsigned int id;
+        unsigned int id = -1;
         unsigned int type;
         std::string source;
+        std::string filepath;
+
+        operator bool() const {
+            return id != -1;
+        }
 
         void create();
 
