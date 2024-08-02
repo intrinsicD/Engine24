@@ -70,20 +70,23 @@ namespace Bcg::Gui {
     }
 
     void Show(BasePropertyArray &a_property) {
-        static std::pair<int, std::string> curr;
+        static std::pair<int, std::string> curr = {0, ""};
         ImGui::PushID((a_property.name() + curr.second).c_str());
-        Combo(curr.second.c_str(), curr, a_property);
+        Combo((curr.second + "##values").c_str(), curr, a_property);
         ImGui::PopID();
     }
 
-    void Show(PropertyContainer &container) {
-        for (auto &a_property: container.get_parray()) {
+    void Show(const char *label, PropertyContainer &container) {
+        static std::pair<int, std::string> curr_property = {0, ""};
+        Combo(label, curr_property, container);
+        Show(*container.get_parray()[curr_property.first]);
+        /*for (auto &a_property: container.get_parray()) {
             if (ImGui::TreeNode(a_property->name().c_str())) {
                 ImGui::PushID(a_property->name().c_str());
                 Show(*a_property);
                 ImGui::PopID();
                 ImGui::TreePop();
             }
-        }
+        }*/
     }
 }

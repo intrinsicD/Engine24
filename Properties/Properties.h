@@ -43,6 +43,8 @@ namespace Bcg {
         virtual std::string element_string(size_t i) const = 0;
 
         virtual size_t size() const = 0;
+
+        virtual size_t dims() const = 0;
     };
 
     template<typename T, int N>
@@ -114,7 +116,31 @@ namespace Bcg {
             return data_.size();
         }
 
+        size_t dims() const override{
+            return GetDims(value_);
+        }
+
     private:
+        template<typename S>
+        size_t GetDims(S) const {
+            return 1;
+        }
+
+        template<>
+        size_t GetDims(Vector<float, 2>) const {
+            return 2;
+        }
+
+        template<>
+        size_t GetDims(Vector<float, 3>) const {
+            return 3;
+        }
+
+        template<>
+        size_t GetDims(Vector<float, 4>) const {
+            return 4;
+        }
+
         std::string name_;
         VectorType data_;
         ValueType value_;
@@ -214,11 +240,18 @@ namespace Bcg {
         size_t n_properties() const { return parrays_.size(); }
 
         // returns a vector of all property names
-        std::vector<std::string> properties() const {
+        std::vector<std::string> properties(int filter_dims = 0) const {
             std::vector<std::string> names;
             names.reserve(parrays_.size());
-            for (const auto *array: parrays_)
-                names.emplace_back(array->name());
+            for (const auto *array: parrays_){
+                if(filter_dims > 0){
+                    if(array->dims() == filter_dims){
+                        names.emplace_back(array->name());
+                    }
+                }else{
+                    names.emplace_back(array->name());
+                }
+            }
             return names;
         }
 

@@ -19,7 +19,7 @@ namespace Bcg::Gui {
 
     void Show(BasePropertyArray &basePropertyArray);
 
-    void Show(PropertyContainer &container);
+    void Show(const char *label, PropertyContainer &container);
 }
 
 #endif //ENGINE24_PROPERTIESGUI_H

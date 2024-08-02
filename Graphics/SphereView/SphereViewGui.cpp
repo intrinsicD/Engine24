@@ -5,6 +5,10 @@
 #include "SphereViewGui.h"
 #include "Engine.h"
 #include "imgui.h"
+#include "GetPrimitives.h"
+#include "GuiUtils.h"
+#include "PropertiesGui.h"
+#include "SphereViewCommands.h"
 
 namespace Bcg::Gui {
     void Show(SphereView &view) {
@@ -55,6 +59,23 @@ namespace Bcg::Gui {
     void ShowSphereView(entt::entity entity_id) {
         if (Engine::valid(entity_id) && Engine::has<SphereView>(entity_id)) {
             auto &view = Engine::State().get<SphereView>(entity_id);
+            auto *vertices = GetPrimitives(entity_id).vertices();
+            if(vertices){
+                auto properties_3d = vertices->properties(3);
+                static std::pair<int, std::string> curr_pos = {0, view.position.bound_buffer_name};
+                if(Combo(view.position.shader_name.c_str(), curr_pos, properties_3d)){
+                    Commands::View::SetPositionSphereView(entity_id, properties_3d[curr_pos.first]).execute();
+                }
+                static std::pair<int, std::string> curr_color = {0, view.color.bound_buffer_name};
+                if(Combo(view.color.shader_name.c_str(), curr_color, properties_3d)){
+                    Commands::View::SetColorSphereView(entity_id, properties_3d[curr_color.first]).execute();
+                }
+                static std::pair<int, std::string> curr_radius = {0, view.radius.bound_buffer_name};
+                auto properties_1d = vertices->properties(1);
+                if(Combo(view.radius.shader_name.c_str(), curr_radius, properties_1d)){
+                    Commands::View::SetRadiusSphereView(entity_id, properties_1d[curr_radius.first]).execute();
+                }
+            }
             Show(view);
         }
     }

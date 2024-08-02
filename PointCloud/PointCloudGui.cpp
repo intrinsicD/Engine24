@@ -34,7 +34,7 @@ namespace Bcg::Gui {
     void Show(PointCloud &pc) {
         if (ImGui::CollapsingHeader(("Vertices #v: " + std::to_string(pc.n_vertices())).c_str())) {
             ImGui::PushID("Vertices");
-            Show(pc.vprops_);
+            Show("##Vertices", pc.vprops_);
             ImGui::PopID();
         }
     }

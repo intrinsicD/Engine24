@@ -33,22 +33,22 @@ namespace Bcg::Gui {
     void Show(SurfaceMesh &mesh) {
         if (ImGui::CollapsingHeader(("Vertices #v: " + std::to_string(mesh.n_vertices())).c_str())) {
             ImGui::PushID("Vertices");
-            Show(mesh.vprops_);
+            Show("##Vertices", mesh.vprops_);
             ImGui::PopID();
         }
         if (ImGui::CollapsingHeader(("Halfedges #h: " + std::to_string(mesh.n_halfedges())).c_str())) {
             ImGui::PushID("Halfedges");
-            Show(mesh.hprops_);
+            Show("##Halfedges", mesh.hprops_);
             ImGui::PopID();
         }
         if (ImGui::CollapsingHeader(("Edges #e: " + std::to_string(mesh.n_edges())).c_str())) {
             ImGui::PushID("Edges");
-            Show(mesh.eprops_);
+            Show("##Edges",mesh.eprops_);
             ImGui::PopID();
         }
         if (ImGui::CollapsingHeader(("Faces #f: " + std::to_string(mesh.n_faces())).c_str())) {
             ImGui::PushID("Faces");
-            Show(mesh.fprops_);
+            Show("##Faces",mesh.fprops_);
             ImGui::PopID();
         }
     }
