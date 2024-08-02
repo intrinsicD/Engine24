@@ -12,83 +12,16 @@
 #include "Engine.h"
 
 namespace Bcg {
-    VertexProperty<Vector<float, 3>> ComputeVertexNormals(entt::entity entity_id, SurfaceMesh &mesh) {
-        const char *computeShaderSource = R"(
-        #version 430 core
+    VertexProperty<Vector<float, 3>> ComputeSurfaceMeshVertexNormals(entt::entity entity_id) {
+        if (!Engine::valid(entity_id)) return VertexProperty<Vector<float, 3>>();
+        if (!Engine::has<SurfaceMesh>(entity_id)) return VertexProperty<Vector<float, 3>>();
 
-        layout (local_size_x = 1) in;
-
-        struct Vector3{
-            float x, y, z;
-        };
-
-        layout (std430, binding = 0) readonly buffer VertexPositions { Vector3 positions[]; };
-        layout (std430, binding = 1) readonly buffer VertexConnectivity { uint vconn[]; };
-        layout (std430, binding = 2) readonly buffer HalfedgeConnectivity { uvec4 hconn[]; };
-        layout (std430, binding = 3) readonly buffer FaceConnectivity { uint fconn[]; };
-
-        layout (std430, binding = 4) writeonly buffer VertexNormals { Vector3 normals[]; };
-
-        uint face(uint h) {
-            return hconn[h].x;
-        }
-
-        uint to_vertex(uint h) {
-            return hconn[h].y;
-        }
-
-        uint next_halfedge(uint h) {
-            return hconn[h].z;
-        }
-
-        uint prev_halfedge(uint h) {
-            return hconn[h].w;
-        }
-
-        uint opposite_halfedge(uint h) {
-            return ((h & 1) == 1 ? h - 1 : h + 1);
-        }
-
-        uint ccw_rotated_halfedge(uint h) {
-            return opposite_halfedge(prev_halfedge(h));
-        }
-
-        uint cw_rotated_halfedge(uint h) {
-            return next_halfedge(opposite_halfedge(h));
-        }
-
-        vec3 Get(Vector3 p){
-            return vec3(p.x, p.y, p.z);
-        }
-
-        void main() {
-            uint v = gl_GlobalInvocationID.x;
-            uint h = vconn[v];
-            uint start = h;
-
-            vec3 normal = vec3(0.0);
-            vec3 v0 = Get(positions[v]);
-
-            do {
-                uint nh = next_halfedge(h);
-                vec3 v1 = Get(positions[to_vertex(h)]);
-                vec3 v2 = Get(positions[to_vertex(nh)]);
-                normal += normalize(cross(v1 - v0, v2 - v0));
-                h = cw_rotated_halfedge(h);
-            } while (h != start && h != uint(-1));
-
-            vec3 N = normalize(normal);
-            normals[v] = Vector3(N.x, N.y, N.z);
-        }
-    )";
-
-        // Point coordinates
+        auto &mesh = Engine::State().get<SurfaceMesh>(entity_id);
         auto &vpoint = mesh.vpoint_.vector();
         auto &vconn = mesh.vconn_.vector();
         auto &hconn = mesh.hconn_.vector();
         auto &fconn = mesh.fconn_.vector();
-        mesh.vprops_.get_or_add<Vector<float, 3>>("v:normal");
-        auto normals = mesh.get_vertex_property<Vector<float, 3>>("v:normal");
+        auto normals = mesh.vertex_property<Vector<float, 3>>("v:normal");
 
         OpenGLState openGlState(entity_id);
         auto b_positions = openGlState.get_buffer(mesh.vpoint_.name());
@@ -151,10 +84,6 @@ namespace Bcg {
 
         auto program = openGlState.get_compute_program("ComputeHalfedgeMeshVertexNormals");
         if (!program) {
-    /*        if (!program.create_from_source(computeShaderSource)) {
-                Log::Error("Failed to create compute shader program!\n");
-                return normals;
-            }*/
             if (!program.create_from_file("../Shaders/glsl/surface_mesh_vertex_normal_cs.glsl")) {
                 Log::Error("Failed to create compute shader program!\n");
                 return normals;

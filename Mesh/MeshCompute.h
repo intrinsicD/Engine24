@@ -9,7 +9,7 @@
 #include "entt/fwd.hpp"
 
 namespace Bcg {
-    VertexProperty<Vector<float, 3>> ComputeVertexNormals(entt::entity entity_id, SurfaceMesh &mesh);
+    VertexProperty<Vector<float, 3>> ComputeSurfaceMeshVertexNormals(entt::entity entity_id);
 
     FaceProperty<Vector<float, 3>> ComputeFaceNormals(entt::entity entity_id, SurfaceMesh &mesh);
 

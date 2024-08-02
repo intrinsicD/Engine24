@@ -194,6 +194,7 @@ namespace Bcg {
 // Enable blending for transparency
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_PROGRAM_POINT_SIZE);
         Vector<int, 2> fbs = Graphics::get_framebuffer_size();
         Engine::Dispatcher().enqueue(Events::Callback::FramebufferResize{global_window.handle, fbs.x(), fbs.y()});
         return true;

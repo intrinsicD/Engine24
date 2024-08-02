@@ -21,25 +21,25 @@ namespace Bcg {
 
     PropertyContainer *GetPrimitives::halfedges() const {
         if (Engine::has<SurfaceMesh>(entity_id)) {
-            return &Engine::State().get<SurfaceMesh>(entity_id).vprops_;
+            return &Engine::State().get<SurfaceMesh>(entity_id).hprops_;
         } /* else if(Engine::has<Graph>(entity_id)){
-            return &Engine::State().get<Graph>(entity_id).vprops_;
+            return &Engine::State().get<Graph>(entity_id).hprops_;
         }*/
         return nullptr;
     }
 
     PropertyContainer *GetPrimitives::edges() const {
         if (Engine::has<SurfaceMesh>(entity_id)) {
-            return &Engine::State().get<SurfaceMesh>(entity_id).vprops_;
+            return &Engine::State().get<SurfaceMesh>(entity_id).eprops_;
         }/* else if(Engine::has<Graph>(entity_id)){
-            return &Engine::State().get<Graph>(entity_id).vprops_;
+            return &Engine::State().get<Graph>(entity_id).eprops_;
         }*/
         return nullptr;
     }
 
     PropertyContainer *GetPrimitives::faces() const {
         if (Engine::has<SurfaceMesh>(entity_id)) {
-            return &Engine::State().get<SurfaceMesh>(entity_id).vprops_;
+            return &Engine::State().get<SurfaceMesh>(entity_id).fprops_;
         }
         return nullptr;
     }

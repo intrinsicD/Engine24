@@ -28,15 +28,16 @@ namespace Bcg::Commands::Mesh {
 
         Build(aabb, mesh.positions());
 
-
         Vector<float, 3> center = aabb.center();
+        float scale = (aabb.max - aabb.min).maxCoeff();
 
         for (auto &point: mesh.positions()) {
             point -= center;
+            point /= scale;
         }
 
-        aabb.min -= center;
-        aabb.max -= center;
+        aabb.min = (aabb.min - center) / scale;
+        aabb.max = (aabb.max - center) / scale;
 
         std::string message = name + ": ";
         message += " #v: " + std::to_string(mesh.n_vertices());

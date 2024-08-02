@@ -98,76 +98,8 @@ namespace Bcg::Commands::View {
         colors_attribute.set_default(pcw.base_color.data());
         pcw.vao.unbind();
 
-        const char *vertex_shader_src = "#version 330 core\n"
-                                        "layout (location = 0) in vec3 aPos;\n"
-                                        "layout (location = 1) in vec3 aNormal;\n"
-                                        "layout (location = 2) in vec3 aColor;\n"
-                                        "layout (std140) uniform Camera {\n"
-                                        "    mat4 view;\n"
-                                        "    mat4 projection;\n"
-                                        "};\n"
-                                        "uniform mat4 model;\n"
-                                        "uniform uint width;\n"
-                                        "uniform uint height;\n"
-                                        "uniform float pointSize;\n"
-                                        "out vec4 f_view;\n"
-                                        "out vec4 f_world;\n"
-                                        "out vec3 f_color;\n"
-                                        "out vec3 f_normal;\n"
-                                        "out float f_radius_view_space;\n"
-                                        "void main()\n"
-                                        "{\n"
-                                        "   f_normal = mat3(transpose(inverse(model))) * aNormal;\n"
-                                        "   f_color = aColor;\n"
-                                        "   f_world = model * vec4(aPos, 1.0);\n"
-                                        "   f_view = view * f_world;\n"
-                                        "   vec4 clipSpacePos = projection * f_view;\n"
-                                        "   float radius_ndc_x = pointSize / width * 2.0;\n"
-                                        "   float radius_ndc_y = pointSize / height * 2.0;\n"
-                                        "   // Use the larger of the two dimensions to ensure the point remains a square\n"
-                                        "   float radius_ndc_space = max(radius_ndc_x, radius_ndc_y);\n"
-                                        "   f_radius_view_space = (inverse(projection) * vec4(radius_ndc_space * clipSpacePos.w, 0, 0, 1.0)).x;\n"
-                                        "   gl_Position = clipSpacePos;\n"
-                                        "}\0";
-
-        const char *fragment_shader_src = "#version 330 core\n"
-                                          "in vec3 f_normal;\n"
-                                          "in vec3 f_color;\n"
-                                          "in vec4 f_view;\n"
-                                          "in vec4 f_world;\n"
-                                          "in float f_radius_view_space;\n"
-                                          "out vec4 FragColor;\n"
-                                          "layout (std140) uniform Camera {\n"
-                                          "    mat4 view;\n"
-                                          "    mat4 projection;\n"
-                                          "};\n"
-                                          "uniform vec3 lightPosition;\n"
-                                          "void main()\n"
-                                          "{\n"
-                                          "   vec2 coord = gl_PointCoord * 2.0 - 1.0; // Convert from [0,1] to [-1,1]\n"
-                                          "   float dist = dot(coord, coord);\n"
-                                          "   if (dist > 1.0) {\n"
-                                          "        discard; // Discard fragments outside the sphere\n"
-                                          "    }\n"
-                                          "   float z = sqrt(1.0 - dist); // Sphere depth\n"
-                                          "   float adjustedViewDepth = f_view.z + z * f_radius_view_space;\n"
-                                          "   vec4 adjustedClipSpacePos = projection * vec4(f_view.xy, adjustedViewDepth, f_view.w);\n"
-                                          "   float ndcDepth = adjustedClipSpacePos.z / adjustedClipSpacePos.w;\n"
-                                          "   gl_FragDepth = (ndcDepth * 0.5 + 0.5);\n"
-
-                                          "   vec3 normal = normalize(f_normal);\n"
-                                          "   float diff = max(dot(normal, normalize(lightPosition - f_world.xyz)), 0);\n"
-                                          "   vec3 finalColor = diff * f_color;\n"
-                                          "   if(length(normal) >= 0.5){\n"
-                                          "        FragColor = vec4(finalColor, 1.0f);\n"
-                                          "   }else{\n"
-                                          "        FragColor = vec4(f_color, 1.0f);\n"
-                                          "   }\n"
-                                          "}\n\0";
-
         auto program = openGlState.get_program("PointCloudProgram");
         if (!program) {
-            //program.create_from_source(vertex_shader_src, fragment_shader_src);
             program.create_from_files("../Shaders/glsl/impostor_spheres_vs.glsl", "../Shaders/glsl/impostor_spheres_fs.glsl");
 
             auto &camera_ubi = Engine::Context().get<CameraUniformBuffer>();
@@ -196,7 +128,7 @@ namespace Bcg::Commands::View {
 
         OpenGLState openGlState(entity_id);
 
-        auto v_normals = ComputeVertexNormals(entity_id, mesh);
+        auto v_normals = ComputeSurfaceMeshVertexNormals(entity_id);
 
         auto b_position = openGlState.get_buffer(mesh.vpoint_.name());
         if (!b_position) {
@@ -279,43 +211,8 @@ namespace Bcg::Commands::View {
         b_normals.unbind();
         b_triangles.unbind();
 
-        const char *vertex_shader_src = "#version 330 core\n"
-                                        "layout (location = 0) in vec3 aPos;\n"
-                                        "layout (location = 1) in vec3 aNormal;\n"
-                                        "layout (location = 2) in vec3 aColor;\n"
-                                        "layout (std140) uniform Camera {\n"
-                                        "    mat4 view;\n"
-                                        "    mat4 projection;\n"
-                                        "};\n"
-                                        "uniform mat4 model;\n"
-                                        "out vec3 f_normal;\n"
-                                        "out vec3 f_world;\n"
-                                        "out vec3 f_color;\n"
-                                        "void main()\n"
-                                        "{\n"
-                                        "   f_normal = mat3(transpose(inverse(model))) * aNormal;\n"
-                                        "   f_color = aColor;"
-                                        "   f_world = (model * vec4(aPos, 1.0)).xyz;"
-                                        "   gl_Position = projection * view * vec4(f_world, 1.0);\n"
-                                        "}\0";
-
-        const char *fragment_shader_src = "#version 330 core\n"
-                                          "in vec3 f_normal;\n"
-                                          "in vec3 f_color;\n"
-                                          "in vec3 f_world;\n"
-                                          "out vec4 FragColor;\n"
-                                          "uniform vec3 lightPosition;\n"
-                                          "void main()\n"
-                                          "{\n"
-                                          "   vec3 normal = normalize(f_normal);\n"
-                                          "   float diff = max(dot(normal, normalize(lightPosition - f_world)), 0);\n"
-                                          "   vec3 finalColor = diff * f_color;\n"
-                                          "   FragColor = vec4(finalColor, 1.0f);\n"
-                                          "}\n\0";
-
         auto program = openGlState.get_program("MeshProgram");
         if (!program) {
-            //program.create_from_source(vertex_shader_src, fragment_shader_src);
             program.create_from_files("../Shaders/glsl/surface_mesh_vs.glsl", "../Shaders/glsl/surface_mesh_fs.glsl");
             // Get the index of the uniform block
             auto &camera_ubi = Engine::Context().get<CameraUniformBuffer>();

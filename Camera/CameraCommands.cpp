@@ -14,5 +14,9 @@ namespace Bcg {
         camera.v_params.center = center;
         camera.v_params.eye = camera.v_params.center - front * distance / tan(camera.p_params.fovy / 2.0);
         camera.v_params.dirty = true;
+
+        camera.p_params.zNear = distance / 100.0f;
+        camera.p_params.zFar = distance * 3.0f;
+        camera.p_params.dirty = true;
     }
 }

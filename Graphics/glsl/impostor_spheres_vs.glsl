@@ -36,6 +36,7 @@ void main()
     // Use the larger of the two dimensions to ensure the point remains a square
     float radius_ndc_space = max(radius_ndc_x, radius_ndc_y);
     f_radius_view_space = (inverse(projection) * vec4(radius_ndc_space * clipSpacePos.w, 0, 0, 1.0)).x;
+    //f_radius_view_space /= distance;
     gl_Position = clipSpacePos; //if the near and far plane are too great, there will be artifacts: TODO tight fit od near and fast plane!
     gl_PointSize = adjustedPointSize;
 }
