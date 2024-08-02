@@ -7,3 +7,4 @@ target_sources(Engine24 PRIVATE
 )
 
 add_subdirectory(opengl)
+add_subdirectory(SphereView)

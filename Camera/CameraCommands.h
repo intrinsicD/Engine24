@@ -21,5 +21,16 @@ namespace Bcg {
         Vector<float, 3> center;
         float distance;
     };
+
+    struct FitNearAndFarToDistance : public AbstractCommand {
+        explicit FitNearAndFarToDistance(float distance = 3) : AbstractCommand("FitNearAndFarToDistance"),
+                                                               distance(distance) {
+
+        }
+
+        void execute() const override;
+
+        float distance;
+    };
 }
 #endif //ENGINE24_CAMERACOMMANDS_H

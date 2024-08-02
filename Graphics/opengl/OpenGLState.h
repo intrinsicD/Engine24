@@ -7,6 +7,7 @@
 
 #include "Program.h"
 #include "Buffer.h"
+#include "VertexArrayObject.h"
 #include "entt/fwd.hpp"
 
 namespace Bcg {
@@ -30,6 +31,12 @@ namespace Bcg {
         bool register_buffer(const std::string &name, const Buffer &buffer);
 
         bool remove_buffer(const std::string &name);
+
+        VertexArrayObject get_vao(const std::string name);
+
+        bool register_vao(const std::string &name, const VertexArrayObject &vao);
+
+        bool remove_vao(const std::string &name);
 
     private:
         entt::entity entity_id;

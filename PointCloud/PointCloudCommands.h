@@ -9,9 +9,9 @@
 #include "entt/fwd.hpp"
 
 namespace Bcg::Commands::Points {
-    struct SetupForRendering : public AbstractCommand {
-        explicit SetupForRendering(entt::entity entity_id) : AbstractCommand("SetupForRendering"),
-                                                             entity_id(entity_id) {}
+    struct SetupPointCloud : public AbstractCommand {
+        explicit SetupPointCloud(entt::entity entity_id) : AbstractCommand("SetupPointCloud"),
+                                                           entity_id(entity_id) {}
 
         void execute() const override;
 

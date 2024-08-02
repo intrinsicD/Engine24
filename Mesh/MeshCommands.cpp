@@ -9,6 +9,7 @@
 #include "AABB.h"
 #include "Hierarchy.h"
 #include "CameraCommands.h"
+#include "MeshCompute.h"
 
 namespace Bcg::Commands::Mesh {
     void SetupMesh::execute() const {
@@ -49,6 +50,7 @@ namespace Bcg::Commands::Mesh {
         Log::Info(message);
         float d = aabb.diagonal().maxCoeff();
         CenterCameraAtDistance(aabb.center(), d).execute();
+        ComputeSurfaceMeshVertexNormals(entity_id);
     }
 
     void ComputeFaceNormals::execute() const {

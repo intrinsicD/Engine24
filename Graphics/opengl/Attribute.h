@@ -5,6 +5,8 @@
 #ifndef ENGINE24_ATTRIBUTE_H
 #define ENGINE24_ATTRIBUTE_H
 
+#include <string>
+
 namespace Bcg {
     struct Attribute {
         unsigned int id;
@@ -16,8 +18,8 @@ namespace Bcg {
         } type;
         bool normalized;
         unsigned int stride;
-        const char *shader_name;
-        const char *bound_buffer_name;
+        std::string shader_name;
+        std::string bound_buffer_name;
 
         void set(const void *pointer);
 

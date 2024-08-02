@@ -46,8 +46,13 @@ namespace Bcg {
     };
 
     struct TriangleView {
+        Attribute v_position{0, 3, Attribute::Type::FLOAT, false, 3 * sizeof(float), "position", ""};
+        Attribute v_normal{1, 3, Attribute::Type::FLOAT, false, 3 * sizeof(float), "normal", ""};
+        Attribute v_color{2, 3, Attribute::Type::FLOAT, false, 3 * sizeof(float), "color", ""};
+
         VertexArrayObject vao;
         Program program;
+
         unsigned int num_indices;
         bool hide = false;
 

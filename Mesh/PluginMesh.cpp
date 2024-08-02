@@ -27,6 +27,7 @@
 #include "EntityCommands.h"
 #include "Picker.h"
 #include "Transform.h"
+#include "SphereViewCommands.h"
 
 namespace Bcg {
     namespace PluginMeshInternal{
@@ -66,7 +67,7 @@ namespace Bcg {
         Commands::Entity::Add<SurfaceMesh>(entity_id, mesh, "Mesh").execute();
         Commands::Mesh::SetupMesh(entity_id).execute();
         Commands::View::SetupMeshView(entity_id).execute();
-        Commands::View::SetupPointsView(entity_id).execute();
+        Commands::View::SetupSphereView(entity_id).execute();
         return mesh;
     }
 

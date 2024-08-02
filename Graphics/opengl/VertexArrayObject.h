@@ -11,7 +11,11 @@
 
 namespace Bcg {
     struct VertexArrayObject {
-        unsigned int id;
+        unsigned int id = -1;
+
+        operator bool() const {
+            return id != -1;
+        }
 
         VertexArrayObject();
 

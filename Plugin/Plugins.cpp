@@ -14,6 +14,7 @@
 #include "PluginTransform.h"
 #include "PluginHierarchy.h"
 #include "PluginViews.h"
+#include "PluginSphereView.h"
 #include <unordered_map>
 
 namespace Bcg {
@@ -30,6 +31,7 @@ namespace Bcg {
         add_plugin(std::make_unique<PluginTransform>());
         add_plugin(std::make_unique<PluginHierarchy>());
         add_plugin(std::make_unique<PluginViews>());
+        add_plugin(std::make_unique<PluginSphereView>());
     }
 
     void Plugins::init_user_plugin(const std::string &name) {

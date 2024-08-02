@@ -25,6 +25,10 @@ namespace Bcg {
         using Manager<Buffer>::Manager;
     };
 
+    struct VertexArrayObjects : public Manager<VertexArrayObject> {
+        using Manager<VertexArrayObject>::Manager;
+    };
+
     OpenGLState::OpenGLState(entt::entity entity_id) : entity_id(entity_id) {
         if (!Engine::Context().find<Programs>()) {
             Engine::Context().emplace<Programs>();
@@ -37,6 +41,10 @@ namespace Bcg {
         }
         if (!Engine::State().all_of<Buffers>(entity_id)) {
             Engine::State().emplace<Buffers>(entity_id);
+        }
+
+        if (!Engine::State().all_of<VertexArrayObjects>(entity_id)) {
+            Engine::State().emplace<VertexArrayObjects>(entity_id);
         }
     }
 
@@ -202,9 +210,30 @@ namespace Bcg {
         return true;
     }
 
-
     bool OpenGLState::remove_buffer(const std::string &name) {
         auto &buffers = Engine::State().get<Buffers>(entity_id);
         return buffers.erase(name);
+    }
+
+    VertexArrayObject OpenGLState::get_vao(const std::string name) {
+        auto &vaos = Engine::State().get<VertexArrayObjects>(entity_id);
+        if (vaos.find(name) != vaos.end()) {
+            return vaos[name];
+        }
+        return {};
+    }
+
+    bool OpenGLState::register_vao(const std::string &name, const Bcg::VertexArrayObject &vao) {
+        auto &vaos = Engine::State().get<VertexArrayObjects>(entity_id);
+        if (vaos.find(name) != vaos.end()) {
+            return false;
+        }
+        vaos[name] = vao;
+        return true;
+    }
+
+    bool OpenGLState::remove_vao(const std::string &name) {
+        auto &vaos = Engine::State().get<VertexArrayObjects>(entity_id);
+        return vaos.erase(name);
     }
 }

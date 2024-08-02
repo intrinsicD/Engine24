@@ -25,10 +25,11 @@
 #include "Transform.h"
 #include "Keyboard.h"
 #include "Graphics.h"
+#include "SphereView.h"
 #include "glad/gl.h"
 
 namespace Bcg {
-    namespace PluginPointCloudInternal{
+    namespace PluginPointCloudInternal {
         static void on_drop_file(const Events::Callback::Drop &event) {
             PluginPointCloud plugin;
             for (int i = 0; i < event.count; ++i) {
@@ -41,15 +42,8 @@ namespace Bcg {
                 Log::Info("Build Spc in " + std::to_string(build_duration.count()) + " seconds");
             }
         }
-
-        static float point_size = 1.0f;
-        static void on_mouse_scroll(const Events::Callback::MouseScroll &event) {
-            auto &keyboard = Engine::Context().get<Keyboard>();
-            if (!keyboard.strg()) return;
-            point_size = std::max<float>(1.0f, point_size + event.yoffset);
-            glPointSize(point_size);
-        }
     }
+
     PointCloud PluginPointCloud::load(const std::string &path) {
         std::string ext = path;
         ext = ext.substr(ext.find_last_of('.') + 1);
@@ -58,15 +52,15 @@ namespace Bcg {
             pc = load_xyz(path);
         } else if (ext == "pts") {
             pc = load_pts(path);
-        } else  if (ext == "csv") {
+        } else if (ext == "csv") {
             pc = load_csv(path);
-        }else{
+        } else {
             Log::Error("Unsupported file format: " + ext);
             return {};
         }
         auto entity_id = Engine::State().create();
         Commands::Entity::Add<PointCloud>(entity_id, pc, "PointCloud").execute();
-        Commands::Points::SetupForRendering(entity_id).execute();
+        Commands::Points::SetupPointCloud(entity_id).execute();
         return pc;
     }
 
@@ -89,12 +83,10 @@ namespace Bcg {
     }
 
 
-
     PluginPointCloud::PluginPointCloud() : Plugin("PluginPointCloud") {}
 
     void PluginPointCloud::activate() {
         Engine::Dispatcher().sink<Events::Callback::Drop>().connect<&PluginPointCloudInternal::on_drop_file>();
-        Engine::Dispatcher().sink<Events::Callback::MouseScroll>().connect<&PluginPointCloudInternal::on_mouse_scroll>();
         Plugin::activate();
     }
 
@@ -112,7 +104,6 @@ namespace Bcg {
 
     void PluginPointCloud::deactivate() {
         Engine::Dispatcher().sink<Events::Callback::Drop>().disconnect<&PluginPointCloudInternal::on_drop_file>();
-        Engine::Dispatcher().sink<Events::Callback::MouseScroll>().disconnect<&PluginPointCloudInternal::on_mouse_scroll>();
         Plugin::deactivate();
     }
 
@@ -128,7 +119,7 @@ namespace Bcg {
                     ImGuiFileDialog::Instance()->OpenDialog("Load PointCloud", "Choose File", ".xyz,.pts,.csv",
                                                             config);
                 }
-                if(ImGui::MenuItem("Instance", nullptr, &show_pc_gui)){
+                if (ImGui::MenuItem("Instance", nullptr, &show_pc_gui)) {
 
                 }
                 ImGui::EndMenu();
@@ -139,7 +130,7 @@ namespace Bcg {
 
     void PluginPointCloud::render_gui() {
         Gui::ShowLoadPointCloud();
-        if(show_pc_gui){
+        if (show_pc_gui) {
             auto &picked = Engine::Context().get<Picked>();
             if (ImGui::Begin("PointCloud", &show_pc_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
                 Gui::ShowPointCloud(picked.entity.id);
@@ -157,15 +148,14 @@ namespace Bcg {
 
             pcw.vao.bind();
             pcw.program.use();
-            pcw.program.set_uniform3fv("lightPosition", camera.v_params.eye.data());
+            pcw.program.set_uniform3fv("light_position", camera.v_params.eye.data());
             pcw.program.set_uniform1ui("width", vp[2]);
             pcw.program.set_uniform1ui("height", vp[3]);
-            pcw.program.set_uniform1f("pointSize", PluginPointCloudInternal::point_size);
 
-            if(Engine::has<Transform>(entity_id)){
+            if (Engine::has<Transform>(entity_id)) {
                 auto &transform = Engine::State().get<Transform>(entity_id);
                 pcw.program.set_uniform4fm("model", transform.data(), false);
-            }else{
+            } else {
                 pcw.program.set_uniform4fm("model", Transform().data(), false);
             }
 

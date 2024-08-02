@@ -5,15 +5,15 @@
 #include "PointCloudCommands.h"
 #include "EntityCommands.h"
 #include "PointCloud.h"
-#include "ViewCommands.h"
 #include "Transform.h"
 #include "AABB.h"
 #include "Hierarchy.h"
 #include "Camera.h"
 #include "CameraCommands.h"
+#include "SphereViewCommands.h"
 
 namespace Bcg::Commands::Points {
-    void SetupForRendering::execute() const {
+    void SetupPointCloud::execute() const {
         if (!Engine::valid(entity_id)) {
             Log::Warn(name + "Entity is not valid. Abort Command");
             return;
@@ -39,7 +39,7 @@ namespace Bcg::Commands::Points {
         aabb.min -= center;
         aabb.max -= center;
 
-        Commands::View::SetupPointsView(entity_id).execute();
+        Commands::View::SetupSphereView(entity_id).execute();
 
         std::string message = name + ": ";
         message += " #v: " + std::to_string(pc.n_vertices());

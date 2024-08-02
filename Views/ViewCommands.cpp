@@ -7,7 +7,6 @@
 #include "Engine.h"
 #include "Camera.h"
 #include "Mesh.h"
-#include "MeshCompute.h"
 #include "OpenGLState.h"
 #include "GLUtils.h"
 #include "GetPrimitives.h"
@@ -100,7 +99,8 @@ namespace Bcg::Commands::View {
 
         auto program = openGlState.get_program("PointCloudProgram");
         if (!program) {
-            program.create_from_files("../Shaders/glsl/impostor_spheres_vs.glsl", "../Shaders/glsl/impostor_spheres_fs.glsl");
+            program.create_from_files("../Shaders/glsl/impostor_spheres_vs.glsl",
+                                      "../Shaders/glsl/impostor_spheres_fs.glsl");
 
             auto &camera_ubi = Engine::Context().get<CameraUniformBuffer>();
             pcw.program.bind_uniform_block("Camera", camera_ubi.binding_point);
@@ -128,9 +128,8 @@ namespace Bcg::Commands::View {
 
         OpenGLState openGlState(entity_id);
 
-        auto v_normals = ComputeSurfaceMeshVertexNormals(entity_id);
-
         auto b_position = openGlState.get_buffer(mesh.vpoint_.name());
+
         if (!b_position) {
             b_position = ArrayBuffer();
             b_position.create();
@@ -143,53 +142,33 @@ namespace Bcg::Commands::View {
             b_position.bind();
         }
 
-        auto &position_attribute = mw.vao.attributes.emplace_back();
-        position_attribute.id = BCG_GL_DEFAULT_POSITION_LOC;
-        position_attribute.size = 3;
-        position_attribute.type = Attribute::Type::FLOAT;
-        position_attribute.normalized = false;
-        position_attribute.stride = 3 * sizeof(float);
-        position_attribute.shader_name = "positions";
-        position_attribute.bound_buffer_name = mesh.vpoint_.name().c_str();
-        position_attribute.set(nullptr);
-        position_attribute.enable();
+        mw.v_position.bound_buffer_name = mesh.vpoint_.name().c_str();
+        mw.v_position.set(nullptr);
+        mw.v_position.enable();
 
-
+        auto v_normals = mesh.get_vertex_property<Vector<float, 3>>("v:normal");
         auto b_normals = openGlState.get_buffer(v_normals.name());
-        if (!b_normals) {
-            b_normals = ArrayBuffer();
-            b_normals.create();
-            b_normals.bind();
-            b_normals.buffer_data(v_normals.data(),
-                                  v_normals.vector().size() * 3 * sizeof(float),
-                                  Buffer::STATIC_DRAW);
-            openGlState.register_buffer(v_normals.name(), b_normals);
-        } else {
-            b_normals.bind();
+        if (v_normals) {
+            if (!b_normals) {
+                b_normals = ArrayBuffer();
+                b_normals.create();
+                b_normals.bind();
+                b_normals.buffer_data(v_normals.data(),
+                                      v_normals.vector().size() * 3 * sizeof(float),
+                                      Buffer::STATIC_DRAW);
+                openGlState.register_buffer(v_normals.name(), b_normals);
+            } else {
+                b_normals.bind();
+            }
+
+            mw.v_normal.bound_buffer_name = v_normals.name().c_str();
+            mw.v_normal.set(nullptr);
+            mw.v_normal.enable();
         }
 
-        auto &normals_attribute = mw.vao.attributes.emplace_back();
-        normals_attribute.id = BCG_GL_DEFAULT_NORMAL_LOC;
-        normals_attribute.size = 3;
-        normals_attribute.type = Attribute::Type::FLOAT;
-        normals_attribute.normalized = false;
-        normals_attribute.stride = 3 * sizeof(float);
-        normals_attribute.shader_name = "normals";
-        normals_attribute.bound_buffer_name = v_normals.name().c_str();
-        normals_attribute.set(nullptr);
-        normals_attribute.enable();
-
-        auto &colors_attribute = mw.vao.attributes.emplace_back();
-        colors_attribute.id = BCG_GL_DEFAULT_COLOR_LOC;
-        colors_attribute.size = 3;
-        colors_attribute.type = Attribute::Type::FLOAT;
-        colors_attribute.normalized = false;
-        colors_attribute.stride = 3 * sizeof(float);
-        colors_attribute.shader_name = "colors";
-        colors_attribute.bound_buffer_name = v_normals.name().c_str();
-        colors_attribute.set(nullptr);
-        colors_attribute.enable();
-        colors_attribute.set_default(mw.base_color.data());
+        mw.v_color.bound_buffer_name = v_normals.name().c_str();
+        mw.v_color.set(nullptr);
+        mw.v_color.enable();
 
         auto f_triangles = extract_triangle_list(mesh);
         auto b_triangles = openGlState.get_buffer(f_triangles.name());
@@ -207,9 +186,9 @@ namespace Bcg::Commands::View {
 
         mw.vao.unbind();
 
-        b_position.unbind();
-        b_normals.unbind();
-        b_triangles.unbind();
+        if (b_position) b_position.unbind();
+        if (b_normals) b_normals.unbind();
+        if (b_triangles) b_triangles.unbind();
 
         auto program = openGlState.get_program("MeshProgram");
         if (!program) {

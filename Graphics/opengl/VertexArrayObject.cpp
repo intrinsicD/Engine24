@@ -7,16 +7,20 @@
 
 namespace Bcg {
     VertexArrayObject::VertexArrayObject() {
-        id = 0;
+        id = -1;
     }
 
     void VertexArrayObject::create() {
-        glGenVertexArrays(1, &id);
-
+        if(id == -1){
+            glGenVertexArrays(1, &id);
+        }
     }
 
     void VertexArrayObject::destroy() {
-        glDeleteVertexArrays(1, &id);
+        if (id != -1) {
+            glDeleteVertexArrays(1, &id);
+            id = -1;
+        }
     }
 
     void VertexArrayObject::bind() {
