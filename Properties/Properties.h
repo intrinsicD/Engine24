@@ -241,6 +241,7 @@ namespace Bcg {
 
         // returns a vector of all property names
         std::vector<std::string> properties(int filter_dims = 0) const {
+            //TODO figure out filtering by type, float, int, other custom types ...
             std::vector<std::string> names;
             names.reserve(parrays_.size());
             for (const auto *array: parrays_){
