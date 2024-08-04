@@ -73,10 +73,6 @@ namespace Bcg {
         void draw();
     };
 
-    struct MeshView : public TriangleView {
-        Vector<float, 3> base_color = {0.3, 0.6, 0.2};
-    };
-
     struct VectorfieldView : public PointView {
 
     };

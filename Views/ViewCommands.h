@@ -28,16 +28,6 @@ namespace Bcg::Commands::View {
 
         entt::entity entity_id;
     };
-
-    struct SetupMeshView : public AbstractCommand {
-        SetupMeshView(entt::entity entity_id) : AbstractCommand("SetupMeshView"), entity_id(entity_id) {
-
-        }
-
-        void execute() const override;
-
-        entt::entity entity_id;
-    };
 }
 
 #endif //ENGINE24_VIEWCOMMANDS_H

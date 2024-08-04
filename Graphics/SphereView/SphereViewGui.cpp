@@ -7,7 +7,6 @@
 #include "imgui.h"
 #include "GetPrimitives.h"
 #include "GuiUtils.h"
-#include "PropertiesGui.h"
 #include "SphereViewCommands.h"
 
 namespace Bcg::Gui {
@@ -84,14 +83,6 @@ namespace Bcg::Gui {
                         }
                     }
                 }
-
-
-/*                static std::pair<int, std::string> curr_radius = {0, view.radius.bound_buffer_name};
-                auto properties_1d = vertices->properties(1);
-                if (Combo(view.radius.shader_name.c_str(), curr_radius, properties_1d)) {
-                    Commands::View::SetRadiusSphereView(entity_id, properties_1d[curr_radius.first]).execute();
-                }*/
-
                 view.vao.unbind();
             }
             Show(view);
