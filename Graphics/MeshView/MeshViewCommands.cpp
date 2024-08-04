@@ -42,7 +42,7 @@ namespace Bcg::Commands::View {
 
         SetPositionMeshView(entity_id, "v:point").execute();
         SetNormalMeshView(entity_id, "v:normal").execute();
-        SetColorMeshView(entity_id, "v:color").execute();
+        SetColorMeshView(entity_id, "base_color").execute();
 
         auto &mesh = Engine::State().get<SurfaceMesh>(entity_id);
         auto f_triangles = extract_triangle_list(mesh);
@@ -62,8 +62,6 @@ namespace Bcg::Commands::View {
         auto &view = Engine::require<MeshView>(entity_id);
         size_t num_vertices = vertices->size();
 
-
-
         OpenGLState openGlState(entity_id);
 
         auto v_positions = vertices->get<Vector<float, 3>>(property_name);
@@ -76,8 +74,6 @@ namespace Bcg::Commands::View {
                 openGlState.register_buffer(property_name, b_position);
             }
 
-            b_position = openGlState.get_buffer(property_name);
-
             view.vao.bind();
             b_position.bind();
             b_position.buffer_data(v_positions.data(),
@@ -88,13 +84,9 @@ namespace Bcg::Commands::View {
             view.position.set(nullptr);
             view.position.enable();
             view.vao.unbind();
+            b_position.unbind();
         } else {
             Log::Warn(name + ": failed, because entity does not have " + property_name + " property.");
-        }
-
-
-        if (v_positions) {
-            b_position.unbind();
         }
     }
 
@@ -109,12 +101,10 @@ namespace Bcg::Commands::View {
         auto &view = Engine::require<MeshView>(entity_id);
         size_t num_vertices = vertices->size();
 
-
         OpenGLState openGlState(entity_id);
 
         auto v_normals = vertices->get<Vector<float, 3>>(property_name);
         auto b_normals = openGlState.get_buffer(property_name);
-
 
         if (v_normals) {
             if (!b_normals) {
@@ -123,24 +113,19 @@ namespace Bcg::Commands::View {
                 openGlState.register_buffer(property_name, b_normals);
             }
 
-            b_normals = openGlState.get_buffer(property_name);
-
             view.vao.bind();
             b_normals.bind();
             b_normals.buffer_data(v_normals.data(),
-                                 num_vertices * 3 * sizeof(float),
-                                 Buffer::STATIC_DRAW);
+                                  num_vertices * 3 * sizeof(float),
+                                  Buffer::STATIC_DRAW);
 
             view.normal.bound_buffer_name = property_name.c_str();
             view.normal.set(nullptr);
             view.normal.enable();
             view.vao.unbind();
+            b_normals.unbind();
         } else {
             Log::Warn(name + ": failed, because entity does not have " + property_name + " property.");
-        }
-
-        if (v_normals) {
-            b_normals.unbind();
         }
     }
 
@@ -155,8 +140,6 @@ namespace Bcg::Commands::View {
         auto &view = Engine::require<MeshView>(entity_id);
         size_t num_vertices = vertices->size();
 
-        view.vao.bind();
-
         OpenGLState openGlState(entity_id);
 
         auto v_color = vertices->get<Vector<float, 3>>(property_name);
@@ -169,8 +152,7 @@ namespace Bcg::Commands::View {
                 openGlState.register_buffer(property_name, b_color);
             }
 
-            b_color = openGlState.get_buffer(property_name);
-
+            view.vao.bind();
             b_color.bind();
             b_color.buffer_data(v_color.data(),
                                 num_vertices * 3 * sizeof(float),
@@ -182,9 +164,11 @@ namespace Bcg::Commands::View {
             view.color.set(nullptr);
             view.color.enable();
         } else {
+            view.vao.bind();
+            view.color.bound_buffer_name = "base_color";
             view.color.disable();
+            view.color.set_default(view.base_color.data());
         }
-        view.color.set_default(view.base_color.data());
         view.vao.unbind();
 
         if (v_color) {
@@ -208,8 +192,6 @@ namespace Bcg::Commands::View {
         auto &view = Engine::require<MeshView>(entity_id);
         size_t num_faces = faces->size();
 
-        view.vao.bind();
-
         OpenGLState openGlState(entity_id);
 
         auto b_indices = openGlState.get_buffer("f:indices");
@@ -220,6 +202,8 @@ namespace Bcg::Commands::View {
         }
 
         b_indices = openGlState.get_buffer("f:indices");
+
+        view.vao.bind();
         b_indices.bind();
         b_indices.buffer_data(tris.data(),
                               num_faces * 3 * sizeof(unsigned int),

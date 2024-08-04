@@ -16,6 +16,7 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
 #include "EventsGui.h"
+#include "FileWatcher.h"
 
 namespace Bcg {
 
@@ -197,6 +198,7 @@ namespace Bcg {
         glEnable(GL_PROGRAM_POINT_SIZE);
         Vector<int, 2> fbs = Graphics::get_framebuffer_size();
         Engine::Dispatcher().enqueue(Events::Callback::FramebufferResize{global_window.handle, fbs.x(), fbs.y()});
+        Engine::Context().emplace<FileWatcher>();
         return true;
     }
 
@@ -268,6 +270,11 @@ namespace Bcg {
 
     void Graphics::swap_buffers() {
         glfwSwapBuffers(global_window.handle);
+    }
+
+    void Graphics::update() {
+        auto &watcher = Engine::Context().get<FileWatcher>();
+        watcher.check();
     }
 
     Vector<int, 2> Graphics::get_window_pos() {

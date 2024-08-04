@@ -40,7 +40,7 @@ namespace Bcg::Commands::View {
 
         SetPositionSphereView(entity_id, "v:point").execute();
         SetRadiusSphereView(entity_id, "v:radius").execute();
-        SetColorSphereView(entity_id, "v:color").execute();
+        SetColorSphereView(entity_id, "base_color").execute();
 
         auto v_indices = vertices->get<unsigned int>("v:indices");
         if (!v_indices) {
@@ -64,8 +64,6 @@ namespace Bcg::Commands::View {
         auto &view = Engine::require<SphereView>(entity_id);
         size_t num_vertices = vertices->size();
 
-        view.vao.bind();
-
         OpenGLState openGlState(entity_id);
 
         auto v_positions = vertices->get<Vector<float, 3>>(property_name);
@@ -78,8 +76,7 @@ namespace Bcg::Commands::View {
                 openGlState.register_buffer(property_name, b_position);
             }
 
-            b_position = openGlState.get_buffer(property_name);
-
+            view.vao.bind();
             b_position.bind();
             b_position.buffer_data(v_positions.data(),
                                    num_vertices * 3 * sizeof(float),
@@ -88,14 +85,10 @@ namespace Bcg::Commands::View {
             view.position.bound_buffer_name = property_name.c_str();
             view.position.set(nullptr);
             view.position.enable();
+            view.vao.unbind();
+            b_position.unbind();
         } else {
             Log::Warn(name + ": failed, because entity does not have " + property_name + " property.");
-        }
-
-        view.vao.unbind();
-
-        if (v_positions) {
-            b_position.unbind();
         }
     }
 
@@ -110,8 +103,6 @@ namespace Bcg::Commands::View {
         auto &view = Engine::require<SphereView>(entity_id);
         size_t num_vertices = vertices->size();
 
-        view.vao.bind();
-
         OpenGLState openGlState(entity_id);
 
         auto v_radius = vertices->get<float>(property_name);
@@ -124,8 +115,7 @@ namespace Bcg::Commands::View {
                 openGlState.register_buffer(property_name, b_radius);
             }
 
-            b_radius = openGlState.get_buffer(property_name);
-
+            view.vao.bind();
             b_radius.bind();
             b_radius.buffer_data(v_radius.data(),
                                  num_vertices * 1 * sizeof(float),
@@ -139,10 +129,11 @@ namespace Bcg::Commands::View {
             view.radius.set(nullptr);
             view.radius.enable();
         } else {
+            view.vao.bind();
+            view.radius.bound_buffer_name = property_name.c_str();
             view.radius.disable();
+            view.radius.set_default(&view.default_radius);
         }
-        view.radius.set_default(&view.default_radius);
-
         view.vao.unbind();
 
         if (v_radius) {
@@ -161,8 +152,6 @@ namespace Bcg::Commands::View {
         auto &view = Engine::require<SphereView>(entity_id);
         size_t num_vertices = vertices->size();
 
-        view.vao.bind();
-
         OpenGLState openGlState(entity_id);
 
         auto v_color = vertices->get<Vector<float, 3>>(property_name);
@@ -175,8 +164,7 @@ namespace Bcg::Commands::View {
                 openGlState.register_buffer(property_name, b_color);
             }
 
-            b_color = openGlState.get_buffer(property_name);
-
+            view.vao.bind();
             b_color.bind();
             b_color.buffer_data(v_color.data(),
                                 num_vertices * 3 * sizeof(float),
@@ -188,10 +176,11 @@ namespace Bcg::Commands::View {
             view.color.set(nullptr);
             view.color.enable();
         } else {
+            view.vao.bind();
+            view.color.bound_buffer_name = "base_color";
             view.color.disable();
+            view.color.set_default(view.base_color.data());
         }
-        view.color.set_default(view.base_color.data());
-
         view.vao.unbind();
 
         if (v_color) {
@@ -215,8 +204,6 @@ namespace Bcg::Commands::View {
         auto &view = Engine::require<SphereView>(entity_id);
         size_t num_vertices = vertices->size();
 
-        view.vao.bind();
-
         OpenGLState openGlState(entity_id);
 
         auto b_indices = openGlState.get_buffer("v:indices");
@@ -227,6 +214,7 @@ namespace Bcg::Commands::View {
         }
 
         b_indices = openGlState.get_buffer("v:indices");
+        view.vao.bind();
         b_indices.bind();
         b_indices.buffer_data(indices.data(),
                               num_vertices * 1 * sizeof(unsigned int),

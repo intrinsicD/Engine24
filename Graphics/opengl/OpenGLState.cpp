@@ -71,8 +71,9 @@ namespace Bcg {
                 Log::Error("Failed to link program: " + name);
             }
         } else {
-            Log::Error("Failed to compile vertex shader: " + shader.filepath);
+            Log::Error("Failed to compile shader: " + shader.filepath);
         }
+        Log::Info("Recompile shader: " + shader.filepath);
         shader.load_source(old_source);
         shader.compile();
         shader.check_compile_errors();

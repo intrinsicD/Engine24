@@ -52,6 +52,7 @@ namespace Bcg {
         auto &camera = Engine::Context().get<Camera>();
         for (auto entity_id: rendergroup) {
             auto &view = Engine::State().get<MeshView>(entity_id);
+            if(view.hide) continue;
 
             view.vao.bind();
             view.program.use();

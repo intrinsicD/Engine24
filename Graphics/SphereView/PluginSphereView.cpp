@@ -72,6 +72,7 @@ namespace Bcg {
         auto vp = Graphics::get_viewport();
         for (auto entity_id: rendergroup) {
             auto &view = Engine::State().get<SphereView>(entity_id);
+            if(view.hide) continue;
 
             view.vao.bind();
             view.program.use();

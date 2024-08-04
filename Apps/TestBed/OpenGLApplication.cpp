@@ -28,6 +28,7 @@ namespace Bcg{
                 Bcg::Graphics::poll_events();
                 Bcg::Plugins::begin_frame_all();
                 Bcg::Plugins::update_all();
+                Bcg::Graphics::update();
                 Bcg::Engine::ExecuteCmdBuffer();
             }
             {

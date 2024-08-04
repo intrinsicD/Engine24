@@ -9,8 +9,8 @@
 #include "entt/fwd.hpp"
 #include "MatVec.h"
 
-namespace Bcg::Commands::View{
-    
+namespace Bcg::Commands::View {
+
     struct SetupMeshView : public AbstractCommand {
         SetupMeshView(entt::entity entity_id) : AbstractCommand("SetupMeshView"), entity_id(entity_id) {
 
@@ -58,7 +58,8 @@ namespace Bcg::Commands::View{
     };
 
     struct SetTrianglesMeshView : public AbstractCommand {
-        explicit SetTrianglesMeshView(entt::entity entity_id, std::vector<Vector<unsigned int, 3>> &tris) : AbstractCommand(
+        explicit SetTrianglesMeshView(entt::entity entity_id, std::vector<Vector<unsigned int, 3>> &tris)
+                : AbstractCommand(
                 "SetTrianglesMeshView"), entity_id(entity_id), tris(tris) {
 
         }

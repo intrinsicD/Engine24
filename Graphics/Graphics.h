@@ -38,6 +38,8 @@ namespace Bcg {
 
         static void swap_buffers();
 
+        static void update();
+
         static Vector<int, 2> get_window_pos();
 
         static Vector<int, 2> get_window_size();

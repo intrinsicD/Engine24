@@ -23,6 +23,7 @@ namespace Bcg {
         float default_radius = 10.0;
         float min_color = 0;
         float max_color = 1;
+        bool hide = false;
 
         void draw();
     };

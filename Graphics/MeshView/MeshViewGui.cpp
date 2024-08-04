@@ -18,6 +18,7 @@ namespace Bcg::Gui{
         if (Engine::valid(entity_id) && Engine::has<MeshView>(entity_id)) {
             auto &view = Engine::State().get<MeshView>(entity_id);
             auto *vertices = GetPrimitives(entity_id).vertices();
+            ImGui::Checkbox("hide", &view.hide);
             if (vertices) {
                 auto properties_3d = vertices->properties(3);
 
@@ -31,37 +32,36 @@ namespace Bcg::Gui{
                     Commands::View::SetNormalMeshView(entity_id, properties_3d[curr_normal.first]).execute();
                 }
 
-                view.vao.bind();
                 {
-                    bool enabled_color = view.color.is_enabled();
                     properties_3d.emplace_back("base_color");
-                    static std::pair<int, std::string> curr_color = {0, view.color.bound_buffer_name};
+                    static std::pair<int, std::string> curr_color = {-1, view.color.bound_buffer_name};
 
-                    if (view.color.bound_buffer_name.empty()) {
+                    if (view.color.bound_buffer_name.empty() || curr_color.first == -1 || properties_3d.empty()) {
                         curr_color.first = properties_3d.size() - 1;
+                        view.color.bound_buffer_name = properties_3d[curr_color.first];
+                        Commands::View::SetColorMeshView(entity_id, properties_3d[curr_color.first]).execute();
                     }
 
-                    if (!properties_3d.empty() && Combo(view.color.shader_name.c_str(), curr_color, properties_3d)) {
-                        if (curr_color.second != "base_color") {
-                            Commands::View::SetColorMeshView(entity_id, properties_3d[curr_color.first]).execute();
-                        }
-                        if (!enabled_color) {
-                            view.color.enable();
-                        } else {
-                            view.color.disable();
-                        }
+                    if (Combo(view.color.shader_name.c_str(), curr_color, properties_3d)) {
+                        Commands::View::SetColorMeshView(entity_id, properties_3d[curr_color.first]).execute();
                     }
 
-                    if (!enabled_color && (properties_3d.empty() || curr_color.second != "base_color")) {
+                    view.vao.bind();
+                    bool enabled_color = view.color.is_enabled();
+                    view.vao.unbind();
+
+                    if (!enabled_color) {
                         if (ImGui::ColorEdit3("##base_color", view.base_color.data())) {
+                            view.vao.bind();
                             view.color.set_default(view.base_color.data());
+                            view.color.disable();
+                            view.vao.unbind();
                         }
                     }else{
                         ImGui::InputFloat("min_color", &view.min_color);
                         ImGui::InputFloat("max_color", &view.max_color);
                     }
                 }
-                view.vao.unbind();
             }
             Show(view);
         }
