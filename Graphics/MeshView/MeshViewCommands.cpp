@@ -37,7 +37,7 @@ namespace Bcg::Commands::View {
         }
 
         view.program = program;
-
+        view.program.use();
         view.vao.create();
 
         SetPositionMeshView(entity_id, "v:point").execute();

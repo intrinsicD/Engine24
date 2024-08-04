@@ -91,6 +91,7 @@ namespace Bcg {
             }
 
             view.draw();
+            view.vao.unbind();
         }
     }
 }

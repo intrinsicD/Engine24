@@ -9,17 +9,19 @@
 #include "GetPrimitives.h"
 #include "MeshViewCommands.h"
 
-namespace Bcg::Gui{
-    void Show(MeshView &view){
+namespace Bcg::Gui {
+    void Show(MeshView &view) {
         ImGui::Text("num_indices: %d", view.num_indices);
     }
 
-    void ShowMeshView(entt::entity entity_id){
+    void ShowMeshView(entt::entity entity_id) {
         if (Engine::valid(entity_id) && Engine::has<MeshView>(entity_id)) {
+            ImGui::PushID("mesh_view");
             auto &view = Engine::State().get<MeshView>(entity_id);
             auto *vertices = GetPrimitives(entity_id).vertices();
             ImGui::Checkbox("hide", &view.hide);
             if (vertices) {
+                view.program.use();
                 auto properties_3d = vertices->properties(3);
 
                 static std::pair<int, std::string> curr_pos = {0, view.position.bound_buffer_name};
@@ -51,19 +53,20 @@ namespace Bcg::Gui{
                     view.vao.unbind();
 
                     if (!enabled_color) {
-                        if (ImGui::ColorEdit3("##base_color", view.base_color.data())) {
+                        if (ImGui::ColorEdit3("##base_color_mesh_view", view.base_color.data())) {
                             view.vao.bind();
                             view.color.set_default(view.base_color.data());
                             view.color.disable();
                             view.vao.unbind();
                         }
-                    }else{
+                    } else {
                         ImGui::InputFloat("min_color", &view.min_color);
                         ImGui::InputFloat("max_color", &view.max_color);
                     }
                 }
             }
             Show(view);
+            ImGui::PopID();
         }
     }
 }

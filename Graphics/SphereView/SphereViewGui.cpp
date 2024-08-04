@@ -16,10 +16,12 @@ namespace Bcg::Gui {
 
     void ShowSphereView(entt::entity entity_id) {
         if (Engine::valid(entity_id) && Engine::has<SphereView>(entity_id)) {
+            ImGui::PushID("sphere_view");
             auto &view = Engine::State().get<SphereView>(entity_id);
             auto *vertices = GetPrimitives(entity_id).vertices();
             ImGui::Checkbox("hide", &view.hide);
             if (vertices) {
+                view.program.use();
                 auto properties_3d = vertices->properties(3);
                 static std::pair<int, std::string> curr_pos = {0, view.position.bound_buffer_name};
                 if (Combo(view.position.shader_name.c_str(), curr_pos, properties_3d)) {
@@ -45,7 +47,7 @@ namespace Bcg::Gui {
                     view.vao.unbind();
 
                     if (!enabled_color) {
-                        if (ImGui::ColorEdit3("##base_color", view.base_color.data())) {
+                        if (ImGui::ColorEdit3("##base_color_sphere_view", view.base_color.data())) {
                             view.vao.bind();
                             view.color.set_default(view.base_color.data());
                             view.color.disable();
@@ -87,6 +89,7 @@ namespace Bcg::Gui {
                 }
             }
             Show(view);
+            ImGui::PopID();
         }
     }
 }

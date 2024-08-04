@@ -12,8 +12,8 @@
 namespace Bcg{
     struct MeshView {
         Attribute position{0, 3, Attribute::Type::FLOAT, false, 3 * sizeof(float), "position", ""};
-        Attribute color{1, 3, Attribute::Type::FLOAT, false, 3 * sizeof(float), "color", ""};
-        Attribute normal{2, 3, Attribute::Type::FLOAT, false, 3 * sizeof(float), "normal", ""};
+        Attribute normal{1, 3, Attribute::Type::FLOAT, false, 3 * sizeof(float), "normal", ""};
+        Attribute color{2, 3, Attribute::Type::FLOAT, false, 3 * sizeof(float), "color", ""};
 
         VertexArrayObject vao;
         Program program;

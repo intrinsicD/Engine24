@@ -35,7 +35,7 @@ namespace Bcg::Commands::View {
         }
 
         view.program = program;
-
+        view.program.use();
         view.vao.create();
 
         SetPositionSphereView(entity_id, "v:point").execute();

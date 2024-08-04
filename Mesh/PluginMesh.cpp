@@ -19,14 +19,10 @@
 #include "io/read_off.h"
 #include "io/read_stl.h"
 #include "io/read_pmp.h"
-#include "Camera.h"
 #include "VertexArrayObject.h"
-#include "Views.h"
 #include "MeshCommands.h"
-#include "ViewCommands.h"
 #include "EntityCommands.h"
 #include "Picker.h"
-#include "Transform.h"
 #include "SphereViewCommands.h"
 #include "MeshViewCommands.h"
 
@@ -294,26 +290,6 @@ namespace Bcg {
     }
 
     void PluginMesh::render() {
-    /*    auto mesh_view = Engine::State().view<MeshView>();
-        auto &camera = Engine::Context().get<Camera>();
 
-        for (auto entity_id: mesh_view) {
-            auto &mw = Engine::State().get<MeshView>(entity_id);
-
-            mw.vao.bind();
-            mw.program.use();
-            mw.program.set_uniform3fv("light_position", camera.v_params.eye.data());
-*//*            mw.program.set_uniform1f("min_color", mw.min_color);
-            mw.program.set_uniform1f("max_color", mw.max_color);*//*
-
-            if (Engine::has<Transform>(entity_id)) {
-                auto &transform = Engine::State().get<Transform>(entity_id);
-                mw.program.set_uniform4fm("model", transform.data(), false);
-            } else {
-                mw.program.set_uniform4fm("model", Transform().data(), false);
-            }
-
-            mw.draw();
-        }*/
     }
 }
