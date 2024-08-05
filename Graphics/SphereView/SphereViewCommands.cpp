@@ -35,12 +35,13 @@ namespace Bcg::Commands::View {
         }
 
         view.program = program;
-        view.program.use();
+
         view.vao.create();
 
         SetPositionSphereView(entity_id, "v:point").execute();
         SetRadiusSphereView(entity_id, "v:radius").execute();
-        SetColorSphereView(entity_id, "base_color").execute();
+        SetNormalSphereView(entity_id, "v:normal").execute();
+        SetColorSphereView(entity_id, "uniform_color").execute();
 
         auto v_indices = vertices->get<unsigned int>("v:indices");
         if (!v_indices) {
@@ -125,15 +126,14 @@ namespace Bcg::Commands::View {
                 Log::Error(name + ": " + property_name + " has negative values which cannot be used as radius!");
             }
 
-            view.radius.bound_buffer_name = property_name.c_str();
             view.radius.set(nullptr);
             view.radius.enable();
         } else {
             view.vao.bind();
-            view.radius.bound_buffer_name = property_name.c_str();
             view.radius.disable();
             view.radius.set_default(&view.default_radius);
         }
+        view.radius.bound_buffer_name = property_name.c_str();
         view.vao.unbind();
 
         if (v_radius) {
@@ -172,19 +172,60 @@ namespace Bcg::Commands::View {
             view.min_color = Map(v_color.vector()).minCoeff();
             view.max_color = Map(v_color.vector()).maxCoeff();
 
-            view.color.bound_buffer_name = property_name.c_str();
             view.color.set(nullptr);
             view.color.enable();
+            view.use_uniform_color = false;
         } else {
             view.vao.bind();
-            view.color.bound_buffer_name = "base_color";
             view.color.disable();
-            view.color.set_default(view.base_color.data());
+            view.color.set_default(view.uniform_color.data());
+            view.use_uniform_color = true;
         }
+        view.color.bound_buffer_name = property_name.c_str();
         view.vao.unbind();
 
         if (v_color) {
             b_color.unbind();
+        }
+    }
+
+
+    void SetNormalSphereView::execute() const {
+        auto *vertices = GetPrimitives(entity_id).vertices();
+        if (!vertices) return;
+
+        if (!Engine::has<SphereView>(entity_id)) {
+            SetupSphereView(entity_id).execute();
+        }
+
+        auto &view = Engine::require<SphereView>(entity_id);
+        size_t num_vertices = vertices->size();
+
+        OpenGLState openGlState(entity_id);
+
+        auto v_normals = vertices->get<Vector<float, 3>>(property_name);
+        auto b_normals = openGlState.get_buffer(property_name);
+
+        if (v_normals) {
+            if (!b_normals) {
+                b_normals = ArrayBuffer();
+                b_normals.create();
+                openGlState.register_buffer(property_name, b_normals);
+            }
+
+            view.vao.bind();
+            b_normals.bind();
+            b_normals.buffer_data(v_normals.data(),
+                                  num_vertices * 3 * sizeof(float),
+                                  Buffer::STATIC_DRAW);
+
+            view.normal.bound_buffer_name = property_name.c_str();
+            view.normal.set(nullptr);
+            view.normal.enable();
+            view.vao.unbind();
+            b_normals.unbind();
+        } else {
+            Log::Warn(name + ": failed, because entity does not have " + property_name + " property.");
         }
     }
 

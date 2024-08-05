@@ -94,7 +94,7 @@ namespace Bcg::Commands::View {
         colors_attribute.shader_name = "colors";
         colors_attribute.bound_buffer_name = "";
         colors_attribute.set(nullptr);
-        colors_attribute.set_default(pcw.base_color.data());
+        colors_attribute.set_default(pcw.uniform_color.data());
         pcw.vao.unbind();
 
         auto program = openGlState.get_program("PointCloudProgram");

@@ -2,7 +2,8 @@
 
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 aColor;
-layout (location = 2) in float radius;
+layout (location = 2) in vec3 aNormal;
+layout (location = 3) in float radius;
 
 layout (std140) uniform Camera {
     mat4 view;
@@ -13,15 +14,23 @@ uniform mat4 model;
 uniform uint width;
 uniform uint height;
 uniform float pointSize;
+uniform bool use_uniform_color = true;
+uniform vec3 uniform_color = vec3(1.0, 1.0, 1.0);
 
 out vec4 f_view;
 out vec4 f_world;
 out vec3 f_color;
+out vec3 f_normal;
 out float f_radius_view_space;
 
 void main()
 {
-    f_color = aColor;
+    if (use_uniform_color) {
+        f_color = uniform_color;
+    } else {
+        f_color = aColor;
+    }
+    f_normal = mat3(transpose(inverse(model))) * aNormal;
     f_world = model * vec4(aPos, 1.0);
     f_view = view * f_world;
     vec4 clipSpacePos = projection * f_view;

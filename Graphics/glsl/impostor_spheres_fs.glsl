@@ -3,6 +3,7 @@
 in vec3 f_color;
 in vec4 f_view;
 in vec4 f_world;
+in vec3 f_normal;
 in float f_radius_view_space;
 
 layout (std140) uniform Camera {
@@ -12,6 +13,7 @@ layout (std140) uniform Camera {
 
 uniform float min_color = 0.0f;
 uniform float max_color = 1.0f;
+uniform vec3 light_position;
 
 out vec4 FragColor;
 
@@ -30,7 +32,9 @@ void main()
     float ndcDepth = adjustedClipSpacePos.z / adjustedClipSpacePos.w;
     gl_FragDepth = (ndcDepth * 0.5 + 0.5);
 
+    vec3 normal = normalize(f_normal);
+    float diff = max(dot(normal, normalize(light_position - f_world.xyz)), 0);
     vec3 finalColor = (f_color - min_color) / (max_color - min_color);
-    finalColor = finalColor * z;
+    finalColor = z * diff * finalColor;
     FragColor = vec4(finalColor, 1.0f);
 }

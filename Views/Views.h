@@ -31,7 +31,7 @@ namespace Bcg {
     };
 
     struct PointCloudView : public PointView {
-        Vector<float, 3> base_color = {0.8, 0.8, 0.8};
+        Vector<float, 3> uniform_color = {0.8, 0.8, 0.8};
     };
 
     struct LineView {

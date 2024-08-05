@@ -167,6 +167,14 @@ namespace Bcg {
         }
     }
 
+    void Program::set_uniform1i(const std::string &name, int value){
+        int loc = get_uniform_location(name);
+
+        if (loc != -1) {
+            glUniform1i(loc, value);
+        }
+    }
+
     void Program::set_uniform3fv(const std::string &name, const float *ptr) {
         int loc = get_uniform_location(name);
 

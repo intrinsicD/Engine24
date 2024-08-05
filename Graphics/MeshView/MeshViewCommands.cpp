@@ -37,12 +37,12 @@ namespace Bcg::Commands::View {
         }
 
         view.program = program;
-        view.program.use();
+
         view.vao.create();
 
         SetPositionMeshView(entity_id, "v:point").execute();
         SetNormalMeshView(entity_id, "v:normal").execute();
-        SetColorMeshView(entity_id, "base_color").execute();
+        SetColorMeshView(entity_id, "uniform_color").execute();
 
         auto &mesh = Engine::State().get<SurfaceMesh>(entity_id);
         auto f_triangles = extract_triangle_list(mesh);
@@ -163,11 +163,13 @@ namespace Bcg::Commands::View {
             view.color.bound_buffer_name = property_name.c_str();
             view.color.set(nullptr);
             view.color.enable();
+            view.use_uniform_color = false;
         } else {
             view.vao.bind();
-            view.color.bound_buffer_name = "base_color";
+            view.color.bound_buffer_name = "uniform_color";
             view.color.disable();
-            view.color.set_default(view.base_color.data());
+            view.color.set_default(view.uniform_color.data());
+            view.use_uniform_color = true;
         }
         view.vao.unbind();
 

@@ -13,13 +13,15 @@ namespace Bcg {
     struct SphereView {
         Attribute position{0, 3, Attribute::Type::FLOAT, false, 3 * sizeof(float), "position", ""};
         Attribute color{1, 3, Attribute::Type::FLOAT, false, 3 * sizeof(float), "color", ""};
-        Attribute radius{2, 1, Attribute::Type::FLOAT, false, sizeof(float), "radius", ""};
+        Attribute normal{2, 3, Attribute::Type::FLOAT, false, 3 * sizeof(float), "normal", ""};
+        Attribute radius{3, 1, Attribute::Type::FLOAT, false, sizeof(float), "radius", ""};
 
         VertexArrayObject vao;
         Program program;
         unsigned int num_spheres;
 
-        Vector<float, 3> base_color{0.8, 0.8, 0.8};
+        Vector<float, 3> uniform_color{1.0, 1.0, 1.0};
+        bool use_uniform_color = true;
         float default_radius = 10.0;
         float min_color = 0;
         float max_color = 1;

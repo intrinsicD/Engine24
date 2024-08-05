@@ -17,6 +17,7 @@
 #include "backends/imgui_impl_opengl3.h"
 #include "EventsGui.h"
 #include "FileWatcher.h"
+#include "OpenGLState.h"
 
 namespace Bcg {
 
@@ -321,6 +322,31 @@ namespace Bcg {
         float dpi_scaling_factor;
         glfwGetWindowContentScale(global_window.handle, &dpi_scaling_factor, &dpi_scaling_factor);
         return dpi_scaling_factor;
+    }
+
+    bool Graphics::CreateBuffer(entt::entity entity_id, const std::string &buffer_name, unsigned int target) {
+        OpenGLState openGlState(entity_id);
+        auto buffer = openGlState.get_buffer(buffer_name);
+        if (!buffer) {
+            buffer.create();
+            openGlState.register_buffer(buffer_name, buffer);
+            return true;
+        }
+        return false;
+    }
+
+    bool Graphics::UpdateBuffer(entt::entity entity_id, const std::string &buffer_name, const void *data, size_t size,
+                                unsigned int usage) {
+        OpenGLState openGlState(entity_id);
+        auto buffer = openGlState.get_buffer(buffer_name);
+        if (!buffer) {
+            return false;
+        }
+
+        buffer.bind();
+        buffer.buffer_data(data, size, usage);
+        buffer.unbind();
+        return true;
     }
 
     //------------------------------------------------------------------------------------------------------------------

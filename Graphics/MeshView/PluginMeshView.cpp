@@ -52,13 +52,15 @@ namespace Bcg {
         auto &camera = Engine::Context().get<Camera>();
         for (auto entity_id: rendergroup) {
             auto &view = Engine::State().get<MeshView>(entity_id);
-            if(view.hide) continue;
+            if (view.hide) continue;
 
             view.vao.bind();
             view.program.use();
             view.program.set_uniform3fv("light_position", camera.v_params.eye.data());
             view.program.set_uniform1f("min_color", view.min_color);
             view.program.set_uniform1f("max_color", view.max_color);
+            view.program.set_uniform1i("use_uniform_color", view.use_uniform_color);
+            view.program.set_uniform3fv("uniform_color", view.uniform_color.data());
 
             if (Engine::has<Transform>(entity_id)) {
                 auto &transform = Engine::State().get<Transform>(entity_id);

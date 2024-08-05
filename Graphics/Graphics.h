@@ -5,10 +5,8 @@
 #ifndef ENGINE24_GRAPHICS_H
 #define ENGINE24_GRAPHICS_H
 
-#include <unordered_map>
-#include <vector>
-#include <string>
 #include "MatVec.h"
+#include "entt/fwd.hpp"
 
 struct GLFWwindow;
 
@@ -53,6 +51,10 @@ namespace Bcg {
         static bool read_depth_buffer(int x, int y, float &z);
 
         static float dpi_scaling();
+
+        static bool CreateBuffer(entt::entity entity_id, const std::string &buffer_name, unsigned int target);
+
+        static bool UpdateBuffer(entt::entity entity_id, const std::string &buffer_name, const void *data, size_t size, unsigned int usage);
 
         //--------------------------------------------------------------------------------------------------------------
     };

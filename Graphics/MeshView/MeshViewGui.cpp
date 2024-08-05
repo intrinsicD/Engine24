@@ -47,7 +47,7 @@ namespace Bcg::Gui {
                 }
 
                 {
-                    properties_3d.emplace_back("base_color");
+                    properties_3d.emplace_back("uniform_color");
                     static std::pair<int, std::string> curr_color = {-1, view.color.bound_buffer_name};
 
                     if(curr_color.first == -1){
@@ -66,9 +66,9 @@ namespace Bcg::Gui {
                     view.vao.unbind();
 
                     if (!enabled_color) {
-                        if (ImGui::ColorEdit3("##base_color_mesh_view", view.base_color.data())) {
+                        if (ImGui::ColorEdit3("##uniform_color_mesh_view", view.uniform_color.data())) {
                             view.vao.bind();
-                            view.color.set_default(view.base_color.data());
+                            view.color.set_default(view.uniform_color.data());
                             view.color.disable();
                             view.vao.unbind();
                         }
