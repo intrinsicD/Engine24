@@ -13,7 +13,10 @@ layout (std140) uniform Camera {
 uniform mat4 model;
 uniform uint width;
 uniform uint height;
-uniform float pointSize;
+
+uniform bool use_uniform_radius = true;
+uniform float uniform_radius = 1.0;
+
 uniform bool use_uniform_color = true;
 uniform vec3 uniform_color = vec3(1.0, 1.0, 1.0);
 
@@ -36,7 +39,13 @@ void main()
     vec4 clipSpacePos = projection * f_view;
 
     float distance = length(f_view.xyz);
-    float adjustedPointSize = pointSize / distance;
+
+    float adjustedPointSize = uniform_radius / distance;
+    if(use_uniform_radius){
+        adjustedPointSize = uniform_radius / distance;
+    }else{
+        adjustedPointSize = radius / distance;
+    }
 
     float radius_ndc_x = adjustedPointSize / width * 2.0;
     float radius_ndc_y = adjustedPointSize / height * 2.0;

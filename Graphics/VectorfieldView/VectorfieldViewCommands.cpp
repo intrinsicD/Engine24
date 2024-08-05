@@ -1,47 +1,54 @@
 //
-// Created by alex on 02.08.24.
+// Created by alex on 05.08.24.
 //
 
-#include "SphereViewCommands.h"
+#include "VectorfieldViewCommands.h"
 #include "Engine.h"
-#include "SphereView.h"
+#include "VectorfieldView.h"
 #include "GetPrimitives.h"
 #include "OpenGLState.h"
 #include "Camera.h"
 #include "Logger.h"
 #include "PropertyEigenMap.h"
+#include "AABB.h"
 #include <numeric>
 
 namespace Bcg::Commands::View {
-    void SetupSphereView::execute() const {
+    void SetupVectorfieldView::execute() const {
         auto *vertices = GetPrimitives(entity_id).vertices();
         if (!vertices) return;
 
-        auto &view = Engine::require<SphereView>(entity_id);
+        auto &views = Engine::require<VectorfieldViews>(entity_id);
+        auto &view = (views.vectorfields.emplace(vectorfield_name, VectorfieldView()).first)->second;
+        view.vectorfield_name = vectorfield_name;
         size_t num_vertices = vertices->size();
-        view.num_spheres = num_vertices;
+        view.num_vectors = num_vertices;
 
         OpenGLState openGlState(entity_id);
 
-        auto program = openGlState.get_program("SpheresProgram");
+        auto program = openGlState.get_program("VectorfieldsProgram");
         if (!program) {
-            program.create_from_files("../Shaders/glsl/impostor_spheres_vs.glsl",
-                                      "../Shaders/glsl/impostor_spheres_fs.glsl");
+            program.create_from_files("../Shaders/glsl/vector_vs.glsl",
+                                      "../Shaders/glsl/vector_fs.glsl",
+                                      "../Shaders/glsl/vector_gs.glsl");
 
             auto &camera_ubi = Engine::Context().get<CameraUniformBuffer>();
             view.program.bind_uniform_block("Camera", camera_ubi.binding_point);
 
-            openGlState.register_program("SpheresProgram", program);
+            openGlState.register_program("VectorfieldsProgram", program);
         }
 
         view.program = program;
 
         view.vao.create();
 
-        SetPositionSphereView(entity_id, "v:point").execute();
-        SetRadiusSphereView(entity_id, "uniform_radius").execute();
-        SetNormalSphereView(entity_id, "v:normal").execute();
-        SetColorSphereView(entity_id, "uniform_color").execute();
+        SetPositionVectorfieldView(entity_id, vectorfield_name, "v:point").execute();
+        SetLengthVectorfieldView(entity_id, vectorfield_name, "uniform_length").execute();
+        SetVectorVectorfieldView(entity_id, vectorfield_name, vectorfield_name).execute();
+        SetColorVectorfieldView(entity_id, vectorfield_name, "uniform_color").execute();
+
+        auto &aabb = Engine::require<AABB>(entity_id);
+        view.uniform_length = aabb.diagonal().norm() / 100.0f;
 
         auto v_indices = vertices->get<unsigned int>("v:indices");
         if (!v_indices) {
@@ -49,20 +56,21 @@ namespace Bcg::Commands::View {
             std::iota(v_indices.vector().begin(), v_indices.vector().end(), 0);
         }
 
-        SetIndicesSphereView(entity_id, v_indices.vector()).execute();
+        SetIndicesVectorfieldView(entity_id, vectorfield_name, v_indices.vector()).execute();
 
         view.vao.unbind();
     }
 
-    void SetPositionSphereView::execute() const {
+    void SetPositionVectorfieldView::execute() const {
         auto *vertices = GetPrimitives(entity_id).vertices();
         if (!vertices) return;
 
-        if (!Engine::has<SphereView>(entity_id)) {
-            SetupSphereView(entity_id).execute();
+        if (!Engine::has<VectorfieldViews>(entity_id)) {
+            SetupVectorfieldView(entity_id, vectorfield_name).execute();
         }
 
-        auto &view = Engine::require<SphereView>(entity_id);
+        auto &views = Engine::require<VectorfieldViews>(entity_id);
+        auto &view = views.vectorfields[vectorfield_name];
         size_t num_vertices = vertices->size();
 
         OpenGLState openGlState(entity_id);
@@ -93,62 +101,65 @@ namespace Bcg::Commands::View {
         }
     }
 
-    void SetRadiusSphereView::execute() const {
+    void SetLengthVectorfieldView::execute() const {
         auto *vertices = GetPrimitives(entity_id).vertices();
         if (!vertices) return;
 
-        if (!Engine::has<SphereView>(entity_id)) {
-            SetupSphereView(entity_id).execute();
+        if (!Engine::has<VectorfieldViews>(entity_id)) {
+            SetupVectorfieldView(entity_id, vectorfield_name).execute();
         }
 
-        auto &view = Engine::require<SphereView>(entity_id);
+        auto &views = Engine::require<VectorfieldViews>(entity_id);
+        auto &view = views.vectorfields[vectorfield_name];
         size_t num_vertices = vertices->size();
 
         OpenGLState openGlState(entity_id);
 
-        auto v_radius = vertices->get<float>(property_name);
-        auto b_radius = openGlState.get_buffer(property_name);
+        auto v_length = vertices->get<float>(property_name);
+        auto b_length = openGlState.get_buffer(property_name);
 
-        if (v_radius) {
-            if (!b_radius) {
-                b_radius = ArrayBuffer();
-                b_radius.create();
-                openGlState.register_buffer(property_name, b_radius);
+        if (v_length) {
+            if (!b_length) {
+                b_length = ArrayBuffer();
+                b_length.create();
+                openGlState.register_buffer(property_name, b_length);
             }
 
             view.vao.bind();
-            b_radius.bind();
-            b_radius.buffer_data(v_radius.data(),
+            b_length.bind();
+            b_length.buffer_data(v_length.data(),
                                  num_vertices * 1 * sizeof(float),
                                  Buffer::STATIC_DRAW);
 
-            if (Map(v_radius.vector()).minCoeff() < 0) {
-                Log::Error(name + ": " + property_name + " has negative values which cannot be used as radius!");
+            if (Map(v_length.vector()).minCoeff() < 0) {
+                Log::Error(name + ": " + property_name + " has negative values which cannot be used as length!");
             }
 
-            view.radius.set(nullptr);
-            view.radius.enable();
-            view.use_uniform_radius = false;
+            view.length.set(nullptr);
+            view.length.enable();
+            view.use_uniform_length = false;
             view.vao.unbind();
         } else {
-            view.use_uniform_radius = true;
+            view.use_uniform_length = true;
         }
-        view.radius.bound_buffer_name = property_name.c_str();
+        view.length.bound_buffer_name = property_name.c_str();
 
-        if (v_radius) {
-            b_radius.unbind();
+        if (v_length) {
+            b_length.unbind();
         }
     }
 
-    void SetColorSphereView::execute() const {
+    void SetColorVectorfieldView::execute() const {
         auto *vertices = GetPrimitives(entity_id).vertices();
         if (!vertices) return;
 
-        if (!Engine::has<SphereView>(entity_id)) {
-            SetupSphereView(entity_id).execute();
+        if (!Engine::has<VectorfieldViews>(entity_id)) {
+            SetupVectorfieldView(entity_id, vectorfield_name).execute();
         }
 
-        auto &view = Engine::require<SphereView>(entity_id);
+        auto &views = Engine::require<VectorfieldViews>(entity_id);
+        auto &view = views.vectorfields[vectorfield_name];
+
         size_t num_vertices = vertices->size();
 
         OpenGLState openGlState(entity_id);
@@ -180,53 +191,54 @@ namespace Bcg::Commands::View {
         }
         view.color.bound_buffer_name = property_name.c_str();
 
-
         if (v_color) {
             b_color.unbind();
         }
     }
 
 
-    void SetNormalSphereView::execute() const {
+    void SetVectorVectorfieldView::execute() const {
         auto *vertices = GetPrimitives(entity_id).vertices();
         if (!vertices) return;
 
-        if (!Engine::has<SphereView>(entity_id)) {
-            SetupSphereView(entity_id).execute();
+        if (!Engine::has<VectorfieldViews>(entity_id)) {
+            SetupVectorfieldView(entity_id, vectorfield_name).execute();
         }
 
-        auto &view = Engine::require<SphereView>(entity_id);
+        auto &views = Engine::require<VectorfieldViews>(entity_id);
+        auto &view = views.vectorfields[vectorfield_name];
+
         size_t num_vertices = vertices->size();
 
         OpenGLState openGlState(entity_id);
 
-        auto v_normals = vertices->get<Vector<float, 3>>(property_name);
-        auto b_normals = openGlState.get_buffer(property_name);
+        auto v_vectors = vertices->get<Vector<float, 3>>(property_name);
+        auto b_vectors = openGlState.get_buffer(property_name);
 
-        if (v_normals) {
-            if (!b_normals) {
-                b_normals = ArrayBuffer();
-                b_normals.create();
-                openGlState.register_buffer(property_name, b_normals);
+        if (v_vectors) {
+            if (!b_vectors) {
+                b_vectors = ArrayBuffer();
+                b_vectors.create();
+                openGlState.register_buffer(property_name, b_vectors);
             }
 
             view.vao.bind();
-            b_normals.bind();
-            b_normals.buffer_data(v_normals.data(),
+            b_vectors.bind();
+            b_vectors.buffer_data(v_vectors.data(),
                                   num_vertices * 3 * sizeof(float),
                                   Buffer::STATIC_DRAW);
 
-            view.normal.bound_buffer_name = property_name.c_str();
-            view.normal.set(nullptr);
-            view.normal.enable();
+            view.vector.bound_buffer_name = property_name.c_str();
+            view.vector.set(nullptr);
+            view.vector.enable();
             view.vao.unbind();
-            b_normals.unbind();
+            b_vectors.unbind();
         } else {
             Log::Warn(name + ": failed, because entity does not have " + property_name + " property.");
         }
     }
 
-    void SetIndicesSphereView::execute() const {
+    void SetIndicesVectorfieldView::execute() const {
         if (indices.empty()) {
             Log::Error(name + ": failed, indices vector is empty!");
             return;
@@ -235,11 +247,13 @@ namespace Bcg::Commands::View {
         auto *vertices = GetPrimitives(entity_id).vertices();
         if (!vertices) return;
 
-        if (!Engine::has<SphereView>(entity_id)) {
-            SetupSphereView(entity_id).execute();
+        if (!Engine::has<VectorfieldViews>(entity_id)) {
+            SetupVectorfieldView(entity_id, vectorfield_name).execute();
         }
 
-        auto &view = Engine::require<SphereView>(entity_id);
+        auto &views = Engine::require<VectorfieldViews>(entity_id);
+        auto &view = views.vectorfields[vectorfield_name];
+
         size_t num_vertices = vertices->size();
 
         OpenGLState openGlState(entity_id);

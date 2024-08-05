@@ -24,7 +24,7 @@ namespace Bcg {
         auto entity_id = picked.entity.id;
         if (!picked.entity.is_background && Engine::has<SphereView>(entity_id)) {
             auto &view = Engine::State().get<SphereView>(entity_id);
-            view.default_radius = std::max<float>(1.0f, view.default_radius + event.yoffset);
+            view.uniform_radius = std::max<float>(1.0f, view.uniform_radius + event.yoffset);
         } else {
             global_point_size = std::max<float>(1.0f, global_point_size + event.yoffset);
             glPointSize(global_point_size);
@@ -78,7 +78,8 @@ namespace Bcg {
             view.program.use();
             view.program.set_uniform1ui("width", vp[2]);
             view.program.set_uniform1ui("height", vp[3]);
-            view.program.set_uniform1f("pointSize", view.default_radius);
+            view.program.set_uniform1i("use_uniform_radius", view.use_uniform_radius);
+            view.program.set_uniform1f("uniform_radius", view.uniform_radius);
             view.program.set_uniform1f("min_color", view.min_color);
             view.program.set_uniform1f("max_color", view.max_color);
             view.program.set_uniform1i("use_uniform_color", view.use_uniform_color);

@@ -15,6 +15,7 @@
 #include "PluginHierarchy.h"
 #include "PluginSphereView.h"
 #include "PluginMeshView.h"
+#include "PluginVectorfieldViews.h"
 #include <unordered_map>
 
 namespace Bcg {
@@ -32,6 +33,7 @@ namespace Bcg {
         add_plugin(std::make_unique<PluginHierarchy>());
         add_plugin(std::make_unique<PluginSphereView>());
         add_plugin(std::make_unique<PluginMeshView>());
+        add_plugin(std::make_unique<PluginVectorfieldViews>());
     }
 
     void Plugins::init_user_plugin(const std::string &name) {

@@ -16,6 +16,7 @@ namespace Bcg::Gui {
                     bool is_selected = (curr.first == i);
                     if (ImGui::Selectable(labels[i].c_str(), is_selected)) {
                         curr.first = i;
+                        curr.second = labels[i];
                         changed = true;
                     }
                     if (is_selected) {
@@ -40,6 +41,7 @@ namespace Bcg::Gui {
                     bool is_selected = (curr.first == i);
                     if (ImGui::Selectable(labels[i].c_str(), is_selected)) {
                         curr.first = i;
+                        curr.second = labels[i];
                         changed = true;
                     }
                     if (is_selected) {

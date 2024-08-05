@@ -8,7 +8,6 @@
 #include "GetPrimitives.h"
 #include "GuiUtils.h"
 #include "SphereViewCommands.h"
-#include "GLUtils.h"
 
 namespace Bcg::Gui {
     void Show(SphereView &view) {
@@ -59,17 +58,8 @@ namespace Bcg::Gui {
                         Commands::View::SetColorSphereView(entity_id, properties_3d[curr_color.first]).execute();
                     }
 
-                    view.vao.bind();
-                    bool enabled_color = view.color.is_enabled();
-                    view.vao.unbind();
-
-                    if (!enabled_color) {
-                        if (ImGui::ColorEdit3("##uniform_color_sphere_view", view.uniform_color.data())) {
-                            view.vao.bind();
-                            view.color.set_default(view.uniform_color.data());
-                            view.color.disable();
-                            view.vao.unbind();
-                        }
+                    if (view.use_uniform_color) {
+                        ImGui::ColorEdit3("##uniform_color_sphere_view", view.uniform_color.data());
                     } else {
                         ImGui::InputFloat("min_color", &view.min_color);
                         ImGui::InputFloat("max_color", &view.max_color);
@@ -77,12 +67,11 @@ namespace Bcg::Gui {
                 }
 
                 {
-
                     auto properties_1d = vertices->properties(1);
-                    properties_1d.emplace_back("default_radius");
+                    properties_1d.emplace_back("uniform_radius");
                     static std::pair<int, std::string> curr_radius = {-1, view.radius.bound_buffer_name};
                     if(curr_radius.first == -1){
-                        curr_radius.first = FindIndex(properties_3d, view.radius.bound_buffer_name);
+                        curr_radius.first = FindIndex(properties_1d, view.radius.bound_buffer_name);
                         if(curr_radius.first == -1){
                             curr_radius.first = 0;
                         }
@@ -92,17 +81,8 @@ namespace Bcg::Gui {
                         Commands::View::SetRadiusSphereView(entity_id, properties_1d[curr_radius.first]).execute();
                     }
 
-                    view.vao.bind();
-                    bool enabled_radius = view.radius.is_enabled();
-                    view.vao.unbind();
-
-                    if (!enabled_radius) {
-                        if (ImGui::InputFloat("##default_radius", &view.default_radius)) {
-                            view.vao.bind();
-                            view.radius.set_default(&view.default_radius);
-                            view.radius.disable();
-                            view.vao.unbind();
-                        }
+                    if (view.use_uniform_radius) {
+                        ImGui::InputFloat("##uniform_radius", &view.uniform_radius);
                     }
                 }
             }

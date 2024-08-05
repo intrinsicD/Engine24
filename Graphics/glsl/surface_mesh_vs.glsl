@@ -1,8 +1,8 @@
 #version 330 core
 
-layout (location = 0) in vec3 aPos;
-layout (location = 1) in vec3 aColor;
-layout (location = 2) in vec3 aNormal;
+layout (location = 0) in vec3 position;
+layout (location = 1) in vec3 color;
+layout (location = 2) in vec3 normal;
 
 layout (std140) uniform Camera {
     mat4 view;
@@ -22,9 +22,9 @@ void main()
     if (use_uniform_color) {
         f_color = uniform_color;
     } else {
-        f_color = aColor;
+        f_color = color;
     }
-    f_normal = mat3(transpose(inverse(model))) * aNormal;
-    f_world = (model * vec4(aPos, 1.0)).xyz;
+    f_normal = mat3(transpose(inverse(model))) * normal;
+    f_world = (model * vec4(position, 1.0)).xyz;
     gl_Position = projection * view * vec4(f_world, 1.0);
 }

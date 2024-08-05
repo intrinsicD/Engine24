@@ -20,9 +20,11 @@ namespace Bcg {
         Program program;
         unsigned int num_spheres;
 
-        Vector<float, 3> uniform_color{1.0, 1.0, 1.0};
         bool use_uniform_color = true;
-        float default_radius = 10.0;
+        Vector<float, 3> uniform_color{1.0, 1.0, 1.0};
+        bool use_uniform_radius = true;
+        float uniform_radius = 10.0;
+
         float min_color = 0;
         float max_color = 1;
         bool hide = false;
