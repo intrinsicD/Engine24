@@ -76,7 +76,6 @@ namespace Bcg {
 
             view.vao.bind();
             view.program.use();
-            view.program.set_uniform3fv("light_position", camera.v_params.eye.data());
             view.program.set_uniform1ui("width", vp[2]);
             view.program.set_uniform1ui("height", vp[3]);
             view.program.set_uniform1f("pointSize", view.default_radius);

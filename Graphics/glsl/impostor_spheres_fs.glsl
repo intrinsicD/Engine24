@@ -10,7 +10,6 @@ layout (std140) uniform Camera {
     mat4 projection;
 };
 
-uniform vec3 light_position;
 uniform float min_color = 0.0f;
 uniform float max_color = 1.0f;
 

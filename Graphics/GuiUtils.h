@@ -28,6 +28,8 @@ namespace Bcg::Gui {
 
         return values;
     }
+
+    int FindIndex(const std::vector<std::string> &labels, std::string label);
 }
 
 #endif //ENGINE24_GUIUTILS_H

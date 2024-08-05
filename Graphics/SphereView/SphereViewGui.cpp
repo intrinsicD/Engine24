@@ -8,6 +8,7 @@
 #include "GetPrimitives.h"
 #include "GuiUtils.h"
 #include "SphereViewCommands.h"
+#include "GLUtils.h"
 
 namespace Bcg::Gui {
     void Show(SphereView &view) {
@@ -21,9 +22,14 @@ namespace Bcg::Gui {
             auto *vertices = GetPrimitives(entity_id).vertices();
             ImGui::Checkbox("hide", &view.hide);
             if (vertices) {
-                view.program.use();
                 auto properties_3d = vertices->properties(3);
-                static std::pair<int, std::string> curr_pos = {0, view.position.bound_buffer_name};
+                static std::pair<int, std::string> curr_pos = {-1, view.position.bound_buffer_name};
+                if(curr_pos.first == -1){
+                    curr_pos.first = FindIndex(properties_3d, view.position.bound_buffer_name);
+                    if(curr_pos.first == -1){
+                        curr_pos.first = 0;
+                    }
+                }
                 if (Combo(view.position.shader_name.c_str(), curr_pos, properties_3d)) {
                     Commands::View::SetPositionSphereView(entity_id, properties_3d[curr_pos.first]).execute();
                 }
@@ -31,11 +37,11 @@ namespace Bcg::Gui {
                 {
                     properties_3d.emplace_back("base_color");
                     static std::pair<int, std::string> curr_color = {-1, view.color.bound_buffer_name};
-
-                    if (view.color.bound_buffer_name.empty() || curr_color.first == -1 || properties_3d.empty()) {
-                        curr_color.first = properties_3d.size() - 1;
-                        view.color.bound_buffer_name = properties_3d[curr_color.first];
-                        Commands::View::SetColorSphereView(entity_id, properties_3d[curr_color.first]).execute();
+                    if(curr_color.first == -1){
+                        curr_color.first = FindIndex(properties_3d, view.color.bound_buffer_name);
+                        if(curr_color.first == -1){
+                            curr_color.first = 0;
+                        }
                     }
 
                     if (Combo(view.color.shader_name.c_str(), curr_color, properties_3d)) {
@@ -64,11 +70,11 @@ namespace Bcg::Gui {
                     auto properties_1d = vertices->properties(1);
                     properties_1d.emplace_back("default_radius");
                     static std::pair<int, std::string> curr_radius = {-1, view.radius.bound_buffer_name};
-
-                    if (view.radius.bound_buffer_name.empty() || curr_radius.first == -1 || properties_1d.empty()) {
-                        curr_radius.first = properties_1d.size() - 1;
-                        view.radius.bound_buffer_name = properties_1d[curr_radius.first];
-                        Commands::View::SetRadiusSphereView(entity_id, properties_1d[curr_radius.first]).execute();
+                    if(curr_radius.first == -1){
+                        curr_radius.first = FindIndex(properties_3d, view.radius.bound_buffer_name);
+                        if(curr_radius.first == -1){
+                            curr_radius.first = 0;
+                        }
                     }
 
                     if (Combo(view.radius.shader_name.c_str(), curr_radius, properties_1d)) {
@@ -83,6 +89,7 @@ namespace Bcg::Gui {
                         if (ImGui::InputFloat("##default_radius", &view.default_radius)) {
                             view.vao.bind();
                             view.radius.set_default(&view.default_radius);
+                            view.radius.disable();
                             view.vao.unbind();
                         }
                     }

@@ -8,6 +8,7 @@
 #include "Picker.h"
 #include "GetPrimitives.h"
 #include "MeshViewCommands.h"
+#include "GLUtils.h"
 
 namespace Bcg::Gui {
     void Show(MeshView &view) {
@@ -21,15 +22,26 @@ namespace Bcg::Gui {
             auto *vertices = GetPrimitives(entity_id).vertices();
             ImGui::Checkbox("hide", &view.hide);
             if (vertices) {
-                view.program.use();
                 auto properties_3d = vertices->properties(3);
 
-                static std::pair<int, std::string> curr_pos = {0, view.position.bound_buffer_name};
+                static std::pair<int, std::string> curr_pos = {-1, view.position.bound_buffer_name};
+                if(curr_pos.first == -1){
+                    curr_pos.first = FindIndex(properties_3d, view.position.bound_buffer_name);
+                    if(curr_pos.first == -1){
+                        curr_pos.first = 0;
+                    }
+                }
                 if (Combo(view.position.shader_name.c_str(), curr_pos, properties_3d)) {
                     Commands::View::SetPositionMeshView(entity_id, properties_3d[curr_pos.first]).execute();
                 }
 
-                static std::pair<int, std::string> curr_normal = {0, view.normal.bound_buffer_name};
+                static std::pair<int, std::string> curr_normal = {-1, view.normal.bound_buffer_name};
+                if(curr_normal.first == -1){
+                    curr_normal.first = FindIndex(properties_3d, view.normal.bound_buffer_name);
+                    if(curr_normal.first == -1){
+                        curr_normal.first = 0;
+                    }
+                }
                 if (Combo(view.normal.shader_name.c_str(), curr_normal, properties_3d)) {
                     Commands::View::SetNormalMeshView(entity_id, properties_3d[curr_normal.first]).execute();
                 }
@@ -38,10 +50,11 @@ namespace Bcg::Gui {
                     properties_3d.emplace_back("base_color");
                     static std::pair<int, std::string> curr_color = {-1, view.color.bound_buffer_name};
 
-                    if (view.color.bound_buffer_name.empty() || curr_color.first == -1 || properties_3d.empty()) {
-                        curr_color.first = properties_3d.size() - 1;
-                        view.color.bound_buffer_name = properties_3d[curr_color.first];
-                        Commands::View::SetColorMeshView(entity_id, properties_3d[curr_color.first]).execute();
+                    if(curr_color.first == -1){
+                        curr_color.first = FindIndex(properties_3d, view.color.bound_buffer_name);
+                        if(curr_color.first == -1){
+                            curr_color.first = 0;
+                        }
                     }
 
                     if (Combo(view.color.shader_name.c_str(), curr_color, properties_3d)) {

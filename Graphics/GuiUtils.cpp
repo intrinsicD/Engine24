@@ -53,4 +53,11 @@ namespace Bcg::Gui {
         return changed;
     }
 
+    int FindIndex(const std::vector<std::string> &labels, std::string label) {
+        for (int i = 0; i < labels.size(); ++i) {
+            if (labels[i] == label) return i;
+        }
+        return -1;
+    }
+
 }
