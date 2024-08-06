@@ -3,25 +3,25 @@
 //
 
 #include "Types.h"
-#include "KDtree.h"
+#include "KDtreeCpu.h"
 
 namespace Bcg {
-    KDTree::KDTree() : index(nullptr) {
+    KDTreeCpu::KDTreeCpu() : index(nullptr) {
 
     }
 
-    KDTree::~KDTree() {
+    KDTreeCpu::~KDTreeCpu() {
 
     }
 
-    void KDTree::build(const std::vector<Vector<float, 3>> &positions) {
+    void KDTreeCpu::build(const std::vector<Vector<float, 3>> &positions) {
         dataset = std::make_unique<VectorAdapter>(positions);
         index = std::make_unique<Type>(3, *dataset,
                                        nanoflann::KDTreeSingleIndexAdaptorParams(10 /* max leaf */));
         index->buildIndex();
     }
 
-    QueryResult KDTree::knn_query(const Vector<float, 3> &query_point, unsigned int num_closest) const {
+    QueryResult KDTreeCpu::knn_query(const Vector<float, 3> &query_point, unsigned int num_closest) const {
         QueryResult result;
         result.indices.resize(num_closest);
         result.distances.resize(num_closest);
@@ -31,7 +31,7 @@ namespace Bcg {
         return result;
     }
 
-    QueryResult KDTree::radius_query(const Vector<float, 3> &query_point, float radius) const {
+    QueryResult KDTreeCpu::radius_query(const Vector<float, 3> &query_point, float radius) const {
         QueryResult result;
         nanoflann::SearchParameters params;
         std::vector<nanoflann::ResultItem<size_t, float>> items;
@@ -51,11 +51,11 @@ namespace Bcg {
         return result;
     }
 
-    QueryResult KDTree::closest_query(const Vector<float, 3> &query_point) const {
+    QueryResult KDTreeCpu::closest_query(const Vector<float, 3> &query_point) const {
         return knn_query(query_point, 1);
     }
 
-    float KDTree::VectorAdapter::kdtree_get_pt(const size_t idx, const size_t dim) const {
+    float KDTreeCpu::VectorAdapter::kdtree_get_pt(const size_t idx, const size_t dim) const {
         return points[idx][dim];
     }
 }

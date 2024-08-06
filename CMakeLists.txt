@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.27)
-project(Engine24)
+project(Engine24 LANGUAGES C CXX CUDA)
 
 set(CMAKE_CXX_STANDARD 20)
 

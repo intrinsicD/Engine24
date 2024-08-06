@@ -2,8 +2,8 @@
 // Created by alex on 01.08.24.
 //
 
-#ifndef ENGINE24_KDTREE_H
-#define ENGINE24_KDTREE_H
+#ifndef ENGINE24_KDTREECPU_H
+#define ENGINE24_KDTREECPU_H
 
 #include <vector>
 #include "MatVec.h"
@@ -15,7 +15,7 @@ namespace Bcg {
         std::vector<float> distances;
     };
 
-    class KDTree {
+    class KDTreeCpu {
         struct VectorAdapter {
             explicit VectorAdapter(const std::vector<Vector<float, 3>> &points) : points(points) {}
 
@@ -33,9 +33,9 @@ namespace Bcg {
                 nanoflann::L2_Simple_Adaptor<float, VectorAdapter>,
                 VectorAdapter, 3>;
     public:
-        KDTree();
+        KDTreeCpu();
 
-        ~KDTree();
+        ~KDTreeCpu();
 
         void build(const std::vector<Vector<float, 3>> &positions);
 
@@ -51,4 +51,4 @@ namespace Bcg {
     };
 }
 
-#endif //ENGINE24_KDTREE_H
+#endif //ENGINE24_KDTREECPU_H

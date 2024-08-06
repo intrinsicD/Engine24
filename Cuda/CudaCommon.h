@@ -45,8 +45,28 @@ namespace Bcg {
     inline double infinity<double>() noexcept { return std::numeric_limits<double>::infinity(); }
 
     template<typename T>
-    CUDA_HOST
-    struct CapturedBuffer{
+    struct vec3 {
+        T x, y, z;
+
+        CUDA_HOST_DEVICE
+        vec3() : x(0.0f), y(0.0f), z(0.0f) {}
+
+        CUDA_HOST_DEVICE
+        vec3(float x, float y, float z) : x(x), y(y), z(z) {}
+
+        CUDA_HOST_DEVICE
+        T &operator[](int i) {
+            return ((&x)[i]);
+        }
+
+        CUDA_HOST_DEVICE
+        const T &operator[](int i) const {
+            return ((&x)[i]);
+        }
+    };
+
+    template<typename T>
+    struct CapturedBuffer {
         T *data = nullptr;
         size_t bytes = 0;
 
@@ -54,13 +74,13 @@ namespace Bcg {
 
         CapturedBuffer() = default;
 
-        explicit CapturedBuffer(unsigned int opengl_buffer){
+        explicit CapturedBuffer(unsigned int opengl_buffer) {
             cudaGraphicsGLRegisterBuffer(&cuda_resource, opengl_buffer, cudaGraphicsMapFlagsNone);
             cudaGraphicsMapResources(1, &cuda_resource, nullptr);
-            cudaGraphicsResourceGetMappedPointer((void **)&data, &bytes, cuda_resource);
+            cudaGraphicsResourceGetMappedPointer((void **) &data, &bytes, cuda_resource);
         }
 
-        ~CapturedBuffer(){
+        ~CapturedBuffer() {
             cudaGraphicsUnmapResources(1, &cuda_resource, nullptr);
             cudaGraphicsUnregisterResource(cuda_resource);
             data = nullptr;
