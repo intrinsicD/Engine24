@@ -170,6 +170,9 @@ namespace Bcg::Commands::View {
                                 Buffer::STATIC_DRAW);
             view.min_color = Map(v_color.vector()).minCoeff();
             view.max_color = Map(v_color.vector()).maxCoeff();
+            if(view.min_color == view.max_color){
+                view.min_color = 0;
+            }
 
             view.color.set(nullptr);
             view.color.enable();

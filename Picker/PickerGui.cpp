@@ -4,16 +4,25 @@
 
 #include "PickerGui.h"
 #include "imgui.h"
+#include "GetPrimitives.h"
 
 namespace Bcg {
     namespace Gui {
-        void Show(const Picked &picked) {
+        void Show(Picked &picked) {
             if (ImGui::CollapsingHeader("Entity")) {
                 Show(picked.entity);
             }
         }
 
-        void Show(const Picked::Entity &entity) {
+        void Show(Picked::Entity &entity) {
+            if(ImGui::Checkbox("Show", &entity.show)){
+                auto *vertices = GetPrimitives(entity.id).vertices();
+                if(entity.show){
+
+                }else{
+
+                }
+            }
             ImGui::Text("entity id: %u", static_cast<entt::id_type>(entity.id));
             ImGui::Text("is_background: %s", entity.is_background ? "true" : "false");
             ImGui::Text("vertex_idx: %u", entity.vertex_idx);

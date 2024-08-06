@@ -9,9 +9,9 @@
 
 namespace Bcg {
     namespace Gui {
-        void Show(const Picked &picked);
+        void Show(Picked &picked);
 
-        void Show(const Picked::Entity &entity);
+        void Show(Picked::Entity &entity);
     };
 }
 

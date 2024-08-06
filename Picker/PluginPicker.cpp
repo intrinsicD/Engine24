@@ -11,9 +11,10 @@
 #include "imgui.h"
 #include "Intersections.h"
 #include "Transform.h"
-#include "KDtree.h"
+#include "KDTreeCuda.h"
 #include "PointCloud.h"
 #include "Mesh.h"
+#include "EventsPicker.h"
 
 namespace Bcg {
 
@@ -67,6 +68,10 @@ namespace Bcg {
             auto &kdtree = Engine::State().get<KDTree>(entity_id);
             auto result = kdtree.closest_query(picked.spaces.osp);
             picked.entity.vertex_idx = result.indices[0];
+            Engine::Dispatcher().trigger(Events::PickedEntity{entity_id});
+            Engine::Dispatcher().trigger(Events::PickedVertex{entity_id, picked.entity.vertex_idx});
+        } else {
+            Engine::Dispatcher().trigger<Events::PickedBackgound>();
         }
 
         return picked;
@@ -122,5 +127,7 @@ namespace Bcg {
         }
     }
 
-    void PluginPicker::render() {}
+    void PluginPicker::render() {
+
+    }
 }

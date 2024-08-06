@@ -21,11 +21,9 @@ namespace Bcg {
 
             const std::vector<Vector<float, 3>> &points;
 
-            inline size_t kdtree_get_point_count() const { return points.size(); }
+            [[nodiscard]] inline size_t kdtree_get_point_count() const { return points.size(); }
 
-            inline float kdtree_get_pt(const size_t idx, const size_t dim) const {
-                return points[idx][dim];
-            }
+            [[nodiscard]] inline float kdtree_get_pt(size_t idx, size_t dim) const;
 
             template<class BBOX>
             bool kdtree_get_bbox(BBOX & /*bb*/) const { return false; }
@@ -41,11 +39,11 @@ namespace Bcg {
 
         void build(const std::vector<Vector<float, 3>> &positions);
 
-        QueryResult knn_query(const Vector<float, 3> &query_point, unsigned int num_closest) const;
+        [[nodiscard]] QueryResult knn_query(const Vector<float, 3> &query_point, unsigned int num_closest) const;
 
-        QueryResult radius_query(const Vector<float, 3> &query_point, float radius) const;
+        [[nodiscard]] QueryResult radius_query(const Vector<float, 3> &query_point, float radius) const;
 
-        QueryResult closest_query(const Vector<float, 3> &query_point) const;
+        [[nodiscard]] QueryResult closest_query(const Vector<float, 3> &query_point) const;
 
     private:
         std::unique_ptr<VectorAdapter> dataset;

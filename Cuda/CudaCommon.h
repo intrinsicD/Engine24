@@ -43,6 +43,34 @@ namespace Bcg {
     template<>
     CUDA_HOST_DEVICE
     inline double infinity<double>() noexcept { return std::numeric_limits<double>::infinity(); }
+
+    template<typename T>
+    CUDA_HOST
+    struct CapturedBuffer{
+        T *data = nullptr;
+        size_t bytes = 0;
+
+        cudaGraphicsResource *cuda_resource = nullptr;
+
+        CapturedBuffer() = default;
+
+        explicit CapturedBuffer(unsigned int opengl_buffer){
+            cudaGraphicsGLRegisterBuffer(&cuda_resource, opengl_buffer, cudaGraphicsMapFlagsNone);
+            cudaGraphicsMapResources(1, &cuda_resource, nullptr);
+            cudaGraphicsResourceGetMappedPointer((void **)&data, &bytes, cuda_resource);
+        }
+
+        ~CapturedBuffer(){
+            cudaGraphicsUnmapResources(1, &cuda_resource, nullptr);
+            cudaGraphicsUnregisterResource(cuda_resource);
+            data = nullptr;
+            bytes = 0;
+        }
+
+        operator bool() const {
+            return data != nullptr && bytes != 0;
+        }
+    };
 }
 
 #endif //ENGINE24_CUDACOMMON_H

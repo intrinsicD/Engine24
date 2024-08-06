@@ -16,17 +16,9 @@
 #include "io/read_xyz.h"
 #include "io/read_pts.h"
 #include "io/read_csv.h"
-#include "Camera.h"
-#include "VertexArrayObject.h"
-#include "Views.h"
 #include "PointCloudCommands.h"
 #include "EntityCommands.h"
 #include "Picker.h"
-#include "Transform.h"
-#include "Keyboard.h"
-#include "Graphics.h"
-#include "SphereView.h"
-#include "glad/gl.h"
 
 namespace Bcg {
     namespace PluginPointCloudInternal {
@@ -140,26 +132,6 @@ namespace Bcg {
     }
 
     void PluginPointCloud::render() {
-        auto pc_view = Engine::State().view<PointCloudView>();
-        auto &camera = Engine::Context().get<Camera>();
-        auto vp = Graphics::get_viewport();
-        for (auto entity_id: pc_view) {
-            auto &pcw = Engine::State().get<PointCloudView>(entity_id);
 
-            pcw.vao.bind();
-            pcw.program.use();
-            pcw.program.set_uniform3fv("light_position", camera.v_params.eye.data());
-            pcw.program.set_uniform1ui("width", vp[2]);
-            pcw.program.set_uniform1ui("height", vp[3]);
-
-            if (Engine::has<Transform>(entity_id)) {
-                auto &transform = Engine::State().get<Transform>(entity_id);
-                pcw.program.set_uniform4fm("model", transform.data(), false);
-            } else {
-                pcw.program.set_uniform4fm("model", Transform().data(), false);
-            }
-
-            pcw.draw();
-        }
     }
 }

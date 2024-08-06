@@ -54,4 +54,8 @@ namespace Bcg {
     QueryResult KDTree::closest_query(const Vector<float, 3> &query_point) const {
         return knn_query(query_point, 1);
     }
+
+    float KDTree::VectorAdapter::kdtree_get_pt(const size_t idx, const size_t dim) const {
+        return points[idx][dim];
+    }
 }
