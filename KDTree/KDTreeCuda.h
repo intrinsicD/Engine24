@@ -15,11 +15,11 @@ namespace Bcg{
         std::vector<float> distances;
     };
 
-    class KDTree {
+    class KDTreeCuda {
     public:
-        KDTree();
+        KDTreeCuda();
 
-        ~KDTree();
+        ~KDTreeCuda();
 
         void build(const std::vector<Vector<float, 3>> &positions);
 
@@ -29,6 +29,7 @@ namespace Bcg{
 
         [[nodiscard]] QueryResult closest_query(const Vector<float, 3> &query_point) const;
     private:
+        float3 *d_positions;
         thrust::host_vector<float3> h_positions;
         KDNode *index;
     };

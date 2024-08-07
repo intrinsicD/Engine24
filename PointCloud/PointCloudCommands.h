@@ -17,5 +17,17 @@ namespace Bcg::Commands::Points {
 
         entt::entity entity_id;
     };
+
+    struct ComputePointCloudLocalPcasKnn : public AbstractCommand {
+        explicit ComputePointCloudLocalPcasKnn(entt::entity entity_id, int num_closest) : AbstractCommand(
+                "ComputePointCloudLocalPcasKnn"),
+                                                                                          entity_id(entity_id),
+                                                                                          num_closest(num_closest) {}
+
+        void execute() const override;
+
+        entt::entity entity_id;
+        int num_closest;
+    };
 }
 #endif //ENGINE24_POINTCLOUDCOMMANDS_H

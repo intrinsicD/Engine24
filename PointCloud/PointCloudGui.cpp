@@ -8,6 +8,8 @@
 #include "PluginPointCloud.h"
 #include "PropertiesGui.h"
 #include "Engine.h"
+#include "PointCloudCommands.h"
+#include "GetPrimitives.h"
 
 namespace Bcg::Gui {
     void ShowLoadPointCloud() {
@@ -25,9 +27,17 @@ namespace Bcg::Gui {
     }
 
     void ShowPointCloud(entt::entity entity_id) {
-        if (Engine::valid(entity_id) && Engine::has<PointCloud>(entity_id)) {
-            auto &pc = Engine::State().get<PointCloud>(entity_id);
-            Show(pc);
+        if (Engine::valid(entity_id)) {
+            auto *vertices = GetPrimitives(entity_id).vertices();
+            if(vertices){
+                Show("Vertices",*vertices);
+                ImGui::Separator();
+                static int num_closest = 12;
+                ImGui::InputInt("num_closest", &num_closest);
+                if (ImGui::Button("LocalPcaKnn")) {
+                    Commands::Points::ComputePointCloudLocalPcasKnn(entity_id, num_closest).execute();
+                }
+            }
         }
     }
 

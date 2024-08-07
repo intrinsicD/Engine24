@@ -6,7 +6,7 @@
 #include "Engine.h"
 #include "imgui.h"
 #include "Logger.h"
-#include "KDtreeCpu.h"
+#include "KDTreeCpu.h"
 #include "Picker.h"
 
 namespace Bcg {

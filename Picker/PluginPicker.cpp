@@ -11,7 +11,7 @@
 #include "imgui.h"
 #include "Intersections.h"
 #include "Transform.h"
-#include "KDTreeCuda.h"
+#include "KDTreeCpu.h"
 #include "PointCloud.h"
 #include "Mesh.h"
 #include "EventsPicker.h"
@@ -51,8 +51,8 @@ namespace Bcg {
                 auto &transform = Engine::State().get<Transform>(entity_id);
                 picked.spaces.osp = transform.world().inverse() * picked.spaces.wsp;
             }
-            if (!Engine::has<KDTree>(entity_id)) {
-                auto &kdtree = Engine::State().emplace<KDTree>(entity_id);
+            if (!Engine::has<KDTreeCpu>(entity_id)) {
+                auto &kdtree = Engine::State().emplace<KDTreeCpu>(entity_id);
                 if (Engine::has<SurfaceMesh>(entity_id)) {
                     auto &mesh = Engine::State().get<SurfaceMesh>(entity_id);
                     kdtree.build(mesh.positions());
@@ -65,7 +65,7 @@ namespace Bcg {
                 }
             }
 
-            auto &kdtree = Engine::State().get<KDTree>(entity_id);
+            auto &kdtree = Engine::State().get<KDTreeCpu>(entity_id);
             auto result = kdtree.closest_query(picked.spaces.osp);
             picked.entity.vertex_idx = result.indices[0];
             Engine::Dispatcher().trigger(Events::PickedEntity{entity_id});

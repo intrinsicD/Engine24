@@ -11,6 +11,9 @@
 #include "Camera.h"
 #include "CameraCommands.h"
 #include "SphereViewCommands.h"
+#include "KDTreeCpu.h"
+#include "GetPrimitives.h"
+#include "Eigen/Eigenvalues"
 
 namespace Bcg::Commands::Points {
     void SetupPointCloud::execute() const {
@@ -47,5 +50,53 @@ namespace Bcg::Commands::Points {
 
         Log::Info(message);
         CenterCameraAtDistance(aabb.center(), aabb.diagonal().maxCoeff()).execute();
+    }
+
+    void ComputePointCloudLocalPcasKnn::execute() const {
+        if (!Engine::valid(entity_id)) {
+            Log::Warn(name + " Entity is not valid. Abort Command!");
+            return;
+        }
+
+        auto *vertices = GetPrimitives(entity_id).vertices();
+        if (!vertices) {
+            Log::Warn(name + " Entity does not have vertices. Abort Command!");
+            return;
+        }
+
+        auto positions = vertices->get<Vector<float, 3>>("v:point");
+        if (!positions) {
+            Log::Warn(name + " Entity does not have positions property. Abort Command!");
+            return;
+        }
+
+        if (!Engine::has<KDTreeCpu>(entity_id)) {
+            auto &kdtree = Engine::require<KDTreeCpu>(entity_id);
+            kdtree.build(positions.vector());
+            return;
+        }
+        auto &kdtree = Engine::require<KDTreeCpu>(entity_id);
+
+        auto evecs0 = vertices->get_or_add<Vector<float, 3>>("v:pca_evecs0", Vector<float, 3>::Unit(0));
+        auto evecs1 = vertices->get_or_add<Vector<float, 3>>("v:pca_evecs1", Vector<float, 3>::Unit(1));
+        auto evecs2 = vertices->get_or_add<Vector<float, 3>>("v:pca_evecs2", Vector<float, 3>::Unit(2));
+        auto evals = vertices->get_or_add<Vector<float, 3>>("v:pca_evals", Vector<float, 3>::Ones());
+        for (size_t i = 0; i < vertices->size(); ++i) {
+            auto query_point = positions[i];
+            auto result = kdtree.knn_query(query_point, num_closest);
+            Matrix<float, 3, 3> cov = Matrix<float, 3, 3>::Zero();
+            for (auto &knn_idx: result.indices) {
+                Vector<float, 3> diff = positions[knn_idx] - query_point;
+                cov += diff * diff.transpose();
+            }
+
+            cov /= (num_closest - 1);
+
+            Eigen::SelfAdjointEigenSolver<Eigen::Matrix<float, 3, 3>> eigensolver(cov);
+            evecs0[i] = eigensolver.eigenvectors().col(0);
+            evecs1[i] = eigensolver.eigenvectors().col(1);
+            evecs2[i] = eigensolver.eigenvectors().col(2);
+            evals[i] = eigensolver.eigenvalues();
+        }
     }
 }

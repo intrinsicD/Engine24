@@ -3,7 +3,7 @@
 //
 
 #include "Types.h"
-#include "KDtreeCpu.h"
+#include "KDTreeCpu.h"
 
 namespace Bcg {
     KDTreeCpu::KDTreeCpu() : index(nullptr) {

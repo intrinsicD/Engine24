@@ -5,7 +5,6 @@
 #include <thrust/sort.h>
 #include "KDTreeCuda.cuh"
 #include "CudaCommon.h"
-#include "thrust/device_ptr.h"
 
 namespace Bcg::Cuda {
 
@@ -22,13 +21,35 @@ namespace Bcg::Cuda {
         }
     };
 
-    __device__ float euclidean_distance(const float3 &a, const float3 &b) {
+    CUDA_DEVICE
+    float3 &GetPoint(float3 *points, size_t idx){
+        return points[idx];
+    }
+
+    CUDA_DEVICE
+    const float3 &GetPoint(const float3 *points, size_t idx){
+        return points[idx];
+    }
+
+    CUDA_DEVICE
+    float &GetAxis(float3 &point, int axis){
+        return (&(point.x))[axis];
+    }
+
+    CUDA_DEVICE
+    const float &GetAxis(const float3 &point, int axis){
+        return (&(point.x))[axis];
+    }
+
+    CUDA_DEVICE
+    float euclidean_distance(const float3 &a, const float3 &b) {
         float3 diff = {a.x - b.x, a.y + b.y, a.z - b.z};
         float dist = diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
         return sqrt(dist);
     }
 
-    __global__ void build_kdtree_device(KDNode *nodes, float3 *points, int depth, int start, int end) {
+    CUDA_KERNEL
+    void build_kdtree_device(KDNode *nodes, float3 *points, int depth, int start, int end) {
         if (start >= end) return;
 
         int axis = depth % 3;
@@ -37,13 +58,13 @@ namespace Bcg::Cuda {
         thrust::sort(thrust::device, points + start, points + end, ComparePoints(axis));
 
         // Set node values
-        nodes[mid].split_value = (&(points[mid].x))[axis];
+        nodes[mid].split_value = GetAxis(GetPoint(points, mid), axis);
         nodes[mid].index = mid;
         nodes[mid].left = (start < mid) ? mid - 1 : -1;
         nodes[mid].right = (mid < end - 1) ? mid + 1 : -1;
     }
 
-    void build_kdtree(KDNode* nodes, float3 *points, int depth, int start, int end) {
+    void build_kdtree(KDNode *nodes, float3 *points, int depth, int start, int end) {
         if (start >= end) return;
 
         build_kdtree_device<<<1, 1>>>(nodes, points, depth, start, end);
@@ -63,9 +84,9 @@ namespace Bcg::Cuda {
         }
     };
 
-    __device__ void
-    knn_search(const KDNode *nodes, const float3 *points, const float3 &query, int node_idx, int depth, int k,
-               Neighbor *best_neighbors, int &best_count) {
+    CUDA_DEVICE
+    void knn_search(const KDNode *nodes, const float3 *points, const float3 &query, int node_idx, int depth, int k,
+                    Neighbor *best_neighbors, int &best_count) {
         if (node_idx == -1) return;
 
         const KDNode &node = nodes[node_idx];
@@ -90,7 +111,7 @@ namespace Bcg::Cuda {
         }
 
         // Determine which side of the split plane to search
-        float diff = (&(query.x))[axis] - (&(points[node.index].x))[axis];
+        float diff = GetAxis(query, axis) - GetAxis(GetPoint(points, node.index), axis);
         int near_idx = diff < 0 ? node.left : node.right;
         int far_idx = diff < 0 ? node.right : node.left;
 
@@ -104,9 +125,9 @@ namespace Bcg::Cuda {
     }
 
 
-    __global__ void
-    knn_query_device(KDNode *nodes, const float3 *points, const float3 &query, int k, int *neighbors,
-                     float *distances) {
+    CUDA_KERNEL
+    void knn_query_device(KDNode *nodes, const float3 *points, const float3 &query, int k, int *neighbors,
+                          float *distances) {
         Neighbor best_neighbors[32]; // Adjust size based on max threads per block
 
         int best_count = 0;
@@ -123,10 +144,9 @@ namespace Bcg::Cuda {
         cudaDeviceSynchronize();
     }
 
-    CUDA_DEVICE void
-    radius_search_device(const KDNode *nodes, const float3 *points, const float3 &query, int node_idx, int depth,
-                         float radius,
-                         int *neighbors, float *distances, int &count) {
+    CUDA_DEVICE
+    void radius_search_device(const KDNode *nodes, const float3 *points, const float3 &query, int node_idx, int depth,
+                              float radius, int *neighbors, float *distances, int &count) {
         if (node_idx == -1) return;
 
         const KDNode &node = nodes[node_idx];
@@ -141,7 +161,7 @@ namespace Bcg::Cuda {
         }
 
         // Determine which side of the split plane to search
-        float diff = (&(query.x))[axis] - (&(points[node.index].x))[axis];
+        float diff = GetAxis(query, axis) - GetAxis(GetPoint(points, node.index), axis);
         int near_idx = diff < 0 ? node.left : node.right;
         int far_idx = diff < 0 ? node.right : node.left;
 
@@ -154,9 +174,9 @@ namespace Bcg::Cuda {
         }
     }
 
-    __global__ void
-    radius_query_device(KDNode *nodes, const float3 *points, const float3 &query, float radius, int *neighbors,
-                        float *distances) {
+    CUDA_KERNEL
+    void radius_query_device(KDNode *nodes, const float3 *points, const float3 &query, float radius, int *neighbors,
+                             float *distances) {
         int count = 0;
         radius_search_device(nodes, points, query, 0, 0, radius, neighbors, distances, count);
     }

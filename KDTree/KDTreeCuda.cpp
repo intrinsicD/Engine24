@@ -7,18 +7,18 @@
 #include "CudaCommon.h"
 
 namespace Bcg { 
-    KDTree::KDTree() : index(nullptr){}
+    KDTreeCuda::KDTreeCuda() : index(nullptr){}
 
-    KDTree::~KDTree() {
+    KDTreeCuda::~KDTreeCuda() {
         if (index) {
             cudaFree(index);
         }
     }
 
-    void KDTree::build(const std::vector<Vector<float, 3>> &positions) {
+    void KDTreeCuda::build(const std::vector<Vector<float, 3>> &positions) {
         size_t num_points = positions.size();
 
-        // Allocate memory for KDTree nodes
+        // Allocate memory for KDTreeCuda nodes
         cudaMalloc(&index, num_points * sizeof(KDNode));
 
         // Allocate memory for positions on device
@@ -37,7 +37,7 @@ namespace Bcg {
         cudaFree(d_positions);
     }
 
-    QueryResult KDTree::knn_query(const Vector<float, 3> &query_point, unsigned int num_closest) const {
+    QueryResult KDTreeCuda::knn_query(const Vector<float, 3> &query_point, unsigned int num_closest) const {
         QueryResult result;
 
         // Allocate device memory for query results
@@ -76,7 +76,7 @@ namespace Bcg {
         return result;
     }
 
-    QueryResult KDTree::radius_query(const Vector<float, 3> &query_point, float radius) const {
+    QueryResult KDTreeCuda::radius_query(const Vector<float, 3> &query_point, float radius) const {
         QueryResult result;
 
         // Allocate device memory for query
@@ -120,7 +120,7 @@ namespace Bcg {
         return result;
     }
 
-    QueryResult KDTree::closest_query(const Vector<float, 3> &query_point) const {
+    QueryResult KDTreeCuda::closest_query(const Vector<float, 3> &query_point) const {
         return knn_query(query_point, 1);
     }
 }

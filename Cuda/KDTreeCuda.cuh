@@ -20,7 +20,6 @@ namespace Bcg::Cuda {
 
     void radius_query(KDNode *nodes, const float3 *points, const float3 &query, float radius, int *neighbors,
                       float *distances);
-
 }
 
 #endif //ENGINE24_KDTREECUDA_CUH
