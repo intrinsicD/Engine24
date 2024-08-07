@@ -14,8 +14,36 @@
 #include "KDTreeCpu.h"
 #include "GetPrimitives.h"
 #include "Eigen/Eigenvalues"
+#include "io/io.h"
+#include "io/read_xyz.h"
+#include "io/read_pts.h"
+#include "io/read_csv.h"
 
 namespace Bcg::Commands::Points {
+    void LoadPointCloud::execute() const {
+        std::string ext = filepath;
+        ext = ext.substr(ext.find_last_of('.') + 1);
+
+        PointCloud pc;
+        if (ext == "xyz") {
+            read_xyz(pc, filepath);
+        } else if (ext == "pts") {
+            read_pts(pc, filepath);
+        } else if (ext == "csv") {
+            read_csv(pc, filepath);
+        } else {
+            Log::Error("Unsupported file format: " + ext);
+            return;
+        }
+
+        auto entity = entity_id;
+        if (!Engine::valid(entity_id)) {
+            entity = Engine::State().create();
+        }
+
+        Engine::State().emplace_or_replace<PointCloud>(entity, pc);
+    }
+
     void SetupPointCloud::execute() const {
         if (!Engine::valid(entity_id)) {
             Log::Warn(name + "Entity is not valid. Abort Command");

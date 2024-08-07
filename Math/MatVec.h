@@ -298,6 +298,27 @@ namespace Bcg {
                                        const Vector<Scalar, 3> &v) {
         return m.block(0, 0, 3, 3) * v;
     }
+
+    template<typename Derived>
+    Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
+    random_like(const Eigen::MatrixBase<Derived> &matrix) {
+        return Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>::Random(
+                matrix.derived().rows(), matrix.derived().cols());
+    }
+
+    template<typename Derived>
+    Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
+    zeros_like(const Eigen::MatrixBase<Derived> &matrix) {
+        return Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>::Zero(
+                matrix.derived().rows(), matrix.derived().cols());
+    }
+
+    template<typename Derived>
+    Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
+    ones_like(const Eigen::MatrixBase<Derived> &matrix) {
+        return Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>::Ones(
+                matrix.derived().rows(), matrix.derived().cols());
+    }
 }
 
 #endif //ENGINE24_MATVEC_H

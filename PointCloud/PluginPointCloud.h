@@ -19,12 +19,6 @@ namespace Bcg {
 
         static PointCloud load(const std::string &path);
 
-        static PointCloud load_xyz(const std::string &path);
-
-        static PointCloud load_pts(const std::string &path);
-
-        static PointCloud load_csv(const std::string &path);
-
         void activate() override;
 
         void begin_frame() override;
