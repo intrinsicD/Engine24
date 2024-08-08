@@ -10,25 +10,9 @@
 #include <vector>
 
 namespace Bcg {
-    struct aabb_getter {
-        __device__
-        lbvh::aabb<float> operator()(const float4 f) const noexcept {
-            lbvh::aabb<float> retval;
-            retval.upper = f;
-            retval.lower = f;
-            return retval;
-        }
-    };
 
-    struct sphere_getter {
-        __device__ __host__
-        lbvh::sphere<float> operator()(const float4 center, float radius) const noexcept {
-            lbvh::sphere<float> retval;
-            retval.center = center;
-            retval.radius = radius;
-            return retval;
-        }
-    };
+
+    using aabb_getter = lbvh::aabb_getter;
 
     KDTreeCuda::KDTreeCuda(entt::entity entity_id) : entity_id(entity_id) {
 

@@ -67,6 +67,16 @@ namespace lbvh {
     inline double minmaxdist(const sphere<double> &sphere, const double4 &point) noexcept {
         return mindist(sphere, point) + sphere.radius;
     }
+
+    struct sphere_getter {
+        __device__ __host__
+        lbvh::sphere<float> operator()(const float4 center, float radius) const noexcept {
+            lbvh::sphere<float> retval;
+            retval.center = center;
+            retval.radius = radius;
+            return retval;
+        }
+    };
 }
 
 #endif //ENGINE24_SPHERE_CUH
