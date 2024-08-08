@@ -15,8 +15,6 @@ namespace Bcg {
 
         ~PluginCuda() override = default;
 
-        static void init();
-
         void activate() override;
 
         void begin_frame() override;

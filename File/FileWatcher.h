@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <functional>
 #include <chrono>
+#include <string>
 
 namespace Bcg {
     struct File {

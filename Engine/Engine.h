@@ -5,7 +5,8 @@
 #ifndef ENGINE24_ENGINE_H
 #define ENGINE24_ENGINE_H
 
-#include "entt/entt.hpp"
+#include "entt/entity/registry.hpp"
+#include "entt/signal/dispatcher.hpp"
 
 namespace Bcg {
     struct Engine {

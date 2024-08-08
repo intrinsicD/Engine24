@@ -11,7 +11,8 @@
 #include "imgui.h"
 #include "Intersections.h"
 #include "Transform.h"
-#include "KDTreeCpu.h"
+//#include "KDTreeCpu.h"
+#include "KDTreeCuda.h"
 #include "PointCloud.h"
 #include "Mesh.h"
 #include "EventsPicker.h"
@@ -51,22 +52,38 @@ namespace Bcg {
                 auto &transform = Engine::State().get<Transform>(entity_id);
                 picked.spaces.osp = transform.world().inverse() * picked.spaces.wsp;
             }
-            if (!Engine::has<KDTreeCpu>(entity_id)) {
+/*            if (!Engine::has<KDTreeCpu>(entity_id)) {
                 auto &kdtree = Engine::State().emplace<KDTreeCpu>(entity_id);
                 if (Engine::has<SurfaceMesh>(entity_id)) {
                     auto &mesh = Engine::State().get<SurfaceMesh>(entity_id);
                     kdtree.build(mesh.positions());
-                }/*else if(Engine::has<Graph>(entity_id)){
+                }else *//*if(Engine::has<Graph>(entity_id)){
                     auto &graph = Engine::State().get<Graph>(entity_id);
                     kdtree.build(graph.positions());
-                }*/else if (Engine::has<PointCloud>(entity_id)) {
+                }else *//*if (Engine::has<PointCloud>(entity_id)) {
                     auto &pc = Engine::State().get<PointCloud>(entity_id);
                     kdtree.build(pc.positions());
                 }
             }
 
-            auto &kdtree = Engine::State().get<KDTreeCpu>(entity_id);
+            auto &kdtree = Engine::State().get<KDTreeCpu>(entity_id);*/
+
+            auto kdtree = KDTreeCuda(entity_id);
+            if(!kdtree){
+                if (Engine::has<SurfaceMesh>(entity_id)) {
+                    auto &mesh = Engine::State().get<SurfaceMesh>(entity_id);
+                    kdtree.build(mesh.positions());
+                }else /*if(Engine::has<Graph>(entity_id)){
+                    auto &graph = Engine::State().get<Graph>(entity_id);
+                    kdtree.build(graph.positions());
+                }else */if (Engine::has<PointCloud>(entity_id)) {
+                    auto &pc = Engine::State().get<PointCloud>(entity_id);
+                    kdtree.build(pc.positions());
+                }
+            }
+
             auto result = kdtree.closest_query(picked.spaces.osp);
+
             picked.entity.vertex_idx = result.indices[0];
             Engine::Dispatcher().trigger(Events::PickedEntity{entity_id});
             Engine::Dispatcher().trigger(Events::PickedVertex{entity_id, picked.entity.vertex_idx});

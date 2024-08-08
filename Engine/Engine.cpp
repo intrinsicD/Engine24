@@ -3,6 +3,7 @@
 //
 
 #include "Engine.h"
+#include "entt/entt.hpp"
 #include "CommandBuffer.h"
 
 namespace Bcg {

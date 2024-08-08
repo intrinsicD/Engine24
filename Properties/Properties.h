@@ -53,6 +53,25 @@ namespace Bcg {
         return os;
     }
 
+    template<typename S>
+    inline size_t GetDims(S &) {
+        return 1;
+    }
+
+    inline size_t GetDims(Vector<float, 2> &) {
+        return 2;
+    }
+
+    template<>
+    inline size_t GetDims(Vector<float, 3> &) {
+        return 3;
+    }
+
+    template<>
+    inline size_t GetDims(Vector<float, 4> &) {
+        return 4;
+    }
+
     template<class T>
     class PropertyArray : public BasePropertyArray {
     public:
@@ -121,26 +140,6 @@ namespace Bcg {
         }
 
     private:
-        template<typename S>
-        size_t GetDims(S) const {
-            return 1;
-        }
-
-        template<>
-        size_t GetDims(Vector<float, 2>) const {
-            return 2;
-        }
-
-        template<>
-        size_t GetDims(Vector<float, 3>) const {
-            return 3;
-        }
-
-        template<>
-        size_t GetDims(Vector<float, 4>) const {
-            return 4;
-        }
-
         std::string name_;
         VectorType data_;
         ValueType value_;

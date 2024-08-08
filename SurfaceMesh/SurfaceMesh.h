@@ -54,12 +54,12 @@ namespace Bcg {
         //! this class circulates through all one-ring neighbors of a vertex.
         //! it also acts as a container-concept for C++11 range-based for loops.
         //! \sa HalfedgeAroundVertexCirculator, vertices(Vertex)
-        using VertexAroundVertexCirculator = VertexAroundVertexCirculator<class SurfaceMesh>;
-        using HalfedgeAroundVertexCirculator = HalfedgeAroundVertexCirculator<class SurfaceMesh>;
-        using EdgeAroundVertexCirculator = EdgeAroundVertexCirculator<class SurfaceMesh>;
-        using FaceAroundVertexCirculator = FaceAroundVertexCirculator<class SurfaceMesh>;
-        using VertexAroundFaceCirculator = VertexAroundFaceCirculator<class SurfaceMesh>;
-        using HalfedgeAroundFaceCirculator = HalfedgeAroundFaceCirculator<class SurfaceMesh>;
+        using VertexAroundVertexCirculator = VertexAroundVertexCirculatorBase<class SurfaceMesh>;
+        using HalfedgeAroundVertexCirculator = HalfedgeAroundVertexCirculatorBase<class SurfaceMesh>;
+        using EdgeAroundVertexCirculator = EdgeAroundVertexCirculatorBase<class SurfaceMesh>;
+        using FaceAroundVertexCirculator = FaceAroundVertexCirculatorBase<class SurfaceMesh>;
+        using VertexAroundFaceCirculator = VertexAroundFaceCirculatorBase<class SurfaceMesh>;
+        using HalfedgeAroundFaceCirculator = HalfedgeAroundFaceCirculatorBase<class SurfaceMesh>;
 
         //!@}
         //! \name Construction, destruction, assignment

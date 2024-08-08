@@ -195,7 +195,7 @@ namespace Bcg {
     };
 
     template<class DataContainer>
-    class VertexAroundVertexCirculator {
+    class VertexAroundVertexCirculatorBase {
     public:
         using difference_type = std::ptrdiff_t;
         using value_type = Vertex;
@@ -204,7 +204,7 @@ namespace Bcg {
         using iterator_category = std::bidirectional_iterator_tag;
 
         //! default constructor
-        VertexAroundVertexCirculator(const DataContainer *data_ = nullptr,
+        VertexAroundVertexCirculatorBase(const DataContainer *data_ = nullptr,
                                      Vertex v = Vertex())
                 : data__(data_) {
             if (data__)
@@ -212,19 +212,19 @@ namespace Bcg {
         }
 
         //! are two circulators equal?
-        bool operator==(const VertexAroundVertexCirculator &rhs) const {
+        bool operator==(const VertexAroundVertexCirculatorBase &rhs) const {
             assert(data__);
             assert(data__ == rhs.data__);
             return (is_active_ && (halfedge_ == rhs.halfedge_));
         }
 
         //! are two circulators different?
-        bool operator!=(const VertexAroundVertexCirculator &rhs) const {
+        bool operator!=(const VertexAroundVertexCirculatorBase &rhs) const {
             return !operator==(rhs);
         }
 
         //! pre-increment (rotate counter-clockwise)
-        VertexAroundVertexCirculator &operator++() {
+        VertexAroundVertexCirculatorBase &operator++() {
             assert(data__);
             halfedge_ = data__->ccw_rotated_halfedge(halfedge_);
             is_active_ = true;
@@ -232,21 +232,21 @@ namespace Bcg {
         }
 
         //! post-increment (rotate counter-clockwise)
-        VertexAroundVertexCirculator operator++(int) {
+        VertexAroundVertexCirculatorBase operator++(int) {
             auto tmp = *this;
             ++(*this);
             return tmp;
         }
 
         //! pre-decrement (rotate clockwise)
-        VertexAroundVertexCirculator &operator--() {
+        VertexAroundVertexCirculatorBase &operator--() {
             assert(data__);
             halfedge_ = data__->cw_rotated_halfedge(halfedge_);
             return *this;
         }
 
         //! post-decrement (rotate clockwise)
-        VertexAroundVertexCirculator operator--(int) {
+        VertexAroundVertexCirculatorBase operator--(int) {
             auto tmp = *this;
             --(*this);
             return tmp;
@@ -265,13 +265,13 @@ namespace Bcg {
         Halfedge halfedge() const { return halfedge_; }
 
         // helper for C++11 range-based for-loops
-        VertexAroundVertexCirculator &begin() {
+        VertexAroundVertexCirculatorBase &begin() {
             is_active_ = !halfedge_.is_valid();
             return *this;
         }
 
         // helper for C++11 range-based for-loops
-        VertexAroundVertexCirculator &end() {
+        VertexAroundVertexCirculatorBase &end() {
             is_active_ = true;
             return *this;
         }
@@ -286,7 +286,7 @@ namespace Bcg {
     //! it also acts as a container-concept for C++11 range-based for loops.
     //! \sa VertexAroundVertexCirculator, halfedges(Vertex)
     template<class DataContainer>
-    class HalfedgeAroundVertexCirculator {
+    class HalfedgeAroundVertexCirculatorBase {
     public:
         using difference_type = std::ptrdiff_t;
         using value_type = Halfedge;
@@ -295,7 +295,7 @@ namespace Bcg {
         using iterator_category = std::bidirectional_iterator_tag;
 
         //! default constructor
-        HalfedgeAroundVertexCirculator(const DataContainer *data_ = nullptr,
+        HalfedgeAroundVertexCirculatorBase(const DataContainer *data_ = nullptr,
                                        Vertex v = Vertex())
                 : data__(data_) {
             if (data__)
@@ -303,19 +303,19 @@ namespace Bcg {
         }
 
         //! are two circulators equal?
-        bool operator==(const HalfedgeAroundVertexCirculator &rhs) const {
+        bool operator==(const HalfedgeAroundVertexCirculatorBase &rhs) const {
             assert(data__);
             assert(data__ == rhs.data__);
             return (is_active_ && (halfedge_ == rhs.halfedge_));
         }
 
         //! are two circulators different?
-        bool operator!=(const HalfedgeAroundVertexCirculator &rhs) const {
+        bool operator!=(const HalfedgeAroundVertexCirculatorBase &rhs) const {
             return !operator==(rhs);
         }
 
         //! pre-increment (rotate counter-clockwise)
-        HalfedgeAroundVertexCirculator &operator++() {
+        HalfedgeAroundVertexCirculatorBase &operator++() {
             assert(data__);
             halfedge_ = data__->ccw_rotated_halfedge(halfedge_);
             is_active_ = true;
@@ -323,21 +323,21 @@ namespace Bcg {
         }
 
         //! post-increment (rotate counter-clockwise)
-        HalfedgeAroundVertexCirculator operator++(int) {
+        HalfedgeAroundVertexCirculatorBase operator++(int) {
             auto tmp = *this;
             ++(*this);
             return tmp;
         }
 
         //! pre-decrement (rotate clockwise)
-        HalfedgeAroundVertexCirculator &operator--() {
+        HalfedgeAroundVertexCirculatorBase &operator--() {
             assert(data__);
             halfedge_ = data__->cw_rotated_halfedge(halfedge_);
             return *this;
         }
 
         //! post-decrement (rotate clockwise)
-        HalfedgeAroundVertexCirculator operator--(int) {
+        HalfedgeAroundVertexCirculatorBase operator--(int) {
             auto tmp = *this;
             --(*this);
             return tmp;
@@ -350,13 +350,13 @@ namespace Bcg {
         operator bool() const { return halfedge_.is_valid(); }
 
         // helper for C++11 range-based for-loops
-        HalfedgeAroundVertexCirculator &begin() {
+        HalfedgeAroundVertexCirculatorBase &begin() {
             is_active_ = !halfedge_.is_valid();
             return *this;
         }
 
         // helper for C++11 range-based for-loops
-        HalfedgeAroundVertexCirculator &end() {
+        HalfedgeAroundVertexCirculatorBase &end() {
             is_active_ = true;
             return *this;
         }
@@ -371,7 +371,7 @@ namespace Bcg {
     //! it also acts as a container-concept for C++11 range-based for loops.
     //! \sa VertexAroundVertexCirculator, edges(Vertex)
     template<class DataContainer>
-    class EdgeAroundVertexCirculator {
+    class EdgeAroundVertexCirculatorBase {
     public:
         using difference_type = std::ptrdiff_t;
         using value_type = Edge;
@@ -380,7 +380,7 @@ namespace Bcg {
         using iterator_category = std::bidirectional_iterator_tag;
 
         //! default constructor
-        EdgeAroundVertexCirculator(const DataContainer *data_ = nullptr,
+        EdgeAroundVertexCirculatorBase(const DataContainer *data_ = nullptr,
                                    Vertex v = Vertex())
                 : data__(data_) {
             if (data__)
@@ -388,19 +388,19 @@ namespace Bcg {
         }
 
         //! are two circulators equal?
-        bool operator==(const EdgeAroundVertexCirculator &rhs) const {
+        bool operator==(const EdgeAroundVertexCirculatorBase &rhs) const {
             assert(data__);
             assert(data__ == rhs.data__);
             return (is_active_ && (halfedge_ == rhs.halfedge_));
         }
 
         //! are two circulators different?
-        bool operator!=(const EdgeAroundVertexCirculator &rhs) const {
+        bool operator!=(const EdgeAroundVertexCirculatorBase &rhs) const {
             return !operator==(rhs);
         }
 
         //! pre-increment (rotate counter-clockwise)
-        EdgeAroundVertexCirculator &operator++() {
+        EdgeAroundVertexCirculatorBase &operator++() {
             assert(data__);
             halfedge_ = data__->ccw_rotated_halfedge(halfedge_);
             is_active_ = true;
@@ -408,21 +408,21 @@ namespace Bcg {
         }
 
         //! post-increment (rotate counter-clockwise)
-        EdgeAroundVertexCirculator operator++(int) {
+        EdgeAroundVertexCirculatorBase operator++(int) {
             auto tmp = *this;
             ++(*this);
             return tmp;
         }
 
         //! pre-decrement (rotate clockwise)
-        EdgeAroundVertexCirculator &operator--() {
+        EdgeAroundVertexCirculatorBase &operator--() {
             assert(data__);
             halfedge_ = data__->cw_rotated_halfedge(halfedge_);
             return *this;
         }
 
         //! post-decrement (rotate clockwise)
-        EdgeAroundVertexCirculator operator--(int) {
+        EdgeAroundVertexCirculatorBase operator--(int) {
             auto tmp = *this;
             --(*this);
             return tmp;
@@ -435,13 +435,13 @@ namespace Bcg {
         operator bool() const { return halfedge_.is_valid(); }
 
         // helper for C++11 range-based for-loops
-        EdgeAroundVertexCirculator &begin() {
+        EdgeAroundVertexCirculatorBase &begin() {
             is_active_ = !halfedge_.is_valid();
             return *this;
         }
 
         // helper for C++11 range-based for-loops
-        EdgeAroundVertexCirculator &end() {
+        EdgeAroundVertexCirculatorBase &end() {
             is_active_ = true;
             return *this;
         }
@@ -456,7 +456,7 @@ namespace Bcg {
     //! it also acts as a container-concept for C++11 range-based for loops.
     //! \sa VertexAroundVertexCirculator, HalfedgeAroundVertexCirculator, faces(Vertex)
     template<class DataContainer>
-    class FaceAroundVertexCirculator {
+    class FaceAroundVertexCirculatorBase {
     public:
         using difference_type = std::ptrdiff_t;
         using value_type = Face;
@@ -465,7 +465,7 @@ namespace Bcg {
         using iterator_category = std::bidirectional_iterator_tag;
 
         //! construct with data_ and vertex (vertex should not be isolated!)
-        FaceAroundVertexCirculator(const DataContainer *m = nullptr,
+        FaceAroundVertexCirculatorBase(const DataContainer *m = nullptr,
                                    Vertex v = Vertex())
                 : data__(m) {
             if (data__) {
@@ -476,19 +476,19 @@ namespace Bcg {
         }
 
         //! are two circulators equal?
-        bool operator==(const FaceAroundVertexCirculator &rhs) const {
+        bool operator==(const FaceAroundVertexCirculatorBase &rhs) const {
             assert(data__);
             assert(data__ == rhs.data__);
             return (is_active_ && (halfedge_ == rhs.halfedge_));
         }
 
         //! are two circulators different?
-        bool operator!=(const FaceAroundVertexCirculator &rhs) const {
+        bool operator!=(const FaceAroundVertexCirculatorBase &rhs) const {
             return !operator==(rhs);
         }
 
         //! pre-increment (rotates counter-clockwise)
-        FaceAroundVertexCirculator &operator++() {
+        FaceAroundVertexCirculatorBase &operator++() {
             assert(data__ && halfedge_.is_valid());
             do {
                 halfedge_ = data__->ccw_rotated_halfedge(halfedge_);
@@ -498,14 +498,14 @@ namespace Bcg {
         }
 
         //! post-increment (rotate counter-clockwise)
-        FaceAroundVertexCirculator operator++(int) {
+        FaceAroundVertexCirculatorBase operator++(int) {
             auto tmp = *this;
             ++(*this);
             return tmp;
         }
 
         //! pre-decrement (rotate clockwise)
-        FaceAroundVertexCirculator &operator--() {
+        FaceAroundVertexCirculatorBase &operator--() {
             assert(data__ && halfedge_.is_valid());
             do
                 halfedge_ = data__->cw_rotated_halfedge(halfedge_);
@@ -514,7 +514,7 @@ namespace Bcg {
         }
 
         //! post-decrement (rotate clockwise)
-        FaceAroundVertexCirculator operator--(int) {
+        FaceAroundVertexCirculatorBase operator--(int) {
             auto tmp = *this;
             --(*this);
             return tmp;
@@ -530,13 +530,13 @@ namespace Bcg {
         operator bool() const { return halfedge_.is_valid(); }
 
         // helper for C++11 range-based for-loops
-        FaceAroundVertexCirculator &begin() {
+        FaceAroundVertexCirculatorBase &begin() {
             is_active_ = !halfedge_.is_valid();
             return *this;
         }
 
         // helper for C++11 range-based for-loops
-        FaceAroundVertexCirculator &end() {
+        FaceAroundVertexCirculatorBase &end() {
             is_active_ = true;
             return *this;
         }
@@ -551,7 +551,7 @@ namespace Bcg {
     //! it also acts as a container-concept for C++11 range-based for loops.
     //! \sa HalfedgeAroundFaceCirculator, vertices(Face)
     template<class DataContainer>
-    class VertexAroundFaceCirculator {
+    class VertexAroundFaceCirculatorBase {
     public:
         using difference_type = std::ptrdiff_t;
         using value_type = Vertex;
@@ -560,7 +560,7 @@ namespace Bcg {
         using iterator_category = std::bidirectional_iterator_tag;
 
         //! default constructor
-        VertexAroundFaceCirculator(const DataContainer *m = nullptr,
+        VertexAroundFaceCirculatorBase(const DataContainer *m = nullptr,
                                    Face f = Face())
                 : data__(m) {
             if (data__)
@@ -568,19 +568,19 @@ namespace Bcg {
         }
 
         //! are two circulators equal?
-        bool operator==(const VertexAroundFaceCirculator &rhs) const {
+        bool operator==(const VertexAroundFaceCirculatorBase &rhs) const {
             assert(data__);
             assert(data__ == rhs.data__);
             return (is_active_ && (halfedge_ == rhs.halfedge_));
         }
 
         //! are two circulators different?
-        bool operator!=(const VertexAroundFaceCirculator &rhs) const {
+        bool operator!=(const VertexAroundFaceCirculatorBase &rhs) const {
             return !operator==(rhs);
         }
 
         //! pre-increment (rotates counter-clockwise)
-        VertexAroundFaceCirculator &operator++() {
+        VertexAroundFaceCirculatorBase &operator++() {
             assert(data__ && halfedge_.is_valid());
             halfedge_ = data__->next_halfedge(halfedge_);
             is_active_ = true;
@@ -588,21 +588,21 @@ namespace Bcg {
         }
 
         //! post-increment (rotate counter-clockwise)
-        VertexAroundFaceCirculator operator++(int) {
+        VertexAroundFaceCirculatorBase operator++(int) {
             auto tmp = *this;
             ++(*this);
             return tmp;
         }
 
         //! pre-decrement (rotates clockwise)
-        VertexAroundFaceCirculator &operator--() {
+        VertexAroundFaceCirculatorBase &operator--() {
             assert(data__ && halfedge_.is_valid());
             halfedge_ = data__->prev_halfedge(halfedge_);
             return *this;
         }
 
         //! post-decrement (rotate clockwise)
-        VertexAroundFaceCirculator operator--(int) {
+        VertexAroundFaceCirculatorBase operator--(int) {
             auto tmp = *this;
             --(*this);
             return tmp;
@@ -615,13 +615,13 @@ namespace Bcg {
         }
 
         // helper for C++11 range-based for-loops
-        VertexAroundFaceCirculator &begin() {
+        VertexAroundFaceCirculatorBase &begin() {
             is_active_ = false;
             return *this;
         }
 
         // helper for C++11 range-based for-loops
-        VertexAroundFaceCirculator &end() {
+        VertexAroundFaceCirculatorBase &end() {
             is_active_ = true;
             return *this;
         }
@@ -636,7 +636,7 @@ namespace Bcg {
     //! it also acts as a container-concept for C++11 range-based for loops.
     //! \sa VertexAroundFaceCirculator, halfedges(Face)
     template<class DataContainer>
-    class HalfedgeAroundFaceCirculator {
+    class HalfedgeAroundFaceCirculatorBase {
     public:
         using difference_type = std::ptrdiff_t;
         using value_type = Halfedge;
@@ -645,7 +645,7 @@ namespace Bcg {
         using iterator_category = std::bidirectional_iterator_tag;
 
         //! default constructor
-        HalfedgeAroundFaceCirculator(const DataContainer *m = nullptr,
+        HalfedgeAroundFaceCirculatorBase(const DataContainer *m = nullptr,
                                      Face f = Face())
                 : data__(m) {
             if (data__)
@@ -653,19 +653,19 @@ namespace Bcg {
         }
 
         //! are two circulators equal?
-        bool operator==(const HalfedgeAroundFaceCirculator &rhs) const {
+        bool operator==(const HalfedgeAroundFaceCirculatorBase &rhs) const {
             assert(data__);
             assert(data__ == rhs.data__);
             return (is_active_ && (halfedge_ == rhs.halfedge_));
         }
 
         //! are two circulators different?
-        bool operator!=(const HalfedgeAroundFaceCirculator &rhs) const {
+        bool operator!=(const HalfedgeAroundFaceCirculatorBase &rhs) const {
             return !operator==(rhs);
         }
 
         //! pre-increment (rotates counter-clockwise)
-        HalfedgeAroundFaceCirculator &operator++() {
+        HalfedgeAroundFaceCirculatorBase &operator++() {
             assert(data__ && halfedge_.is_valid());
             halfedge_ = data__->next_halfedge(halfedge_);
             is_active_ = true;
@@ -673,21 +673,21 @@ namespace Bcg {
         }
 
         //! post-increment (rotate counter-clockwise)
-        HalfedgeAroundFaceCirculator operator++(int) {
+        HalfedgeAroundFaceCirculatorBase operator++(int) {
             auto tmp = *this;
             ++(*this);
             return tmp;
         }
 
         //! pre-decrement (rotates clockwise)
-        HalfedgeAroundFaceCirculator &operator--() {
+        HalfedgeAroundFaceCirculatorBase &operator--() {
             assert(data__ && halfedge_.is_valid());
             halfedge_ = data__->prev_halfedge(halfedge_);
             return *this;
         }
 
         //! post-decrement (rotate clockwise)
-        HalfedgeAroundFaceCirculator operator--(int) {
+        HalfedgeAroundFaceCirculatorBase operator--(int) {
             auto tmp = *this;
             --(*this);
             return tmp;
@@ -697,13 +697,13 @@ namespace Bcg {
         Halfedge operator*() const { return halfedge_; }
 
         // helper for C++11 range-based for-loops
-        HalfedgeAroundFaceCirculator &begin() {
+        HalfedgeAroundFaceCirculatorBase &begin() {
             is_active_ = false;
             return *this;
         }
 
         // helper for C++11 range-based for-loops
-        HalfedgeAroundFaceCirculator &end() {
+        HalfedgeAroundFaceCirculatorBase &end() {
             is_active_ = true;
             return *this;
         }

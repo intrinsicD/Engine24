@@ -3,21 +3,14 @@
 //
 
 #include "PluginCuda.h"
-#include "Logger.h"
-#include "CudaCommon.h"
+#include "CudaTest.cuh"
+
 
 namespace Bcg {
-    void PluginCuda::init() {
-        int deviceCount = 0;
-        cudaGetDeviceCount(&deviceCount);
-        if (deviceCount == 0) {
-            Log::Error("No CUDA-capable devices found");
-        }
-        cudaSetDevice(0); // Choose the first device for simplicity
-    }
-
     void PluginCuda::activate() {
         Plugin::activate();
+
+        HelloFromCudaDevice();
     }
 
     void PluginCuda::begin_frame() {}
