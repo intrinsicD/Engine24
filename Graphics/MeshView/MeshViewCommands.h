@@ -57,6 +57,18 @@ namespace Bcg::Commands::View {
         std::string property_name;
     };
 
+    struct SetScalarfieldMeshView : public AbstractCommand {
+        explicit SetScalarfieldMeshView(entt::entity entity_id, const std::string &property_name) : AbstractCommand(
+                "SetScalarfieldMeshView"), entity_id(entity_id), property_name(property_name) {
+
+        }
+
+        void execute() const override;
+
+        entt::entity entity_id;
+        std::string property_name;
+    };
+
     struct SetTrianglesMeshView : public AbstractCommand {
         explicit SetTrianglesMeshView(entt::entity entity_id, std::vector<Vector<unsigned int, 3>> &tris)
                 : AbstractCommand(

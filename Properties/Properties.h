@@ -54,21 +54,22 @@ namespace Bcg {
     }
 
     template<typename S>
-    inline size_t GetDims(S &) {
+    inline size_t GetDims(const S &) {
         return 1;
     }
 
-    inline size_t GetDims(Vector<float, 2> &) {
+    template<>
+    inline size_t GetDims(const Vector<float, 2> &) {
         return 2;
     }
 
     template<>
-    inline size_t GetDims(Vector<float, 3> &) {
+    inline size_t GetDims(const Vector<float, 3> &) {
         return 3;
     }
 
     template<>
-    inline size_t GetDims(Vector<float, 4> &) {
+    inline size_t GetDims(const Vector<float, 4> &) {
         return 4;
     }
 
@@ -135,7 +136,7 @@ namespace Bcg {
             return data_.size();
         }
 
-        size_t dims() const override{
+        size_t dims() const override {
             return GetDims(value_);
         }
 
@@ -161,6 +162,7 @@ namespace Bcg {
         friend class PropertyContainer;
 
         friend class SurfaceMesh;
+
         friend class PointCloud;
 
         explicit Property(PropertyArray<T> *p = nullptr) : parray_(p) {}
@@ -239,16 +241,18 @@ namespace Bcg {
         size_t n_properties() const { return parrays_.size(); }
 
         // returns a vector of all property names
-        std::vector<std::string> properties(int filter_dims = 0) const {
+        std::vector<std::string> properties(std::initializer_list<int> filter_dims = {}) const {
             //TODO figure out filtering by type, float, int, other custom types ...
             std::vector<std::string> names;
             names.reserve(parrays_.size());
-            for (const auto *array: parrays_){
-                if(filter_dims > 0){
-                    if(array->dims() == filter_dims){
-                        names.emplace_back(array->name());
+            for (const auto *array: parrays_) {
+                if (filter_dims.size() > 0) {
+                    for (const auto &dim: filter_dims) {
+                        if (array->dims() == dim) {
+                            names.emplace_back(array->name());
+                        }
                     }
-                }else{
+                } else {
                     names.emplace_back(array->name());
                 }
             }
@@ -289,6 +293,13 @@ namespace Bcg {
                 if (parray->name() == name)
                     return Property<T>(dynamic_cast<PropertyArray<T> *>(parray));
             return Property<T>();
+        }
+
+        BasePropertyArray *get_base(const std::string &name) const {
+            for (auto parray: parrays_)
+                if (parray->name() == name)
+                    return parray;
+            return nullptr;
         }
 
         // returns a property if it exists, otherwise it creates it first.

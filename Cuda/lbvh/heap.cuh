@@ -18,7 +18,7 @@ namespace lbvh{
         }
     };
 
-    __device__ void push_heap(HeapElement* heap, int& heap_size, HeapElement elem, int k) {
+    inline __device__ void push_heap(HeapElement* heap, int& heap_size, HeapElement elem, int k) {
         if (heap_size < k) {
             heap[heap_size++] = elem;
             int i = heap_size - 1;

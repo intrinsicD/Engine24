@@ -29,13 +29,20 @@ namespace Bcg::Gui {
     void ShowPointCloud(entt::entity entity_id) {
         if (Engine::valid(entity_id)) {
             auto *vertices = GetPrimitives(entity_id).vertices();
-            if(vertices){
-                Show("Vertices",*vertices);
+            if (vertices) {
+                Show("Vertices", *vertices);
                 ImGui::Separator();
                 static int num_closest = 12;
                 ImGui::InputInt("num_closest", &num_closest);
                 if (ImGui::Button("LocalPcaKnn")) {
                     Commands::Points::ComputePointCloudLocalPcasKnn(entity_id, num_closest).execute();
+                }
+                static int k = 12;
+                static int iterations = 100;
+                ImGui::InputInt("k", &k);
+                ImGui::InputInt("iterations", &iterations);
+                if (ImGui::Button("Kmeans")) {
+                    Commands::Points::ComputeKMeans(entity_id, k, iterations).execute();
                 }
             }
         }

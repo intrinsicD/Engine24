@@ -178,6 +178,40 @@ namespace Bcg::Commands::View {
         }
     }
 
+    void SetScalarfieldMeshView::execute() const {
+        auto *vertices = GetPrimitives(entity_id).vertices();
+        if (!vertices) return;
+
+        if (!Engine::has<MeshView>(entity_id)) {
+            SetupMeshView(entity_id).execute();
+        }
+
+        auto v_colorf = vertices->get<float>(property_name);
+        Vector<float, -1> t(vertices->size());
+        if(v_colorf){
+            t = Map(v_colorf.vector());
+        }
+        auto v_colori = vertices->get<int>(property_name);
+        if(v_colori){
+            t = Map(v_colori.vector()).cast<float>();
+        }
+        auto v_colorui = vertices->get<unsigned int>(property_name);
+        if(v_colorui){
+            t = Map(v_colorui.vector()).cast<float>();
+        }
+        auto v_colorb = vertices->get<bool>(property_name);
+        if(v_colorb){
+            for(size_t i = 0; i < t.size(); ++i){
+                t[i] = v_colorb[i];
+            }
+        }
+
+        auto v_colorf3 = vertices->get_or_add<Vector<float, 3>>(property_name + "Color3d");
+        t = (t.array() - t.minCoeff()) / (t.maxCoeff() - t.minCoeff());
+        Map(v_colorf3.vector()).transpose() = t * Vector<float, 3>::Unit(0).transpose() + (1.0f - t.array()).matrix() * Vector<float, 3>::Unit(1).transpose();
+        SetColorMeshView(entity_id, property_name + "Color3d").execute();
+    }
+
     void SetTrianglesMeshView::execute() const {
         if (tris.empty()) {
             Log::Error(name + ": failed, tris vector is empty!");

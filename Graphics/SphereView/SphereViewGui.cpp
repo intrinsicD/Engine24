@@ -21,7 +21,7 @@ namespace Bcg::Gui {
             auto *vertices = GetPrimitives(entity_id).vertices();
             ImGui::Checkbox("hide", &view.hide);
             if (vertices) {
-                auto properties_3d = vertices->properties(3);
+                auto properties_3d = vertices->properties({3});
                 static std::pair<int, std::string> curr_pos = {-1, view.position.bound_buffer_name};
                 if(curr_pos.first == -1){
                     curr_pos.first = FindIndex(properties_3d, view.position.bound_buffer_name);
@@ -45,17 +45,23 @@ namespace Bcg::Gui {
                 }
 
                 {
-                    properties_3d.emplace_back("uniform_color");
+                    auto properties_colors = vertices->properties({1, 3});
+                    properties_colors.emplace_back("uniform_color");
                     static std::pair<int, std::string> curr_color = {-1, view.color.bound_buffer_name};
                     if(curr_color.first == -1){
-                        curr_color.first = FindIndex(properties_3d, view.color.bound_buffer_name);
+                        curr_color.first = FindIndex(properties_colors, view.color.bound_buffer_name);
                         if(curr_color.first == -1){
                             curr_color.first = 0;
                         }
                     }
 
-                    if (Combo(view.color.shader_name.c_str(), curr_color, properties_3d)) {
-                        Commands::View::SetColorSphereView(entity_id, properties_3d[curr_color.first]).execute();
+                    if (Combo(view.color.shader_name.c_str(), curr_color, properties_colors)) {
+                        auto *p_array = vertices->get_base(properties_colors[curr_color.first]);
+                        if(p_array && p_array->dims() == 1){
+                            Commands::View::SetScalarfieldSphereView(entity_id, properties_colors[curr_color.first]).execute();
+                        }else{
+                            Commands::View::SetColorSphereView(entity_id, properties_colors[curr_color.first]).execute();
+                        }
                     }
 
                     if (view.use_uniform_color) {
@@ -67,7 +73,7 @@ namespace Bcg::Gui {
                 }
 
                 {
-                    auto properties_1d = vertices->properties(1);
+                    auto properties_1d = vertices->properties({1});
                     properties_1d.emplace_back("uniform_radius");
                     static std::pair<int, std::string> curr_radius = {-1, view.radius.bound_buffer_name};
                     if(curr_radius.first == -1){

@@ -18,6 +18,7 @@
 #include "io/read_xyz.h"
 #include "io/read_pts.h"
 #include "io/read_csv.h"
+#include "Kmeans.h"
 
 namespace Bcg::Commands::Points {
     void LoadPointCloud::execute() const {
@@ -126,5 +127,31 @@ namespace Bcg::Commands::Points {
             evecs2[i] = eigensolver.eigenvectors().col(2);
             evals[i] = eigensolver.eigenvalues();
         }
+    }
+
+    void ComputeKMeans::execute() const {
+        if (!Engine::valid(entity_id)) {
+            Log::Warn(name + " Entity is not valid. Abort Command!");
+            return;
+        }
+
+        auto *vertices = GetPrimitives(entity_id).vertices();
+        if (!vertices) {
+            Log::Warn(name + " Entity does not have vertices. Abort Command!");
+            return;
+        }
+
+        auto positions = vertices->get<Vector<float, 3>>("v:point");
+        if (!positions) {
+            Log::Warn(name + " Entity does not have positions property. Abort Command!");
+            return;
+        }
+
+        auto result = KMeans(positions.vector(), k);
+        auto labels = vertices->get_or_add<unsigned int>("v:kmeans:labels");
+        auto distances = vertices->get_or_add<float>("v:kmeans:distances");
+        labels.vector() = result.labels;
+        distances.vector() = result.distances;
+        Engine::State().emplace_or_replace<KMeansResult>(entity_id);
     }
 }

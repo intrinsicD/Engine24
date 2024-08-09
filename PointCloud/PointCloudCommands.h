@@ -41,5 +41,19 @@ namespace Bcg::Commands::Points {
         entt::entity entity_id;
         int num_closest;
     };
+
+    struct ComputeKMeans : public AbstractCommand {
+        explicit ComputeKMeans(entt::entity entity_id, int k, unsigned int iterations = 100) : AbstractCommand(
+                "ComputeKMeans"),
+                                                                                               entity_id(entity_id),
+                                                                                               k(k),
+                                                                                               iterations(iterations) {}
+
+        void execute() const override;
+
+        entt::entity entity_id;
+        int k;
+        unsigned int iterations;
+    };
 }
 #endif //ENGINE24_POINTCLOUDCOMMANDS_H

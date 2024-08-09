@@ -168,7 +168,6 @@ namespace lbvh {
                                  self.nodes[self.nodes[idx].right_idx].parent_idx = idx;
                                  return;
                              });
-            return;
         }
 
     } // detail
@@ -253,15 +252,19 @@ namespace lbvh {
             this->aabbs_.clear();
             this->nodes_h_.clear();
             this->nodes_.clear();
-            return;
         }
 
         template<typename InputIterator>
-        void assign(InputIterator first, InputIterator last) {
+        void assign_host(InputIterator first, InputIterator last) {
             this->objects_h_.assign(first, last);
             this->objects_d_ = this->objects_h_;
             this->construct();
-            return;
+        }
+
+        void assign_device(const thrust::device_vector<object_type> &d_objects) {
+            this->objects_d_ = d_objects;
+            this->objects_h_ = this->objects_d_;
+            this->construct();
         }
 
         bvh_device<real_type, object_type> get_device_repr() noexcept {
@@ -421,7 +424,6 @@ namespace lbvh {
                 aabbs_h_ = aabbs_;
                 nodes_h_ = nodes_;
             }
-            return;
         }
 
         thrust::host_vector<object_type> const &objects_host() const noexcept { return objects_h_; }

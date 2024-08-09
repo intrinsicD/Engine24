@@ -10,7 +10,7 @@
 
 namespace Bcg {
     using hbvh = lbvh::bvh<float, float4, lbvh::aabb_getter>;
-    using dbvh = lbvh::cbvh_device<float, float4>;
+    using dbvh = lbvh::bvh_device<float, float4>;
 
     struct distance_calculator {
         __device__ __host__
@@ -21,71 +21,68 @@ namespace Bcg {
         }
     };
 
-    __global__ void assign_clusters(const dbvh &bvh, float3 *new_sums,
-                                    unsigned int *new_cluster_sizes,
-                                    unsigned int *new_labels,
-                                    float *new_distances) {
-        //determine idx of thread
-        const auto idx = threadIdx.x + blockIdx.x * blockDim.x;
+    void assign_clusters(dbvh &bvh,
+                         thrust::device_ptr<float4> d_positions,
+                         thrust::device_ptr<float4> d_new_sums,
+                         thrust::device_ptr<unsigned int> d_new_cluster_sizes,
+                         thrust::device_ptr<unsigned int> d_new_labels,
+                         thrust::device_ptr<float> d_new_distances,
+                         size_t num_objects) {
 
-        const auto d_query = bvh.objects[idx];
-        const auto best = lbvh::query_device(bvh, lbvh::nearest(d_query), distance_calculator());
+        thrust::for_each(thrust::device,
+                         thrust::make_counting_iterator<std::uint32_t>(0),
+                         thrust::make_counting_iterator<std::uint32_t>(num_objects),
+                         [bvh, d_positions, d_new_labels, d_new_distances, d_new_sums, d_new_cluster_sizes] __device__(
+                                 std::uint32_t idx) {
+                             const float4 &query = d_positions[idx];
+                             const auto best = lbvh::query_device(bvh, lbvh::nearest(query), distance_calculator());
 
-        const auto best_cluster = best.first;
-        const auto best_distance = best.second;
+                             const auto best_cluster = best.first;
+                             const auto best_distance = best.second;
 
-        new_labels[idx] = best_cluster;
-        new_distances[idx] = best_distance;
+                             d_new_labels[idx] = best_cluster;
+                             d_new_distances[idx] = best_distance;
 
-        atomicAdd(&new_sums[best_cluster].x, d_query.x);
-        atomicAdd(&new_sums[best_cluster].y, d_query.y);
-        atomicAdd(&new_sums[best_cluster].z, d_query.z);
-        atomicAdd(&new_cluster_sizes[best_cluster], 1);
-    }
+                             float4 *new_sum = thrust::raw_pointer_cast(d_new_sums + best_cluster);
 
-    template<typename T>
-    __global__ void reset_to(T *array, size_t size, T value) {
-        int idx = blockIdx.x * blockDim.x + threadIdx.x;
-        if (idx < size) {
-            array[idx] = value;
+                             atomicAdd(&new_sum->x, query.x);
+                             atomicAdd(&new_sum->y, query.y);
+                             atomicAdd(&new_sum->z, query.z);
+                             atomicAdd(thrust::raw_pointer_cast(&d_new_cluster_sizes[best_cluster]), 1);
+                         }
+        );
+        cudaDeviceSynchronize();
+        cudaError_t err = cudaGetLastError();
+        if (err != cudaSuccess) {
+            printf("CUDA error: %s\n", cudaGetErrorString(err));
         }
     }
 
-    void reset(float3 *d_array, int numElements) {
-        // Define the number of threads per block and the number of blocks
-        int threadsPerBlock = 256;
-        int blocksPerGrid = (numElements * 3 + threadsPerBlock - 1) / threadsPerBlock;
+    void update_centroids(thrust::device_ptr<float4> new_centroids,
+                          const thrust::device_ptr<float4> new_sums,
+                          const thrust::device_ptr<unsigned int> &new_cluster_sizes, std::uint32_t k) {
+        thrust::for_each(thrust::device,
+                         thrust::make_counting_iterator<std::uint32_t>(0),
+                         thrust::make_counting_iterator(k),
+                         [new_cluster_sizes, new_sums, new_centroids] __device__(std::uint32_t idx) {
+                             float count = ::fmaxf(float(new_cluster_sizes[idx]), 1.0f);
+                             const float4 &new_sum = new_sums[idx];
+                             float4 *new_centroid = thrust::raw_pointer_cast(new_centroids + idx);
 
-        // Launch the kernel to reset the array
-        reset_to<<<blocksPerGrid, threadsPerBlock>>>(reinterpret_cast<float *>(d_array), numElements, 0.0f);
-
-        // Wait for the kernel to complete
+                             new_centroid->x = new_sum.x / count;
+                             new_centroid->y = new_sum.y / count;
+                             new_centroid->z = new_sum.z / count;
+                             new_centroid->w = new_sum.w / count;
+                         });
         cudaDeviceSynchronize();
-    }
-
-    void reset(unsigned int *d_array, int numElements) {
-        // Define the number of threads per block and the number of blocks
-        int threadsPerBlock = 256;
-        int blocksPerGrid = (numElements + threadsPerBlock - 1) / threadsPerBlock;
-
-        // Launch the kernel to reset the array
-        reset_to<<<blocksPerGrid, threadsPerBlock>>>(d_array, numElements, (unsigned int) 0);
-
-        // Wait for the kernel to complete
-        cudaDeviceSynchronize();
-    }
-
-    __global__ void
-    update_centroids(float3 *new_centroids, const float3 *new_sums, const unsigned int *new_cluster_sizes) {
-        const unsigned int idx = threadIdx.x;
-        const float count = ::fmaxf(float(new_cluster_sizes[idx]), 1.0f);
-        new_centroids[idx].x = new_sums[idx].x / count;
-        new_centroids[idx].y = new_sums[idx].y / count;
-        new_centroids[idx].z = new_sums[idx].z / count;
+        cudaError_t err = cudaGetLastError();
+        if (err != cudaSuccess) {
+            printf("CUDA error: %s\n", cudaGetErrorString(err));
+        }
     }
 
     template<typename Point>
-    std::vector<Point> RandomCentroids(const std::vector<Point> &positions, unsigned int k) {
+    inline std::vector<Point> RandomCentroids(const std::vector<Point> &positions, unsigned int k) {
         std::vector<unsigned int> indices(positions.size());
         std::iota(indices.begin(), indices.end(), 0);
         std::mt19937 rng(std::random_device{}());
@@ -99,69 +96,70 @@ namespace Bcg {
     }
 
     KMeansResult KMeans(const std::vector<Vector<float, 3>> &positions, unsigned int k, unsigned int iterations) {
-        //TODO dimension mismatch between positions (float3) and float4... figure out what to do, becahsue float4 could be faster.
-        std::vector<float4> ps(positions.size());
-        for (size_t i = 0; i < positions.size(); ++i) {
-            ps[i] = {positions[i].x(), positions[i].y(), positions[i].z(), 1.0f};
+        auto centroids = RandomCentroids(positions, k);
+        return KMeans(positions, centroids, iterations);
+    }
+
+    KMeansResult KMeans(const std::vector<Vector<float, 3>> &points, const std::vector<Vector<float, 3>> &init_means,
+                        unsigned int iterations) {
+        int k = init_means.size();
+        int num_objects = points.size();
+
+        thrust::host_vector<float4> h_centroids(k);
+        for (size_t i = 0; i < k; ++i) {
+            h_centroids[i] = {init_means[i].x(), init_means[i].y(), init_means[i].z(), 1.0f};
         }
-        auto centroids = RandomCentroids(ps, k);
+        thrust::host_vector<float4> h_positions(num_objects);
+        for (size_t i = 0; i < num_objects; ++i) {
+            h_positions[i] = {points[i].x(), points[i].y(), points[i].z(), 1.0f};
+        }
 
-        int num_objects = positions.size();
-        int threads_assign = 256;
-        int blocks_assign = (num_objects + threads_assign - 1) / threads_assign;
+        thrust::device_vector<float4> positions = h_positions;
+        thrust::device_vector<unsigned int> labels(num_objects);
+        thrust::device_vector<float> distances(num_objects);
 
-        int threads_clusters = 256;
-        int blocks_clusters = (k + threads_clusters - 1) / threads_clusters;
-        int blocks_cluster_coords = (k * 3 + threads_clusters - 1) / threads_clusters;
+        thrust::device_vector<float4> centroids = h_centroids;
+        thrust::device_vector<float4> new_sums(k);
+        thrust::device_vector<unsigned int> new_cluster_sizes(k);
 
-        float3 *d_centroids;
-        cudaMalloc(&d_centroids, k * sizeof(float3));
-        cudaMemcpy(d_centroids, centroids.data(), k * sizeof(float3), cudaMemcpyHostToDevice);
+        thrust::device_ptr<float4> d_positions = positions.data();
+        thrust::device_ptr<unsigned int> d_labels = labels.data();
+        thrust::device_ptr<float> d_distances = distances.data();
 
-        float3 *d_new_sums;
-        cudaMalloc(&d_new_sums, k * sizeof(float3));
+        thrust::device_ptr<float4> d_centroids = centroids.data();
+        thrust::device_ptr<float4> d_new_sums = new_sums.data();
+        thrust::device_ptr<unsigned int> d_new_cluster_sizes = new_cluster_sizes.data();
 
-        unsigned int *d_new_cluster_sizes;
-        cudaMalloc(&d_new_cluster_sizes, k * sizeof(unsigned int));
-
-        unsigned int *d_labels;
-        cudaMalloc(&d_labels, positions.size() * sizeof(unsigned int));
-
-        float *d_distances;
-        cudaMalloc(&d_distances, positions.size() * sizeof(float));
-
+        hbvh bvh = hbvh(h_centroids.begin(), h_centroids.end(), true);
         for (size_t i = 0; i < iterations; ++i) {
-            const auto bvh = hbvh(centroids.begin(), centroids.end(), false);
+            bvh.clear();
+            bvh.assign_device(centroids);
 
-            reset_to<<<blocks_cluster_coords, threads_clusters>>>(reinterpret_cast<float *>(d_new_sums), k, 0.0f);
-            cudaDeviceSynchronize();
-            reset_to<<<blocks_clusters, threads_clusters>>>(d_new_cluster_sizes, k, (unsigned int) 0);
-            cudaDeviceSynchronize();
+            auto d_bvh = bvh.get_device_repr();
 
-            assign_clusters<<<blocks_assign, threads_assign>>>(bvh.get_device_repr(), d_new_sums, d_new_cluster_sizes,
-                                                               d_labels, d_distances);
-            CudaCheckErrorAndSync(__func__);
-            update_centroids<<<blocks_clusters, threads_clusters>>>(d_centroids, d_new_sums, d_new_cluster_sizes);
-            CudaCheckErrorAndSync(__func__);
+            thrust::fill(new_sums.begin(), new_sums.end(), float4(0, 0, 0, 0));
+            thrust::fill(new_cluster_sizes.begin(), new_cluster_sizes.end(), 0);
+
+            assign_clusters(d_bvh, d_positions, d_new_sums, d_new_cluster_sizes, d_labels, d_distances, num_objects);
+
+            update_centroids(d_centroids, d_new_sums, d_new_cluster_sizes, k);
         }
 
         KMeansResult result;
         result.centroids.resize(k);
-        cudaMemcpy(result.centroids.data(), d_centroids, k * sizeof(float3), cudaMemcpyDeviceToHost);
+        h_centroids = thrust::host_vector<float4>(centroids);
+        for (size_t i = 0; i < k; ++i) {
+            result.centroids[i] = Vector<float, 3>(h_centroids[i].x, h_centroids[i].y, h_centroids[i].z);
+        }
 
-        result.labels.resize(positions.size());
-        cudaMemcpy(result.labels.data(), d_labels, positions.size() * sizeof(unsigned int), cudaMemcpyDeviceToHost);
+        result.labels.resize(num_objects);
+        result.distances.resize(num_objects);
+        for (size_t i = 0; i < num_objects; ++i) {
+            result.labels[i] = labels[i];
+            result.distances[i] = distances[i];
+        }
 
-        result.distances.resize(positions.size());
-        cudaMemcpy(result.distances.data(), d_distances, positions.size() * sizeof(float), cudaMemcpyDeviceToHost);
-
-        result.error = thrust::reduce(d_distances, d_distances + positions.size(), 0.0f, thrust::plus<float>());
-
-        cudaFree(d_centroids);
-        cudaFree(d_new_sums);
-        cudaFree(d_new_cluster_sizes);
-        cudaFree(d_labels);
-        cudaFree(d_distances);
+        result.error = thrust::reduce(thrust::device, distances.begin(), distances.end(), 0.0f);
 
         return result;
     }

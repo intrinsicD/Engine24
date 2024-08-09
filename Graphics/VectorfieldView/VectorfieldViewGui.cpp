@@ -18,7 +18,7 @@ namespace Bcg::Gui {
     void ShowVectorfieldViews(entt::entity entity_id) {
         ImGui::PushID("VectorfieldViews");
         auto *vertices = GetPrimitives(entity_id).vertices();
-        auto properties_3d = vertices->properties(3);
+        auto properties_3d = vertices->properties({3});
         std::pair<int, std::string> curr = {0, ""};
         if (Combo("create vectorfield", curr, properties_3d)) {
             curr.first = FindIndex(properties_3d, curr.second);
@@ -44,7 +44,7 @@ namespace Bcg::Gui {
             auto *vertices = GetPrimitives(entity_id).vertices();
             ImGui::Checkbox("hide", &view.hide);
             if (vertices) {
-                auto properties_3d = vertices->properties(3);
+                auto properties_3d = vertices->properties({3});
                 static std::pair<int, std::string> curr_pos = {-1, view.position.bound_buffer_name};
                 if (curr_pos.first == -1) {
                     curr_pos.first = FindIndex(properties_3d, view.position.bound_buffer_name);
@@ -103,7 +103,7 @@ namespace Bcg::Gui {
 
                 {
 
-                    auto properties_1d = vertices->properties(1);
+                    auto properties_1d = vertices->properties({1});
                     properties_1d.emplace_back("uniform_length");
                     static std::pair<int, std::string> curr_lengths = {-1, view.length.bound_buffer_name};
                     if (curr_lengths.first == -1) {

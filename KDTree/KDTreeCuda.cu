@@ -27,7 +27,7 @@ namespace Bcg {
     void KDTreeCuda::build(const std::vector<Vector<float, 3>> &positions) {
         std::vector<float4> ps(positions.size());
         for (size_t i = 0; i < positions.size(); ++i) {
-            ps[i] = {positions[i].x(), positions[i].y(), positions[i].z()};
+            ps[i] = {positions[i].x(), positions[i].y(), positions[i].z(), 1.0f};
         }
         auto &bvh = Engine::require<lbvh::bvh<float, float4, aabb_getter>>(entity_id);
         bvh = lbvh::bvh<float, float4, aabb_getter>(ps.begin(), ps.end(), true);
