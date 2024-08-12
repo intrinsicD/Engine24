@@ -2,7 +2,7 @@
 // Created by alex on 18.06.24.
 //
 
-#include "PluginMesh.h"
+#include "PluginSurfaceMesh.h"
 #include "Logger.h"
 #include <fstream>
 #include <unordered_map>
@@ -14,12 +14,7 @@
 #include "EventsEntity.h"
 #include "MeshGui.h"
 #include <chrono>
-#include "SurfaceMesh.h"
-#include "io/io.h"
-#include "io/read_obj.h"
-#include "io/read_off.h"
-#include "io/read_stl.h"
-#include "io/read_pmp.h"
+#include "SurfaceMeshIo.h"
 #include "VertexArrayObject.h"
 #include "MeshCommands.h"
 #include "EntityCommands.h"
@@ -30,11 +25,11 @@
 namespace Bcg {
     namespace PluginMeshInternal {
         void on_drop_file(const Events::Callback::Drop &event) {
-            PluginMesh plugin;
+            PluginSurfaceMesh plugin;
             for (int i = 0; i < event.count; ++i) {
                 auto start_time = std::chrono::high_resolution_clock::now();
 
-                SurfaceMesh smesh = PluginMesh::load(event.paths[i]);
+                SurfaceMesh smesh = PluginSurfaceMesh::read(event.paths[i]);
                 auto end_time = std::chrono::high_resolution_clock::now();
 
                 std::chrono::duration<double> build_duration = end_time - start_time;
@@ -51,21 +46,11 @@ namespace Bcg {
         Engine::State().destroy(event.entity_id);
     }
 
-    SurfaceMesh PluginMesh::load(const std::string &path) {
-        std::string ext = path;
+    SurfaceMesh PluginSurfaceMesh::read(const std::string &filepath) {
+        std::string ext = filepath;
         ext = ext.substr(ext.find_last_of('.') + 1);
         SurfaceMesh mesh;
-        if (ext == "obj") {
-            mesh = load_obj(path);
-        } else if (ext == "off") {
-            mesh = load_off(path);
-        } else if (ext == "stl") {
-            mesh = load_stl(path);
-        } else if (ext == "ply") {
-            mesh = load_ply(path);
-        } else if (ext == "pmp") {
-            mesh = load_pmp(path);
-        } else {
+        if (!Read(filepath, mesh)) {
             Log::Error("Unsupported file format: " + ext);
             return {};
         }
@@ -77,89 +62,17 @@ namespace Bcg {
         return mesh;
     }
 
-    SurfaceMesh PluginMesh::load_obj(const std::string &path) {
-        SurfaceMesh mesh;
-        read_obj(mesh, path);
-        return mesh;
-    }
-
-    SurfaceMesh PluginMesh::load_off(const std::string &path) {
-        SurfaceMesh mesh;
-        read_off(mesh, path);
-        return mesh;
-    }
-
-    SurfaceMesh PluginMesh::load_stl(const std::string &path) {
-        SurfaceMesh mesh;
-        read_stl(mesh, path);
-        merge_vertices(mesh, 0.0001f);
-        return mesh;
-    }
-
-    SurfaceMesh PluginMesh::load_ply(const std::string &path) {
-        std::ifstream file(path);
-        if (!file.is_open()) {
-            Log::Error("Failed to open PLY file: " + path);
-            return {};
+    bool PluginSurfaceMesh::write(const std::string &filepath, const SurfaceMesh &mesh) {
+        std::string ext = filepath;
+        ext = ext.substr(ext.find_last_of('.') + 1);
+        if (!Write(filepath, mesh)) {
+            Log::Error("Unsupported file format: " + ext);
+            return false;
         }
-
-        std::string line;
-        std::string format;
-        int numVertices = 0;
-        int numFaces = 0;
-        bool header = true;
-
-        while (header && std::getline(file, line)) {
-            std::istringstream iss(line);
-            std::string token;
-            iss >> token;
-
-            if (token == "format") {
-                iss >> format;
-            } else if (token == "element") {
-                iss >> token;
-                if (token == "vertex") {
-                    iss >> numVertices;
-                } else if (token == "face") {
-                    iss >> numFaces;
-                }
-            } else if (token == "end_header") {
-                header = false;
-            }
-        }
-
-        SurfaceMesh mesh;
-
-        for (int i = 0; i < numVertices; ++i) {
-            float x, y, z;
-            file >> x >> y >> z;
-            mesh.add_vertex(PointType(x, y, z));
-        }
-
-        for (int i = 0; i < numFaces; ++i) {
-            int numVerticesInFace;
-            file >> numVerticesInFace;
-            if (numVerticesInFace != 3) {
-                Log::Error("Only triangular faces are supported.");
-                return {};
-            }
-
-            unsigned int a, b, c;
-            file >> a >> b >> c;
-            mesh.add_triangle(Vertex(a), Vertex(b), Vertex(c));
-        }
-
-        file.close();
-        return mesh;
+        return true;
     }
 
-    SurfaceMesh PluginMesh::load_pmp(const std::string &path) {
-        SurfaceMesh mesh;
-        read_pmp(mesh, path);
-        return mesh;
-    }
-
-    void PluginMesh::merge_vertices(SurfaceMesh &mesh, float tol) {
+    void PluginSurfaceMesh::merge_vertices(SurfaceMesh &mesh, float tol) {
         struct VertexHash {
             size_t operator()(const PointType &p) const {
                 auto h1 = std::hash<float>{}(p[0]);
@@ -242,33 +155,33 @@ namespace Bcg {
         mesh.garbage_collection();
     }
 
-    PluginMesh::PluginMesh() : Plugin("PluginMesh") {}
+    PluginSurfaceMesh::PluginSurfaceMesh() : Plugin("PluginMesh") {}
 
-    void PluginMesh::activate() {
+    void PluginSurfaceMesh::activate() {
         Engine::Dispatcher().sink<Events::Callback::Drop>().connect<&PluginMeshInternal::on_drop_file>();
         Plugin::activate();
     }
 
-    void PluginMesh::begin_frame() {
+    void PluginSurfaceMesh::begin_frame() {
 
     }
 
-    void PluginMesh::update() {
+    void PluginSurfaceMesh::update() {
 
     }
 
-    void PluginMesh::end_frame() {
+    void PluginSurfaceMesh::end_frame() {
 
     }
 
-    void PluginMesh::deactivate() {
+    void PluginSurfaceMesh::deactivate() {
         Engine::Dispatcher().sink<Events::Callback::Drop>().disconnect<&PluginMeshInternal::on_drop_file>();
         Plugin::deactivate();
     }
 
     static bool show_mesh_gui = false;
 
-    void PluginMesh::render_menu() {
+    void PluginSurfaceMesh::render_menu() {
         if (ImGui::BeginMenu("Entity")) {
             if (ImGui::BeginMenu("Mesh")) {
                 if (ImGui::MenuItem("Load Mesh")) {
@@ -287,7 +200,7 @@ namespace Bcg {
         }
     }
 
-    void PluginMesh::render_gui() {
+    void PluginSurfaceMesh::render_gui() {
         Gui::ShowLoadMesh();
         if (show_mesh_gui) {
             auto &picked = Engine::Context().get<Picked>();
@@ -298,7 +211,7 @@ namespace Bcg {
         }
     }
 
-    void PluginMesh::render() {
+    void PluginSurfaceMesh::render() {
 
     }
 }

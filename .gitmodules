@@ -55,3 +55,6 @@
 [submodule "ext/fmt"]
 	path = ext/fmt
 	url = https://github.com/fmtlib/fmt.git
+[submodule "ext/happly"]
+	path = ext/happly
+	url = https://github.com/nmwsharp/happly.git

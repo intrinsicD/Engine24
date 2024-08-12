@@ -1,4 +1,5 @@
 target_sources(Engine24 PRIVATE
+        AABB.cpp
         CameraCommands.cpp
         Color.cpp
         CommandBuffer.cpp
@@ -10,20 +11,30 @@ target_sources(Engine24 PRIVATE
         GetPrimitives.cpp
         HierarchyCommands.cpp
         Input.cpp
+        Intersections.cpp
         KDTreeCompute.cpp
         KDTreeCpu.cpp
         KDTreeCuda.cu
         Keyboard.cpp
+        Line.cpp
         Logger.cpp
         MeshCommands.cpp
         MeshCompute.cpp
         Mouse.cpp
+        OBB.cpp
         Picker.cpp
+        Plane.cpp
         Plugin.cpp
         Plugins.cpp
         PointCloud.cpp
+        PointCloudIo.cpp
         PointCloudCompute.cpp
         PointCloudCommands.cpp
         SelectionCommands.cpp
+        Sphere.cpp
+        SurfaceMesh.cpp
+        SurfaceMeshIo.cpp
+        SurfaceMeshTriangles.cpp
+        Triangle.cpp
         Utils.cpp
 )

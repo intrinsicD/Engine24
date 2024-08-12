@@ -12,7 +12,6 @@
 #include "PointCloudGui.h"
 #include <chrono>
 #include "PointCloud.h"
-#include "io/io.h"
 #include "PointCloudCommands.h"
 #include "Picker.h"
 

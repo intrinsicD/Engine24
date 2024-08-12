@@ -1,4 +1,5 @@
 target_sources(Engine24 PRIVATE
+        AABBGui.cpp
         CameraGui.cpp
         CoordinateSystemsGui.cpp
         FrameTimerGui.cpp

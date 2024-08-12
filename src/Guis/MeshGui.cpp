@@ -4,7 +4,7 @@
 
 #include "MeshGui.h"
 #include "ImGuiFileDialog.h"
-#include "PluginMesh.h"
+#include "PluginSurfaceMesh.h"
 #include "PropertiesGui.h"
 #include "Engine.h"
 
@@ -15,7 +15,7 @@ namespace Bcg::Gui {
                 std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
                 std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
                 // action
-                auto mesh = PluginMesh::load(filePathName);
+                auto mesh = PluginSurfaceMesh::read(filePathName);
             }
 
             // close
