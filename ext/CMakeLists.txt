@@ -22,6 +22,9 @@ target_link_libraries(Engine24 PUBLIC EnTT::EnTT)
 add_subdirectory(tinyobjloader)
 target_link_libraries(Engine24 PRIVATE tinyobjloader)
 
+add_subdirectory(fmt)
+target_link_libraries(Engine24 PUBLIC fmt::fmt)
+
 target_sources(Engine24 PRIVATE glad/src/gl.c)
 
 target_include_directories(Engine24 PUBLIC

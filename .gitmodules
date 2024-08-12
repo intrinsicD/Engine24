@@ -52,3 +52,6 @@
 [submodule "ext/nanoflann"]
 	path = ext/nanoflann
 	url = https://github.com/jlblancoc/nanoflann.git
+[submodule "ext/fmt"]
+	path = ext/fmt
+	url = https://github.com/fmtlib/fmt.git
