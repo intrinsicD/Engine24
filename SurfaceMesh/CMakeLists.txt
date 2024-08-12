@@ -1,6 +1,7 @@
 target_include_directories(Engine24 SYSTEM PUBLIC .)
 target_sources(Engine24 PRIVATE
-    SurfaceMesh.cpp
+        SurfaceMesh.cpp
+        SurfaceMeshTriangles.cpp
         io/io.cpp
         io/read_stl.cpp
         io/read_pmp.cpp

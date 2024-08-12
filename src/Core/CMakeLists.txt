@@ -2,10 +2,12 @@ target_sources(Engine24 PRIVATE
         CameraCommands.cpp
         Color.cpp
         CommandBuffer.cpp
+        CoordinateSystems.cpp
         Engine.cpp
         Entity.cpp
         EntityCommands.cpp
         FileWatcher.cpp
+        GetPrimitives.cpp
         HierarchyCommands.cpp
         Input.cpp
         KDTreeCompute.cpp
@@ -13,9 +15,15 @@ target_sources(Engine24 PRIVATE
         KDTreeCuda.cu
         Keyboard.cpp
         Logger.cpp
+        MeshCommands.cpp
+        MeshCompute.cpp
         Mouse.cpp
+        Picker.cpp
+        Plugin.cpp
+        Plugins.cpp
+        PointCloud.cpp
+        PointCloudCompute.cpp
+        PointCloudCommands.cpp
+        SelectionCommands.cpp
         Utils.cpp
 )
-
-add_subdirectory(Guis)
-add_subdirectory(Plugins)

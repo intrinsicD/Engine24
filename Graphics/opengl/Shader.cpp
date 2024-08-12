@@ -35,7 +35,7 @@ namespace Bcg {
         src[size] = 0;
         fclose(file);
         if (!success) {
-            Log::Error("Failed to load shader file: " + filepath);
+            Log::Error("Failed to load shader file: {}", filepath);
             delete[] src;
             return "";
         }
@@ -53,7 +53,7 @@ namespace Bcg {
         if (!success) {
             char infoLog[512];
             glGetShaderInfoLog(id, 512, nullptr, infoLog);
-            Log::Error("Shader compilation failed: " + std::string(infoLog));
+            Log::Error("Shader compilation failed: {}", std::string(infoLog));
         }
         return success;
     }

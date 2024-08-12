@@ -324,30 +324,141 @@ namespace Bcg {
         return dpi_scaling_factor;
     }
 
-    bool Graphics::CreateBuffer(entt::entity entity_id, const std::string &buffer_name, unsigned int target) {
-        OpenGLState openGlState(entity_id);
-        auto buffer = openGlState.get_buffer(buffer_name);
-        if (!buffer) {
-            buffer.create();
-            openGlState.register_buffer(buffer_name, buffer);
-            return true;
-        }
-        return false;
-    }
-
-    bool Graphics::UpdateBuffer(entt::entity entity_id, const std::string &buffer_name, const void *data, size_t size,
-                                unsigned int usage) {
-        OpenGLState openGlState(entity_id);
-        auto buffer = openGlState.get_buffer(buffer_name);
-        if (!buffer) {
-            return false;
-        }
-
-        buffer.bind();
-        buffer.buffer_data(data, size, usage);
-        buffer.unbind();
-        return true;
-    }
 
     //------------------------------------------------------------------------------------------------------------------
+
+    void *PluginGraphics::create_window(int width, int height, const char *title) {
+        return {};
+    }
+
+    void PluginGraphics::destroy_window(void *window) {
+
+    }
+
+    void PluginGraphics::register_callbacks(void *window) {
+        glfwSetKeyCallback(global_window.handle, key_callback);
+        glfwSetCursorPosCallback(global_window.handle, mouse_cursor_callback);
+        glfwSetMouseButtonCallback(global_window.handle, mouse_button_callback);
+        glfwSetScrollCallback(global_window.handle, mouse_scrolling);
+        glfwSetWindowCloseCallback(global_window.handle, close_callback);
+        glfwSetWindowSizeCallback(global_window.handle, window_resize_callback);
+        glfwSetFramebufferSizeCallback(global_window.handle, framebuffer_resize_callback);
+        glfwSetDropCallback(global_window.handle, drop_callback);
+    }
+
+    bool PluginGraphics::should_close() {
+        return glfwWindowShouldClose(global_window.handle);
+    }
+
+    void PluginGraphics::poll_events() {
+        glfwPollEvents();
+    }
+
+    void PluginGraphics::clear_framebuffer() {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    }
+
+    void PluginGraphics::swap_buffers() {
+        glfwSwapBuffers(global_window.handle);
+    }
+
+    void PluginGraphics::set_window_title(const char *title) {
+        glfwSetWindowTitle(global_window.handle, title);
+    }
+
+    void PluginGraphics::set_clear_color(const float *color) {
+        *global_window.clear_color = *color;
+        glClearColor(global_window.clear_color[0], global_window.clear_color[1], global_window.clear_color[2], 1.0f);
+
+    }
+
+    Vector<int, 2> PluginGraphics::get_window_pos() {
+        int windowPosX, windowPosY;
+        glfwGetWindowPos(global_window.handle, &windowPosX, &windowPosY);
+        return {windowPosX, windowPosY};
+    }
+
+    Vector<int, 2> PluginGraphics::get_window_size() {
+        int width, height;
+        glfwGetWindowSize(global_window.handle, &width, &height);
+        return {width, height};
+    }
+
+    Vector<int, 2> PluginGraphics::get_framebuffer_size() {
+        int width, height;
+        glfwGetFramebufferSize(global_window.handle, &width, &height);
+        return {width, height};
+    }
+
+    Vector<int, 4> PluginGraphics::get_viewport() {
+        Vector<int, 4> viewport;
+        glGetIntegerv(GL_VIEWPORT, viewport.data());
+        return std::move(viewport);
+    }
+
+    Vector<int, 4> PluginGraphics::get_viewport_dpi_adjusted() {
+        return  get_viewport() * int(get_dpi_scaling());
+    }
+
+    float PluginGraphics::get_dpi_scaling() {
+        float dpi_scaling_factor;
+        glfwGetWindowContentScale(global_window.handle, &dpi_scaling_factor, &dpi_scaling_factor);
+        return dpi_scaling_factor;
+    }
+
+    void PluginGraphics::start_gui() {
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        ImGuizmo::BeginFrame();
+
+        ImGui::BeginMainMenuBar();
+    }
+
+    void PluginGraphics::end_gui() {
+        ImGui::EndMainMenuBar();
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        auto &io = ImGui::GetIO();
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+            GLFWwindow *backup_current_context = glfwGetCurrentContext();
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+            glfwMakeContextCurrent(backup_current_context);
+        }
+    }
+
+    bool PluginGraphics::read_depth_buffer(int x, int y, float &z) {
+        Vector<int, 4> viewport = get_viewport();
+
+        // in OpenGL y=0 is at the 'bottom'
+        y = viewport[3] - y;
+
+        // read depth buffer value at (x, y_new)
+        glReadPixels(x, y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &z);
+        return z != 1.0f;
+    }
+
+    void PluginGraphics::activate() {
+        Plugin::activate();
+    }
+
+    void PluginGraphics::begin_frame() {}
+
+    void PluginGraphics::update() {
+        auto &watcher = Engine::Context().get<FileWatcher>();
+        watcher.check();
+    }
+
+    void PluginGraphics::end_frame() {}
+
+    void PluginGraphics::deactivate() {
+        Plugin::deactivate();
+    }
+
+    void PluginGraphics::render_menu() {}
+
+    void PluginGraphics::render_gui() {}
+
+    void PluginGraphics::render() {}
 }

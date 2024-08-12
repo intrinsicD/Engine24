@@ -1,0 +1,5 @@
+target_include_directories(Engine24 PUBLIC .)
+add_subdirectory(Core)
+add_subdirectory(Events)
+add_subdirectory(Guis)
+add_subdirectory(Plugins)

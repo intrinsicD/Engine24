@@ -89,7 +89,7 @@ namespace Bcg {
         if (!vs_.empty() && !fs_.empty()) {
             vs.filepath = vs_;
             vsSource = shader.load_file(vs_);
-            
+
             fs.filepath = fs_;
             fsSource = shader.load_file(fs_);
         }
@@ -130,7 +130,7 @@ namespace Bcg {
         if (!success) {
             char infoLog[512];
             glGetProgramInfoLog(id, 512, nullptr, infoLog);
-            Log::Error("Program link failed: " + std::string(infoLog));
+            Log::Error("Program link failed: {}", std::string(infoLog));
         }
         return success;
     }
@@ -151,7 +151,7 @@ namespace Bcg {
         glUniformBlockBinding(id, get_uniform_block_index(name), binding_point);
     }
 
-    void Program::set_uniform1f(const std::string &name, float value){
+    void Program::set_uniform1f(const std::string &name, float value) {
         int loc = get_uniform_location(name);
 
         if (loc != -1) {
@@ -159,7 +159,7 @@ namespace Bcg {
         }
     }
 
-    void Program::set_uniform1ui(const std::string &name, unsigned int value){
+    void Program::set_uniform1ui(const std::string &name, unsigned int value) {
         int loc = get_uniform_location(name);
 
         if (loc != -1) {
@@ -167,7 +167,7 @@ namespace Bcg {
         }
     }
 
-    void Program::set_uniform1i(const std::string &name, int value){
+    void Program::set_uniform1i(const std::string &name, int value) {
         int loc = get_uniform_location(name);
 
         if (loc != -1) {

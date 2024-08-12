@@ -6,11 +6,10 @@
 #include "MeshViewCommands.h"
 #include "Engine.h"
 #include "MeshView.h"
-#include "Mesh.h"
+#include "SurfaceMeshTriangles.h"
 #include "GetPrimitives.h"
 #include "OpenGLState.h"
 #include "Camera.h"
-#include "Logger.h"
 #include "PropertyEigenMap.h"
 
 namespace Bcg::Commands::View {
@@ -45,7 +44,7 @@ namespace Bcg::Commands::View {
         SetColorMeshView(entity_id, "uniform_color").execute();
 
         auto &mesh = Engine::State().get<SurfaceMesh>(entity_id);
-        auto f_triangles = extract_triangle_list(mesh);
+        auto f_triangles = SurfaceMeshTriangles(mesh);
         SetTrianglesMeshView(entity_id, f_triangles.vector()).execute();
 
         view.vao.unbind();
