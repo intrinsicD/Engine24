@@ -7,14 +7,10 @@
 
 #include <vector>
 #include "MatVec.h"
+#include "SpatialQueryResult.h"
 #include "entt/fwd.hpp"
 
 namespace Bcg {
-    struct QueryResult {
-        std::vector<size_t> indices;
-        std::vector<float> distances;
-    };
-
     class KDTreeCuda {
     public:
         explicit KDTreeCuda(entt::entity entity_id);

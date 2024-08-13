@@ -42,7 +42,7 @@ namespace Bcg::Commands::View {
 
         view.vao.create();
 
-        SetPositionVectorfieldView(entity_id, vectorfield_name, "v:point").execute();
+        SetPositionVectorfieldView(entity_id, vectorfield_name, "v:position").execute();
         SetLengthVectorfieldView(entity_id, vectorfield_name, "uniform_length").execute();
         SetVectorVectorfieldView(entity_id, vectorfield_name, vectorfield_name).execute();
         SetColorVectorfieldView(entity_id, vectorfield_name, "uniform_color").execute();

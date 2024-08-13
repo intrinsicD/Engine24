@@ -10,7 +10,7 @@
 #include "RigidTransformGui.h"
 #include "PluginHierarchy.h"
 #include "CommandDoubleBuffer.h"
-#include "HierarchyCommands.h"
+#include "PluginHierarchy.h"
 
 namespace Bcg {
 

@@ -61,11 +61,23 @@ namespace Bcg::Commands {
     };
 
     template<typename Component>
+    struct Load : public AbstractCommand {
+        explicit Load(entt::entity entity_id) : AbstractCommand("Load"), entity_id(entity_id) {}
+
+        void execute() const override {
+            Log::TODO("Load command not implemented for component: {}",
+                      fmt::format(fg(fmt::color::light_blue), "{}", typeid(Component).name()));
+        }
+
+        entt::entity entity_id;
+    };
+
+    template<typename Component>
     struct Setup : public AbstractCommand {
         explicit Setup(entt::entity entity_id) : AbstractCommand("Setup"), entity_id(entity_id) {}
 
         void execute() const override {
-            Log::TODO("Cleanup command not implemented for component: {}",
+            Log::TODO("Setup command not implemented for component: {}",
                       fmt::format(fg(fmt::color::light_blue), "{}", typeid(Component).name()));
         }
 

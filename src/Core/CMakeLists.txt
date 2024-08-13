@@ -1,6 +1,5 @@
 target_sources(Engine24 PRIVATE
         AABB.cpp
-        CameraCommands.cpp
         Color.cpp
         CommandBuffer.cpp
         CoordinateSystems.cpp
@@ -9,7 +8,6 @@ target_sources(Engine24 PRIVATE
         EntityCommands.cpp
         FileWatcher.cpp
         GetPrimitives.cpp
-        HierarchyCommands.cpp
         Input.cpp
         Intersections.cpp
         KDTreeCompute.cpp
@@ -18,8 +16,6 @@ target_sources(Engine24 PRIVATE
         Keyboard.cpp
         Line.cpp
         Logger.cpp
-        MeshCommands.cpp
-        MeshCompute.cpp
         Mouse.cpp
         OBB.cpp
         Picker.cpp
@@ -29,10 +25,9 @@ target_sources(Engine24 PRIVATE
         PointCloud.cpp
         PointCloudIo.cpp
         PointCloudCompute.cpp
-        PointCloudCommands.cpp
-        SelectionCommands.cpp
         Sphere.cpp
         SurfaceMesh.cpp
+        SurfaceMeshCompute.cpp
         SurfaceMeshIo.cpp
         SurfaceMeshTriangles.cpp
         Triangle.cpp

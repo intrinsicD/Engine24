@@ -38,7 +38,7 @@ namespace Bcg::Commands::View {
 
         view.vao.create();
 
-        SetPositionSphereView(entity_id, "v:point").execute();
+        SetPositionSphereView(entity_id, "v:position").execute();
         SetRadiusSphereView(entity_id, "uniform_radius").execute();
         SetNormalSphereView(entity_id, "v:normal").execute();
         SetColorSphereView(entity_id, "uniform_color").execute();

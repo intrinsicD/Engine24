@@ -2,7 +2,7 @@
 // Created by alex on 21.06.24.
 //
 
-#include "MeshCompute.h"
+#include "SurfaceMeshCompute.h"
 #include "Buffer.h"
 #include "Program.h"
 #include "SurfaceMeshTriangles.h"

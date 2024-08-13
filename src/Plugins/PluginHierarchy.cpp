@@ -42,7 +42,7 @@ namespace Bcg {
         auto &p_transform = Engine::State().get<Transform>(parent);
         auto &c_transform = Engine::State().get<Transform>(child);
 
-        if(false){
+        if (false) {
             //old way, changed the local transform resulted in repositioned guizmo
 
             //update the child transform to be relative to the parent
@@ -50,7 +50,7 @@ namespace Bcg {
 
             // Update the child's world transform
             c_transform.update_world(p_transform.world());
-        }else{
+        } else {
             //update the child transform to be relative to the parent
             c_transform.set_local(p_transform.world().inverse() * c_transform.world().matrix());
 
@@ -300,5 +300,12 @@ namespace Bcg {
     }
 
     void PluginHierarchy::render() {
+
+    }
+
+    namespace Commands{
+        void UpdateTransformsDeferred::execute() const {
+            PluginHierarchy::update_transforms(entity_id);
+        }
     }
 }

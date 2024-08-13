@@ -7,6 +7,7 @@
 
 #include "Plugin.h"
 #include "Camera.h"
+#include "Command.h"
 
 namespace Bcg {
     class PluginCamera : public Plugin {
@@ -37,6 +38,31 @@ namespace Bcg {
 
         void render() override;
     };
+
+    namespace Commands{
+        struct CenterCameraAtDistance : public AbstractCommand {
+            explicit CenterCameraAtDistance(const Vector<float, 3> &center, float distance = 3) :
+                    AbstractCommand("CenterCamera"),
+                    center(center),
+                    distance(distance) {}
+
+            void execute() const override;
+
+            Vector<float, 3> center;
+            float distance;
+        };
+
+        struct FitNearAndFarToDistance : public AbstractCommand {
+            explicit FitNearAndFarToDistance(float distance = 3) : AbstractCommand("FitNearAndFarToDistance"),
+                                                                   distance(distance) {
+
+            }
+
+            void execute() const override;
+
+            float distance;
+        };
+    }
 }
 
 #endif //ENGINE24_PLUGINCAMERA_H

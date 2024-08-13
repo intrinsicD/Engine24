@@ -486,10 +486,13 @@ namespace Bcg {
         }
 
         std::vector<std::array<double, 3>> vPos = plyIn.getVertexPositions();
-        std::vector<std::array<unsigned char, 3>> vCol = plyIn.getVertexColors();
+        std::vector<std::array<unsigned char, 3>> vCol;
+        if(plyIn.getElement("vertex").hasProperty("red")){
+            vCol = plyIn.getVertexColors();
+        }
         std::vector<std::vector<size_t>> fInd = plyIn.getFaceIndices<size_t>();
 
-        auto colors = mesh.vertex_property<Vector<float, 3>>("v_color");
+        auto colors = mesh.vertex_property<Vector<float, 3>>("v:color");
 
         mesh.vprops_.reserve(vPos.size());
         for (const auto &point: vPos) {
@@ -697,6 +700,7 @@ namespace Bcg {
         }
 
         fclose(in);
+        return true;
     }
 
     bool ReadPmp(const std::string &filepath, SurfaceMesh &mesh) {
@@ -790,7 +794,7 @@ namespace Bcg {
         fprintf(out, "# OBJ export from PMP\n");
 
         // write vertices
-        auto points = mesh.get_vertex_property<PointType>("v:point");
+        auto points = mesh.get_vertex_property<PointType>("v:position");
         for (auto v: mesh.vertices()) {
             const PointType &p = points[v];
             fprintf(out, "v %.10f %.10f %.10f\n", p[0], p[1], p[2]);
@@ -881,7 +885,7 @@ namespace Bcg {
         WriteBinary(ofs, nf);
         WriteBinary(ofs, ne);
 
-        auto points = mesh.get_vertex_property<PointType>("v:point");
+        auto points = mesh.get_vertex_property<PointType>("v:position");
         for (auto v: mesh.vertices()) {
             const auto p = points[v];
             WriteBinary(ofs, p[0]);
@@ -945,7 +949,7 @@ namespace Bcg {
         fprintf(out, "OFF\n%zu %zu 0\n", mesh.n_vertices(), mesh.n_faces());
 
         // vertices, and optionally normals and texture coordinates
-        VertexProperty<PointType> points = mesh.get_vertex_property<PointType>("v:point");
+        VertexProperty<PointType> points = mesh.get_vertex_property<PointType>("v:position");
         for (auto v: mesh.vertices()) {
             const PointType &p = points[v];
             fprintf(out, "%.10f %.10f %.10f", p[0], p[1], p[2]);
@@ -991,13 +995,13 @@ namespace Bcg {
 
         meshVertexPositions.reserve(mesh.n_vertices());
         meshFaceIndices.reserve(mesh.n_faces());
-        auto positions = mesh.get_vertex_property<Vector<float, 3 >>("v_position");
+        auto positions = mesh.get_vertex_property<Vector<float, 3 >>("v:position");
 
         for (const auto v: mesh.vertices()) {
             meshVertexPositions.push_back({positions[v][0], positions[v][1], positions[v][2]});
         }
 
-        auto colors = mesh.get_vertex_property<Vector<float, 3>>("v_color");
+        auto colors = mesh.get_vertex_property<Vector<float, 3>>("v:color");
 
         if (colors) {
             for (const auto v: mesh.vertices()) {
@@ -1046,7 +1050,7 @@ namespace Bcg {
 
         // write normal, points, and attribute byte count
         auto normals = mesh.get_face_property<NormalType>("f:normal");
-        auto points = mesh.get_vertex_property<PointType>("v:point");
+        auto points = mesh.get_vertex_property<PointType>("v:position");
         for (auto f: mesh.faces()) {
             auto n = normals[f];
             ofs.write((char *) &n[0], sizeof(float));
@@ -1082,7 +1086,7 @@ namespace Bcg {
         }
 
         std::ofstream ofs(filepath.c_str());
-        auto points = mesh.get_vertex_property<PointType>("v:point");
+        auto points = mesh.get_vertex_property<PointType>("v:position");
 
         ofs << "solid stl\n";
 

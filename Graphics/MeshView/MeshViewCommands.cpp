@@ -39,7 +39,7 @@ namespace Bcg::Commands::View {
 
         view.vao.create();
 
-        SetPositionMeshView(entity_id, "v:point").execute();
+        SetPositionMeshView(entity_id, "v:position").execute();
         SetNormalMeshView(entity_id, "v:normal").execute();
         SetColorMeshView(entity_id, "uniform_color").execute();
 

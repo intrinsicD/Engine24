@@ -181,7 +181,7 @@ namespace Bcg {
         )";
 
         // Point coordinates
-        auto points = vertices.get<PointType >("v:point");
+        auto points = vertices.get<PointType >("v:position");
         auto normals = vertices.get_or_add<NormalType >("v:normal");
 
         auto num_points = points.vector().size();

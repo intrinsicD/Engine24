@@ -2,8 +2,8 @@
 // Created by alex on 21.06.24.
 //
 
-#ifndef ENGINE24_MESHCOMPUTE_H
-#define ENGINE24_MESHCOMPUTE_H
+#ifndef ENGINE24_SURFACEMESHCOMPUTE_H
+#define ENGINE24_SURFACEMESHCOMPUTE_H
 
 #include "SurfaceMesh.h"
 #include "entt/fwd.hpp"
@@ -20,4 +20,4 @@ namespace Bcg {
 
 }
 
-#endif //ENGINE24_MESHCOMPUTE_H
+#endif //ENGINE24_SURFACEMESHCOMPUTE_H

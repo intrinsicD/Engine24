@@ -7,13 +7,10 @@
 
 #include <vector>
 #include "MatVec.h"
+#include "SpatialQueryResult.h"
 #include "nanoflann.hpp"
 
 namespace Bcg {
-    struct QueryResult {
-        std::vector<size_t> indices;
-        std::vector<float> distances;
-    };
 
     class KDTreeCpu {
         struct VectorAdapter {

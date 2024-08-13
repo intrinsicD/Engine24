@@ -8,7 +8,7 @@
 #include "PluginPointCloud.h"
 #include "PropertiesGui.h"
 #include "Engine.h"
-#include "PointCloudCommands.h"
+#include "PluginPointCloud.h"
 #include "GetPrimitives.h"
 
 namespace Bcg::Gui {
@@ -35,14 +35,14 @@ namespace Bcg::Gui {
                 static int num_closest = 12;
                 ImGui::InputInt("num_closest", &num_closest);
                 if (ImGui::Button("LocalPcaKnn")) {
-                    Commands::Points::ComputePointCloudLocalPcasKnn(entity_id, num_closest).execute();
+                    Commands::ComputePointCloudLocalPcasKnn(entity_id, num_closest).execute();
                 }
                 static int k = 12;
                 static int iterations = 100;
                 ImGui::InputInt("k", &k);
                 ImGui::InputInt("iterations", &iterations);
                 if (ImGui::Button("Kmeans")) {
-                    Commands::Points::ComputeKMeans(entity_id, k, iterations).execute();
+                    Commands::ComputeKMeans(entity_id, k, iterations).execute();
                 }
             }
         }

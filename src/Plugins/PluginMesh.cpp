@@ -16,11 +16,15 @@
 #include <chrono>
 #include "SurfaceMeshIo.h"
 #include "VertexArrayObject.h"
-#include "MeshCommands.h"
 #include "EntityCommands.h"
 #include "Picker.h"
 #include "SphereViewCommands.h"
 #include "MeshViewCommands.h"
+#include "SurfaceMeshCompute.h"
+#include "PluginTransform.h"
+#include "PluginHierarchy.h"
+#include "PluginAABB.h"
+#include "PluginCamera.h"
 
 namespace Bcg {
     namespace PluginMeshInternal {
@@ -53,6 +57,9 @@ namespace Bcg {
         if (!Read(filepath, mesh)) {
             Log::Error("Unsupported file format: " + ext);
             return {};
+        }
+        if(mesh.has_face_property("f:indices")){
+
         }
         auto entity_id = Engine::State().create();
         Commands::Entity::Add<SurfaceMesh>(entity_id, mesh, "Mesh").execute();
@@ -213,5 +220,74 @@ namespace Bcg {
 
     void PluginSurfaceMesh::render() {
 
+    }
+
+    namespace Commands{
+        void Load<SurfaceMesh>::execute() const {
+            if (!Engine::valid(entity_id)) {
+                Log::Warn(name + "Entity is not valid. Abort Command");
+                return;
+            }
+
+            auto &mesh = Engine::require<SurfaceMesh>(entity_id);
+
+            if (!Read(filepath, mesh)) {
+                Log::Warn("Abort {} command", name);
+                return;
+            }
+
+            if (!mesh.has_face_property("f:indices")) {
+                Log::TODO("Implement: Mesh does not have faces, its a Point Cloud. Forward to Point Cloud stuff...");
+            }
+        }
+
+        void Setup<SurfaceMesh>::execute() const {
+            if (!Engine::valid(entity_id)) {
+                Log::Warn(name + "Entity is not valid. Abort Command");
+                return;
+            }
+
+            if (!Engine::has<SurfaceMesh>(entity_id)) {
+                Log::Warn(name + "Entity does not have a SurfaceMesh. Abort Command");
+            }
+
+            auto &mesh = Engine::require<SurfaceMesh>(entity_id);
+
+            Setup<AABB>(entity_id).execute();
+            CenterAndScaleByAABB(entity_id, mesh.vpoint_.name()).execute();
+
+            auto &aabb = Engine::require<AABB>(entity_id);
+            auto &transform = *PluginTransform::setup(entity_id);
+            auto &hierarchy = Engine::require<Hierarchy>(entity_id);
+
+            std::string message = name + ": ";
+            message += " #v: " + std::to_string(mesh.n_vertices());
+            message += " #e: " + std::to_string(mesh.n_edges());
+            message += " #h: " + std::to_string(mesh.n_halfedges());
+            message += " #f: " + std::to_string(mesh.n_faces());
+            message += " Done.";
+
+            Log::Info(message);
+            float d = aabb.diagonal().maxCoeff();
+            CenterCameraAtDistance(aabb.center(), d).execute();
+            ComputeSurfaceMeshVertexNormals(entity_id);
+        }
+
+
+        void ComputeFaceNormals::execute() const {
+            if (!Engine::valid(entity_id)) {
+                Log::Warn(name + "Entity is not valid. Abort Command");
+                return;
+            }
+
+            if (!Engine::has<SurfaceMesh>(entity_id)) {
+                Log::Warn(name + "Entity does not have a SurfaceMesh. Abort Command");
+                return;
+            }
+
+            auto &mesh = Engine::State().get<SurfaceMesh>(entity_id);
+
+/*        auto v_normals = ComputeFaceNormals(entity_id, mesh);*/
+        }
     }
 }

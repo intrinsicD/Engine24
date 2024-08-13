@@ -12,8 +12,18 @@
 #include "PointCloudGui.h"
 #include <chrono>
 #include "PointCloud.h"
-#include "PointCloudCommands.h"
+#include "PointCloudIo.h"
 #include "Picker.h"
+#include "PluginAABB.h"
+#include "PluginCamera.h"
+#include "PluginTransform.h"
+#include "PluginHierarchy.h"
+#include "GetPrimitives.h"
+#include "KDTreeCuda.h"
+#include "KDTreeCpu.h"
+#include "Kmeans.h"
+#include "Eigen/Eigenvalues"
+#include "SphereViewCommands.h"
 
 namespace Bcg {
     namespace PluginPointCloudInternal {
@@ -33,8 +43,8 @@ namespace Bcg {
 
     PointCloud PluginPointCloud::load(const std::string &filepath) {
         auto entity_id = Engine::State().create();
-        Commands::Points::LoadPointCloud(entity_id, filepath).execute();
-        Commands::Points::SetupPointCloud(entity_id).execute();
+        Commands::Load<PointCloud>(entity_id, filepath).execute();
+        Commands::Setup<PointCloud>(entity_id).execute();
         return Engine::require<PointCloud>(entity_id);
     }
 
@@ -97,5 +107,139 @@ namespace Bcg {
 
     void PluginPointCloud::render() {
 
+    }
+
+    namespace Commands {
+        void Load<PointCloud>::execute() const {
+            std::string ext = filepath;
+            ext = ext.substr(ext.find_last_of('.') + 1);
+
+            PointCloud pc;
+            if (!Read(filepath, pc)) {
+                Log::Error("Unsupported file format: " + filepath);
+                return;
+            }
+
+            auto entity = entity_id;
+            if (!Engine::valid(entity_id)) {
+                entity = Engine::State().create();
+            }
+
+            Engine::State().emplace_or_replace<PointCloud>(entity, pc);
+        }
+
+        void Setup<PointCloud>::execute() const {
+            if (!Engine::valid(entity_id)) {
+                Log::Warn(name + "Entity is not valid. Abort Command");
+                return;
+            }
+
+            if (!Engine::has<PointCloud>(entity_id)) {
+                Log::Warn(name + "Entity does not have a PointCloud. Abort Command");
+                return;
+            }
+
+            auto &pc = Engine::require<PointCloud>(entity_id);
+
+            Setup<AABB>(entity_id).execute();
+            CenterAndScaleByAABB(entity_id, pc.vpoint_.name()).execute();
+            auto &aabb = Engine::require<AABB>(entity_id);
+            Vector<float, 3> center = aabb.center();
+
+            aabb.min -= center;
+            aabb.max -= center;
+
+
+            auto &transform = Engine::require<Transform>(entity_id);
+            auto &hierarchy = Engine::require<Hierarchy>(entity_id);
+
+
+            View::SetupSphereView(entity_id).execute();
+
+            std::string message = name + ": ";
+            message += " #v: " + std::to_string(pc.n_vertices());
+            message += " Done.";
+
+            Log::Info(message);
+            CenterCameraAtDistance(aabb.center(), aabb.diagonal().maxCoeff()).execute();
+        }
+
+        void Cleanup<PointCloud>::execute() const {
+
+        }
+
+        void ComputePointCloudLocalPcasKnn::execute() const {
+            if (!Engine::valid(entity_id)) {
+                Log::Warn(name + " Entity is not valid. Abort Command!");
+                return;
+            }
+
+            auto *vertices = GetPrimitives(entity_id).vertices();
+            if (!vertices) {
+                Log::Warn(name + " Entity does not have vertices. Abort Command!");
+                return;
+            }
+
+            auto positions = vertices->get<Vector<float, 3>>("v:position");
+            if (!positions) {
+                Log::Warn(name + " Entity does not have positions property. Abort Command!");
+                return;
+            }
+
+            if (!Engine::has<KDTreeCpu>(entity_id)) {
+                auto &kdtree = Engine::require<KDTreeCpu>(entity_id);
+                kdtree.build(positions.vector());
+                return;
+            }
+            auto &kdtree = Engine::require<KDTreeCpu>(entity_id);
+
+            auto evecs0 = vertices->get_or_add<Vector<float, 3>>("v:pca_evecs0", Vector<float, 3>::Unit(0));
+            auto evecs1 = vertices->get_or_add<Vector<float, 3>>("v:pca_evecs1", Vector<float, 3>::Unit(1));
+            auto evecs2 = vertices->get_or_add<Vector<float, 3>>("v:pca_evecs2", Vector<float, 3>::Unit(2));
+            auto evals = vertices->get_or_add<Vector<float, 3>>("v:pca_evals", Vector<float, 3>::Ones());
+            for (size_t i = 0; i < vertices->size(); ++i) {
+                auto query_point = positions[i];
+                auto result = kdtree.knn_query(query_point, num_closest);
+                Matrix<float, 3, 3> cov = Matrix<float, 3, 3>::Zero();
+                for (auto &knn_idx: result.indices) {
+                    Vector<float, 3> diff = positions[knn_idx] - query_point;
+                    cov += diff * diff.transpose();
+                }
+
+                cov /= (num_closest - 1);
+
+                Eigen::SelfAdjointEigenSolver<Eigen::Matrix<float, 3, 3>> eigensolver(cov);
+                evecs0[i] = eigensolver.eigenvectors().col(0);
+                evecs1[i] = eigensolver.eigenvectors().col(1);
+                evecs2[i] = eigensolver.eigenvectors().col(2);
+                evals[i] = eigensolver.eigenvalues();
+            }
+        }
+
+        void ComputeKMeans::execute() const {
+            if (!Engine::valid(entity_id)) {
+                Log::Warn(name + " Entity is not valid. Abort Command!");
+                return;
+            }
+
+            auto *vertices = GetPrimitives(entity_id).vertices();
+            if (!vertices) {
+                Log::Warn(name + " Entity does not have vertices. Abort Command!");
+                return;
+            }
+
+            auto positions = vertices->get<Vector<float, 3>>("v:position");
+            if (!positions) {
+                Log::Warn(name + " Entity does not have positions property. Abort Command!");
+                return;
+            }
+
+            auto result = KMeans(positions.vector(), k);
+            auto labels = vertices->get_or_add<unsigned int>("v:kmeans:labels");
+            auto distances = vertices->get_or_add<float>("v:kmeans:distances");
+            labels.vector() = result.labels;
+            distances.vector() = result.distances;
+            Engine::State().emplace_or_replace<KMeansResult>(entity_id);
+        }
     }
 }

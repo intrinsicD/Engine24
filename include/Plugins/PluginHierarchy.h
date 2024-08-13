@@ -7,7 +7,7 @@
 
 #include "Plugin.h"
 #include "Hierarchy.h"
-#include "entt/fwd.hpp"
+#include "Command.h"
 
 namespace Bcg {
     class PluginHierarchy : public Plugin {
@@ -54,6 +54,16 @@ namespace Bcg {
 
         void render() override;
     };
+
+    namespace Commands{
+        struct UpdateTransformsDeferred : public AbstractCommand {
+            explicit UpdateTransformsDeferred(entt::entity entity_id) : AbstractCommand("UpdateTransformsDeferred"), entity_id(entity_id) {}
+
+            void execute() const override;
+
+            entt::entity entity_id;
+        };
+    }
 }
 
 #endif //ENGINE24_PLUGINHIERARCHY_H
