@@ -8,7 +8,7 @@
 #include "imgui.h"
 #include "GetPrimitives.h"
 #include "GuiUtils.h"
-#include "VectorfieldViewCommands.h"
+#include "PluginVectorfieldViews.h"
 
 namespace Bcg::Gui {
     void Show(VectorfieldView &view) {
@@ -22,7 +22,7 @@ namespace Bcg::Gui {
         std::pair<int, std::string> curr = {0, ""};
         if (Combo("create vectorfield", curr, properties_3d)) {
             curr.first = FindIndex(properties_3d, curr.second);
-            Commands::View::SetupVectorfieldView(entity_id, properties_3d[curr.first]).execute();
+            Commands::Setup<VectorfieldView>(entity_id, properties_3d[curr.first]).execute();
         }
         if (Engine::valid(entity_id) && Engine::has<VectorfieldViews>(entity_id)) {
             auto &views = Engine::State().get<VectorfieldViews>(entity_id);
@@ -53,7 +53,7 @@ namespace Bcg::Gui {
                     }
                 }
                 if (Combo(view.position.shader_name.c_str(), curr_pos, properties_3d)) {
-                    Commands::View::SetPositionVectorfieldView(entity_id, view.vectorfield_name,
+                    Commands::SetPositionVectorfieldView(entity_id, view.vectorfield_name,
                                                                properties_3d[curr_pos.first]).execute();
                 }
 
@@ -65,7 +65,7 @@ namespace Bcg::Gui {
                     }
                 }
                 if (Combo(view.vector.shader_name.c_str(), curr_vector, properties_3d)) {
-                    Commands::View::SetVectorVectorfieldView(entity_id, view.vectorfield_name,
+                    Commands::SetVectorVectorfieldView(entity_id, view.vectorfield_name,
                                                              properties_3d[curr_vector.first]).execute();
                 }
 
@@ -80,7 +80,7 @@ namespace Bcg::Gui {
                     }
 
                     if (Combo(view.color.shader_name.c_str(), curr_color, properties_3d)) {
-                        Commands::View::SetColorVectorfieldView(entity_id, view.vectorfield_name,
+                        Commands::SetColorVectorfieldView(entity_id, view.vectorfield_name,
                                                                 properties_3d[curr_color.first]).execute();
                     }
 
@@ -114,7 +114,7 @@ namespace Bcg::Gui {
                     }
 
                     if (Combo(view.length.shader_name.c_str(), curr_lengths, properties_1d)) {
-                        Commands::View::SetLengthVectorfieldView(entity_id, view.vectorfield_name,
+                        Commands::SetLengthVectorfieldView(entity_id, view.vectorfield_name,
                                                                  properties_1d[curr_lengths.first]).execute();
                     }
 

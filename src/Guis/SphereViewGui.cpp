@@ -7,7 +7,7 @@
 #include "imgui.h"
 #include "GetPrimitives.h"
 #include "GuiUtils.h"
-#include "SphereViewCommands.h"
+#include "PluginSphereView.h"
 
 namespace Bcg::Gui {
     void Show(SphereView &view) {
@@ -30,7 +30,7 @@ namespace Bcg::Gui {
                     }
                 }
                 if (Combo(view.position.shader_name.c_str(), curr_pos, properties_3d)) {
-                    Commands::View::SetPositionSphereView(entity_id, properties_3d[curr_pos.first]).execute();
+                    Commands::SetPositionSphereView(entity_id, properties_3d[curr_pos.first]).execute();
                 }
 
                 static std::pair<int, std::string> curr_normal = {-1, view.normal.bound_buffer_name};
@@ -41,7 +41,7 @@ namespace Bcg::Gui {
                     }
                 }
                 if (Combo(view.normal.shader_name.c_str(), curr_normal, properties_3d)) {
-                    Commands::View::SetNormalSphereView(entity_id, properties_3d[curr_normal.first]).execute();
+                    Commands::SetNormalSphereView(entity_id, properties_3d[curr_normal.first]).execute();
                 }
 
                 {
@@ -58,9 +58,9 @@ namespace Bcg::Gui {
                     if (Combo(view.color.shader_name.c_str(), curr_color, properties_colors)) {
                         auto *p_array = vertices->get_base(properties_colors[curr_color.first]);
                         if(p_array && p_array->dims() == 1){
-                            Commands::View::SetScalarfieldSphereView(entity_id, properties_colors[curr_color.first]).execute();
+                            Commands::SetScalarfieldSphereView(entity_id, properties_colors[curr_color.first]).execute();
                         }else{
-                            Commands::View::SetColorSphereView(entity_id, properties_colors[curr_color.first]).execute();
+                            Commands::SetColorSphereView(entity_id, properties_colors[curr_color.first]).execute();
                         }
                     }
 
@@ -84,7 +84,7 @@ namespace Bcg::Gui {
                     }
 
                     if (Combo(view.radius.shader_name.c_str(), curr_radius, properties_1d)) {
-                        Commands::View::SetRadiusSphereView(entity_id, properties_1d[curr_radius.first]).execute();
+                        Commands::SetRadiusSphereView(entity_id, properties_1d[curr_radius.first]).execute();
                     }
 
                     if (view.use_uniform_radius) {

@@ -24,7 +24,7 @@
 #include "KDTreeCpu.h"
 #include "Kmeans.h"
 #include "Eigen/Eigenvalues"
-#include "SphereViewCommands.h"
+#include "PluginSphereView.h"
 
 namespace Bcg {
     namespace PluginPointCloudInternal {
@@ -155,7 +155,7 @@ namespace Bcg {
             auto &hierarchy = Engine::require<Hierarchy>(entity_id);
 
 
-            View::SetupSphereView(entity_id).execute();
+            Setup<SphereView>(entity_id).execute();
 
             std::string message = name + ": ";
             message += " #v: " + std::to_string(pc.n_vertices());

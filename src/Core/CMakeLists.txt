@@ -8,6 +8,9 @@ target_sources(Engine24 PRIVATE
         EntityCommands.cpp
         FileWatcher.cpp
         GetPrimitives.cpp
+        GLFWUtils.cpp
+        GuiUtils.cpp
+        HandleGlfwKeyEvents.cpp
         Intersections.cpp
         KDTreeCompute.cpp
         KDTreeCpu.cpp
@@ -15,6 +18,7 @@ target_sources(Engine24 PRIVATE
         Keyboard.cpp
         Line.cpp
         Logger.cpp
+        MeshView.cpp
         Mouse.cpp
         OBB.cpp
         Picker.cpp
@@ -29,6 +33,8 @@ target_sources(Engine24 PRIVATE
         SurfaceMeshCompute.cpp
         SurfaceMeshIo.cpp
         SurfaceMeshTriangles.cpp
+        SphereView.cpp
         Triangle.cpp
         Utils.cpp
+        VectorfieldView.cpp
 )

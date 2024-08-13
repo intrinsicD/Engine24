@@ -8,7 +8,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "ImGuizmo.h"
-#include "Graphics.h"
+#include "PluginGraphics.h"
 
 namespace Bcg::Gui {
     void Show(const RigidTransform &transform) {
@@ -122,8 +122,8 @@ namespace Bcg::Gui {
 
         auto &io = ImGui::GetIO();
         ImGuizmo::SetOrthographic(false);
-        auto win_pos = Graphics::get_window_pos();
-        auto win_size = Graphics::get_window_size();
+        auto win_pos = PluginGraphics::get_window_pos();
+        auto win_size = PluginGraphics::get_window_size();
         ImGuizmo::SetRect(win_pos.x(), win_pos.y(), io.DisplaySize.x, io.DisplaySize.y);
         auto &camera = Engine::Context().get<Camera>();
         Matrix<float, 4, 4> mat = transform.matrix();

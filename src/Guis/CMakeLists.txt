@@ -5,9 +5,12 @@ target_sources(Engine24 PRIVATE
         FrameTimerGui.cpp
         HierarchyGui.cpp
         MeshGui.cpp
+        MeshViewGui.cpp
         PickerGui.cpp
         PointCloudGui.cpp
         PropertiesGui.cpp
         RigidTransformGui.cpp
         SelectionGui.cpp
+        SphereViewGui.cpp
+        VectorfieldViewGui.cpp
 )

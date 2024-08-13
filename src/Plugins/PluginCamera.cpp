@@ -11,7 +11,7 @@
 #include "Mouse.h"
 #include "Keyboard.h"
 #include "Picker.h"
-#include "Graphics.h"
+#include "PluginGraphics.h"
 #include "PluginFrameTimer.h"
 #include "Logger.h"
 #include "AABB.h"
@@ -50,7 +50,7 @@ namespace Bcg {
     static bool last_point_ok_ = false;
 
     static bool map_to_sphere(const Vector<int, 2> &point2D, Vector<float, 3> &result) {
-        auto vp = Graphics::get_viewport();
+        auto vp = PluginGraphics::get_viewport();
         double w = vp[2];
         double h = vp[3];
         if ((point2D[0] >= 0) && (point2D[0] <= w) && (point2D[1] >= 0) &&
@@ -125,7 +125,7 @@ namespace Bcg {
 
         float distance_to_scene = (center - eye).norm();
         // Project the change in screen coordinates to world coordinates
-        auto vp = Graphics::get_viewport();
+        auto vp = PluginGraphics::get_viewport();
         float viewport_width = vp[2];
         float viewport_height = vp[3];
         float fov = camera.p_params.fovy; // Field of view in radians

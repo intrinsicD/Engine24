@@ -5,7 +5,7 @@
 #include "PluginPicker.h"
 #include "PickerGui.h"
 #include "Engine.h"
-#include "Graphics.h"
+#include "PluginGraphics.h"
 #include "EventsCallbacks.h"
 #include "Mouse.h"
 #include "imgui.h"

@@ -14,7 +14,7 @@
 #include "SurfaceMeshIo.h"
 #include "VertexArrayObject.h"
 #include "Picker.h"
-#include "SphereViewCommands.h"
+#include "PluginSphereView.h"
 #include "SurfaceMeshCompute.h"
 #include "PluginTransform.h"
 #include "PluginHierarchy.h"
@@ -56,7 +56,7 @@ namespace Bcg {
         Engine::State().emplace<SurfaceMesh>(entity_id, mesh);
         Commands::Setup<SurfaceMesh>(entity_id).execute();
         Commands::Setup<MeshView>(entity_id).execute();
-        Commands::View::SetupSphereView(entity_id).execute();
+        Commands::Setup<SphereView>(entity_id).execute();
         return mesh;
     }
 

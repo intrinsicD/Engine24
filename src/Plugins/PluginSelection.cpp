@@ -10,7 +10,7 @@
 #include "Picker.h"
 #include "EventsPicker.h"
 #include "GetPrimitives.h"
-#include "SphereViewCommands.h"
+#include "PluginSphereView.h"
 #include "PropertyEigenMap.h"
 
 namespace Bcg {
@@ -97,7 +97,7 @@ namespace Bcg {
                 selected_vertices[idx] = {1.0, 0.0, 0.0};
             }
 
-            View::SetColorSphereView(entity_id, property_name).execute();
+            SetColorSphereView(entity_id, property_name).execute();
         }
 
         void EnableVertexSelection::execute() const {

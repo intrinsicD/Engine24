@@ -19,12 +19,14 @@
 #include "PluginVectorfieldViews.h"
 #include "PluginSelection.h"
 #include "PluginCuda.h"
+#include "PluginGraphics.h"
 #include <unordered_map>
 
 namespace Bcg {
     static std::unordered_map<std::string, std::unique_ptr<Plugin>> plugins;
 
     void Plugins::init() {
+        add_plugin(std::make_unique<PluginGraphics>());
         add_plugin(std::make_unique<PluginCuda>());
         add_plugin(std::make_unique<PluginInput>());
         add_plugin(std::make_unique<PluginEntity>());
