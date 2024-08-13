@@ -3,10 +3,7 @@
 //
 
 #include "PluginSurfaceMesh.h"
-#include "Logger.h"
-#include <fstream>
 #include <unordered_map>
-#include <sstream>
 #include "imgui.h"
 #include "ImGuiFileDialog.h"
 #include "Engine.h"
@@ -16,38 +13,32 @@
 #include <chrono>
 #include "SurfaceMeshIo.h"
 #include "VertexArrayObject.h"
-#include "EntityCommands.h"
 #include "Picker.h"
 #include "SphereViewCommands.h"
-#include "MeshViewCommands.h"
 #include "SurfaceMeshCompute.h"
 #include "PluginTransform.h"
 #include "PluginHierarchy.h"
 #include "PluginAABB.h"
 #include "PluginCamera.h"
+#include "PluginMeshView.h"
 
 namespace Bcg {
-    namespace PluginMeshInternal {
-        void on_drop_file(const Events::Callback::Drop &event) {
-            PluginSurfaceMesh plugin;
-            for (int i = 0; i < event.count; ++i) {
-                auto start_time = std::chrono::high_resolution_clock::now();
 
-                SurfaceMesh smesh = PluginSurfaceMesh::read(event.paths[i]);
-                auto end_time = std::chrono::high_resolution_clock::now();
+    static void on_drop_file(const Events::Callback::Drop &event) {
+        PluginSurfaceMesh plugin;
+        for (int i = 0; i < event.count; ++i) {
+            auto start_time = std::chrono::high_resolution_clock::now();
 
-                std::chrono::duration<double> build_duration = end_time - start_time;
-                Log::Info("Build Smesh in " + std::to_string(build_duration.count()) + " seconds");
-            }
+            SurfaceMesh smesh = PluginSurfaceMesh::read(event.paths[i]);
+            auto end_time = std::chrono::high_resolution_clock::now();
+
+            std::chrono::duration<double> build_duration = end_time - start_time;
+            Log::Info("Build Smesh in " + std::to_string(build_duration.count()) + " seconds");
         }
-
     }
 
-    static void on_destroy_entity(const Events::Entity::Destroy &event) {
-        if (Engine::has<SurfaceMesh>(event.entity_id)) {
-            Engine::State().remove<SurfaceMesh>(event.entity_id);
-        }
-        Engine::State().destroy(event.entity_id);
+    static void on_cleanup_components(const Events::Entity::CleanupComponents &event) {
+        Commands::Cleanup<SurfaceMesh>(event.entity_id).execute();
     }
 
     SurfaceMesh PluginSurfaceMesh::read(const std::string &filepath) {
@@ -58,13 +49,13 @@ namespace Bcg {
             Log::Error("Unsupported file format: " + ext);
             return {};
         }
-        if(mesh.has_face_property("f:indices")){
+        if (mesh.has_face_property("f:indices")) {
 
         }
         auto entity_id = Engine::State().create();
-        Commands::Entity::Add<SurfaceMesh>(entity_id, mesh, "Mesh").execute();
+        Engine::State().emplace<SurfaceMesh>(entity_id, mesh);
         Commands::Setup<SurfaceMesh>(entity_id).execute();
-        Commands::View::SetupMeshView(entity_id).execute();
+        Commands::Setup<MeshView>(entity_id).execute();
         Commands::View::SetupSphereView(entity_id).execute();
         return mesh;
     }
@@ -165,7 +156,8 @@ namespace Bcg {
     PluginSurfaceMesh::PluginSurfaceMesh() : Plugin("PluginMesh") {}
 
     void PluginSurfaceMesh::activate() {
-        Engine::Dispatcher().sink<Events::Callback::Drop>().connect<&PluginMeshInternal::on_drop_file>();
+        Engine::Dispatcher().sink<Events::Callback::Drop>().connect<&on_drop_file>();
+        Engine::Dispatcher().sink<Events::Entity::CleanupComponents>().connect<&on_cleanup_components>();
         Plugin::activate();
     }
 
@@ -182,7 +174,8 @@ namespace Bcg {
     }
 
     void PluginSurfaceMesh::deactivate() {
-        Engine::Dispatcher().sink<Events::Callback::Drop>().disconnect<&PluginMeshInternal::on_drop_file>();
+        Engine::Dispatcher().sink<Events::Callback::Drop>().disconnect<&on_drop_file>();
+        Engine::Dispatcher().sink<Events::Entity::CleanupComponents>().disconnect<&on_cleanup_components>();
         Plugin::deactivate();
     }
 
@@ -222,7 +215,7 @@ namespace Bcg {
 
     }
 
-    namespace Commands{
+    namespace Commands {
         void Load<SurfaceMesh>::execute() const {
             if (!Engine::valid(entity_id)) {
                 Log::Warn(name + "Entity is not valid. Abort Command");
@@ -271,6 +264,23 @@ namespace Bcg {
             float d = aabb.diagonal().maxCoeff();
             CenterCameraAtDistance(aabb.center(), d).execute();
             ComputeSurfaceMeshVertexNormals(entity_id);
+        }
+
+        void Cleanup<SurfaceMesh>::execute() const {
+            if (!Engine::valid(entity_id)) {
+                Log::Warn(name + "Entity is not valid. Abort Command");
+                return;
+            }
+
+            if (!Engine::has<SurfaceMesh>(entity_id)) {
+                Log::Warn(name + "Entity does not have a SurfaceMesh. Abort Command");
+                return;
+            }
+
+            Engine::Dispatcher().trigger(Events::Entity::PreRemove<SurfaceMesh>{entity_id});
+            Engine::State().remove<SurfaceMesh>(entity_id);
+            Engine::Dispatcher().trigger(Events::Entity::PostRemove<SurfaceMesh>{entity_id});
+            Log::Info("{} for entity {}", name, entity_id);
         }
 
 

@@ -12,9 +12,9 @@
 struct GLFWwindow;
 
 namespace Bcg {
-    class Input : public Plugin {
+    class PluginInput : public Plugin {
     public:
-        Input();
+        PluginInput();
 
         static Keyboard &set_keyboard(GLFWwindow *window, int key, int scancode, int action, int mode);
 

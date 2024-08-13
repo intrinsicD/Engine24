@@ -9,6 +9,7 @@
 #include "Logger.h"
 #include "Picker.h"
 #include "imgui.h"
+#include "EventsEntity.h"
 
 namespace Bcg {
     void PluginHierarchy::attach_child(entt::entity parent, entt::entity child) {
@@ -303,7 +304,37 @@ namespace Bcg {
 
     }
 
-    namespace Commands{
+    namespace Commands {
+        void Setup<Hierarchy>::execute() const {
+            if (!Engine::valid(entity_id)) {
+                return;
+            }
+
+            Engine::State().get_or_emplace<Hierarchy>(entity_id);
+            Log::Info("{} for entity {}", name, entity_id);
+        }
+
+        void Cleanup<Hierarchy>::execute() const {
+            if (!Engine::valid(entity_id)) {
+                Log::Warn(name + "Entity is not valid. Abort Command");
+                return;
+            }
+
+            if (!Engine::has<Hierarchy>(entity_id)) {
+                Log::Warn(name + "Entity does not have a PointCloud. Abort Command");
+                return;
+            }
+
+            auto &hierarchy = Engine::require<Hierarchy>(entity_id);
+            PluginHierarchy::detach_child(hierarchy.parent, entity_id);
+            PluginHierarchy::detach_children(entity_id);
+
+            Engine::Dispatcher().trigger(Events::Entity::PreRemove<Hierarchy>{entity_id});
+            Engine::State().remove<Hierarchy>(entity_id);
+            Engine::Dispatcher().trigger(Events::Entity::PostRemove<Hierarchy>{entity_id});
+            Log::Info("{} for entity {}", name, entity_id);
+        }
+
         void UpdateTransformsDeferred::execute() const {
             PluginHierarchy::update_transforms(entity_id);
         }

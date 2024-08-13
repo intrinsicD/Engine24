@@ -56,6 +56,24 @@ namespace Bcg {
     };
 
     namespace Commands{
+        template<>
+        struct Setup<Hierarchy> : public AbstractCommand {
+            explicit Setup(entt::entity entity_id) : AbstractCommand("Setup<Hierarchy>"), entity_id(entity_id) {}
+
+            void execute() const override;
+
+            entt::entity entity_id;
+        };
+
+        template<>
+        struct Cleanup<Hierarchy> : public AbstractCommand {
+            explicit Cleanup(entt::entity entity_id) : AbstractCommand("Cleanup<Hierarchy>"), entity_id(entity_id) {}
+
+            void execute() const override;
+
+            entt::entity entity_id;
+        };
+
         struct UpdateTransformsDeferred : public AbstractCommand {
             explicit UpdateTransformsDeferred(entt::entity entity_id) : AbstractCommand("UpdateTransformsDeferred"), entity_id(entity_id) {}
 

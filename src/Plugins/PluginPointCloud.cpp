@@ -9,6 +9,7 @@
 #include "ImGuiFileDialog.h"
 #include "Engine.h"
 #include "EventsCallbacks.h"
+#include "EventsEntity.h"
 #include "PointCloudGui.h"
 #include <chrono>
 #include "PointCloud.h"
@@ -165,7 +166,20 @@ namespace Bcg {
         }
 
         void Cleanup<PointCloud>::execute() const {
+            if (!Engine::valid(entity_id)) {
+                Log::Warn("{}: Entity {} is not valid.", name, entity_id);
+                return;
+            }
 
+            if (!Engine::has<PointCloud>(entity_id)) {
+                Log::Warn("{}: Entity {} does not have Component.", name, entity_id);
+                return;
+            }
+
+            Engine::Dispatcher().trigger(Events::Entity::PreRemove<PointCloud>{entity_id});
+            Engine::State().remove<PointCloud>(entity_id);
+            Engine::Dispatcher().trigger(Events::Entity::PostRemove<PointCloud>{entity_id});
+            Log::Info("{}: Entity {}", name, entity_id);
         }
 
         void ComputePointCloudLocalPcasKnn::execute() const {

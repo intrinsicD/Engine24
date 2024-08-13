@@ -2,18 +2,14 @@
 // Created by alex on 19.06.24.
 //
 
-#include "Input.h"
+#include "PluginInput.h"
 #include "Engine.h"
-#include "Keyboard.h"
-#include "Mouse.h"
 #include "Camera.h"
 #include "Graphics.h"
 #include "imgui.h"
 
 namespace Bcg {
-    static bool show_input_gui;
-
-    Input::Input() : Plugin("Input") {
+    PluginInput::PluginInput() : Plugin("Input") {
         if (!Engine::Context().find<Keyboard>()) {
             auto &keyboard = Engine::Context().emplace<Keyboard>();
             keyboard.pressed.resize(1024);
@@ -25,7 +21,7 @@ namespace Bcg {
     }
 
 
-    Keyboard &Input::set_keyboard(GLFWwindow *window, int key, int scancode, int action, int mode) {
+    Keyboard &PluginInput::set_keyboard(GLFWwindow *window, int key, int scancode, int action, int mode) {
         auto &keyboard = Engine::Context().get<Keyboard>();
         if (keyboard.gui_captured) return keyboard;
         while (key >= keyboard.pressed.size()) {
@@ -40,7 +36,7 @@ namespace Bcg {
         return keyboard;
     }
 
-    Mouse &Input::set_mouse_cursor_position(GLFWwindow *window, double xpos, double ypos) {
+    Mouse &PluginInput::set_mouse_cursor_position(GLFWwindow *window, double xpos, double ypos) {
         auto &mouse = Engine::Context().get<Mouse>();
         if (mouse.gui_captured) return mouse;
         auto &camera = Engine::Context().get<Camera>();
@@ -52,7 +48,7 @@ namespace Bcg {
         return mouse;
     }
 
-    Mouse &Input::set_mouse_button(GLFWwindow *window, int button, int action, int mods) {
+    Mouse &PluginInput::set_mouse_button(GLFWwindow *window, int button, int action, int mods) {
         auto &mouse = Engine::Context().get<Mouse>();
         if (mouse.gui_captured) return mouse;
         while (button >= mouse.pressed.size()) {
@@ -90,7 +86,7 @@ namespace Bcg {
         return mouse;
     }
 
-    Mouse &Input::set_mouse_scrolling(GLFWwindow *window, double xoffset, double yoffset) {
+    Mouse &PluginInput::set_mouse_scrolling(GLFWwindow *window, double xoffset, double yoffset) {
         auto &mouse = Engine::Context().get<Mouse>();
         if (mouse.gui_captured) return mouse;
         mouse.scroll_offset = {xoffset, yoffset};
@@ -98,11 +94,11 @@ namespace Bcg {
         return mouse;
     }
 
-    void Input::activate() {
+    void PluginInput::activate() {
         Plugin::activate();
     }
 
-    void Input::begin_frame() {
+    void PluginInput::begin_frame() {
         auto &mouse = Engine::Context().get<Mouse>();
         mouse.gui_captured = ImGui::GetIO().WantCaptureMouse;
 
@@ -110,28 +106,30 @@ namespace Bcg {
         keyboard.gui_captured = ImGui::GetIO().WantCaptureKeyboard;
     }
 
-    void Input::update() {
+    void PluginInput::update() {
 
     }
 
-    void Input::end_frame() {
+    void PluginInput::end_frame() {
         auto &mouse = Engine::Context().get<Mouse>();
         mouse.scrolling = false;
         mouse.scroll_offset.setZero();
     }
 
-    void Input::deactivate() {
+    void PluginInput::deactivate() {
         Plugin::deactivate();
     }
 
-    void Input::render_menu() {
+    static bool show_input_gui;
+
+    void PluginInput::render_menu() {
         if (ImGui::BeginMenu("Input")) {
             ImGui::MenuItem("Input", nullptr, &show_input_gui);
             ImGui::EndMenu();
         }
     }
 
-    void Input::render_gui() {
+    void PluginInput::render_gui() {
         if (show_input_gui) {
             if (ImGui::Begin("Input", &show_input_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
                 ImGui::Text("Keyboard:");
@@ -146,7 +144,7 @@ namespace Bcg {
         }
     }
 
-    void Input::render() {
+    void PluginInput::render() {
 
     }
 }

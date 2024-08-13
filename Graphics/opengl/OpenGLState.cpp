@@ -237,4 +237,15 @@ namespace Bcg {
         auto &vaos = Engine::State().get<VertexArrayObjects>(entity_id);
         return vaos.erase(name);
     }
+
+    void OpenGLState::clear() {
+        auto &vaos = Engine::State().get<VertexArrayObjects>(entity_id);
+        for (auto &vao: vaos) {
+            vao.second.destroy();
+        }
+        auto &buffers = Engine::State().get<Buffers>(entity_id);
+        for (auto &buffer: buffers) {
+            buffer.second.destroy();
+        }
+    }
 }

@@ -2,9 +2,10 @@
 // Created by alex on 27.06.24.
 //
 
-#include "Plugins.h"
-#include "Input.h"
 #include "Logger.h"
+#include "Plugins.h"
+#include "PluginInput.h"
+#include "PluginEntity.h"
 #include "PluginAABB.h"
 #include "PluginSurfaceMesh.h"
 #include "PluginPointCloud.h"
@@ -25,7 +26,8 @@ namespace Bcg {
 
     void Plugins::init() {
         add_plugin(std::make_unique<PluginCuda>());
-        add_plugin(std::make_unique<Input>());
+        add_plugin(std::make_unique<PluginInput>());
+        add_plugin(std::make_unique<PluginEntity>());
         add_plugin(std::make_unique<PluginAABB>());
         add_plugin(std::make_unique<PluginSurfaceMesh>());
         add_plugin(std::make_unique<PluginPointCloud>());

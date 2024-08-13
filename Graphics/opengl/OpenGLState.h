@@ -12,7 +12,7 @@
 
 namespace Bcg {
     struct OpenGLState {
-        OpenGLState(entt::entity entity_id);
+        explicit OpenGLState(entt::entity entity_id);
 
         Program get_program(const std::string &name);
 
@@ -37,6 +37,8 @@ namespace Bcg {
         bool register_vao(const std::string &name, const VertexArrayObject &vao);
 
         bool remove_vao(const std::string &name);
+
+        void clear();
 
     private:
         entt::entity entity_id;

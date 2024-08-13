@@ -8,7 +8,11 @@
 #include "entt/fwd.hpp"
 
 namespace Bcg::Events::Entity {
-    struct Destroy{
+    struct Destroy {
+        entt::entity entity_id;
+    };
+
+    struct CleanupComponents{
         entt::entity entity_id;
     };
 

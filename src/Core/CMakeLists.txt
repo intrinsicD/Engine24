@@ -8,7 +8,6 @@ target_sources(Engine24 PRIVATE
         EntityCommands.cpp
         FileWatcher.cpp
         GetPrimitives.cpp
-        Input.cpp
         Intersections.cpp
         KDTreeCompute.cpp
         KDTreeCpu.cpp

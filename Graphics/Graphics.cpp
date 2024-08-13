@@ -7,7 +7,7 @@
 #include "Engine.h"
 #include "EventsCallbacks.h"
 #include "Logger.h"
-#include "Input.h"
+#include "PluginInput.h"
 #include "HandleGlfwKeyEvents.h"
 #include "glad/gl.h"
 #include "GLFW/glfw3.h"
@@ -39,7 +39,7 @@ namespace Bcg {
     }
 
     static void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode) {
-        auto &keyboard = Input::set_keyboard(window, key, scancode, action, mode);
+        auto &keyboard = PluginInput::set_keyboard(window, key, scancode, action, mode);
 
         if (!keyboard.gui_captured) {
             auto &dispatcher = Engine::Dispatcher();
@@ -53,7 +53,7 @@ namespace Bcg {
     }
 
     static void mouse_cursor_callback(GLFWwindow *window, double xpos, double ypos) {
-        Input::set_mouse_cursor_position(window, xpos, ypos);
+        PluginInput::set_mouse_cursor_position(window, xpos, ypos);
         //TODO figure out how to either control the camera or on strg space control the selected object...
 
         if (!ImGui::GetIO().WantCaptureMouse) {
@@ -62,7 +62,7 @@ namespace Bcg {
     }
 
     static void mouse_button_callback(GLFWwindow *window, int button, int action, int mods) {
-        Input::set_mouse_button(window, button, action, mods);
+        PluginInput::set_mouse_button(window, button, action, mods);
 
         if (!ImGui::GetIO().WantCaptureMouse) {
             Engine::Dispatcher().trigger<Events::Callback::MouseButton>({window, button, action, mods});
@@ -70,7 +70,7 @@ namespace Bcg {
     }
 
     static void mouse_scrolling(GLFWwindow *window, double xoffset, double yoffset) {
-        Input::set_mouse_scrolling(window, xoffset, yoffset);
+        PluginInput::set_mouse_scrolling(window, xoffset, yoffset);
 
         if (!ImGui::GetIO().WantCaptureMouse) {
             Engine::Dispatcher().trigger<Events::Callback::MouseScroll>({window, xoffset, yoffset});

@@ -61,6 +61,16 @@ namespace Bcg {
             entt::entity entity_id;
         };
 
+        template<>
+        struct Cleanup<SurfaceMesh> : public AbstractCommand {
+            explicit Cleanup(entt::entity entity_id) : AbstractCommand("Cleanup<SurfaceMesh>"),
+                                                       entity_id(entity_id) {}
+
+            void execute() const override;
+
+            entt::entity entity_id;
+        };
+
         struct ComputeFaceNormals : public AbstractCommand {
             explicit ComputeFaceNormals(entt::entity entity_id) : AbstractCommand("ComputeFaceNormals"),
                                                                   entity_id(entity_id) {}

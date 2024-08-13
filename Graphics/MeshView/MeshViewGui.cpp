@@ -7,8 +7,7 @@
 #include "Engine.h"
 #include "Picker.h"
 #include "GetPrimitives.h"
-#include "MeshViewCommands.h"
-#include "GLUtils.h"
+#include "PluginMeshView.h"
 
 namespace Bcg::Gui {
     void Show(MeshView &view) {
@@ -32,7 +31,7 @@ namespace Bcg::Gui {
                     }
                 }
                 if (Combo(view.position.shader_name.c_str(), curr_pos, properties_3d)) {
-                    Commands::View::SetPositionMeshView(entity_id, properties_3d[curr_pos.first]).execute();
+                    Commands::SetPositionMeshView(entity_id, properties_3d[curr_pos.first]).execute();
                 }
 
                 static std::pair<int, std::string> curr_normal = {-1, view.normal.bound_buffer_name};
@@ -43,7 +42,7 @@ namespace Bcg::Gui {
                     }
                 }
                 if (Combo(view.normal.shader_name.c_str(), curr_normal, properties_3d)) {
-                    Commands::View::SetNormalMeshView(entity_id, properties_3d[curr_normal.first]).execute();
+                    Commands::SetNormalMeshView(entity_id, properties_3d[curr_normal.first]).execute();
                 }
 
                 {
@@ -61,9 +60,9 @@ namespace Bcg::Gui {
                     if (Combo(view.color.shader_name.c_str(), curr_color, properties_colors)) {
                         auto *p_array = vertices->get_base(properties_colors[curr_color.first]);
                         if(p_array && p_array->dims() == 1){
-                            Commands::View::SetScalarfieldMeshView(entity_id, properties_colors[curr_color.first]).execute();
+                            Commands::SetScalarfieldMeshView(entity_id, properties_colors[curr_color.first]).execute();
                         }else{
-                            Commands::View::SetColorMeshView(entity_id, properties_colors[curr_color.first]).execute();
+                            Commands::SetColorMeshView(entity_id, properties_colors[curr_color.first]).execute();
                         }
                     }
 

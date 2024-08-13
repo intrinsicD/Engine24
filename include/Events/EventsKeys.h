@@ -146,9 +146,6 @@ namespace Bcg::Events::Key {
     struct CapsLock {
         int action;
     };
-    struct Escape {
-        int action;
-    };
     struct ArrowUp {
         int action;
     };
