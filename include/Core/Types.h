@@ -16,6 +16,8 @@ namespace Bcg {
     using ScalarType = float;
 #endif
 
+    using WeightType = ScalarType;
+
 //! Point type
     using PointType = Vector<ScalarType, 3>;
 
