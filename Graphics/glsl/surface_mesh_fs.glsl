@@ -13,7 +13,8 @@ out vec4 FragColor;
 void main()
 {
     vec3 normal = normalize(f_normal);
-    float diff = max(dot(normal, normalize(light_position - f_world)), 0);
+    float diff = max(dot(normal, normalize(light_position - f_world)), 0.0f);
+    //diff = normal.z;
     vec3 finalColor = (f_color - min_color) / (max_color - min_color);
     finalColor = diff * finalColor;
     FragColor = vec4(finalColor, 1.0f);
