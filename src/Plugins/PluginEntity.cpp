@@ -10,6 +10,10 @@
 
 namespace Bcg {
 
+    static void on_entity_construct(entt::registry &registry, entt::entity entity) {
+        Log::Info("Entity created: {}", entity);
+    }
+
     void on_key_delete(const Events::Key::Delete &event) {
         auto &picker = Engine::Context().get<Picked>();
         auto entity_id = picker.entity.id;
@@ -22,6 +26,7 @@ namespace Bcg {
     PluginEntity::PluginEntity() : Plugin("Entity") {}
 
     void PluginEntity::activate() {
+        Engine::State().on_construct<entt::entity>().connect<&on_entity_construct>();
         Engine::Dispatcher().sink<Events::Key::Delete>().connect<&on_key_delete>();
         Plugin::activate();
     }
@@ -39,6 +44,7 @@ namespace Bcg {
     }
 
     void PluginEntity::deactivate() {
+        Engine::State().on_construct<entt::entity>().disconnect<&on_entity_construct>();
         Engine::Dispatcher().sink<Events::Key::Delete>().disconnect<&on_key_delete>();
         Plugin::deactivate();
     }

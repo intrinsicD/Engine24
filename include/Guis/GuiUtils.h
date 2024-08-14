@@ -7,9 +7,12 @@
 
 #include <sstream>
 #include <vector>
+#include "entt/fwd.hpp"
 
 namespace Bcg::Gui {
     bool Combo(const char *label, std::pair<int, std::string> &curr, std::vector<std::string> &labels);
+
+    bool ComboEntities(const char *label, std::pair<entt::entity, std::string> &curr);
 
     bool ListBox(const char *label, std::pair<int, std::string> &curr, std::vector<std::string> &labels);
 

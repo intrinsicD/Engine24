@@ -3,6 +3,8 @@
 //
 
 #include "GuiUtils.h"
+#include "Engine.h"
+#include "entt/entity/entity.hpp"
 #include "imgui.h"
 
 namespace Bcg::Gui {
@@ -25,6 +27,26 @@ namespace Bcg::Gui {
                 }
             }
             clipper.End();
+            ImGui::EndCombo();
+        }
+        return changed;
+    }
+
+    bool ComboEntities(const char *combo_label, std::pair<entt::entity, std::string> &curr) {
+        bool changed = false;
+        if (ImGui::BeginCombo(combo_label, curr.second.c_str())) {
+            Engine::State().view<entt::entity>().each([&curr, &changed](auto &&entity_id) {
+                auto entity_id_string = std::to_string(static_cast<unsigned int>(entity_id));
+                bool is_selected = (curr.first == entity_id);
+                if (ImGui::Selectable(entity_id_string.c_str(), is_selected)) {
+                    curr.first = entity_id;
+                    curr.second = entity_id_string;
+                    changed = true;
+                }
+                if (is_selected) {
+                    ImGui::SetItemDefaultFocus();
+                }
+            });
             ImGui::EndCombo();
         }
         return changed;

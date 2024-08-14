@@ -3,6 +3,7 @@ target_sources(Engine24 PRIVATE
         CameraGui.cpp
         CoordinateSystemsGui.cpp
         FrameTimerGui.cpp
+        GuiUtils.cpp
         HierarchyGui.cpp
         MeshGui.cpp
         MeshViewGui.cpp

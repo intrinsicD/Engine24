@@ -3,6 +3,8 @@
 //
 
 #include "PluginIcp.h"
+#include "imgui.h"
+#include "GuiUtils.h"
 
 namespace Bcg {
     void PluginIcp::activate() {
@@ -25,19 +27,32 @@ namespace Bcg {
         Plugin::deactivate();
     }
 
-    void PluginIcp::render_menu() {
+    static bool show_gui = false;
 
+    void PluginIcp::render_menu() {
+        if (ImGui::BeginMenu("Registration")) {
+            ImGui::MenuItem("ICP", nullptr, &show_gui);
+            ImGui::EndMenu();
+        }
     }
 
     void PluginIcp::render_gui() {
+        if (show_gui) {
+            if (ImGui::Begin("ICP", &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
+                static std::pair<entt::entity, std::string> source;
+                static std::pair<entt::entity, std::string> target;
+                bool changed = Gui::ComboEntities("Source", source);
+                ImGui::SameLine();
+                changed |= Gui::ComboEntities("Target", target);
 
+
+
+            }
+            ImGui::End();
+        }
     }
 
     void PluginIcp::render() {
-
-    }
-
-    void Commands::ComputeIcp::execute() const {
 
     }
 }

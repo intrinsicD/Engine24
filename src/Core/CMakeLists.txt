@@ -9,7 +9,6 @@ target_sources(Engine24 PRIVATE
         FileWatcher.cpp
         GetPrimitives.cpp
         GLFWUtils.cpp
-        GuiUtils.cpp
         HandleGlfwKeyEvents.cpp
         Intersections.cpp
         KDTreeCompute.cpp

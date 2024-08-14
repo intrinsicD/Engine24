@@ -34,19 +34,26 @@ namespace Bcg {
                 auto start_time = std::chrono::high_resolution_clock::now();
 
                 PointCloud pc = PluginPointCloud::load(event.paths[i]);
-                auto end_time = std::chrono::high_resolution_clock::now();
+                if (!pc.is_empty()) {
+                    auto end_time = std::chrono::high_resolution_clock::now();
 
-                std::chrono::duration<double> build_duration = end_time - start_time;
-                Log::Info("Build PointCloud in " + std::to_string(build_duration.count()) + " seconds");
+                    std::chrono::duration<double> build_duration = end_time - start_time;
+                    Log::Info("Build PointCloud in " + std::to_string(build_duration.count()) + " seconds");
+
+                    auto entity_id = Engine::State().create();
+                    Commands::Setup<PointCloud>(entity_id).execute();
+                }
+
             }
         }
     }
 
     PointCloud PluginPointCloud::load(const std::string &filepath) {
-        auto entity_id = Engine::State().create();
-        Commands::Load<PointCloud>(entity_id, filepath).execute();
-        Commands::Setup<PointCloud>(entity_id).execute();
-        return Engine::require<PointCloud>(entity_id);
+        PointCloud pc;
+        if (!Read(filepath, pc)) {
+            Log::Error("Unsupported file format: " + filepath);
+        }
+        return pc;
     }
 
 
@@ -112,21 +119,19 @@ namespace Bcg {
 
     namespace Commands {
         void Load<PointCloud>::execute() const {
-            std::string ext = filepath;
-            ext = ext.substr(ext.find_last_of('.') + 1);
-
-            PointCloud pc;
-            if (!Read(filepath, pc)) {
-                Log::Error("Unsupported file format: " + filepath);
+            if (!Engine::valid(entity_id)) {
+                Log::Warn(name + "Entity is not valid. Abort Command");
                 return;
             }
 
-            auto entity = entity_id;
-            if (!Engine::valid(entity_id)) {
-                entity = Engine::State().create();
+            auto pc = PluginPointCloud::load(filepath);
+
+            if(pc.is_empty()){
+                Log::Warn(name + "Failed to load PointCloud from " + filepath);
+                return;
             }
 
-            Engine::State().emplace_or_replace<PointCloud>(entity, pc);
+            Engine::State().emplace_or_replace<PointCloud>(entity_id, pc);
         }
 
         void Setup<PointCloud>::execute() const {

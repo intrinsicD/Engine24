@@ -37,21 +37,7 @@ namespace Bcg {
     };
 
     namespace Commands {
-        struct ComputeIcp : public AbstractCommand {
-            explicit ComputeIcp(entt::entity source_id, entt::entity target_id, const IcpConfig &config)
-                    : AbstractCommand("ComputeIcp"),
-                      source_id(source_id),
-                      target_id(target_id),
-                      config(config) {
 
-            }
-
-            void execute() const override;
-
-            entt::entity source_id;
-            entt::entity target_id;
-            IcpConfig config;
-        };
     }
 }
 

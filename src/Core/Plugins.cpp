@@ -20,6 +20,7 @@
 #include "PluginSelection.h"
 #include "PluginCuda.h"
 #include "PluginGraphics.h"
+#include "PluginIcp.h"
 #include <unordered_map>
 
 namespace Bcg {
@@ -42,6 +43,7 @@ namespace Bcg {
         add_plugin(std::make_unique<PluginMeshView>());
         add_plugin(std::make_unique<PluginVectorfieldViews>());
         add_plugin(std::make_unique<PluginSelection>());
+        add_plugin(std::make_unique<PluginIcp>());
     }
 
     void Plugins::init_user_plugin(const std::string &name) {
