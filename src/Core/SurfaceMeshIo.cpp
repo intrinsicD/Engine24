@@ -206,15 +206,22 @@ namespace Bcg {
             colors = mesh.vertex_property<ColorType>("v:color");
 
         // read line, but skip comment lines
-        while (lp && (lp[0] == '#' || lp[0] == '\n')) {
+        while (lp && (lp[0] == '#' || lp[0] == '\n' || lp[0] == '\r')) {
             lp = fgets(line.data(), 1000, in);
         }
 
         // #Vertices, #Faces, #Edges
         auto items = sscanf(lp, "%ld %ld %ld\n", &nv, &nf, &ne);
 
-        if (items < 3 || nv < 1 || nf < 1 || ne < 0)
-            throw IOException("Failed to parse OFF header");
+        if (items < 3 || ne < 0){
+            Log::Error("Failed to parse OFF header");
+            return;
+        }
+
+        if(nv < 1){
+            Log::Error("Off file has no vertices");
+            return;
+        }
 
         mesh.reserve(nv, std::max(3 * nv, ne), nf);
 
@@ -261,6 +268,11 @@ namespace Bcg {
                 texcoords[v][1] = y;
                 lp += nc;
             }
+        }
+
+        if(nf < 1){
+            Log::Warn("Off file has no faces");
+            return;
         }
 
         // read faces: #N v[1] v[2] ... v[n-1]

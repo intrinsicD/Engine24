@@ -109,6 +109,10 @@ namespace Bcg {
             t.linear() = Eigen::AngleAxisf(angle_axis.norm(), angle_axis.normalized()).toRotationMatrix();
             return t;
         }
+
+        Vector<float, 3> operator*(const Vector<float, 3> &v) const {
+            return (m_matrix * v.homogeneous()).head<3>();
+        }
     };
 }
 
