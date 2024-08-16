@@ -16,6 +16,7 @@ namespace Bcg::Gui {
     }
 
     void ShowVectorfieldViews(entt::entity entity_id) {
+        if (!Engine::valid(entity_id)) return;
         ImGui::PushID("VectorfieldViews");
         auto *vertices = GetPrimitives(entity_id).vertices();
         auto properties_3d = vertices->properties({3});
@@ -54,7 +55,7 @@ namespace Bcg::Gui {
                 }
                 if (Combo(view.position.shader_name.c_str(), curr_pos, properties_3d)) {
                     Commands::SetPositionVectorfieldView(entity_id, view.vectorfield_name,
-                                                               properties_3d[curr_pos.first]).execute();
+                                                         properties_3d[curr_pos.first]).execute();
                 }
 
                 static std::pair<int, std::string> curr_vector = {-1, view.vector.bound_buffer_name};
@@ -66,7 +67,7 @@ namespace Bcg::Gui {
                 }
                 if (Combo(view.vector.shader_name.c_str(), curr_vector, properties_3d)) {
                     Commands::SetVectorVectorfieldView(entity_id, view.vectorfield_name,
-                                                             properties_3d[curr_vector.first]).execute();
+                                                       properties_3d[curr_vector.first]).execute();
                 }
 
                 {
@@ -81,7 +82,7 @@ namespace Bcg::Gui {
 
                     if (Combo(view.color.shader_name.c_str(), curr_color, properties_3d)) {
                         Commands::SetColorVectorfieldView(entity_id, view.vectorfield_name,
-                                                                properties_3d[curr_color.first]).execute();
+                                                          properties_3d[curr_color.first]).execute();
                     }
 
                     view.vao.bind();
@@ -115,7 +116,7 @@ namespace Bcg::Gui {
 
                     if (Combo(view.length.shader_name.c_str(), curr_lengths, properties_1d)) {
                         Commands::SetLengthVectorfieldView(entity_id, view.vectorfield_name,
-                                                                 properties_1d[curr_lengths.first]).execute();
+                                                           properties_1d[curr_lengths.first]).execute();
                     }
 
                     if (view.use_uniform_length) {

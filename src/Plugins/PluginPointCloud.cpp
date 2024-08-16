@@ -42,6 +42,7 @@ namespace Bcg {
                     Log::Info("Build PointCloud in " + std::to_string(build_duration.count()) + " seconds");
 
                     auto entity_id = Engine::State().create();
+                    Engine::State().emplace<PointCloud>(entity_id, pc);
                     Commands::Setup<PointCloud>(entity_id).execute();
                 }
 
