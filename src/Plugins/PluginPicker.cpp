@@ -82,7 +82,7 @@ namespace Bcg {
                 }
             }
 
-            auto result = kdtree.knn_query(picked.spaces.osp, 15);
+            auto result = kdtree.radius_query(picked.spaces.osp, 0.1);
 
             picked.entity.vertex_idx = result.indices[0];
             Engine::Dispatcher().trigger(Events::PickedEntity{entity_id});

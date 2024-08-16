@@ -47,6 +47,9 @@ namespace Bcg::Gui {
                 if (ImGui::Button("HierarchicalKmeans")) {
                     Commands::ComputeHierarchicalKMeans(entity_id, k, iterations).execute();
                 }
+                if (ImGui::Button("LocalGaussians")) {
+                    Commands::ComputeLocalGaussians(entity_id, k).execute();
+                }
             }
         }
     }

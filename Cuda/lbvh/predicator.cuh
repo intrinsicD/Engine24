@@ -31,16 +31,19 @@ namespace lbvh {
         Object target;
     };
 
-    template<typename Real>
     __device__ __host__
-    query_overlap<aabb<Real>> overlaps(const aabb<Real> &region) noexcept {
-        return query_overlap<aabb<Real>>(region);
+    inline query_overlap<aabb<float>> overlaps_aabb(const aabb<float> &region) noexcept {
+        return query_overlap<aabb<float>>(region);
     }
 
-    template<typename Real>
     __device__ __host__
-    query_overlap<sphere<Real>> overlaps(const sphere<Real> &region) noexcept {
-        return query_overlap<sphere<Real>>(region);
+    inline query_overlap<sphere<float>> overlaps_sphere(const sphere<float> &region) noexcept {
+        return query_overlap<sphere<float>>(region);
+    }
+
+    __device__ __host__
+    inline query_overlap<sphere<float>> overlaps_sphere(const float3 &point, float radius) noexcept {
+        return query_overlap<sphere<float>>({make_float4(point.x, point.y, point.z, radius)});
     }
 
     template<typename Real>

@@ -20,3 +20,4 @@ target_compile_options(Engine24 PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe=\"--
 
 add_subdirectory(lbvh)
 add_subdirectory(Kmeans)
+add_subdirectory(LocalGaussians)

@@ -54,8 +54,16 @@ namespace Bcg {
     }
 
     [[nodiscard]] QueryResult KDTreeCuda::radius_query(const Vector<float, 3> &query_point, float radius) const {
-
-        return {};
+        auto &bvh = Engine::require<lbvh::bvh<float, float4, aabb_getter>>(entity_id);
+        float3 d_query = {query_point[0], query_point[1], query_point[2]};
+        QueryResult result;
+        std::vector<size_t> indices;
+        const auto num_found = lbvh::query_host(bvh, lbvh::overlaps_sphere(d_query, radius), indices);
+        result.indices.reserve(num_found);
+        for (const auto idx: indices) {
+            result.indices.push_back(idx);
+        }
+        return result;
     }
 
     [[nodiscard]] QueryResult KDTreeCuda::closest_query(const Vector<float, 3> &query_point) const {

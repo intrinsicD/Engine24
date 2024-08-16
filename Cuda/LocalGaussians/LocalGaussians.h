@@ -8,7 +8,9 @@
 #include "LocalGaussiansResult.h"
 
 namespace Bcg{
-    LocalGaussiansResult LocalGaussians(const std::vector<Vector<float, 3>> &points, const std::vector<unsigned int> &labels, const std::vector<Vector<float, 3>> &centroids, const std::vector<float> &distances, const float sigma, const float epsilon, const unsigned int max_iter);
+    LocalGaussiansResult LocalGaussians(const std::vector<Vector<float, 3>> &points, const std::vector<unsigned int> &labels, const std::vector<Vector<float, 3>> &centroids);
+
+    LocalGaussiansResult LocalGaussians(const std::vector<Vector<float, 3>> &points, int k);
 }
 
 #endif //ENGINE24_LOCALGAUSSIANS_H

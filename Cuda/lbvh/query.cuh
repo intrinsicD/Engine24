@@ -12,16 +12,14 @@ namespace lbvh {
 // requirements:
 // - OutputIterator should be writable and its object_type should be uint32_t
 //
-    template<typename Real, typename Objects, bool IsConst, typename OutputIterator>
+    template<typename Real, typename Objects, bool IsConst, typename QueryObject,typename OutputIterator>
     __device__
     unsigned int query_device(
             const detail::basic_device_bvh<Real, Objects, IsConst> &bvh,
-            const query_overlap<Real> q, OutputIterator outiter,
+            const query_overlap<QueryObject> q, OutputIterator outiter,
             const unsigned int max_buffer_size = 0xFFFFFFFF) noexcept {
         using bvh_type = detail::basic_device_bvh<Real, Objects, IsConst>;
         using index_type = typename bvh_type::index_type;
-        using aabb_type = typename bvh_type::aabb_type;
-        using node_type = typename bvh_type::node_type;
 
         index_type stack[64]; // is it okay?
         index_type *stack_ptr = stack;
@@ -76,7 +74,6 @@ namespace lbvh {
         using real_type = typename bvh_type::real_type;
         using index_type = typename bvh_type::index_type;
         using aabb_type = typename bvh_type::aabb_type;
-        using node_type = typename bvh_type::node_type;
 
         // pair of {node_idx, mindist}
         thrust::pair<index_type, real_type> stack[64];
@@ -145,10 +142,9 @@ namespace lbvh {
 // requirements:
 // - DistanceCalculator must be able to calc distance between a point to an object.
 //
-    template<typename Real, typename Objects, typename AABBGetter,
-            typename MortonCodeCalculator, typename DistanceCalculator, typename OutputIterator>
+    template<typename Real, typename Objects, bool IsConst, typename DistanceCalculator, typename OutputIterator>
     __device__ unsigned int query_device(
-            const detail::basic_device_bvh<Real, Objects, true> &bvh,
+            const detail::basic_device_bvh<Real, Objects, IsConst> &bvh,
             const query_knn<Real> &q, DistanceCalculator calc_dist,
             OutputIterator outiter,
             const unsigned int max_buffer_size = 0xFFFFFFFF) {
@@ -250,15 +246,12 @@ namespace lbvh {
     }
 
     template<typename Real, typename Objects, typename AABBGetter,
-            typename MortonCodeCalculator, typename OutputIterator>
+            typename MortonCodeCalculator, typename QueryObject>
     unsigned int query_host(
             const bvh<Real, Objects, AABBGetter, MortonCodeCalculator> &tree,
-            const query_overlap<Objects> q, OutputIterator outiter,
-            const unsigned int max_buffer_size = 0xFFFFFFFF) {
+            const query_overlap<QueryObject> q, std::vector<size_t> &outiter) {
         using bvh_type = ::lbvh::bvh<Real, Objects, AABBGetter, MortonCodeCalculator>;
         using index_type = typename bvh_type::index_type;
-        using aabb_type = typename bvh_type::aabb_type;
-        using node_type = typename bvh_type::node_type;
 
         if (!tree.query_host_enabled()) {
             throw std::runtime_error("lbvh::bvh query_host is not enabled");
@@ -278,9 +271,7 @@ namespace lbvh {
             if (intersects(q.target, tree.aabbs_host()[L_idx])) {
                 const auto obj_idx = tree.nodes_host()[L_idx].object_idx;
                 if (obj_idx != 0xFFFFFFFF) {
-                    if (num_found < max_buffer_size) {
-                        *outiter++ = obj_idx;
-                    }
+                    outiter.push_back(obj_idx);
                     ++num_found;
                 } else // the node is not a leaf.
                 {
@@ -290,9 +281,7 @@ namespace lbvh {
             if (intersects(q.target, tree.aabbs_host()[R_idx])) {
                 const auto obj_idx = tree.nodes_host()[R_idx].object_idx;
                 if (obj_idx != 0xFFFFFFFF) {
-                    if (num_found < max_buffer_size) {
-                        *outiter++ = obj_idx;
-                    }
+                    outiter.push_back(obj_idx);
                     ++num_found;
                 } else // the node is not a leaf.
                 {

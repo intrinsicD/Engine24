@@ -23,6 +23,7 @@
 #include "KDTreeCuda.h"
 #include "KDTreeCpu.h"
 #include "Kmeans.h"
+#include "LocalGaussians.h"
 #include "Eigen/Eigenvalues"
 #include "PluginSphereView.h"
 
@@ -126,7 +127,7 @@ namespace Bcg {
 
             auto pc = PluginPointCloud::load(filepath);
 
-            if(pc.is_empty()){
+            if (pc.is_empty()) {
                 Log::Warn(name + "Failed to load PointCloud from " + filepath);
                 return;
             }
@@ -285,6 +286,40 @@ namespace Bcg {
             labels.vector() = result.labels;
             distances.vector() = result.distances;
             Engine::State().emplace_or_replace<KMeansResult>(entity_id);
+        }
+
+        void ComputeLocalGaussians::execute() const {
+            if (!Engine::valid(entity_id)) {
+                Log::Warn(name + " Entity is not valid. Abort Command!");
+                return;
+            }
+
+            auto *vertices = GetPrimitives(entity_id).vertices();
+            if (!vertices) {
+                Log::Warn(name + " Entity does not have vertices. Abort Command!");
+                return;
+            }
+
+            auto positions = vertices->get<Vector<float, 3>>("v:position");
+            if (!positions) {
+                Log::Warn(name + " Entity does not have positions property. Abort Command!");
+                return;
+            }
+            auto result = LocalGaussians(positions.vector(), num_closest);
+            auto means = vertices->get_or_add<Vector<float, 3>>("v:local_gaussians:means");
+            auto covs = vertices->get_or_add<Matrix<float, 3, 3>>("v:local_gaussians:covs");
+            auto evecs0 = vertices->get_or_add<Vector<float, 3>>("v:local_gaussians:evecs0");
+            auto evecs1 = vertices->get_or_add<Vector<float, 3>>("v:local_gaussians:evecs1");
+            auto evecs2 = vertices->get_or_add<Vector<float, 3>>("v:local_gaussians:evecs2");
+            covs.vector() = result.covs;
+            means.vector() = result.means;
+
+            for (size_t i = 0; i < vertices->size(); ++i) {
+                Eigen::SelfAdjointEigenSolver<Eigen::Matrix<float, 3, 3>> eigensolver(result.covs[i]);
+                evecs0[i] = eigensolver.eigenvectors().col(0);
+                evecs1[i] = eigensolver.eigenvectors().col(1);
+                evecs2[i] = eigensolver.eigenvectors().col(2);
+            }
         }
     }
 }

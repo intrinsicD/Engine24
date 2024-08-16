@@ -18,6 +18,7 @@ namespace lbvh {
         using type = double4;
     };
 
+
     template<typename T>
     using vector_of_t = typename vector_of<T>::type;
 
