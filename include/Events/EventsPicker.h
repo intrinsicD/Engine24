@@ -14,7 +14,7 @@ namespace Bcg::Events {
 
     struct PickedVertex {
         entt::entity entity_id;
-        unsigned int idx;
+        std::vector<size_t> *idx;
     };
 
     struct PickedBackgound{

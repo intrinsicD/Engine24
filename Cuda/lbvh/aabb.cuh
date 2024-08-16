@@ -127,7 +127,7 @@ namespace lbvh {
     }
 
     struct aabb_getter {
-        __device__
+        __device__ __host__
         lbvh::aabb<float> operator()(const float4 f) const noexcept {
             lbvh::aabb<float> retval;
             retval.upper = f;

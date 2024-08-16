@@ -35,17 +35,15 @@ namespace Bcg {
 
     [[nodiscard]] QueryResult
     KDTreeCuda::knn_query(const Vector<float, 3> &query_point, unsigned int num_closest) const {
-        //TODO this is still wrong
         auto &bvh = Engine::require<lbvh::bvh<float, float4, aabb_getter>>(entity_id);
         struct distance_calculator {
             __device__ __host__
-            float operator()(const float4 point, const float4 object) const noexcept {
+            float operator()(const float4 &point, const float4 &object) const noexcept {
                 return (point.x - object.x) * (point.x - object.x) +
                        (point.y - object.y) * (point.y - object.y) +
                        (point.z - object.z) * (point.z - object.z);
             }
         };
-        const auto bvh_dev = bvh.get_device_repr();
         float3 d_query = {query_point[0], query_point[1], query_point[2]};
         QueryResult result;
         const auto indices = lbvh::query_host(bvh, lbvh::knn(d_query, num_closest), distance_calculator());
@@ -64,21 +62,18 @@ namespace Bcg {
         auto &bvh = Engine::require<lbvh::bvh<float, float4, aabb_getter>>(entity_id);
         struct distance_calculator {
             __device__ __host__
-            float operator()(const float4 point, const float4 object) const noexcept {
+            float operator()(const float4 &point, const float4 &object) const noexcept {
                 return (point.x - object.x) * (point.x - object.x) +
                        (point.y - object.y) * (point.y - object.y) +
                        (point.z - object.z) * (point.z - object.z);
             }
         };
-        const auto bvh_dev = bvh.get_device_repr();
         float3 d_query = {query_point[0], query_point[1], query_point[2]};
-        const auto nest = lbvh::query_host(bvh, lbvh::nearest(d_query),
-                                           distance_calculator());
+        const auto next = lbvh::query_host(bvh, lbvh::nearest(d_query), distance_calculator());
         QueryResult result;
-        result.indices.emplace_back(nest.first);
-        result.distances.emplace_back(nest.second);
+        result.indices.emplace_back(next.first);
+        result.distances.emplace_back(next.second);
         return result;
-        /*       return {};*/
     }
 
 }

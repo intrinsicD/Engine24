@@ -149,7 +149,7 @@ namespace Bcg {
         return result;
     }
 
-    void assign_clusters(dbvh &bvh,
+    void AssignClusters(dbvh &bvh,
                          thrust::device_ptr<float4> d_positions,
                          thrust::device_ptr<float4> d_new_sums,
                          thrust::device_ptr<unsigned int> d_new_cluster_sizes,
@@ -186,7 +186,7 @@ namespace Bcg {
         }
     }
 
-    void update_centroids(thrust::device_ptr<float4> new_centroids,
+    void UpdateCentroids(thrust::device_ptr<float4> new_centroids,
                           const thrust::device_ptr<float4> new_sums,
                           const thrust::device_ptr<unsigned int> &new_cluster_sizes, std::uint32_t k) {
         thrust::for_each(thrust::device,
@@ -255,13 +255,19 @@ namespace Bcg {
             thrust::fill(d_data.new_sums.begin(), d_data.new_sums.end(), float4(0, 0, 0, 0));
             thrust::fill(d_data.new_cluster_sizes.begin(), d_data.new_cluster_sizes.end(), 0);
 
-            assign_clusters(d_ptrs.d_bvh, d_ptrs.d_positions, d_ptrs.d_new_sums, d_ptrs.d_new_cluster_sizes,
+            AssignClusters(d_ptrs.d_bvh, d_ptrs.d_positions, d_ptrs.d_new_sums, d_ptrs.d_new_cluster_sizes,
                             d_ptrs.d_labels, d_ptrs.d_distances, num_objects);
 
-            update_centroids(d_ptrs.d_centroids, d_ptrs.d_new_sums, d_ptrs.d_new_cluster_sizes, k);
+            UpdateCentroids(d_ptrs.d_centroids, d_ptrs.d_new_sums, d_ptrs.d_new_cluster_sizes, k);
         }
 
         return DeviceToHost(d_data, h_centroids);
+    }
+
+    float4 GetMostDistantPoint(KmeansDeviceData &d_data) {
+        auto max_dist_iter = thrust::max_element(d_data.distances.begin(), d_data.distances.end());
+        auto max_dist_index = max_dist_iter - d_data.distances.begin();
+        return d_data.positions[max_dist_index];
     }
 
     KMeansResult
@@ -282,11 +288,8 @@ namespace Bcg {
 
         KmeansDeviceData d_data = SetupKMeansDeviceData(h_centroids, h_positions);
         d_data.distances = h_distances;
-
-
-        auto max_dist_iter = thrust::max_element(d_data.distances.begin(), d_data.distances.end());
-        auto max_dist_index = max_dist_iter - d_data.distances.begin();
-        d_data.push_new_cluster(d_data.positions[max_dist_index]);
+        
+        d_data.push_new_cluster(GetMostDistantPoint(d_data));
         current_k = d_data.centroids.size();
 
         while (current_k < k) {
@@ -296,19 +299,16 @@ namespace Bcg {
 
                 KmeansDeviceDataPtr d_ptrs = d_data.get_ptrs();
 
-                //d_ptrs.d_bvh = d_data.bvh.get_device_repr();
-
                 thrust::fill(d_data.new_sums.begin(), d_data.new_sums.end(), float4(0, 0, 0, 0));
                 thrust::fill(d_data.new_cluster_sizes.begin(), d_data.new_cluster_sizes.end(), 0);
 
-                assign_clusters(d_ptrs.d_bvh, d_ptrs.d_positions, d_ptrs.d_new_sums, d_ptrs.d_new_cluster_sizes,
+                AssignClusters(d_ptrs.d_bvh, d_ptrs.d_positions, d_ptrs.d_new_sums, d_ptrs.d_new_cluster_sizes,
                                 d_ptrs.d_labels, d_ptrs.d_distances, num_objects);
 
-                update_centroids(d_ptrs.d_centroids, d_ptrs.d_new_sums, d_ptrs.d_new_cluster_sizes, current_k);
+                UpdateCentroids(d_ptrs.d_centroids, d_ptrs.d_new_sums, d_ptrs.d_new_cluster_sizes, current_k);
             }
-            auto max_dist_iter = thrust::max_element(d_data.distances.begin(), d_data.distances.end());
-            auto max_dist_index = max_dist_iter - d_data.distances.begin();
-            d_data.push_new_cluster(d_data.positions[max_dist_index]);
+            
+            d_data.push_new_cluster(GetMostDistantPoint(d_data));
             current_k = d_data.centroids.size();
         }
 

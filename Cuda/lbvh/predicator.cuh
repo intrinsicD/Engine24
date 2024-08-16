@@ -87,47 +87,47 @@ namespace lbvh {
     }
 
     template<typename Real>
-    struct query_k_closest {
+    struct query_knn {
         // float4/double4
         using vector_type = typename vector_of<Real>::type;
 
         __device__ __host__
-        query_k_closest(const vector_type &tgt, unsigned int k_closest) : target(tgt), k_closest(k_closest) {}
+        query_knn(const vector_type &tgt, unsigned int k_closest) : target(tgt), k_closest(k_closest) {}
 
-        query_k_closest() = default;
+        query_knn() = default;
 
-        ~query_k_closest() = default;
+        ~query_knn() = default;
 
-        query_k_closest(const query_k_closest &) = default;
+        query_knn(const query_knn &) = default;
 
-        query_k_closest(query_k_closest &&) = default;
+        query_knn(query_knn &&) = default;
 
-        query_k_closest &operator=(const query_k_closest &) = default;
+        query_knn &operator=(const query_knn &) = default;
 
-        query_k_closest &operator=(query_k_closest &&) = default;
+        query_knn &operator=(query_knn &&) = default;
 
         vector_type target;
         unsigned int k_closest;
     };
 
     __device__ __host__
-    inline query_k_closest<float> knn(const float4 &point, unsigned int k) noexcept {
-        return query_k_closest<float>(point, k);
+    inline query_knn<float> knn(const float4 &point, unsigned int k) noexcept {
+        return query_knn<float>(point, k);
     }
 
     __device__ __host__
-    inline query_k_closest<float> knn(const float3 &point, unsigned int k) noexcept {
-        return query_k_closest<float>(make_float4(point.x, point.y, point.z, 0.0f), k);
+    inline query_knn<float> knn(const float3 &point, unsigned int k) noexcept {
+        return query_knn<float>(make_float4(point.x, point.y, point.z, 0.0f), k);
     }
 
     __device__ __host__
-    inline query_k_closest<double> knn(const double4 &point, unsigned int k) noexcept {
-        return query_k_closest<double>(point, k);
+    inline query_knn<double> knn(const double4 &point, unsigned int k) noexcept {
+        return query_knn<double>(point, k);
     }
 
     __device__ __host__
-    inline query_k_closest<double> knn(const double3 &point, unsigned int k) noexcept {
-        return query_k_closest<double>(make_double4(point.x, point.y, point.z, 0.0), k);
+    inline query_knn<double> knn(const double3 &point, unsigned int k) noexcept {
+        return query_knn<double>(make_double4(point.x, point.y, point.z, 0.0), k);
     }
 
 } // lbvh

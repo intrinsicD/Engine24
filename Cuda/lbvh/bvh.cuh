@@ -29,9 +29,10 @@ namespace lbvh {
             std::uint32_t object_idx; // == 0xFFFFFFFF if internal node.
         };
 
-// a set of pointers to use it on device.
+        // a set of pointers to use it on device.
         template<typename Real, typename Object, bool IsConst>
         struct basic_device_bvh;
+
         template<typename Real, typename Object>
         struct basic_device_bvh<Real, Object, false> {
             using real_type = Real;
@@ -47,6 +48,7 @@ namespace lbvh {
             aabb_type *aabbs;
             object_type *objects;
         };
+
         template<typename Real, typename Object>
         struct basic_device_bvh<Real, Object, true> {
             using real_type = Real;
@@ -205,6 +207,7 @@ namespace lbvh {
 
     template<typename Real, typename Object>
     using bvh_device = detail::basic_device_bvh<Real, Object, false>;
+
     template<typename Real, typename Object>
     using cbvh_device = detail::basic_device_bvh<Real, Object, true>;
 
@@ -219,9 +222,7 @@ namespace lbvh {
         using node_type = detail::node;
         using aabb_getter_type = AABBGetter;
         using morton_code_calculator_type = MortonCodeCalculator;
-
     public:
-
         template<typename InputIterator>
         bvh(InputIterator first, InputIterator last, bool query_host_enabled = false)
                 : objects_h_(first, last), objects_d_(objects_h_),

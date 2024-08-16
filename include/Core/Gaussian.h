@@ -8,69 +8,29 @@
 #include "MatVec.h"
 #include "Statistics.h"
 #include "RigidTransform.h"
+#include "Covariance.h"
 
 namespace Bcg {
     template<typename Scalar, int N>
-    struct Gaussian {
-        Matrix<Scalar, N, N> covariance;
-        Vector<Scalar, N> mean;
+    struct GaussianStructOfArrays {
+        std::vector<Vector<Scalar, N>> means;
+        std::vector<Matrix<Scalar, N, N>> covs;
+        std::vector<Scalar> weights;
     };
 
-    template<typename Scalar>
-    struct Gaussian<Scalar, 3> {
-        Vector<Scalar, 3> mean;
-        Matrix<Scalar, 3, 3> covariance;
-        Scalar weight;
-
-        Gaussian() : mean(Vector<Scalar, 3>::Zero()), covariance(Matrix<Scalar, 3, 3>::Identity()), weight(1) {
-
-        }
-
-        Gaussian(const Vector<Scalar, 3> &mean, const Matrix<Scalar, 3, 3> &covariance, Scalar weight = 1) : mean(mean),
-                                                                                                             covariance(
-                                                                                                                     covariance),
-                                                                                                             weight(weight) {
-
-        }
-
-        static Gaussian Zero() {
-            return Gaussian(Vector<Scalar, 3>::Zero(), Matrix<Scalar, 3, 3>::Zero(), 0);
-        }
-
-        Scalar pdf(const Vector<Scalar, 3> &x) const {
-            return std::exp(-0.5 * (x - mean).transpose() * covariance.inverse() * (x - mean)) /
-                   std::sqrt(std::pow(2 * M_PI, 3) * covariance.determinant());
-        }
-
-        Gaussian operator*(const Gaussian &other) const {
-            Matrix<Scalar, 3, 3> covSum = covariance + other.covariance;
-            Matrix<Scalar, 3, 3> invCovSum = covSum.inverse();
-            Scalar preFac = 1.0 / std::sqrt(std::pow(2 * M_PI, 3) * covSum.determinant());
-
-            Matrix<Scalar, 3, 3> invCov0 = covariance.inverse();
-            Matrix<Scalar, 3, 3> invCov1 = other.covariance.inverse();
-            Vector<Scalar, 3> d = mean - other.mean;
-
-            Gaussian product;
-            product.weight = weight * other.weight * preFac * std::exp(-0.5 * d.transpose() * invCovSum * d);
-            product.covariance = (invCov0 + invCov1).inverse();
-            product.mean = product.covariance * (invCov0 * mean + invCov1 * other.mean);
-
-            return product;
-        }
-    };
-
-
+    template<typename Scalar, int N>
+    struct IGaussian;
 
     template<typename Scalar, int N>
-    Gaussian<Scalar, N> Build(Gaussian<Scalar, N> &gaussian, const std::vector<Vector<Scalar, N>> &points) {
-        gaussian.mean = Mean(points);
-        gaussian.covariance = Covariance(points, gaussian.mean);
-        return gaussian;
-    }
+    struct Gaussian;
 
     template<typename Scalar, int N>
-    Matrix<Scalar, N, N> RotateCovariance(const Matrix<Scalar, N, N> &cov, const Matrix<Scalar, N, N> &R) {
+    struct GaussianView;
+
+    // Utility functions for common Gaussian operations
+    template<typename Scalar, int N>
+    Matrix<Scalar, N, N> RotateCovariance(const Matrix<Scalar, N, N> &cov,
+                                          const Matrix<Scalar, N, N> &R) {
         return R * cov * R.transpose();
     }
 
@@ -89,32 +49,167 @@ namespace Bcg {
         return std::sqrt(SquaredMahalonobisDistance(x, y, cov));
     }
 
-    template<typename Scalar>
-    Scalar KullbackLeiblerDivergence(const Gaussian<Scalar, 3> &p, const Gaussian<Scalar, 3> &q) {
-        Matrix<Scalar, 3, 3> invCovQ = q.covariance.inverse();
-        Vector<Scalar, 3> d = p.mean - q.mean;
-        Scalar tr = (invCovQ * p.covariance).trace();
-        Scalar logDet = std::log(q.covariance.determinant() / p.covariance.determinant());
-        return 0.5 * (tr + d.transpose() * invCovQ * d - 3 + logDet);
+    template<typename Scalar, int N>
+    Scalar GaussianPDF(const Vector<Scalar, N> &x,
+                       const Vector<Scalar, N> &mean,
+                       const Matrix<Scalar, N, N> &covariance) {
+        return std::exp(-0.5 * (x - mean).transpose() * covariance.inverse() * (x - mean)) /
+               std::sqrt(std::pow(2 * M_PI, N) * covariance.determinant());
     }
 
-    template<typename Scalar>
-    Scalar BhattacharyyaDistance(const Gaussian<Scalar, 3> &p, const Gaussian<Scalar, 3> &q) {
-        Matrix<Scalar, 3, 3> covSum = 0.5 * (p.covariance + q.covariance);
-        Vector<Scalar, 3> d = p.mean - q.mean;
+    template<typename Scalar, int N>
+    Scalar KullbackLeiblerDiv(const Vector<Scalar, N> &meanP, const Matrix<Scalar, N, N> &covP,
+                              const Vector<Scalar, N> &meanQ, const Matrix<Scalar, N, N> &covQ) {
+        Matrix<Scalar, N, N> invCovQ = covQ.inverse();
+        Vector<Scalar, N> d = meanP - meanQ;
+        Scalar tr = (invCovQ * covP).trace();
+        Scalar logDet = std::log(covQ.determinant() / covP.determinant());
+        return 0.5 * (tr + d.transpose() * invCovQ * d - N + logDet);
+    }
+
+    template<typename Scalar, int N>
+    Scalar BhattacharyyaDist(const Vector<Scalar, N> &meanP, const Matrix<Scalar, N, N> &covP,
+                             const Vector<Scalar, N> &meanQ, const Matrix<Scalar, N, N> &covQ) {
+        Matrix<Scalar, N, N> covSum = 0.5 * (covP + covQ);
+        Vector<Scalar, N> d = meanP - meanQ;
         Scalar detCovSum = covSum.determinant();
-        Scalar detCovP = p.covariance.determinant();
-        Scalar detCovQ = q.covariance.determinant();
+        Scalar detCovP = covP.determinant();
+        Scalar detCovQ = covQ.determinant();
         return 0.125 * d.transpose() * covSum.inverse() * d +
                0.5 * std::log(detCovSum / std::sqrt(detCovP * detCovQ));
     }
 
-    template<typename Scalar>
-    Gaussian<Scalar, 3> operator*(const RigidTransform &transform, const Gaussian<Scalar, 3> &gaussian) {
-        return Gaussian<Scalar, 3>(transform * gaussian.mean,
-                                   RotateCovariance(gaussian.covariance, transform.matrix().block<3, 3>(0, 0)),
-                                   gaussian.weight);
+    template<typename Scalar, int N>
+    Gaussian<Scalar, N>
+    MultiplyGaussians(const Vector<Scalar, N> &meanP, const Matrix<Scalar, N, N> &covP, Scalar weightP,
+                      const Vector<Scalar, N> &meanQ, const Matrix<Scalar, N, N> &covQ, Scalar weightQ) {
+        Matrix<Scalar, N, N> covSum = covP + covQ;
+        Matrix<Scalar, N, N> invCovSum = covSum.inverse();
+        Scalar preFac = 1.0 / std::sqrt(std::pow(2 * M_PI, N) * covSum.determinant());
+
+        Matrix<Scalar, N, N> invCovP = covP.inverse();
+        Matrix<Scalar, N, N> invCovQ = covQ.inverse();
+        Vector<Scalar, N> d = meanP - meanQ;
+
+        Scalar newWeight = weightP * weightQ * preFac * std::exp(-0.5 * d.transpose() * invCovSum * d);
+        Matrix<Scalar, N, N> newCovariance = (invCovP + invCovQ).inverse();
+        Vector<Scalar, N> newMean = newCovariance * (invCovP * meanP + invCovQ * meanQ);
+
+        return Gaussian<Scalar, N>(newMean, newCovariance, newWeight);
     }
+
+    template<typename Scalar, int N>
+    struct IGaussian {
+        virtual void build(const std::vector<Vector<Scalar, N>> &points) = 0;
+
+        virtual Scalar pdf(const Vector<Scalar, N> &x) const = 0;
+
+        virtual Scalar kullback_leibler_div(const Gaussian<Scalar, N> &other) const = 0;
+
+        virtual Scalar kullback_leibler_div(const GaussianView<Scalar, N> &other) const = 0;
+
+        virtual Scalar bhattacharyya_dist(const Gaussian<Scalar, N> &other) const = 0;
+
+        virtual Scalar bhattacharyya_dist(const GaussianView<Scalar, N> &other) const = 0;
+
+        virtual Gaussian<Scalar, N> operator*(const Gaussian<Scalar, N> &other) const = 0;
+
+        virtual Gaussian<Scalar, N> operator*(const GaussianView<Scalar, N> &other) const = 0;
+    };
+
+    template<typename Scalar, int N>
+    struct Gaussian : public IGaussian<Scalar, N> {
+        Matrix<Scalar, N, N> covariance;
+        Vector<Scalar, N> mean;
+        Scalar weight;
+
+        Gaussian() : covariance(Matrix<Scalar, N, N>::Identity()), mean(Vector<Scalar, N>::Zero()), weight(1) {}
+
+        Gaussian(const Vector<Scalar, N> &mean, const Matrix<Scalar, N, N> &covariance, Scalar weight)
+                : covariance(covariance), mean(mean), weight(weight) {}
+
+        void build(const std::vector<Vector<Scalar, N>> &points) override {
+            mean = Mean(points);
+            covariance = Covariance(points, mean);
+        }
+
+        Scalar pdf(const Vector<Scalar, N> &x) const override {
+            return GaussianPDF(x, mean, covariance);
+        }
+
+        Scalar kullback_leibler_div(const Gaussian<Scalar, N> &other) const override {
+            return KullbackLeiblerDiv(mean, covariance, other.mean, other.covariance);
+        }
+
+        Scalar kullback_leibler_div(const GaussianView<Scalar, N> &other) const override {
+            return KullbackLeiblerDiv(mean, covariance, other.mean, other.covariance);
+        }
+
+        Scalar bhattacharyya_dist(const Gaussian<Scalar, N> &other) const override {
+            return BhattacharyyaDist(mean, covariance, other.mean, other.covariance);
+        }
+
+        Scalar bhattacharyya_dist(const GaussianView<Scalar, N> &other) const override {
+            return BhattacharyyaDist(mean, covariance, other.mean, other.covariance);
+        }
+
+        Gaussian<Scalar, N> operator*(const Gaussian<Scalar, N> &other) const override {
+            return MultiplyGaussians(mean, covariance, weight, other.mean, other.covariance, other.weight);
+        }
+
+        Gaussian<Scalar, N> operator*(const GaussianView<Scalar, N> &other) const override {
+            return MultiplyGaussians(mean, covariance, weight, other.mean, other.covariance, other.weight);
+        }
+    };
+
+    template<typename Scalar, int N>
+    struct GaussianView : public IGaussian<Scalar, N> {
+        Matrix<Scalar, N, N> &covariance;
+        Vector<Scalar, N> &mean;
+        Scalar &weight;
+
+        GaussianView(Vector<Scalar, N> &mean, Matrix<Scalar, N, N> &covariance, Scalar &weight)
+                : covariance(covariance), mean(mean), weight(weight) {}
+
+        void build(const std::vector<Vector<Scalar, N>> &points) override {
+            mean = Mean(points);
+            covariance = Covariance(points, mean);
+        }
+
+        Scalar pdf(const Vector<Scalar, N> &x) const override {
+            return GaussianPDF(x, mean, covariance);
+        }
+
+        Scalar kullback_leibler_div(const Gaussian<Scalar, N> &other) const override {
+            return KullbackLeiblerDiv(mean, covariance, other.mean, other.covariance);
+        }
+
+        Scalar kullback_leibler_div(const GaussianView<Scalar, N> &other) const override {
+            return KullbackLeiblerDiv(mean, covariance, other.mean, other.covariance);
+        }
+
+        Scalar bhattacharyya_dist(const Gaussian<Scalar, N> &other) const override {
+            return BhattacharyyaDist(mean, covariance, other.mean, other.covariance);
+        }
+
+        Scalar bhattacharyya_dist(const GaussianView<Scalar, N> &other) const override {
+            return BhattacharyyaDist(mean, covariance, other.mean, other.covariance);
+        }
+
+        Gaussian<Scalar, N> operator*(const Gaussian<Scalar, N> &other) const override {
+            return MultiplyGaussians(mean, covariance, weight, other.mean, other.covariance, other.weight);
+        }
+
+        Gaussian<Scalar, N> operator*(const GaussianView<Scalar, N> &other) const override {
+            return MultiplyGaussians(mean, covariance, weight, other.mean, other.covariance, other.weight);
+        }
+    };
+
+    template<typename Scalar>
+    using Gaussian3 = Gaussian<Scalar, 3>;
+
+    template<typename Scalar>
+    using GaussianView3 = GaussianView<Scalar, 3>;
 }
 
 #endif //ENGINE24_GAUSSIAN_H

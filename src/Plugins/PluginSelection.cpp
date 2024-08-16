@@ -18,17 +18,19 @@ namespace Bcg {
         auto &keyboard = Engine::Context().get<Keyboard>();
         if (keyboard.strg() && keyboard.shift()) {
             auto &selection = Engine::require<Selection>(event.entity_id);
-            auto iter = selection.vertices.find(event.idx);
-            if (iter != selection.vertices.end()) {
-                selection.vertices.erase(iter);
-            } else {
-                selection.vertices.emplace(event.idx);
+            for (auto idx: *event.idx) {
+                auto iter = selection.vertices.find(idx);
+                if (iter != selection.vertices.end()) {
+                    selection.vertices.erase(iter);
+                } else {
+                    selection.vertices.emplace(idx);
+                }
             }
             Commands::MarkPoints(event.entity_id, "v::selected").execute();
         }
     }
 
-    static void on_picked_background(const Events::PickedBackgound &event){
+    static void on_picked_background(const Events::PickedBackgound &event) {
         auto &keyboard = Engine::Context().get<Keyboard>();
         if (!keyboard.strg() && keyboard.shift()) {
             auto &picked = Engine::Context().get<Picked>();
@@ -83,7 +85,7 @@ namespace Bcg {
 
     }
 
-    namespace Commands{
+    namespace Commands {
         void MarkPoints::execute() const {
             if (!Engine::has<Selection>(entity_id)) {
                 return;

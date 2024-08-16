@@ -145,59 +145,105 @@ namespace lbvh {
 // requirements:
 // - DistanceCalculator must be able to calc distance between a point to an object.
 //
-    template<typename Real, typename Objects, bool IsConst, typename OutputIterator>
-    __device__
-    unsigned int query_device(
-            const detail::basic_device_bvh<Real, Objects, IsConst> &bvh,
-            const query_k_closest<Real> q, OutputIterator outiter,
-            const unsigned int max_buffer_size = 0xFFFFFFFF) noexcept {
-        using bvh_type = detail::basic_device_bvh<Real, Objects, IsConst>;
-        using index_type = typename bvh_type::index_type;
-        using aabb_type = typename bvh_type::aabb_type;
-        using node_type = typename bvh_type::node_type;
+    template<typename Real, typename Objects, typename AABBGetter,
+            typename MortonCodeCalculator, typename DistanceCalculator, typename OutputIterator>
+    __device__ unsigned int query_device(
+            const detail::basic_device_bvh<Real, Objects, true> &bvh,
+            const query_knn<Real> &q, DistanceCalculator calc_dist,
+            OutputIterator outiter,
+            const unsigned int max_buffer_size = 0xFFFFFFFF) {
 
-        HeapElement heap[64];
-        int heap_size = 0;
+        using index_type = typename detail::basic_device_bvh<Real, Objects, true>::index_type;
+        using real_type = typename detail::basic_device_bvh<Real, Objects, true>::real_type;
 
-        index_type stack[64]; // Traversal stack
-        index_type *stack_ptr = stack;
-        *stack_ptr++ = 0; // root node is always 0
+        // We will store the k-nearest neighbors in this fixed-size array
+        unsigned int result[32];  // Adjust size as necessary for your max `k`
+        real_type distances[32];  // Corresponding distances
 
-        unsigned int num_found = 0;
+        const unsigned int k = q.k_closest;
 
-        do {
-            const index_type node = *--stack_ptr;
+        for (unsigned int i = 0; i < k; ++i) {
+            result[i] = 0xFFFFFFFF;  // Initialize with invalid indices
+            distances[i] = INFINITY;  // Initialize with max distance
+        }
+
+        int stack[64];  // Traversal stack
+        int stack_ptr = 0;
+        stack[stack_ptr++] = 0;  // Start with root node
+
+        while (stack_ptr > 0) {
+            const int node = stack[--stack_ptr];
+
             const index_type L_idx = bvh.nodes[node].left_idx;
             const index_type R_idx = bvh.nodes[node].right_idx;
 
-            if (intersects(q.target, bvh.aabbs[L_idx])) {
-                const auto obj_idx = bvh.nodes[L_idx].object_idx;
-                if (obj_idx != 0xFFFFFFFF) {
-                    // Calculate distance
-                    Real dist = distance(q.target, bvh.aabbs[L_idx]);
-                    push_heap(heap, heap_size, {dist, obj_idx}, q.k_closest);
-                    ++num_found;
-                } else { // The node is not a leaf
-                    *stack_ptr++ = L_idx;
-                }
-            }
-            if (intersects(q.target, bvh.aabbs[R_idx])) {
-                const auto obj_idx = bvh.nodes[R_idx].object_idx;
-                if (obj_idx != 0xFFFFFFFF) {
-                    // Calculate distance
-                    Real dist = distance(q.target, bvh.aabbs[R_idx]);
-                    push_heap(heap, heap_size, {dist, obj_idx}, q.k_closest);
-                    ++num_found;
-                } else { // The node is not a leaf
-                    *stack_ptr++ = R_idx;
-                }
-            }
-        } while (stack < stack_ptr);
+            const auto &L_aabb = bvh.aabbs[L_idx];
+            const auto &R_aabb = bvh.aabbs[R_idx];
 
-        // Copy the results to the output iterator
-        thrust::sort(heap, heap + heap_size);
-        for (unsigned int i = 0; i < heap_size && i < max_buffer_size; ++i) {
-            *outiter++ = heap[i].index;
+            // Check left child
+            if (L_idx != 0xFFFFFFFF) {
+                real_type dist = mindist(L_aabb, q.target);
+                if (dist < distances[0]) {
+                    if (bvh.nodes[L_idx].object_idx != 0xFFFFFFFF) {
+                        // Leaf node, calculate the distance to the object
+                        index_type obj_idx = bvh.nodes[L_idx].object_idx;
+                        real_type obj_dist = calc_dist(q.target, bvh.objects[obj_idx]);
+                        if (obj_dist < distances[0]) {
+                            // Insert this object into the heap (max-heap logic with fixed size)
+                            result[0] = obj_idx;
+                            distances[0] = obj_dist;
+
+                            // Maintain max-heap property (simple sort for small k)
+                            for (int i = 1; i < k; ++i) {
+                                if (distances[i - 1] < distances[i]) {
+                                    thrust::swap(distances[i - 1], distances[i]);
+                                    thrust::swap(result[i - 1], result[i]);
+                                }
+                            }
+                        }
+                    } else {
+                        // Internal node, push to stack for further traversal
+                        stack[stack_ptr++] = L_idx;
+                    }
+                }
+            }
+
+            // Check right child
+            if (R_idx != 0xFFFFFFFF) {
+                real_type dist = mindist(R_aabb, q.target);
+                if (dist < distances[0]) {
+                    if (bvh.nodes[R_idx].object_idx != 0xFFFFFFFF) {
+                        // Leaf node, calculate the distance to the object
+                        index_type obj_idx = bvh.nodes[R_idx].object_idx;
+                        real_type obj_dist = calc_dist(q.target, bvh.objects[obj_idx]);
+                        if (obj_dist < distances[0]) {
+                            // Insert this object into the heap (max-heap logic with fixed size)
+                            result[0] = obj_idx;
+                            distances[0] = obj_dist;
+
+                            // Maintain max-heap property (simple sort for small k)
+                            for (int i = 1; i < k; ++i) {
+                                if (distances[i - 1] < distances[i]) {
+                                    thrust::swap(distances[i - 1], distances[i]);
+                                    thrust::swap(result[i - 1], result[i]);
+                                }
+                            }
+                        }
+                    } else {
+                        // Internal node, push to stack for further traversal
+                        stack[stack_ptr++] = R_idx;
+                    }
+                }
+            }
+        }
+
+        // Copy results to output iterator
+        unsigned int num_found = 0;
+        for (unsigned int i = 0; i < k && i < max_buffer_size; ++i) {
+            if (result[i] != 0xFFFFFFFF) {
+                *outiter++ = result[i];
+                ++num_found;
+            }
         }
 
         return num_found;
@@ -338,73 +384,99 @@ namespace lbvh {
             typename MortonCodeCalculator, typename DistanceCalculator>
     std::vector<unsigned int> query_host(
             const bvh<Real, Objects, AABBGetter, MortonCodeCalculator> &tree,
-            const query_k_closest<Real> &q, DistanceCalculator calc_dist,
+            const query_knn<Real> &q, DistanceCalculator calc_dist,
             const unsigned int max_buffer_size = 0xFFFFFFFF) {
-        using bvh_type = ::lbvh::bvh<Real, Objects, AABBGetter, MortonCodeCalculator>;
-        using index_type = typename bvh_type::index_type;
-        using real_type = typename bvh_type::real_type;
-        using aabb_type = typename bvh_type::aabb_type;
-        using node_type = typename bvh_type::node_type;
+        using index_type = typename bvh<Real, Objects, AABBGetter, MortonCodeCalculator>::index_type;
+        using real_type = typename bvh<Real, Objects, AABBGetter, MortonCodeCalculator>::real_type;
 
         if (!tree.query_host_enabled()) {
             throw std::runtime_error("lbvh::bvh query_host is not enabled");
         }
 
-        auto compare = [](const std::pair<real_type, index_type> &lhs, const std::pair<real_type, index_type> &rhs) {
-            return lhs.first > rhs.first; // Max-heap
+        // Priority queue for KNN, max-heap
+        auto knn_compare = [](const std::pair<real_type, index_type> &lhs,
+                              const std::pair<real_type, index_type> &rhs) {
+            return lhs.first < rhs.first; // max-heap, so closer (smaller) distances should be at the top
         };
-        std::priority_queue<std::pair<real_type, index_type>, std::vector<std::pair<real_type, index_type>>, decltype(compare)> knn_heap(
-                compare);
+        std::priority_queue<std::pair<real_type, index_type>,
+                std::vector<std::pair<real_type, index_type>>,
+                decltype(knn_compare)> knn_heap(knn_compare);
 
-        std::vector<index_type> stack;
-        stack.reserve(64);
-        stack.push_back(0);
+        // Priority queue for nodes, min-heap
+        auto node_compare = [](const std::pair<real_type, index_type> &lhs,
+                               const std::pair<real_type, index_type> &rhs) {
+            return lhs.first > rhs.first; // min-heap, so the closest node (smaller distance) is explored first
+        };
+        std::priority_queue<std::pair<real_type, index_type>,
+                std::vector<std::pair<real_type, index_type>>,
+                decltype(node_compare)> node_heap(node_compare);
 
-        do {
-            const index_type node = stack.back();
-            stack.pop_back();
+        // Start with the root node
+        node_heap.emplace(0.0f, 0);
+
+        while (!node_heap.empty()) {
+            const auto [current_dist, node] = node_heap.top();
+            node_heap.pop();
+
             const index_type L_idx = tree.nodes_host()[node].left_idx;
             const index_type R_idx = tree.nodes_host()[node].right_idx;
 
-            if (intersects(tree.aabbs_host()[L_idx], AABBGetter()(q.target))) {
-                const auto obj_idx = tree.nodes_host()[L_idx].object_idx;
-                if (obj_idx != 0xFFFFFFFF) {
-                    real_type dist = calc_dist(q.target, tree.objects_host()[L_idx]);
-                    if (knn_heap.size() < q.k_closest) {
-                        knn_heap.emplace(dist, obj_idx);
-                    } else if (dist < knn_heap.top().first) {
-                        knn_heap.pop();
-                        knn_heap.emplace(dist, obj_idx);
-                    }
-                } else {
-                    stack.push_back(L_idx);
-                }
-            }
-            if (intersects(tree.aabbs_host()[R_idx], AABBGetter()(q.target))) {
-                const auto obj_idx = tree.nodes_host()[R_idx].object_idx;
-                if (obj_idx != 0xFFFFFFFF) {
-                    real_type dist = calc_dist(q.target, tree.objects_host()[R_idx]);
-                    if (knn_heap.size() < q.k_closest) {
-                        knn_heap.emplace(dist, obj_idx);
-                    } else if (dist < knn_heap.top().first) {
-                        knn_heap.pop();
-                        knn_heap.emplace(dist, obj_idx);
-                    }
-                } else {
-                    stack.push_back(R_idx);
-                }
-            }
-        } while (!stack.empty());
+            const auto &L_aabb = tree.aabbs_host()[L_idx];
+            const auto &R_aabb = tree.aabbs_host()[R_idx];
 
+            // Check left child
+            if (L_idx != 0xFFFFFFFF) {
+                real_type dist = mindist(L_aabb, q.target);
+                if (knn_heap.size() < q.k_closest || dist < knn_heap.top().first) {
+                    if (tree.nodes_host()[L_idx].object_idx != 0xFFFFFFFF) {
+                        // Leaf node, calculate the distance to the object
+                        index_type obj_idx = tree.nodes_host()[L_idx].object_idx;
+                        real_type obj_dist = calc_dist(q.target, tree.objects_host()[obj_idx]);
+                        if (knn_heap.size() < q.k_closest) {
+                            knn_heap.emplace(obj_dist, obj_idx);
+                        } else if (obj_dist < knn_heap.top().first) {
+                            knn_heap.pop();
+                            knn_heap.emplace(obj_dist, obj_idx);
+                        }
+                    } else {
+                        // Internal node, push it to the node heap
+                        node_heap.emplace(dist, L_idx);
+                    }
+                }
+            }
+
+            // Check right child
+            if (R_idx != 0xFFFFFFFF) {
+                real_type dist = mindist(R_aabb, q.target);
+                if (knn_heap.size() < q.k_closest || dist < knn_heap.top().first) {
+                    if (tree.nodes_host()[R_idx].object_idx != 0xFFFFFFFF) {
+                        // Leaf node, calculate the distance to the object
+                        index_type obj_idx = tree.nodes_host()[R_idx].object_idx;
+                        real_type obj_dist = calc_dist(q.target, tree.objects_host()[obj_idx]);
+                        if (knn_heap.size() < q.k_closest) {
+                            knn_heap.emplace(obj_dist, obj_idx);
+                        } else if (obj_dist < knn_heap.top().first) {
+                            knn_heap.pop();
+                            knn_heap.emplace(obj_dist, obj_idx);
+                        }
+                    } else {
+                        // Internal node, push it to the node heap
+                        node_heap.emplace(dist, R_idx);
+                    }
+                }
+            }
+        }
+
+        // Extract the results from the KNN heap
         std::vector<unsigned int> result;
-        unsigned int num_found = 0;
-        while (!knn_heap.empty() && num_found < max_buffer_size) {
+        result.reserve(q.k_closest);
+        while (!knn_heap.empty() && result.size() < max_buffer_size) {
             result.push_back(knn_heap.top().second);
             knn_heap.pop();
-            ++num_found;
         }
 
         return result;
     }
+
 } // lbvh
 #endif// LBVH_QUERY_CUH
