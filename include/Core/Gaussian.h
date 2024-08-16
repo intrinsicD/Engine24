@@ -6,6 +6,7 @@
 #define ENGINE24_GAUSSIAN_H
 
 #include "MatVec.h"
+#include "Statistics.h"
 #include "RigidTransform.h"
 
 namespace Bcg {
@@ -58,6 +59,15 @@ namespace Bcg {
             return product;
         }
     };
+
+
+
+    template<typename Scalar, int N>
+    Gaussian<Scalar, N> Build(Gaussian<Scalar, N> &gaussian, const std::vector<Vector<Scalar, N>> &points) {
+        gaussian.mean = Mean(points);
+        gaussian.covariance = Covariance(points, gaussian.mean);
+        return gaussian;
+    }
 
     template<typename Scalar, int N>
     Matrix<Scalar, N, N> RotateCovariance(const Matrix<Scalar, N, N> &cov, const Matrix<Scalar, N, N> &R) {

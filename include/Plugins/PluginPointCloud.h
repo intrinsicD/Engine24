@@ -100,6 +100,21 @@ namespace Bcg {
             int k;
             unsigned int iterations;
         };
+
+        struct ComputeHierarchicalKMeans : public AbstractCommand {
+            explicit ComputeHierarchicalKMeans(entt::entity entity_id, int k, unsigned int iterations = 100) : AbstractCommand(
+                    "ComputeHierarchicalKMeans"),
+                                                                                                   entity_id(entity_id),
+                                                                                                   k(k),
+                                                                                                   iterations(
+                                                                                                           iterations) {}
+
+            void execute() const override;
+
+            entt::entity entity_id;
+            int k;
+            unsigned int iterations;
+        };
     }
 }
 #endif //ENGINE24_PLUGINPOINTCLOUD_H

@@ -7,6 +7,8 @@
 #include <numeric>
 #include <random>
 #include "CudaCommon.cuh"
+#include "Statistics.h"
+#include "PropertyEigenMap.h"
 
 namespace Bcg {
     using hbvh = lbvh::bvh<float, float4, lbvh::aabb_getter>;
@@ -20,6 +22,132 @@ namespace Bcg {
                    (point.z - object.z) * (point.z - object.z);
         }
     };
+
+    struct KmeansDeviceDataPtr {
+        thrust::device_ptr<float4> d_positions;
+        thrust::device_ptr<unsigned int> d_labels;
+        thrust::device_ptr<float> d_distances;
+
+        thrust::device_ptr<float4> d_centroids;
+        thrust::device_ptr<float4> d_new_sums;
+        thrust::device_ptr<unsigned int> d_new_cluster_sizes;
+        dbvh d_bvh;
+    };
+
+    struct KmeansDeviceData {
+        thrust::device_vector<float4> positions;
+        thrust::device_vector<unsigned int> labels;
+        thrust::device_vector<float> distances;
+
+        thrust::device_vector<float4> centroids;
+        thrust::device_vector<float4> new_sums;
+        thrust::device_vector<unsigned int> new_cluster_sizes;
+        hbvh bvh;
+
+        void push_new_cluster(const float4 &new_centroid) {
+            centroids.push_back(new_centroid);
+            new_sums.push_back({0, 0, 0, 0});
+            new_cluster_sizes.push_back(0);
+        }
+
+        KmeansDeviceDataPtr get_ptrs() {
+            return {positions.data(),
+                    labels.data(),
+                    distances.data(),
+                    centroids.data(),
+                    new_sums.data(),
+                    new_cluster_sizes.data(),
+                    bvh.get_device_repr()};
+        }
+    };
+
+    KmeansDeviceData SetupKMeansDeviceData(const thrust::host_vector<float4> &h_centroids,
+                                           const thrust::host_vector<float4> h_positions) {
+        auto num_objects = h_positions.size();
+        auto k = h_centroids.size();
+        return {h_positions,
+                thrust::device_vector<unsigned int>(num_objects),
+                thrust::device_vector<unsigned int>(num_objects),
+                h_centroids,
+                thrust::device_vector<float4>(k),
+                thrust::device_vector<unsigned int>(k),
+                hbvh(h_centroids.begin(), h_centroids.end(), true)
+        };
+    }
+
+
+    struct DistanceSumMax {
+        float sum;
+        float max_distance;
+        int max_index;
+
+        __host__ __device__
+        DistanceSumMax() : sum(0.0f), max_distance(0.0f), max_index(-1) {}
+
+        __host__ __device__
+        DistanceSumMax(float s, float max_dist, int max_idx) : sum(s), max_distance(max_dist), max_index(max_idx) {}
+    };
+
+    struct DistanceSumMaxOp {
+        __host__ __device__
+        DistanceSumMax operator()(const DistanceSumMax &a, const DistanceSumMax &b) const {
+            float total_sum = a.sum + b.sum;
+            if (a.max_distance > b.max_distance) {
+                return {total_sum, a.max_distance, a.max_index};
+            } else {
+                return {total_sum, b.max_distance, b.max_index};
+            }
+        }
+    };
+
+    struct CreateDistanceSumMax {
+        __host__ __device__
+        DistanceSumMax operator()(const thrust::tuple<float, int> &t) const {
+            float distance = thrust::get<0>(t);
+            int index = thrust::get<1>(t);
+            return {distance, distance, index};
+        }
+    };
+
+    KMeansResult DeviceToHost(KmeansDeviceData &d_data, thrust::host_vector<float4> &h_centroids) {
+        // Combine distance sum and max distance finding
+        int num_objects = d_data.positions.size();
+        int k = d_data.centroids.size();
+
+        thrust::device_vector<int> indices(num_objects);
+        thrust::sequence(indices.begin(), indices.end());
+
+        auto iter_begin = thrust::make_zip_iterator(thrust::make_tuple(d_data.distances.begin(), indices.begin()));
+        auto iter_end = thrust::make_zip_iterator(thrust::make_tuple(d_data.distances.end(), indices.end()));
+
+        DistanceSumMax init;
+        DistanceSumMax result_data = thrust::transform_reduce(iter_begin, iter_end,
+                                                              CreateDistanceSumMax(),
+                                                              init,
+                                                              DistanceSumMaxOp());
+
+        // Prepare the KMeansResult
+        KMeansResult result;
+
+        // Copy centroids to result
+        thrust::copy(d_data.centroids.begin(), d_data.centroids.end(), h_centroids.begin());
+        result.centroids.resize(k);
+        for (size_t i = 0; i < k; ++i) {
+            result.centroids[i] = Vector<float, 3>(h_centroids[i].x, h_centroids[i].y, h_centroids[i].z);
+        }
+
+        // Copy labels and distances to result
+        result.labels.resize(num_objects);
+        result.distances.resize(num_objects);
+
+        thrust::copy(d_data.labels.begin(), d_data.labels.end(), result.labels.begin());
+        thrust::copy(d_data.distances.begin(), d_data.distances.end(), result.distances.begin());
+
+        result.error = result_data.sum;
+        result.max_dist_index = result_data.max_index;
+
+        return result;
+    }
 
     void assign_clusters(dbvh &bvh,
                          thrust::device_ptr<float4> d_positions,
@@ -100,6 +228,7 @@ namespace Bcg {
         return KMeans(positions, centroids, iterations);
     }
 
+
     KMeansResult KMeans(const std::vector<Vector<float, 3>> &points, const std::vector<Vector<float, 3>> &init_means,
                         unsigned int iterations) {
         int k = init_means.size();
@@ -114,53 +243,76 @@ namespace Bcg {
             h_positions[i] = {points[i].x(), points[i].y(), points[i].z(), 1.0f};
         }
 
-        thrust::device_vector<float4> positions = h_positions;
-        thrust::device_vector<unsigned int> labels(num_objects);
-        thrust::device_vector<float> distances(num_objects);
+        KmeansDeviceData d_data = SetupKMeansDeviceData(h_centroids, h_positions);
+        KmeansDeviceDataPtr d_ptrs = d_data.get_ptrs();
 
-        thrust::device_vector<float4> centroids = h_centroids;
-        thrust::device_vector<float4> new_sums(k);
-        thrust::device_vector<unsigned int> new_cluster_sizes(k);
-
-        thrust::device_ptr<float4> d_positions = positions.data();
-        thrust::device_ptr<unsigned int> d_labels = labels.data();
-        thrust::device_ptr<float> d_distances = distances.data();
-
-        thrust::device_ptr<float4> d_centroids = centroids.data();
-        thrust::device_ptr<float4> d_new_sums = new_sums.data();
-        thrust::device_ptr<unsigned int> d_new_cluster_sizes = new_cluster_sizes.data();
-
-        hbvh bvh = hbvh(h_centroids.begin(), h_centroids.end(), true);
         for (size_t i = 0; i < iterations; ++i) {
-            bvh.clear();
-            bvh.assign_device(centroids);
+            d_data.bvh.clear();
+            d_data.bvh.assign_device(d_data.centroids);
 
-            auto d_bvh = bvh.get_device_repr();
+            d_ptrs.d_bvh = d_data.bvh.get_device_repr();
 
-            thrust::fill(new_sums.begin(), new_sums.end(), float4(0, 0, 0, 0));
-            thrust::fill(new_cluster_sizes.begin(), new_cluster_sizes.end(), 0);
+            thrust::fill(d_data.new_sums.begin(), d_data.new_sums.end(), float4(0, 0, 0, 0));
+            thrust::fill(d_data.new_cluster_sizes.begin(), d_data.new_cluster_sizes.end(), 0);
 
-            assign_clusters(d_bvh, d_positions, d_new_sums, d_new_cluster_sizes, d_labels, d_distances, num_objects);
+            assign_clusters(d_ptrs.d_bvh, d_ptrs.d_positions, d_ptrs.d_new_sums, d_ptrs.d_new_cluster_sizes,
+                            d_ptrs.d_labels, d_ptrs.d_distances, num_objects);
 
-            update_centroids(d_centroids, d_new_sums, d_new_cluster_sizes, k);
+            update_centroids(d_ptrs.d_centroids, d_ptrs.d_new_sums, d_ptrs.d_new_cluster_sizes, k);
         }
 
-        KMeansResult result;
-        result.centroids.resize(k);
-        h_centroids = thrust::host_vector<float4>(centroids);
-        for (size_t i = 0; i < k; ++i) {
-            result.centroids[i] = Vector<float, 3>(h_centroids[i].x, h_centroids[i].y, h_centroids[i].z);
-        }
+        return DeviceToHost(d_data, h_centroids);
+    }
 
-        result.labels.resize(num_objects);
-        result.distances.resize(num_objects);
+    KMeansResult
+    HierarchicalKMeans(const std::vector<Vector<float, 3>> &points, unsigned int k, unsigned int iterations) {
+        int current_k = 1;
+        int num_objects = points.size();
+
+        const Vector<float, 3> mean = Mean(points);
+        thrust::host_vector<float4> h_centroids;
+        thrust::host_vector<float> h_distances(num_objects);
+        h_centroids.push_back({mean.x(), mean.y(), mean.z(), 1.0f});
+
+        thrust::host_vector<float4> h_positions(num_objects);
         for (size_t i = 0; i < num_objects; ++i) {
-            result.labels[i] = labels[i];
-            result.distances[i] = distances[i];
+            h_positions[i] = {points[i].x(), points[i].y(), points[i].z(), 1.0f};
+            h_distances[i] = (points[i] - mean).squaredNorm();
         }
 
-        result.error = thrust::reduce(thrust::device, distances.begin(), distances.end(), 0.0f);
+        KmeansDeviceData d_data = SetupKMeansDeviceData(h_centroids, h_positions);
+        d_data.distances = h_distances;
 
-        return result;
+
+        auto max_dist_iter = thrust::max_element(d_data.distances.begin(), d_data.distances.end());
+        auto max_dist_index = max_dist_iter - d_data.distances.begin();
+        d_data.push_new_cluster(d_data.positions[max_dist_index]);
+        current_k = d_data.centroids.size();
+
+        while (current_k < k) {
+            for (size_t i = 0; i < iterations; ++i) {
+                d_data.bvh.clear();
+                d_data.bvh.assign_device(d_data.centroids);
+
+                KmeansDeviceDataPtr d_ptrs = d_data.get_ptrs();
+
+                //d_ptrs.d_bvh = d_data.bvh.get_device_repr();
+
+                thrust::fill(d_data.new_sums.begin(), d_data.new_sums.end(), float4(0, 0, 0, 0));
+                thrust::fill(d_data.new_cluster_sizes.begin(), d_data.new_cluster_sizes.end(), 0);
+
+                assign_clusters(d_ptrs.d_bvh, d_ptrs.d_positions, d_ptrs.d_new_sums, d_ptrs.d_new_cluster_sizes,
+                                d_ptrs.d_labels, d_ptrs.d_distances, num_objects);
+
+                update_centroids(d_ptrs.d_centroids, d_ptrs.d_new_sums, d_ptrs.d_new_cluster_sizes, current_k);
+            }
+            auto max_dist_iter = thrust::max_element(d_data.distances.begin(), d_data.distances.end());
+            auto max_dist_index = max_dist_iter - d_data.distances.begin();
+            d_data.push_new_cluster(d_data.positions[max_dist_index]);
+            current_k = d_data.centroids.size();
+        }
+
+        h_centroids.resize(current_k);
+        return DeviceToHost(d_data, h_centroids);
     }
 }
