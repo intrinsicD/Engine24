@@ -6,6 +6,10 @@
 #define ENGINE24_CUDA__MAT_VEC_CUH
 
 namespace Bcg {
+    struct vec2;
+    struct vec3;
+    struct vec4;
+
     struct mat2;
     struct mat3;
     struct mat4;
@@ -19,6 +23,14 @@ namespace Bcg {
         };
 
         __device__ __host__ inline vec2() : x(0), y(0) {
+
+        }
+
+        __device__ __host__ inline vec2(float *x) : x(x[0]), y(x[1]) {
+
+        }
+
+        __device__ __host__ inline vec2(float x) : x(x), y(x) {
 
         }
 
@@ -58,6 +70,8 @@ namespace Bcg {
             return x * b.y - y * b.x;
         }
 
+        __device__ __host__ inline vec3 homogeneous() const;
+
         __device__ __host__ inline vec2 operator+(const vec2 &b) const {
             return {x + b.x, y + b.y};
         }
@@ -91,6 +105,8 @@ namespace Bcg {
         }
 
         __device__ __host__ inline mat2 outer(const vec2 &b) const;
+
+        __device__ __host__ inline mat2 as_diag() const;
     };
 
     __device__ __host__ inline vec2 operator+(const float &a, const vec2 &b) {
@@ -122,6 +138,18 @@ namespace Bcg {
         };
 
         __device__ __host__ inline vec3() : x(0), y(0), z(0), w(0) {
+
+        }
+
+        __device__ __host__ inline vec3(float x) : x(x), y(x), z(x), w(0) {
+
+        }
+
+        __device__ __host__ inline vec3(float *x) : x(x[0]), y(x[1]), z(x[2]), w(0) {
+
+        }
+
+        __device__ __host__ inline vec3(const vec2 &v) : x(v.x), y(v.y), z(0), w(0) {
 
         }
 
@@ -166,6 +194,12 @@ namespace Bcg {
         __device__ __host__ inline mat3 wedge() const;
 
         __device__ __host__ inline mat3 outer(const vec3 &b) const;
+
+        __device__ __host__ inline mat3 as_diag() const;
+
+        __device__ __host__ inline vec3 DROP() const;
+
+        __device__ __host__ inline vec4 homogeneous() const;
 
         __device__ __host__ inline vec3 operator+(const vec3 &b) const {
             return {x + b.x, y + b.y, z + b.z};
@@ -216,6 +250,10 @@ namespace Bcg {
         return {a / b.x, a / b.y, a / b.z};
     }
 
+    __device__ __host__ inline vec3 vec2::homogeneous() const {
+        return vec3{x, y, 1};
+    }
+
     //------------------------------------------------------------------------------------------------------------------
     // Vector vec4
     //------------------------------------------------------------------------------------------------------------------
@@ -229,6 +267,22 @@ namespace Bcg {
         };
 
         __device__ __host__ inline vec4() : x(0), y(0), z(0), w(0) {
+
+        }
+
+        __device__ __host__ inline vec4(float x) : x(x), y(x), z(x), w(x) {
+
+        }
+
+        __device__ __host__ inline vec4(float *x) : x(x[0]), y(x[1]), z(x[2]), w(x[3]) {
+
+        }
+
+        __device__ __host__ inline vec4(const vec2 &v) : x(v.x), y(v.y), z(0), w(0) {
+
+        }
+
+        __device__ __host__ inline vec4(const vec3 &v) : x(v.x), y(v.y), z(v.z), w(0) {
 
         }
 
@@ -264,9 +318,9 @@ namespace Bcg {
             return {*this / length()};
         }
 
-        __device__ __host__ inline mat4 wedge() const;
-
         __device__ __host__ inline mat4 outer(const vec4 &b) const;
+
+        __device__ __host__ inline mat4 as_diag() const;
 
         __device__ __host__ inline vec4 operator+(const vec4 &b) const {
             return {x + b.x, y + b.y, z + b.z, w + b.w};
@@ -338,8 +392,52 @@ namespace Bcg {
 
         }
 
+        __device__ __host__ inline mat2(float x) : x(x), y(x) {
+
+        }
+
         __device__ __host__ inline mat2(vec2 x, vec2 y) : x(x), y(y) {
 
+        }
+
+        __device__ __host__ static inline mat2 identity() {
+            return {{1, 0},
+                    {0, 1}};
+        }
+
+        __device__ __host__ static inline mat2 reflect_x() {
+            return {{1, 0},
+                    {0, -1}};
+        }
+
+        __device__ __host__ static inline mat2 reflect_y() {
+            return {{-1, 0},
+                    {0,  1}};
+        }
+
+        __device__ __host__ static inline mat2 rot(float angle) {
+            float c = cosf(angle);
+            float s = sinf(angle);
+            return {{c, -s},
+                    {s, c}};
+        }
+
+        __device__ __host__ static inline mat2 project(float angle) {
+            float c = cosf(angle);
+            float s = sinf(angle);
+            float cs = c * s;
+            return {{c * c, cs},
+                    {cs,    s * s}};
+        }
+
+        __device__ __host__ static mat2 shear_x(float s) {
+            return {{1, s},
+                    {0, 1}};
+        }
+
+        __device__ __host__ static mat2 shear_y(float s) {
+            return {{1, 0},
+                    {s, 1}};
         }
 
         __device__ __host__ inline mat2 operator-() const {
@@ -429,6 +527,13 @@ namespace Bcg {
         return mat2{
                 {x * b.x, x * b.y},
                 {y * b.x, y * b.y}
+        };
+    }
+
+    __device__ __host__ inline mat2 vec2::as_diag() const {
+        return mat2{
+                {x, 0},
+                {0, y}
         };
     }
 
@@ -585,6 +690,23 @@ namespace Bcg {
         };
     }
 
+    __device__ __host__ inline mat3 vec3::as_diag() const {
+        return mat3{
+                {x, 0, 0},
+                {0, y, 0},
+                {0, 0, z}
+        };
+    }
+
+
+    __device__ __host__ inline vec2 head(int idx) const{
+        return vec2{x, y};
+    }
+
+    __device__ __host__ inline vec4 vec3::homogeneous() const{
+        return vec4{x, y, z, 1.0};
+    }
+
     //------------------------------------------------------------------------------------------------------------------
     // Matrix mat4
     //------------------------------------------------------------------------------------------------------------------
@@ -720,21 +842,21 @@ namespace Bcg {
         }
     };
 
-    __device__ __host__ inline mat4 vec4::wedge() const {
-        return mat4{
-                {0,  -z, y,  -w},
-                {z,  0,  -x, w},
-                {-y, x,  0,  -w},
-                {w,  -w, w,  0}
-        };
-    }
-
     __device__ __host__ inline mat4 vec4::outer(const vec4 &b) const {
         return mat4{
                 {x * b.x, x * b.y, x * b.z, x * b.w},
                 {y * b.x, y * b.y, y * b.z, y * b.w},
                 {z * b.x, z * b.y, z * b.z, z * b.w},
                 {w * b.x, w * b.y, w * b.z, w * b.w}
+        };
+    }
+
+    __device__ __host__ inline mat4 vec4::as_diag() const {
+        return mat4{
+                {x, 0, 0, 0},
+                {0, y, 0, 0},
+                {0, 0, z, 0},
+                {0, 0, 0, w}
         };
     }
 }
