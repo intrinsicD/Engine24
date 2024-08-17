@@ -30,10 +30,13 @@ file(MAKE_DIRECTORY ${FONTS_OUTPUT_DIR})
 # Copy all shader files if not present
 copy_shaders(${FONTS_DIR} ${FONTS_OUTPUT_DIR})
 
+target_include_directories(Engine24 PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(Engine24 PUBLIC .)
+
 add_subdirectory(include)
 add_subdirectory(src)
 add_subdirectory(ext)
 
 add_subdirectory(Apps)
-add_subdirectory(Cuda)
 add_subdirectory(Graphics)
+add_subdirectory(Cuda)

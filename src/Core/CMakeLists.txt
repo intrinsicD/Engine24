@@ -13,7 +13,6 @@ target_sources(Engine24 PRIVATE
         Intersections.cpp
         KDTreeCompute.cpp
         KDTreeCpu.cpp
-        KDTreeCuda.cu
         Keyboard.cpp
         Line.cpp
         Logger.cpp

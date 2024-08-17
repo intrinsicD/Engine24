@@ -310,7 +310,10 @@ namespace Bcg {
                 return;
             }
 
-            Engine::State().get_or_emplace<Hierarchy>(entity_id);
+            if(!Engine::has<Hierarchy>(entity_id)){
+                Engine::State().emplace<Hierarchy>(entity_id);
+            }
+
             Log::Info("{} for entity {}", name, entity_id);
         }
 

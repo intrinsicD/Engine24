@@ -1,28 +1,33 @@
 find_package(CUDAToolkit REQUIRED)
+set(CMAKE_CUDA_ARCHITECTURES native)
+message(STATUS "CMAKE_CUDA_ARCHITECTURES: ${CMAKE_CUDA_ARCHITECTURES}")
 
-target_include_directories(Engine24 PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
-target_include_directories(Engine24 PUBLIC .)
+#[[add_library(BcgCudaLib STATIC)
+target_link_libraries(BcgCudaLib PRIVATE ${CUDAToolkit_LIBRARIES})]]
+#[[
+get_target_property(ENGINE24_INCLUDE_DIRS Engine24 INCLUDE_DIRECTORIES)
 
-target_sources(Engine24 PRIVATE
-        PluginCuda.cpp
-        CudaCommon.cu
-        vec2.cu
-        vec3.cu
-        vec4.cu
-        mat2.cu
-        mat3.cu
-        mat4.cu
-)
+target_include_directories(BcgCudaLib PUBLIC .)
+target_include_directories(BcgCudaLib PUBLIC ${ENGINE24_INCLUDE_DIRS})
+]]
 
 target_link_libraries(Engine24 PRIVATE ${CUDAToolkit_LIBRARIES})
 
-set(CMAKE_CUDA_ARCHITECTURES native)
+add_subdirectory(include)
+add_subdirectory(src)
 
-message(STATUS "CMAKE_CUDA_ARCHITECTURES: ${CMAKE_CUDA_ARCHITECTURES}")
+target_sources(Engine24 PRIVATE
+        src/kmeans.cu
+        src/kdtree_cuda.cu
+        src/local_gaussians.cu
+)
+#target_link_libraries(Engine24 PRIVATE BcgCudaLib)
+
+
+#[[target_compile_options(BcgCudaLib PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>)
+target_compile_options(BcgCudaLib PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--extended-lambda>)
+target_compile_options(BcgCudaLib PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe=\"--diag_suppress=20208\">)]]
+
 target_compile_options(Engine24 PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>)
 target_compile_options(Engine24 PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--extended-lambda>)
 target_compile_options(Engine24 PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe=\"--diag_suppress=20208\">)
-
-add_subdirectory(lbvh)
-add_subdirectory(Kmeans)
-add_subdirectory(LocalGaussians)

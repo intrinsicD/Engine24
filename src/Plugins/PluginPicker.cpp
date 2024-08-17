@@ -12,7 +12,7 @@
 #include "Intersections.h"
 #include "Transform.h"
 //#include "KDTreeCpu.h"
-#include "KDTreeCuda.h"
+#include "Cuda/KDTreeCuda.h"
 #include "PointCloud.h"
 #include "SurfaceMesh.h"
 #include "EventsPicker.h"
@@ -68,7 +68,7 @@ namespace Bcg {
 
             auto &kdtree = Engine::State().get<KDTreeCpu>(entity_id);*/
 
-            auto kdtree = KDTreeCuda(entity_id);
+            auto kdtree = cuda::KDTreeCuda(entity_id);
             if(!kdtree){
                 if (Engine::has<SurfaceMesh>(entity_id)) {
                     auto &mesh = Engine::State().get<SurfaceMesh>(entity_id);

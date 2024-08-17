@@ -18,7 +18,6 @@
 #include "PluginMeshView.h"
 #include "PluginVectorfieldViews.h"
 #include "PluginSelection.h"
-#include "PluginCuda.h"
 #include "PluginGraphics.h"
 #include "PluginIcp.h"
 #include <unordered_map>
@@ -28,7 +27,6 @@ namespace Bcg {
 
     void Plugins::init() {
         add_plugin(std::make_unique<PluginGraphics>());
-        add_plugin(std::make_unique<PluginCuda>());
         add_plugin(std::make_unique<PluginInput>());
         add_plugin(std::make_unique<PluginEntity>());
         add_plugin(std::make_unique<PluginAABB>());

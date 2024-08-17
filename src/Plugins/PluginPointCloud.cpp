@@ -20,10 +20,10 @@
 #include "PluginTransform.h"
 #include "PluginHierarchy.h"
 #include "GetPrimitives.h"
-#include "KDTreeCuda.h"
+#include "Cuda/KDTreeCuda.h"
 #include "KDTreeCpu.h"
-#include "Kmeans.h"
-#include "LocalGaussians.h"
+#include "Cuda/Kmeans.h"
+#include "Cuda/LocalGaussians.h"
 #include "Eigen/Eigenvalues"
 #include "PluginSphereView.h"
 
@@ -255,7 +255,7 @@ namespace Bcg {
                 return;
             }
 
-            auto result = KMeans(positions.vector(), k, iterations);
+            auto result = cuda::KMeans(positions.vector(), k, iterations);
             auto labels = vertices->get_or_add<unsigned int>("v:kmeans:labels");
             auto distances = vertices->get_or_add<float>("v:kmeans:distances");
             labels.vector() = result.labels;
@@ -281,7 +281,7 @@ namespace Bcg {
                 return;
             }
 
-            auto result = HierarchicalKMeans(positions.vector(), k, iterations);
+            auto result = cuda::HierarchicalKMeans(positions.vector(), k, iterations);
             auto labels = vertices->get_or_add<unsigned int>("v:kmeans:labels");
             auto distances = vertices->get_or_add<float>("v:kmeans:distances");
             labels.vector() = result.labels;
@@ -306,7 +306,7 @@ namespace Bcg {
                 Log::Warn(name + " Entity does not have positions property. Abort Command!");
                 return;
             }
-            auto result = LocalGaussians(positions.vector(), num_closest);
+            auto result = cuda::LocalGaussians(positions.vector(), num_closest);
             auto means = vertices->get_or_add<Vector<float, 3>>("v:local_gaussians:means");
             auto covs = vertices->get_or_add<Matrix<float, 3, 3>>("v:local_gaussians:covs");
             auto evecs0 = vertices->get_or_add<Vector<float, 3>>("v:local_gaussians:evecs0");

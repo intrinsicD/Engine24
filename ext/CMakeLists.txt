@@ -32,6 +32,10 @@ target_include_directories(Engine24 PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/imgui
         ${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends
         ${CMAKE_CURRENT_SOURCE_DIR}/ImGuiFileDialog
+        ${CMAKE_CURRENT_SOURCE_DIR}/fmt/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/eigen
+        ${CMAKE_CURRENT_SOURCE_DIR}/entt/src
+        .
 )
 
 # Link imgui to Engine24
