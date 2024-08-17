@@ -227,7 +227,7 @@ namespace Bcg {
                     cov += diff * diff.transpose();
                 }
 
-                cov /= (num_closest - 1);
+                cov /= num_closest;
 
                 Eigen::SelfAdjointEigenSolver<Eigen::Matrix<float, 3, 3>> eigensolver(cov);
                 evecs0[i] = eigensolver.eigenvectors().col(0);

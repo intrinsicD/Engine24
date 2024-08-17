@@ -49,7 +49,7 @@ namespace Bcg::cuda {
         thrust::host_vector<vec3> h_means = data.means;
         std::vector<Vector<float, 3>> host_means(h_means.size());
         thrust::transform(h_means.begin(), h_means.end(), host_means.begin(),
-                          [] __host__ (const vec3 &v) {
+                          [] __host__(const vec3 &v) {
                               return Vector<float, 3>{v.x, v.y, v.z};
                           });
 
@@ -57,11 +57,17 @@ namespace Bcg::cuda {
         thrust::host_vector<mat3> h_covs = data.covs;
         std::vector<Matrix<float, 3, 3>> host_covs(h_covs.size());
         thrust::transform(h_covs.begin(), h_covs.end(), host_covs.begin(),
-                          [] __host__ (const mat3 &m) {
+                          [] __host__(const mat3 &m) {
                               Matrix<float, 3, 3> mat;
-                              mat(0, 0) = m.col0.x; mat(0, 1) = m.col0.y; mat(0, 2) = m.col0.z;
-                              mat(1, 0) = m.col1.x; mat(1, 1) = m.col1.y; mat(1, 2) = m.col1.z;
-                              mat(2, 0) = m.col2.x; mat(2, 1) = m.col2.y; mat(2, 2) = m.col2.z;
+                              mat(0, 0) = m.col0.x;
+                              mat(0, 1) = m.col0.y;
+                              mat(0, 2) = m.col0.z;
+                              mat(1, 0) = m.col1.x;
+                              mat(1, 1) = m.col1.y;
+                              mat(1, 2) = m.col1.z;
+                              mat(2, 0) = m.col2.x;
+                              mat(2, 1) = m.col2.y;
+                              mat(2, 2) = m.col2.z;
                               return mat;
                           });
 
@@ -110,6 +116,10 @@ namespace Bcg::cuda {
                 mean = mean + object;
                 cov = cov + outer(object, object);
             }
+
+            mean = mean / num_found;
+            cov = (cov - num_found * outer(mean, mean)) / num_found;
+
 
             mean = mean / num_found;
             cov = (cov - num_found * outer(mean, mean)) / num_found;

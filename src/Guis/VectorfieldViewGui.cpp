@@ -85,17 +85,8 @@ namespace Bcg::Gui {
                                                           properties_3d[curr_color.first]).execute();
                     }
 
-                    view.vao.bind();
-                    bool enabled_color = view.color.is_enabled();
-                    view.vao.unbind();
-
-                    if (!enabled_color) {
-                        if (ImGui::ColorEdit3("##uniform_color_vectorfield_view", view.uniform_color.data())) {
-                            view.vao.bind();
-                            view.color.set_default(view.uniform_color.data());
-                            view.color.disable();
-                            view.vao.unbind();
-                        }
+                    if (view.use_uniform_color) {
+                        ImGui::ColorEdit3("##uniform_color_vectorfield_view", view.uniform_color.data());
                     } else {
                         ImGui::InputFloat("min_color", &view.min_color);
                         ImGui::InputFloat("max_color", &view.max_color);

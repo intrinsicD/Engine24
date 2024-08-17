@@ -141,7 +141,7 @@ namespace Bcg::cuda {
 // requirements:
 // - DistanceCalculator must be able to calc distance between a point to an object.
 //
-    template<typename Objects, bool IsConst, typename DistanceCalculator, typename OutputIterator>
+    /*template<typename Objects, bool IsConst, typename DistanceCalculator, typename OutputIterator>
     __device__ unsigned int query_device(
             const detail::basic_device_bvh<Objects, IsConst> &bvh,
             const query_knn &q, DistanceCalculator calc_dist,
@@ -241,7 +241,110 @@ namespace Bcg::cuda {
         }
 
         return num_found;
+    }*/
+
+    template<typename Objects, bool IsConst, typename DistanceCalculator, typename OutputIterator>
+    __device__ unsigned int query_device(
+            const detail::basic_device_bvh<Objects, IsConst> &bvh,
+            const query_knn &q, DistanceCalculator calc_dist,
+            OutputIterator outiter,
+            const unsigned int max_buffer_size = 0xFFFFFFFF) {
+
+        using index_type = typename detail::basic_device_bvh<Objects, true>::index_type;
+
+        // Array to store the k-nearest neighbors and their distances
+        unsigned int result[32];
+        float distances[32];
+
+        const unsigned int k = q.k_closest;
+
+        // Initialize results with invalid indices and maximum distances
+        for (unsigned int i = 0; i < k; ++i) {
+            result[i] = 0xFFFFFFFF;  // Invalid index
+            distances[i] = INFINITY;  // Maximum possible distance
+        }
+
+        // Traversal stack
+        int stack[64];
+        int stack_ptr = 0;
+        stack[stack_ptr++] = 0;  // Start with root node
+
+        while (stack_ptr > 0) {
+            const int node = stack[--stack_ptr];
+
+            // Get child indices
+            const index_type L_idx = bvh.nodes[node].left_idx;
+            const index_type R_idx = bvh.nodes[node].right_idx;
+
+            // Calculate minimum distances to child AABBs
+            float dist_L = mindist(bvh.aabbs[L_idx], q.target);
+            float dist_R = mindist(bvh.aabbs[R_idx], q.target);
+
+            // Push children to stack if their distance is less than the farthest current distance
+            bool push_L = (L_idx != 0xFFFFFFFF) && (dist_L < distances[0]);
+            bool push_R = (R_idx != 0xFFFFFFFF) && (dist_R < distances[0]);
+
+            // Handle left child
+            if (push_L) {
+                if (bvh.nodes[L_idx].object_idx != 0xFFFFFFFF) {
+                    // Leaf node: calculate distance to object
+                    float obj_dist = calc_dist(q.target, bvh.objects[bvh.nodes[L_idx].object_idx]);
+
+                    if (obj_dist < distances[0]) {
+                        // Insert into result set and maintain max-heap property
+                        distances[0] = obj_dist;
+                        result[0] = bvh.nodes[L_idx].object_idx;
+
+                        // Bubble down to maintain max-heap
+                        for (int i = 1; i < k; ++i) {
+                            if (distances[i - 1] < distances[i]) {
+                                thrust::swap(distances[i - 1], distances[i]);
+                                thrust::swap(result[i - 1], result[i]);
+                            }
+                        }
+                    }
+                } else {
+                    stack[stack_ptr++] = L_idx;
+                }
+            }
+
+            // Handle right child
+            if (push_R) {
+                if (bvh.nodes[R_idx].object_idx != 0xFFFFFFFF) {
+                    // Leaf node: calculate distance to object
+                    float obj_dist = calc_dist(q.target, bvh.objects[bvh.nodes[R_idx].object_idx]);
+
+                    if (obj_dist < distances[0]) {
+                        // Insert into result set and maintain max-heap property
+                        distances[0] = obj_dist;
+                        result[0] = bvh.nodes[R_idx].object_idx;
+
+                        // Bubble down to maintain max-heap
+                        for (int i = 1; i < k; ++i) {
+                            if (distances[i - 1] < distances[i]) {
+                                thrust::swap(distances[i - 1], distances[i]);
+                                thrust::swap(result[i - 1], result[i]);
+                            }
+                        }
+                    }
+                } else {
+                    stack[stack_ptr++] = R_idx;
+                }
+            }
+        }
+
+        // Copy results to output iterator
+        unsigned int num_found = 0;
+        for (unsigned int i = 0; i < k && i < max_buffer_size; ++i) {
+            if (result[i] != 0xFFFFFFFF) {
+                *outiter++ = result[i];
+                ++num_found;
+            }
+        }
+
+        return num_found;
     }
+
 
     template<typename Objects, typename AABBGetter,
             typename MortonCodeCalculator, typename QueryObject>
