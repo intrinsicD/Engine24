@@ -6,7 +6,12 @@ target_include_directories(Engine24 PUBLIC .)
 target_sources(Engine24 PRIVATE
         PluginCuda.cpp
         CudaCommon.cu
-
+        vec2.cu
+        vec3.cu
+        vec4.cu
+        mat2.cu
+        mat3.cu
+        mat4.cu
 )
 
 target_link_libraries(Engine24 PRIVATE ${CUDAToolkit_LIBRARIES})
