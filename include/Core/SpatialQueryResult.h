@@ -12,6 +12,10 @@ namespace Bcg {
     struct QueryResult {
         std::vector<size_t> indices;
         std::vector<float> distances;
+
+        bool empty() const {
+            return indices.empty();
+        }
     };
 }
 

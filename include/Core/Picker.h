@@ -23,6 +23,7 @@ namespace Bcg {
             unsigned int vertex_idx = -1;
             unsigned int edge_idx = -1;
             unsigned int face_idx = -1;
+            float pick_radius = 0.023022268;
         } entity;
         Points spaces;
     };

@@ -7,6 +7,7 @@
 #include "mat3.cuh"
 #include "vec_operations.cuh"
 #include "gaussian.cuh"
+#include "Logger.h"
 #include <float.h>
 #include <thrust/random.h>
 #include <thrust/gather.h>
@@ -69,7 +70,8 @@ namespace Bcg::cuda {
 
 
     __device__ __host__ float max_eigenvalues_radius(const mat3 &cov) {
-        return real_symmetric_3x3_eigendecomposition(cov, nullptr).z;
+        mat3 evecs;
+        return real_symmetric_3x3_eigendecomposition(cov, evecs).z;
     }
 
     __device__ __host__ float geroshin_radius(const mat3 &cov) {
@@ -217,11 +219,22 @@ namespace Bcg::cuda {
                              }
                          });
 
+        cudaMemcpy(&max_radius, d_max_radius, sizeof(float), cudaMemcpyDeviceToHost);
+        Log::Info("Max radius: {}", max_radius * params.alpha0);
+
+        float *d_alpha0 = &params.alpha0;
+        cudaMalloc(&d_alpha0, sizeof(float));
+        cudaMemcpy(d_alpha0, &params.alpha0, sizeof(float), cudaMemcpyHostToDevice);
+        bool *d_useWeightedPotentials = &params.useWeightedPotentials;
+        cudaMalloc(&d_useWeightedPotentials, sizeof(bool));
+        cudaMemcpy(d_useWeightedPotentials, &params.useWeightedPotentials, sizeof(bool), cudaMemcpyHostToDevice);
+
         thrust::for_each(thrust::make_counting_iterator<std::uint32_t>(0),
                          thrust::make_counting_iterator<std::uint32_t>(d_parents.num_components),
-                         [d_parents, d_max_radius, params] __device__(unsigned int idx) {
+                         [d_parents, d_max_radius, d_alpha0, d_useWeightedPotentials] __device__(unsigned int idx) {
                              const vec3 &query_point = d_parents.means[idx];
-                             float r = *d_max_radius * params.alpha0;
+                             float r = *d_max_radius * *d_alpha0;
+
                              unsigned int indices[32];
                              auto nn = query_device(d_parents.d_bvh_means, overlaps_sphere(query_point, r),
                                                     indices, 32);
@@ -232,6 +245,7 @@ namespace Bcg::cuda {
 
                              vec3 mean = vec3::constant(0);
                              mat3 cov = mat3::identity() * eps;
+                             nn = fminf(nn, 32);
                              for (int i = 0; i < nn; ++i) {
                                  unsigned int neighbor_idx = indices[i];
                                  vec3 neighbor = d_parents.means[neighbor_idx];
@@ -240,16 +254,16 @@ namespace Bcg::cuda {
                                  mean = mean + neighbor;
                                  density += expf(minus_16_over_h2 * diff.dot(diff));
                              }
-
-                             float inv_w = 1.0f / nn;
-                             d_parents.means[idx] = query_point;
+                             float inv_w = 1.0f / fmaxf(nn, 1.0f);
                              vec3 o = mean * inv_w - query_point;
                              cov = cov * inv_w - outer(o, o);
+
+                             d_parents.means[idx] = query_point;
                              d_parents.covs[idx] = conditionCov(cov);
-                             d_parents.weights[idx] = params.useWeightedPotentials ? 1.0f / density : 1.0f;
+                             d_parents.weights[idx] = *d_useWeightedPotentials ? 1.0f / density : 1.0f;
 
                              mat3 evectors;
-                             jacobi_eigen(cov, evectors);
+                             real_symmetric_3x3_eigendecomposition(cov, evectors);
 
                              float initialVar = 0.001f;
                              d_parents.nvars[idx] = evectors.col0 * initialVar;
@@ -444,11 +458,10 @@ namespace Bcg::cuda {
 
         //count orphans, components not adressed by any parent
         thrust::device_vector<unsigned int> orphans_indices(num_children);
-        auto
-        end = thrust::copy_if(components.children_indices.begin(),
-                              components.children_indices.end(),
-                              comp_likelihood_sums.begin(),
-                              orphans_indices.begin(),
+        auto end = thrust::copy_if(components.children_indices.begin(),
+                                      components.children_indices.end(),
+                                      comp_likelihood_sums.begin(),
+                                      orphans_indices.begin(),
         [d_comp_likelihood_sums]
                 __device__(unsigned int
         idx) {
@@ -497,6 +510,25 @@ namespace Bcg::cuda {
 
         for (int i = 0; i < levels; ++i) {
             data = ClusterLevel(data, params);
+        }
+
+        thrust::host_vector<vec3> h_means = data.means;
+        thrust::host_vector<mat3> h_covs = data.covs;
+        thrust::host_vector<float> h_weights = data.weights;
+        thrust::host_vector<vec3> h_nvars = data.nvars;
+
+        result.means.resize(h_means.size());
+        result.covs.resize(h_covs.size());
+        result.weights.resize(h_weights.size());
+        result.nvars.resize(h_nvars.size());
+
+        for (size_t i = 0; i < h_means.size(); ++i) {
+            result.means[i] = {h_means[i].x, h_means[i].y, h_means[i].z};
+            result.covs[i] << h_covs[i].col0.x, h_covs[i].col0.y, h_covs[i].col0.z,
+                    h_covs[i].col1.x, h_covs[i].col1.y, h_covs[i].col1.z,
+                    h_covs[i].col2.x, h_covs[i].col2.y, h_covs[i].col2.z;
+            result.weights[i] = h_weights[i];
+            result.nvars[i] = {h_nvars[i].x, h_nvars[i].y, h_nvars[i].z};
         }
 /*
         hem mixture;

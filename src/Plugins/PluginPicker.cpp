@@ -82,11 +82,12 @@ namespace Bcg {
                 }
             }
 
-            auto result = kdtree.radius_query(picked.spaces.osp, 0.1);
-
-            picked.entity.vertex_idx = result.indices[0];
+            auto result = kdtree.radius_query(picked.spaces.osp, picked.entity.pick_radius);
+            if (!result.indices.empty()) {
+                picked.entity.vertex_idx = result.indices[0];
+                Engine::Dispatcher().trigger(Events::PickedVertex{entity_id, &result.indices});
+            }
             Engine::Dispatcher().trigger(Events::PickedEntity{entity_id});
-            Engine::Dispatcher().trigger(Events::PickedVertex{entity_id, &result.indices});
         } else {
             Engine::Dispatcher().trigger<Events::PickedBackgound>();
         }

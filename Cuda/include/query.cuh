@@ -20,6 +20,60 @@ namespace Bcg::cuda {
             const detail::basic_device_bvh<Objects, IsConst> &bvh,
             const query_overlap<QueryObject> q, OutputIterator outiter,
             const unsigned int max_buffer_size = 0xFFFFFFFF) noexcept {
+        /*using bvh_type = detail::basic_device_bvh<Objects, IsConst>;
+        using index_type = typename bvh_type::index_type;
+
+        index_type stack[64]; // Consider stack size in relation to BVH depth.
+        index_type *stack_ptr = stack;
+        *stack_ptr++ = 0; // root node is always 0
+
+        unsigned int num_found = 0;
+        do {
+            const index_type node = *--stack_ptr;
+            const index_type L_idx = bvh.nodes[node].left_idx;
+            const index_type R_idx = bvh.nodes[node].right_idx;
+
+            bool intersects_left = intersects(q.target, bvh.aabbs[L_idx]);
+            bool intersects_right = intersects(q.target, bvh.aabbs[R_idx]);
+
+            if (intersects_left) {
+                const auto obj_idx = bvh.nodes[L_idx].object_idx;
+                if (obj_idx != 0xFFFFFFFF) {
+                    if (num_found < max_buffer_size) {
+                        *outiter++ = obj_idx;
+                    }
+                    ++num_found;
+                } else {
+                    *stack_ptr++ = L_idx;
+                    if (stack_ptr - stack >= 64) {
+                        // Handle stack overflow, e.g., return early or log an error.
+                        return num_found;
+                    }
+                }
+            }
+
+            if (intersects_right) {
+                const auto obj_idx = bvh.nodes[R_idx].object_idx;
+                if (obj_idx != 0xFFFFFFFF) {
+                    if (num_found < max_buffer_size) {
+                        *outiter++ = obj_idx;
+                    }
+                    ++num_found;
+                } else {
+                    *stack_ptr++ = R_idx;
+                    if (stack_ptr - stack >= 64) {
+                        // Handle stack overflow, e.g., return early or log an error.
+                        return num_found;
+                    }
+                }
+            }
+
+            if (num_found >= max_buffer_size) {
+                break;
+            }
+        } while (stack < stack_ptr);
+
+        return num_found;*/
         using bvh_type = detail::basic_device_bvh<Objects, IsConst>;
         using index_type = typename bvh_type::index_type;
 

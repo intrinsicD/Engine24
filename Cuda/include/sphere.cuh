@@ -16,6 +16,7 @@ namespace Bcg::cuda {
 
         sphere() noexcept = default;
 
+        __device__ __host__
         sphere(const vec3 &center, float radius) noexcept: center_radius(center.x, center.y, center.z, radius) {}
     };
 

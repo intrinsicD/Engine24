@@ -343,18 +343,18 @@ namespace Bcg {
             }
             auto result = cuda::Hem(positions.vector(), levels, num_closest);
             entt::entity entity_id = Engine::State().create();
-            PointCloud hem;
-            hem.positions() = result.means;
-            vertices = &hem.vprops_;
+            auto &hem = Engine::State().emplace<PointCloud>(entity_id);
+            for(const auto &mean : result.means){
+                hem.add_vertex(mean);
+            }
 
-            Setup<PointCloud>(entity_id).execute();
-            auto means = vertices->get_or_add<Vector<float, 3>>("v:hem:means");
-            auto covs = vertices->get_or_add<Matrix<float, 3, 3>>("v:hem:covs");
-            auto nvars = vertices->get_or_add<Vector<float, 3>>("v:hem:nvars");
-            auto weights = vertices->get_or_add<float>("v:hem:weigths");
-            auto evecs0 = vertices->get_or_add<Vector<float, 3>>("v:hem:evecs0");
-            auto evecs1 = vertices->get_or_add<Vector<float, 3>>("v:hem:evecs1");
-            auto evecs2 = vertices->get_or_add<Vector<float, 3>>("v:hem:evecs2");
+            auto means = hem.vertex_property<Vector<float, 3>>("v:hem:means");
+            auto covs = hem.vertex_property<Matrix<float, 3, 3>>("v:hem:covs");
+            auto nvars = hem.vertex_property<Vector<float, 3>>("v:hem:nvars");
+            auto weights = hem.vertex_property<float>("v:hem:weigths");
+            auto evecs0 = hem.vertex_property<Vector<float, 3>>("v:hem:evecs0");
+            auto evecs1 = hem.vertex_property<Vector<float, 3>>("v:hem:evecs1");
+            auto evecs2 = hem.vertex_property<Vector<float, 3>>("v:hem:evecs2");
 
             covs.vector() = result.covs;
             means.vector() = result.means;
@@ -363,10 +363,12 @@ namespace Bcg {
 
             for (size_t i = 0; i < vertices->size(); ++i) {
                 Eigen::SelfAdjointEigenSolver<Eigen::Matrix<float, 3, 3>> eigensolver(result.covs[i]);
-                evecs0[i] = eigensolver.eigenvectors().col(0);
-                evecs1[i] = eigensolver.eigenvectors().col(1);
-                evecs2[i] = eigensolver.eigenvectors().col(2);
+                evecs0.vector()[i] = eigensolver.eigenvectors().col(0);
+                evecs1.vector()[i] = eigensolver.eigenvectors().col(1);
+                evecs2.vector()[i] = eigensolver.eigenvectors().col(2);
             }
+
+            Setup<PointCloud>(entity_id).execute();
         }
     }
 }

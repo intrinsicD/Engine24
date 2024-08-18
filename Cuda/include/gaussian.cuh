@@ -45,6 +45,7 @@ namespace Bcg::cuda {
         float sy = sqrtf(cov.col1.y);
         float sz = sqrtf(cov.col2.z);
 
+        bool conditioned = false;
         for (float rho = 0.99f; rho >= 0; rho -= 0.01f) {
             float rxy = rho * sx * sy;
             float rxz = rho * sx * sz;
@@ -58,17 +59,29 @@ namespace Bcg::cuda {
             newCov.col1.z = newCov.col2.y;
 
             // Check
-            outEvalues = real_symmetric_3x3_eigendecomposition(cov, nullptr);
-            if (outEvalues.x > 0.0f)
+            mat3 evecs;
+            outEvalues = jacobi_eigen(newCov, evecs);
+            if (outEvalues.x > 0.0f && outEvalues.y > 0.0f && outEvalues.z > 0.0f) {
+                conditioned = true;
                 break;
+            }
         }
 
         // Check
-        if (outEvalues.x <= 0.0f) {
-            printf("Warning: cov still non-psd despite conditioning! det: %f\n", cov.determinant());
-            printf("evals: %f, %f, %f\n", outEvalues.x, outEvalues.y, outEvalues.z);
-        }
+        if (!conditioned) {
+            // Add a small multiple of the identity matrix as a fallback
+            newCov = newCov + mat3::identity() * abseps;
 
+            // Recompute eigenvalues for the final conditioned matrix
+            mat3 evecs;
+            outEvalues = jacobi_eigen(newCov, evecs);
+
+            // Check and warn
+            if (outEvalues.x <= 0.0f || outEvalues.y <= 0.0f || outEvalues.z <= 0.0f) {
+                printf("Warning: cov still non-psd despite conditioning! det: %f\n", cov.determinant());
+                printf("evals: %f, %f, %f\n", outEvalues.x, outEvalues.y, outEvalues.z);
+            }
+        }
         return newCov;
     }
 
