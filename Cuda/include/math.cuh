@@ -64,7 +64,7 @@ namespace Bcg::cuda {
             }
         }
         assert(fabsf(evecs.col0.dot(evecs.col1)) <= 1e-6f);
-        assert(fabsf(evecs.col1.dot(evecs.col2)) <= 1e-6f);
+        assert(fabsf(evecs.col1.dot(evecsm ".col2)) <= 1e-6f);
         assert(fabsf(evecs.col2.dot(evecs.col0)) <= 1e-6f);
         return vec3(m[0][0], m[1][1], m[2][2]);
     }
