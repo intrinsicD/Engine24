@@ -116,8 +116,8 @@ namespace Bcg::cuda {
 
         template<typename UInt>
         __device__
-        inline unsigned int find_split(UInt const *node_code, const unsigned int num_leaves,
-                                       const unsigned int first, const unsigned int last) noexcept {
+        inline unsigned int
+        find_split(UInt const *node_code, const unsigned int first, const unsigned int last) noexcept {
             const UInt first_code = node_code[first];
             const UInt last_code = node_code[last];
             if (first_code == last_code) {
@@ -152,7 +152,7 @@ namespace Bcg::cuda {
                                  self.nodes[idx].object_idx = 0xFFFFFFFF; //  internal nodes
 
                                  const uint2 ij = determine_range(node_code, num_objects, idx);
-                                 const int gamma = find_split(node_code, num_objects, ij.x, ij.y);
+                                 const int gamma = find_split(node_code, ij.x, ij.y);
 
                                  self.nodes[idx].left_idx = gamma;
                                  self.nodes[idx].right_idx = gamma + 1;

@@ -37,6 +37,8 @@ namespace Bcg::cuda {
 
         __device__ __host__ inline vec3 cross(const vec3 &b) const;
 
+        __device__ __host__ inline float sum() const;
+
         __device__ __host__ inline vec3 operator+(const vec3 &b) const;
 
         __device__ __host__ inline vec3 operator-(const vec3 &b) const;
@@ -106,6 +108,10 @@ namespace Bcg::cuda {
         return {y * b.z - z * b.y,
                 z * b.x - x * b.z,
                 x * b.y - y * b.x};
+    }
+
+    __device__ __host__ inline float vec3::sum() const {
+        return x + y + z;
     }
 
     __device__ __host__ inline vec3 vec3::operator+(const vec3 &b) const {
