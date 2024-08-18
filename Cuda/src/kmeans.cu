@@ -14,15 +14,6 @@ namespace Bcg::cuda {
     using hbvh = lbvh<vec3, aabb_getter>;
     using dbvh = bvh_device<vec3>;
 
-    struct distance_calculator {
-        __device__ __host__
-        float operator()(const vec3 point, const vec3 object) const noexcept {
-            return (point.x - object.x) * (point.x - object.x) +
-                   (point.y - object.y) * (point.y - object.y) +
-                   (point.z - object.z) * (point.z - object.z);
-        }
-    };
-
     struct KmeansDeviceDataPtr {
         thrust::device_ptr<vec3> d_positions;
         thrust::device_ptr<unsigned int> d_labels;
@@ -156,6 +147,15 @@ namespace Bcg::cuda {
                          thrust::device_ptr<unsigned int> d_new_labels,
                          thrust::device_ptr<float> d_new_distances,
                          size_t num_objects) {
+
+        struct distance_calculator {
+            __device__ __host__
+            float operator()(const vec3 point, const vec3 object) const noexcept {
+                return (point.x - object.x) * (point.x - object.x) +
+                       (point.y - object.y) * (point.y - object.y) +
+                       (point.z - object.z) * (point.z - object.z);
+            }
+        };
 
         thrust::for_each(thrust::device,
                          thrust::make_counting_iterator<std::uint32_t>(0),

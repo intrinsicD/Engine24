@@ -127,6 +127,21 @@ namespace Bcg {
             entt::entity entity_id;
             int num_closest;
         };
+
+        struct ComputeHem : public AbstractCommand {
+            explicit ComputeHem(entt::entity entity_id, int levels, int num_closest) : AbstractCommand(
+                    "ComputeHem"),
+                                                                                       entity_id(entity_id),
+                                                                                       levels(levels),
+                                                                                       num_closest(
+                                                                                               num_closest) {}
+
+            void execute() const override;
+
+            entt::entity entity_id;
+            int levels;
+            int num_closest;
+        };
     }
 }
 #endif //ENGINE24_PLUGINPOINTCLOUD_H

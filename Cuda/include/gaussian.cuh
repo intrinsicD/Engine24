@@ -7,6 +7,7 @@
 
 #include "vec3.cuh"
 #include "mat3.cuh"
+#include "math.cuh"
 
 namespace Bcg::cuda {
     struct gaussian {
@@ -20,14 +21,61 @@ namespace Bcg::cuda {
         return expf(exponent) / sqrtf(det * 8 * CUDART_PI);
     }
 
-    __device__ __host__ float kullback_leibler_divergence(const vec3 &mean_p, const mat3 &cov_p, const mat3 &inv_cov_p,
-                                                          const vec3 &mean_q, const mat3 &cov_q, const mat3 &inv_cov_q) {
+    __device__ __host__ inline float
+    kullback_leibler_divergence(const vec3 &mean_p, const mat3 &cov_p, const mat3 &inv_cov_p,
+                                const vec3 &mean_q, const mat3 &cov_q, const mat3 &inv_cov_q) {
         float trace = (inv_cov_q * cov_p).trace();
         vec3 diff = mean_q - mean_p;
         float exponent = 0.5f * (trace + diff.dot(inv_cov_q * diff) - 3);
         return 0.5f * exponent;
     }
 
+    __device__ __host__ inline mat3
+    conditionCov(const mat3 &cov, vec3 &outEvalues, float epsilon = 1e-10f) {
+        mat3 newCov;
+        float abseps = fabsf(epsilon);
+
+        // condition diagonal elements
+        newCov.col0.x = fmaxf(cov.col0.x, abseps);
+        newCov.col1.y = fmaxf(cov.col1.y, abseps);
+        newCov.col2.z = fmaxf(cov.col2.z, abseps);
+
+        // condition off diagonal elements
+        float sx = sqrtf(cov.col0.x);
+        float sy = sqrtf(cov.col1.y);
+        float sz = sqrtf(cov.col2.z);
+
+        for (float rho = 0.99f; rho >= 0; rho -= 0.01f) {
+            float rxy = rho * sx * sy;
+            float rxz = rho * sx * sz;
+            float ryz = rho * sy * sz;
+            newCov.col1.x = clamp(cov.col1.x, -rxy, rxy);
+            newCov.col2.x = clamp(cov.col2.x, -rxz, rxz);
+            newCov.col2.y = clamp(cov.col2.y, -ryz, ryz);
+
+            newCov.col0.y = newCov.col1.x;
+            newCov.col0.z = newCov.col2.x;
+            newCov.col1.z = newCov.col2.y;
+
+            // Check
+            outEvalues = real_symmetric_3x3_eigendecomposition(cov, nullptr);
+            if (outEvalues.x > 0.0f)
+                break;
+        }
+
+        // Check
+        if (outEvalues.x <= 0.0f) {
+            printf("Warning: cov still non-psd despite conditioning! det: %f\n", cov.determinant());
+            printf("evals: %f, %f, %f\n", outEvalues.x, outEvalues.y, outEvalues.z);
+        }
+
+        return newCov;
+    }
+
+    __device__ __host__ inline mat3 conditionCov(const mat3 &cov, float epsilon = 1e-10f) {
+        vec3 evd;
+        return conditionCov(cov, evd, epsilon);
+    }
 
 }
 

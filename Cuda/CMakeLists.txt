@@ -17,6 +17,7 @@ add_subdirectory(include)
 add_subdirectory(src)
 
 target_sources(Engine24 PRIVATE
+        src/hem_test.cu
         src/kmeans.cu
         src/kdtree_cuda.cu
         src/local_gaussians.cu

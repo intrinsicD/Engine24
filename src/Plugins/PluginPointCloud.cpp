@@ -24,6 +24,7 @@
 #include "KDTreeCpu.h"
 #include "Cuda/Kmeans.h"
 #include "Cuda/LocalGaussians.h"
+#include "Cuda/Hem.h"
 #include "Eigen/Eigenvalues"
 #include "PluginSphereView.h"
 
@@ -314,6 +315,51 @@ namespace Bcg {
             auto evecs2 = vertices->get_or_add<Vector<float, 3>>("v:local_gaussians:evecs2");
             covs.vector() = result.covs;
             means.vector() = result.means;
+
+            for (size_t i = 0; i < vertices->size(); ++i) {
+                Eigen::SelfAdjointEigenSolver<Eigen::Matrix<float, 3, 3>> eigensolver(result.covs[i]);
+                evecs0[i] = eigensolver.eigenvectors().col(0);
+                evecs1[i] = eigensolver.eigenvectors().col(1);
+                evecs2[i] = eigensolver.eigenvectors().col(2);
+            }
+        }
+
+        void ComputeHem::execute() const {
+            if (!Engine::valid(entity_id)) {
+                Log::Warn(name + " Entity is not valid. Abort Command!");
+                return;
+            }
+
+            auto *vertices = GetPrimitives(entity_id).vertices();
+            if (!vertices) {
+                Log::Warn(name + " Entity does not have vertices. Abort Command!");
+                return;
+            }
+
+            auto positions = vertices->get<Vector<float, 3>>("v:position");
+            if (!positions) {
+                Log::Warn(name + " Entity does not have positions property. Abort Command!");
+                return;
+            }
+            auto result = cuda::Hem(positions.vector(), levels, num_closest);
+            entt::entity entity_id = Engine::State().create();
+            PointCloud hem;
+            hem.positions() = result.means;
+            vertices = &hem.vprops_;
+
+            Setup<PointCloud>(entity_id).execute();
+            auto means = vertices->get_or_add<Vector<float, 3>>("v:hem:means");
+            auto covs = vertices->get_or_add<Matrix<float, 3, 3>>("v:hem:covs");
+            auto nvars = vertices->get_or_add<Vector<float, 3>>("v:hem:nvars");
+            auto weights = vertices->get_or_add<float>("v:hem:weigths");
+            auto evecs0 = vertices->get_or_add<Vector<float, 3>>("v:hem:evecs0");
+            auto evecs1 = vertices->get_or_add<Vector<float, 3>>("v:hem:evecs1");
+            auto evecs2 = vertices->get_or_add<Vector<float, 3>>("v:hem:evecs2");
+
+            covs.vector() = result.covs;
+            means.vector() = result.means;
+            nvars.vector() = result.nvars;
+            weights.vector() = result.weights;
 
             for (size_t i = 0; i < vertices->size(); ++i) {
                 Eigen::SelfAdjointEigenSolver<Eigen::Matrix<float, 3, 3>> eigensolver(result.covs[i]);

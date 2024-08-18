@@ -4,7 +4,6 @@
 
 #include "Cuda/KDTreeCuda.h"
 #include "lbvh.cuh"
-#include "vec3.cuh"
 #include "Engine.h"
 
 #include <vector>

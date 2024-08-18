@@ -37,18 +37,21 @@ namespace Bcg::Gui {
                 if (ImGui::Button("LocalPcaKnn")) {
                     Commands::ComputePointCloudLocalPcasKnn(entity_id, num_closest).execute();
                 }
-                static int k = 12;
                 static int iterations = 100;
-                ImGui::InputInt("k", &k);
                 ImGui::InputInt("iterations", &iterations);
                 if (ImGui::Button("Kmeans")) {
-                    Commands::ComputeKMeans(entity_id, k, iterations).execute();
+                    Commands::ComputeKMeans(entity_id, num_closest, iterations).execute();
                 }
                 if (ImGui::Button("HierarchicalKmeans")) {
-                    Commands::ComputeHierarchicalKMeans(entity_id, k, iterations).execute();
+                    Commands::ComputeHierarchicalKMeans(entity_id, num_closest, iterations).execute();
                 }
                 if (ImGui::Button("LocalGaussians")) {
-                    Commands::ComputeLocalGaussians(entity_id, k).execute();
+                    Commands::ComputeLocalGaussians(entity_id, num_closest).execute();
+                }
+                static int levels = 5;
+                ImGui::InputInt("levels", &levels);
+                if(ImGui::Button("Hem")){
+                    Commands::ComputeHem(entity_id, levels, num_closest).execute();
                 }
             }
         }
