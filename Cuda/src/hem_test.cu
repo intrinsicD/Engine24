@@ -71,7 +71,7 @@ namespace Bcg::cuda {
 
     __device__ __host__ float max_eigenvalues_radius(const mat3 &cov) {
         mat3 evecs;
-        return real_symmetric_3x3_eigendecomposition(cov, evecs).z;
+        return jacobi_eigen(cov, evecs).z;
     }
 
     __device__ __host__ float geroshin_radius(const mat3 &cov) {
@@ -235,9 +235,9 @@ namespace Bcg::cuda {
                              const vec3 &query_point = d_parents.means[idx];
                              float r = *d_max_radius * *d_alpha0;
 
-                             unsigned int indices[32];
+                             unsigned int indices[64];
                              auto nn = query_device(d_parents.d_bvh_means, overlaps_sphere(query_point, r),
-                                                    indices, 32);
+                                                    indices, 64);
                              const float minus_16_over_h2 = -16.0f / (r * r);
 
                              float eps = r * r * 0.0001f;
@@ -245,7 +245,7 @@ namespace Bcg::cuda {
 
                              vec3 mean = vec3::constant(0);
                              mat3 cov = mat3::identity() * eps;
-                             nn = fminf(nn, 32);
+                             nn = fminf(nn, 64);
                              for (int i = 0; i < nn; ++i) {
                                  unsigned int neighbor_idx = indices[i];
                                  vec3 neighbor = d_parents.means[neighbor_idx];
@@ -261,12 +261,11 @@ namespace Bcg::cuda {
                              d_parents.means[idx] = query_point;
                              d_parents.covs[idx] = conditionCov(cov);
                              d_parents.weights[idx] = *d_useWeightedPotentials ? 1.0f / density : 1.0f;
-
-                             mat3 evectors;
-                             real_symmetric_3x3_eigendecomposition(cov, evectors);
+                             mat3 evecs;
+                             jacobi_eigen(cov, evecs);
 
                              float initialVar = 0.001f;
-                             d_parents.nvars[idx] = evectors.col0 * initialVar;
+                             d_parents.nvars[idx] = evecs.col0 * initialVar;
                          });
 
         cudaFree(d_max_radius);
@@ -292,13 +291,13 @@ namespace Bcg::cuda {
         auto d_parents = parents.get_device_repr();
         auto d_components = components.get_device_repr();
 
-        thrust::device_vector<CudaMatrixRow<unsigned int, 32>> parents_children_indices(num_parents);
-        thrust::device_vector<CudaMatrixRow<float, 32>> comp_likelihoods(num_components);
+        thrust::device_vector<CudaMatrixRow<unsigned int, 64>> parents_children_indices(num_parents);
+        thrust::device_vector<CudaMatrixRow<float, 64>> comp_likelihoods(num_components);
         thrust::device_vector<float> comp_likelihood_sums(num_components, 0);
         thrust::device_vector<float> parents_radii(num_parents);
 
-        CudaMatrixRow<unsigned int, 32> *d_parents_children_indices = parents_children_indices.data().get();
-        CudaMatrixRow<float, 32> *d_comp_likelihoods = comp_likelihoods.data().get();
+        CudaMatrixRow<unsigned int, 64> *d_parents_children_indices = parents_children_indices.data().get();
+        CudaMatrixRow<float, 64> *d_comp_likelihoods = comp_likelihoods.data().get();
         float *d_comp_likelihood_sums = comp_likelihood_sums.data().get();
         float *d_parents_radii = parents_radii.data().get();
 
@@ -308,11 +307,11 @@ namespace Bcg::cuda {
         float *d_max_radius = &max_radius;
         float *d_alpha = &params.alpha;
 
-        // Allocate memory on the device
         cudaMalloc(&d_max_radius, sizeof(float));
-
-// Initialize the value in device memory
         cudaMemcpy(d_max_radius, &max_radius, sizeof(float), cudaMemcpyHostToDevice);
+
+        cudaMalloc(&d_alpha, sizeof(float));
+        cudaMemcpy(d_alpha, &params.alpha, sizeof(float), cudaMemcpyHostToDevice);
 
         thrust::for_each(thrust::make_counting_iterator<std::uint32_t>(0),
                          thrust::make_counting_iterator<std::uint32_t>(num_parents),
@@ -329,7 +328,7 @@ namespace Bcg::cuda {
                              atomicMaxFloat(d_max_radius, d_parents_radii[idx]);
                          });
 
-
+        //TODO this fails... out of bounds access...
         thrust::for_each(thrust::make_counting_iterator<std::uint32_t>(0),
                          thrust::make_counting_iterator<std::uint32_t>(num_parents),
                          [d_components, d_parents, d_comp_likelihood_sums, d_comp_likelihoods,
@@ -381,7 +380,7 @@ namespace Bcg::cuda {
                                  float wL_si = weight_parent *
                                                fmaxf(min_likelilhood, fminf(likelihood, max_likelihood));
 
-                                 comp_likelihood.data[i] = wL_si;
+                                 comp_likelihood.data[child_idx] = wL_si;
                                  atomicAdd(&comp_likelihood_sum, wL_si);
                              }
                          });
@@ -459,9 +458,9 @@ namespace Bcg::cuda {
         //count orphans, components not adressed by any parent
         thrust::device_vector<unsigned int> orphans_indices(num_children);
         auto end = thrust::copy_if(components.children_indices.begin(),
-                                      components.children_indices.end(),
-                                      comp_likelihood_sums.begin(),
-                                      orphans_indices.begin(),
+                                   components.children_indices.end(),
+                                   comp_likelihood_sums.begin(),
+                                   orphans_indices.begin(),
         [d_comp_likelihood_sums]
                 __device__(unsigned int
         idx) {

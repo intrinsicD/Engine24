@@ -35,19 +35,19 @@ namespace Bcg::cuda {
 
     __host__ __device__
     void rotate(mat3 &m, mat3 &evecs, int p, int q) {
-        if (fabsf(m[p][q]) > 1e-9) {  // Only rotate if the off-diagonal element is significant
-            double tau = (m[q][q] - m[p][p]) / (2.0f * m[p][q]);
-            double t = (tau >= 0 ? 1.0f : -1.0f) / (fabsf(tau) + sqrtf(1.0f + tau * tau));
-            double c = 1.0f / sqrtf(1.0f + t * t);
+        if (fabs(m[p][q]) > 1e-9) {  // Only rotate if the off-diagonal element is significant
+            double tau = (m[q][q] - m[p][p]) / (2.0 * m[p][q]);
+            double t = (tau >= 0 ? 1.0 : -1.0) / (fabs(tau) + sqrt(1.0 + tau * tau));
+            double c = 1.0 / sqrt(1.0 + t * t);
             double s = t * c;
 
             double m_pp = m[p][p];
             double m_qq = m[q][q];
 
-            m[p][p] = c * c * m_pp - 2.0f * c * s * m[p][q] + s * s * m_qq;
-            m[q][q] = s * s * m_pp + 2.0f * c * s * m[p][q] + c * c * m_qq;
-            m[p][q] = 0.0f;
-            m[q][p] = 0.0f;
+            m[p][p] = c * c * m_pp - 2.0 * c * s * m[p][q] + s * s * m_qq;
+            m[q][q] = s * s * m_pp + 2.0 * c * s * m[p][q] + c * c * m_qq;
+            m[p][q] = 0.0;
+            m[q][p] = 0.0;
 
             for (int i = 0; i < 3; ++i) {
                 if (i != p && i != q) {
@@ -82,20 +82,20 @@ namespace Bcg::cuda {
     __host__ __device__
     vec3 jacobi_eigen(const mat3 &m_, mat3 &evecs) {
         evecs = mat3::identity();
-        float scale = fmaxf(fmaxf(fabsf(m_.col0.x), fabsf(m_.col1.y)), fabsf(m_.col2.z));
-        mat3 m = m_ * (1.0f / scale);
+        float scale = fmax(fmax(fabs(m_.col0.x), fabs(m_.col1.y)), fabs(m_.col2.z));
+        mat3 m = m_ * (1.0 / scale);
         for (int iter = 0; iter < 50; ++iter) {
             // Find the largest off-diagonal element in the upper triangle
             int p = 0, q = 1;
-            double max_offdiag = fabsf(m[0][1]);
+            double max_offdiag = fabs(m[0][1]);
 
-            if (fabsf(m[1][2]) > max_offdiag) {
+            if (fabs(m[1][2]) > max_offdiag) {
                 p = 1;
                 q = 2;
-                max_offdiag = fabsf(m[1][2]);
+                max_offdiag = fabs(m[1][2]);
             }
 
-            if (fabsf(m[0][2]) > max_offdiag) {
+            if (fabs(m[0][2]) > max_offdiag) {
                 p = 0;
                 q = 2;
             }
@@ -103,8 +103,8 @@ namespace Bcg::cuda {
             rotate(m, evecs, p, q);
 
             // Convergence check: norm of off-diagonal elements
-            double offdiag_norm = sqrtf(m[0][1] * m[0][1] + m[1][2] * m[1][2] + m[0][2] * m[0][2]);
-            double diag_norm = sqrtf(m[0][0] * m[0][0] + m[1][1] * m[1][1] + m[2][2] * m[2][2]);
+            double offdiag_norm = sqrt(m[0][1] * m[0][1] + m[1][2] * m[1][2] + m[0][2] * m[0][2]);
+            double diag_norm = sqrt(m[0][0] * m[0][0] + m[1][1] * m[1][1] + m[2][2] * m[2][2]);
 
             if (offdiag_norm / diag_norm < 1e-9) {
                 break;
@@ -126,9 +126,7 @@ namespace Bcg::cuda {
         return evals * scale;
     }
 
-    __device__ __host__ inline vec3 real_symmetric_3x3_eigendecomposition(const mat3 &m_, mat3 &evecs) {
-        float scale = fmaxf(fmaxf(fabsf(m_.col0.x), fabsf(m_.col1.y)), fabsf(m_.col2.z));
-        mat3 m = m_ * (1.0f / scale);
+    __device__ __host__ inline vec3 real_symmetric_3x3_eigendecomposition(const mat3 &m, mat3 &evecs) {
         double a = m.col0.x;
         double b = m.col1.y;
         double c = m.col2.z;
@@ -146,18 +144,17 @@ namespace Bcg::cuda {
 
         double phi;
         if (x2 > 0) {
-            phi = atan2f(sqrtf(4 * x1 * x1 * x1 - x2 * x2) / x2, x2);
+            phi = atan2(sqrt(4 * x1 * x1 * x1 - x2 * x2) / x2, x2);
         } else if (x2 == 0) {
             phi = CUDART_PI / 2;
         } else {
-            phi = atan2f(sqrtf(4 * x1 * x1 * x1 - x2 * x2) / x2, x2) + CUDART_PI;
+            phi = atan2(sqrt(4 * x1 * x1 * x1 - x2 * x2) / x2, x2) + CUDART_PI;
         }
 
 
-        double evals_x = (a + b + c - 2 * sqrtf(x1) * cosf(phi / 3)) / 3;
-        double evals_y = (a + b + c + 2 * sqrtf(x1) * cosf((phi - CUDART_PI) / 3)) / 3;
-        double evals_z = (a + b + c + 2 * sqrtf(x1) * cosf((phi + CUDART_PI) / 3)) / 3;
-
+        double evals_x = (a + b + c - 2 * sqrt(x1) * cos(phi / 3)) / 3;
+        double evals_y = (a + b + c + 2 * sqrt(x1) * cos((phi - CUDART_PI) / 3)) / 3;
+        double evals_z = (a + b + c + 2 * sqrt(x1) * cos((phi + CUDART_PI) / 3)) / 3;
 
         double ef = e * f;
         double de = d * e;
@@ -165,7 +162,6 @@ namespace Bcg::cuda {
         double m1 = (d * (c - evals_x) - ef) / (f * (b - evals_x) - de);
         double m2 = (d * (c - evals_y) - ef) / (f * (b - evals_y) - de);
         double m3 = (d * (c - evals_z) - ef) / (f * (b - evals_z) - de);
-
 
         evecs.col0 = vec3((evals_x - c - e * m1) / f, m1, 1).normalized();
         evecs.col1 = vec3((evals_y - c - e * m2) / f, m2, 1).normalized();
@@ -180,7 +176,7 @@ namespace Bcg::cuda {
         //sort eigenvalues and eigenvectors
         vec3 evals = vec3(evals_x, evals_y, evals_z);
         sort_ascending(evals, evecs);
-        return evals * scale;
+        return evals;
     }
 }
 
