@@ -97,6 +97,10 @@ namespace Bcg::cuda {
                 } else // the node is not a leaf.
                 {
                     *stack_ptr++ = L_idx;
+                    if (stack_ptr - stack >= 64) {
+                        // Handle stack overflow, e.g., return early or log an error.
+                        return num_found;
+                    }
                 }
             }
             if (intersects(q.target, bvh.aabbs[R_idx])) {
@@ -109,7 +113,15 @@ namespace Bcg::cuda {
                 } else // the node is not a leaf.
                 {
                     *stack_ptr++ = R_idx;
+                    if (stack_ptr - stack >= 64) {
+                        // Handle stack overflow, e.g., return early or log an error.
+                        return num_found;
+                    }
                 }
+            }
+
+            if (num_found >= max_buffer_size) {
+                break;
             }
         } while (stack < stack_ptr);
         return num_found;

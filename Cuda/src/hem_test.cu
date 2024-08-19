@@ -211,6 +211,7 @@ namespace Bcg::cuda {
                              auto nn = query_device(d_parents.d_bvh_means, knn(query_point, params.knn),
                                                     distance_calculator(),
                                                     indices, 32);
+                             nn = fminf(nn, 32);
                              for (int i = 0; i < nn; ++i) {
                                  unsigned int neighbor_idx = indices[i];
                                  vec3 neighbor = d_parents.means[neighbor_idx];
@@ -238,6 +239,7 @@ namespace Bcg::cuda {
                              unsigned int indices[64];
                              auto nn = query_device(d_parents.d_bvh_means, overlaps_sphere(query_point, r),
                                                     indices, 64);
+                             nn = fminf(nn, 64);
                              const float minus_16_over_h2 = -16.0f / (r * r);
 
                              float eps = r * r * 0.0001f;
@@ -245,7 +247,7 @@ namespace Bcg::cuda {
 
                              vec3 mean = vec3::constant(0);
                              mat3 cov = mat3::identity() * eps;
-                             nn = fminf(nn, 64);
+
                              for (int i = 0; i < nn; ++i) {
                                  unsigned int neighbor_idx = indices[i];
                                  vec3 neighbor = d_parents.means[neighbor_idx];
@@ -323,11 +325,14 @@ namespace Bcg::cuda {
                              d_parents.nvars[idx] = d_components.nvars[parent_idx];
 
                              float alpha = *d_alpha;
-                             d_parents_radii[idx] =
-                                     alpha * sqrtf(max_eigenvalues_radius(d_components.covs[parent_idx]));
-                             atomicMaxFloat(d_max_radius, d_parents_radii[idx]);
+                             float radius = alpha * sqrtf(max_eigenvalues_radius(d_components.covs[parent_idx]));
+
+                             d_parents_radii[idx] = radius;
+                             atomicMaxFloat(d_max_radius, radius);
                          });
 
+        cudaMemcpy(&max_radius, d_max_radius, sizeof(float), cudaMemcpyDeviceToHost);
+        printf("Max radius: %f\n", max_radius);
         //TODO this fails... out of bounds access...
         thrust::for_each(thrust::make_counting_iterator<std::uint32_t>(0),
                          thrust::make_counting_iterator<std::uint32_t>(num_parents),
@@ -335,25 +340,27 @@ namespace Bcg::cuda {
                                  d_parents_children_indices, d_max_radius, d_alpha] __device__(unsigned int idx) {
                              unsigned int parent_idx = d_components.parents_indices[idx];
 
-                             unsigned int radius_query_indices[32];
+                             unsigned int radius_query_indices[64];
                              const vec3 &mean_parent = d_parents.means[idx];
                              const mat3 &cov_parent = d_parents.covs[idx];
                              const float weight_parent = d_parents.weights[idx];
                              const mat3 cov_parent_inv = cov_parent.inverse();
-
                              float &comp_likelihood_sum = d_comp_likelihood_sums[parent_idx];
                              auto &comp_likelihood = d_comp_likelihoods[parent_idx];
                              auto &parent_children_indices = d_parents_children_indices[idx];
 
-
-                             auto nn = query_device(d_parents.d_bvh_means, overlaps_sphere(mean_parent, *d_max_radius),
-                                                    radius_query_indices, 32);
-
+                             float radius = *d_max_radius;
+                             auto nn = query_device(d_components.d_bvh_means, overlaps_sphere(mean_parent, radius),
+                                                    radius_query_indices, 64);
+                             nn = fminf(nn, 64);
                              const float max_likelihood = 1e8f;
                              const float min_likelilhood = FLT_MIN;
                              const float alpha = *d_alpha;
                              const float alpha2 = alpha * alpha;
-                             for (int i = 0; i < nn; ++i) {
+                             parent_children_indices.data[0] = nn;
+                             printf("Parent %d has %d children\n", parent_idx, nn);
+                             assert(nn > 0);
+                             for (int i = 1; i < nn; ++i) {
                                  unsigned int child_idx = radius_query_indices[i];
                                  parent_children_indices.data[i] = child_idx;
 
@@ -402,8 +409,10 @@ namespace Bcg::cuda {
                              mat3 sumcov_i = mat3::constant(0);
                              vec3 resultant = vec3::constant(0);
                              float nvar = 0.0f;
-
-                             for (int i = 0; i < 32; ++i) {
+                             unsigned int nn = parent_children_indices.data[0];
+                             printf("Parent %d has %d children\n", parent_idx, nn);
+                             assert(nn > 1);
+                             for (int i = 1; i < nn; ++i) {
                                  unsigned int child_idx = parent_children_indices.data[i];
 
                                  if (comp_likelihood_sum[child_idx] == 0) {
@@ -415,10 +424,13 @@ namespace Bcg::cuda {
                                  const float child_weight = d_components.weights[child_idx];
                                  const vec3 &child_nvar = d_components.nvars[child_idx];
 
+                                 assert(comp_likelihood_sum[child_idx] > 0.0f);
                                  float r_cp = likelihoods.data[i] / comp_likelihood_sum[child_idx];
+                                 assert(r_cp > 0.0f);
                                  float w = r_cp * child_weight;
-
+                                 assert(w > 0.0f);
                                  float c_nvar = child_nvar.length();
+                                 assert(c_nvar > 0.0f);
                                  vec3 c_normal = child_nvar / c_nvar;
 
                                  if (c_normal.dot(d_components.nvars[parent_idx]) < 0.0f) {
@@ -433,7 +445,8 @@ namespace Bcg::cuda {
                                  resultant = resultant + w * c_normal;
                                  nvar += w * c_nvar;
                              }
-
+                             //TODO this fails... w_s is 0
+                             assert(w_s > 0.0f);
                              float inv_w = 1.0f / w_s;
                              vec3 µ_s = inv_w * sumµ_i;
                              vec3 diff = µ_s - d_components.means[parent_idx];
@@ -444,6 +457,7 @@ namespace Bcg::cuda {
                              float R = resultant.length();
                              float Rmean = R * inv_w;
                              float variance2 = -2.0f * log(Rmean);
+                             assert(R > 0.0f);
                              vec3 newMeanNormal = resultant / R;
 
 
@@ -470,6 +484,12 @@ namespace Bcg::cuda {
         orphans_indices.resize(end - orphans_indices.begin());
 
         HemDeviceData orphans;
+        orphans.means.resize(orphans_indices.size());
+        orphans.covs.resize(orphans_indices.size());
+        orphans.weights.resize(orphans_indices.size());
+        orphans.nvars.resize(orphans_indices.size());
+        orphans.is_parent.resize(orphans_indices.size());
+
         thrust::gather(orphans_indices.begin(), orphans_indices.end(), components.means.begin(),
                        orphans.means.begin());
         thrust::gather(orphans_indices.begin(), orphans_indices.end(), components.covs.begin(),
