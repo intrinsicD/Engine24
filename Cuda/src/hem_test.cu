@@ -5,6 +5,7 @@
 #include "Cuda/Hem.h"
 #include "lbvh.cuh"
 #include "mat3.cuh"
+#include "math.cuh"
 #include "vec_operations.cuh"
 #include "gaussian.cuh"
 #include "Logger.h"
@@ -71,7 +72,7 @@ namespace Bcg::cuda {
 
     __device__ __host__ float max_eigenvalues_radius(const mat3 &cov) {
         mat3 evecs;
-        return jacobi_eigen(cov, evecs).z;
+        return real_symmetric_3x3_eigendecomposition(cov, evecs).z;
     }
 
     __device__ __host__ float geroshin_radius(const mat3 &cov) {
@@ -245,7 +246,7 @@ namespace Bcg::cuda {
                              vec3 mean = vec3::constant(0);
                              mat3 cov = mat3::identity() * eps;
                              assert(nn > 0);
-                             for (int i = 0; i < nn; ++i) {
+                             for (unsigned int i = 0; i < nn; ++i) {
                                  unsigned int neighbor_idx = indices[i];
                                  vec3 neighbor = d_parents.means[neighbor_idx];
                                  vec3 diff = neighbor - query_point;
@@ -261,8 +262,7 @@ namespace Bcg::cuda {
                              d_parents.covs[idx] = conditionCov(cov);
                              d_parents.weights[idx] = *d_useWeightedPotentials ? 1.0f / density : 1.0f;
                              mat3 evecs;
-                             jacobi_eigen(cov, evecs);
-
+                             real_symmetric_3x3_eigendecomposition(cov, evecs);
                              float initialVar = 0.001f;
                              d_parents.nvars[idx] = evecs.col0 * initialVar;
                          });
@@ -388,7 +388,7 @@ namespace Bcg::cuda {
                              const float alpha = *d_alpha;
                              const float alpha2 = alpha * alpha;
                              d_nn_found[s_] = nn;
-                             printf("Parent %d: %d neighbors\n", parent_idx, nn);
+
                              for (unsigned int i = 0; i < nn; ++i) {
                                  unsigned int child_idx = radius_query_indices[i];
                                  parent_children_indices[i] = child_idx;
@@ -401,7 +401,6 @@ namespace Bcg::cuda {
                                  float kld = kullback_leibler_divergence(mean_parent, cov_parent,
                                                                          child_mean, child_cov, child_cov_inv);
 
-                                 printf("KLD %d: %f\n", i, kld);
                                  if (kld > alpha2 * 0.5f) {
                                      continue;
                                  }
@@ -417,7 +416,7 @@ namespace Bcg::cuda {
                                  float wL_si = weight_parent * clamp(likelihood, min_likelilhood, max_likelihood);
 
                                  comp_likelihoods[i] = wL_si;
-                                 printf("Likelihood %d: %f\n", i, wL_si);
+                                 //printf("Likelihood: %f weight_parent: %f\n", likelihood, weight_parent);
                                  atomicAdd(&d_comp_likelihood_sums[child_idx], wL_si);
                              }
                          });
@@ -440,9 +439,10 @@ namespace Bcg::cuda {
                              mat3 sum_cov_i = w_s * d_parents.covs[s_];
                              vec3 resultant = w_s * d_parents.nvars[s_];
                              float nvar = resultant.length();
-                             int nn = d_nn_found[s_];
+                             unsigned int nn = d_nn_found[s_];
                              assert(nn > 0);
-                             for (int i = 0; i < nn; ++i) {
+                             //TODO this loop seems to be never used!!!!
+                             for (unsigned int i = 0; i < nn; ++i) {
                                  unsigned int child_idx = parent_children_indices[i];
 
                                  if (child_idx == parent_idx || !parents_children_valid[i] ||
@@ -474,6 +474,7 @@ namespace Bcg::cuda {
 
                                  resultant = resultant + w * c_normal;
                                  nvar += w * c_nvar;
+                                 printf("inloop\n");
                              }
 
                              float inv_w = 1.0f / w_s;
@@ -505,9 +506,8 @@ namespace Bcg::cuda {
 
         //count orphans, components not adressed by any parent
         thrust::device_vector<unsigned int> orphans_indices(num_children);
-        auto
-                end = thrust::copy_if(components.children_indices.begin(),
-                                      components.children_indices.end(), orphans_indices.begin(),
+        auto end = thrust::copy_if(components.children_indices.begin(),
+                                   components.children_indices.end(), orphans_indices.begin(),
         [d_comp_likelihood_sums]
                 __device__(unsigned int
         child_idx) {
@@ -537,6 +537,7 @@ namespace Bcg::cuda {
         parents.weights.insert(parents.weights.end(), orphans.weights.begin(), orphans.weights.end());
         parents.nvars.insert(parents.nvars.end(), orphans.nvars.begin(), orphans.nvars.end());
 
+        assert(orphans_indices.size() < components.means.size());
         assert(parents.means.size() < components.means.size());
 
         parents.h_bvh.clear();

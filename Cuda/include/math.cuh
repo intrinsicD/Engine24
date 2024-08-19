@@ -70,7 +70,7 @@ namespace Bcg::cuda {
     }
 
 
-// Simple Gram-Schmidt orthogonalization
+    // Simple Gram-Schmidt orthogonalization
     __host__ __device__ void orthogonalize(mat3 &evecs) {
         evecs.col1 = evecs.col1 - evecs.col0 * (evecs.col1.dot(evecs.col0));
         evecs.col1 = evecs.col1.normalized();
@@ -82,7 +82,7 @@ namespace Bcg::cuda {
     __host__ __device__
     vec3 jacobi_eigen(const mat3 &m_, mat3 &evecs) {
         evecs = mat3::identity();
-        float scale = fmax(fmax(fabs(m_.col0.x), fabs(m_.col1.y)), fabs(m_.col2.z));
+        double scale = fmax(fmax(fabs(m_.col0.x), fabs(m_.col1.y)), fabs(m_.col2.z));
         mat3 m = m_ * (1.0 / scale);
         for (int iter = 0; iter < 50; ++iter) {
             // Find the largest off-diagonal element in the upper triangle
@@ -177,6 +177,37 @@ namespace Bcg::cuda {
         vec3 evals = vec3(evals_x, evals_y, evals_z);
         sort_ascending(evals, evecs);
         return evals;
+    }
+
+    __device__ __host__ inline bool is_psd(const mat3 &matrix) {
+        mat3 L; // Lower triangular matrix
+
+        // Cholesky decomposition
+        for (int i = 0; i < 3; ++i) {
+            // Compute the diagonal element
+            double sum = 0.0f;
+            for (int k = 0; k < i; ++k) {
+                sum += L[k][i] * L[k][i];  // Adjusted for column-major format
+            }
+            double diag = matrix[i][i] - sum;
+
+            if (diag <= 0.0f) {
+                return false; // Matrix is not positive semi-definite
+            }
+
+            L[i][i] = sqrtf(diag);
+
+            // Compute the off-diagonal elements
+            for (int j = i + 1; j < 3; ++j) {
+                sum = 0.0f;
+                for (int k = 0; k < i; ++k) {
+                    sum += L[k][i] * L[k][j];  // Adjusted for column-major format
+                }
+                L[i][j] = (matrix[i][j] - sum) / L[i][i];  // Adjusted for column-major format
+            }
+        }
+
+        return true; // Matrix is positive semi-definite
     }
 }
 

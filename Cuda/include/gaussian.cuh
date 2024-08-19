@@ -33,7 +33,7 @@ namespace Bcg::cuda {
     }
 
     __device__ __host__ inline mat3
-    conditionCov(const mat3 &cov, vec3 &outEvalues, float epsilon = 1e-10f) {
+    conditionCovOrig(const mat3 &cov, vec3 &outEvalues, float epsilon = 1e-10f) {
         mat3 newCov;
         float abseps = fabsf(epsilon);
 
@@ -84,6 +84,64 @@ namespace Bcg::cuda {
                 printf("evals: %f, %f, %f\n", outEvalues.x, outEvalues.y, outEvalues.z);
             }
         }
+        return newCov;
+    }
+
+    __device__ __host__ inline mat3 conditionCov(const mat3 &cov, vec3 &outEvalues, float epsilon = 1e-10f) {
+        mat3 newCov;
+        float abseps = fabsf(epsilon);
+
+        // Condition diagonal elements
+        newCov.col0.x = fmaxf(cov.col0.x, abseps);
+        newCov.col1.y = fmaxf(cov.col1.y, abseps);
+        newCov.col2.z = fmaxf(cov.col2.z, abseps);
+
+        // Compute square roots of diagonal elements
+        float sx = sqrtf(newCov.col0.x);
+        float sy = sqrtf(newCov.col1.y);
+        float sz = sqrtf(newCov.col2.z);
+
+        // Condition off-diagonal elements with an adaptive approach
+        bool conditioned = false;
+        float rho = 0.99f;
+
+        while (rho > 0.0f) {
+            float rxy = rho * sx * sy;
+            float rxz = rho * sx * sz;
+            float ryz = rho * sy * sz;
+
+            newCov.col1.x = clamp(cov.col1.x, -rxy, rxy);
+            newCov.col2.x = clamp(cov.col2.x, -rxz, rxz);
+            newCov.col2.y = clamp(cov.col2.y, -ryz, ryz);
+
+            newCov.col0.y = newCov.col1.x;
+            newCov.col0.z = newCov.col2.x;
+            newCov.col1.z = newCov.col2.y;
+
+            // Check if the matrix is PSD using Cholesky decomposition
+            if (is_psd(newCov)) {
+                conditioned = true;
+                break;
+            }
+
+            rho -= 0.01f;
+        }
+
+        if (!conditioned) {
+            // Add a small multiple of the identity matrix as a fallback
+            newCov = newCov + mat3::identity() * abseps;
+
+            // Recompute eigenvalues for the final conditioned matrix
+            mat3 evecs;
+            outEvalues = jacobi_eigen(newCov, evecs);
+
+            // Warning if still non-psd
+            if (outEvalues.x <= 0.0f || outEvalues.y <= 0.0f || outEvalues.z <= 0.0f) {
+                printf("Warning: cov still non-psd despite conditioning! det: %f\n", cov.determinant());
+                printf("evals: %f, %f, %f\n", outEvalues.x, outEvalues.y, outEvalues.z);
+            }
+        }
+
         return newCov;
     }
 

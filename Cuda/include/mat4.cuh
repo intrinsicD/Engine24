@@ -97,15 +97,16 @@ namespace Bcg::cuda {
 
     }
 
-    __device__ __host__ inline mat4::mat4(vec4 col0, vec4 col1, vec4 col2, vec4 col3) : col0(col0), col1(col1), col2(col2),
-                                                                                 col3(col3) {
+    __device__ __host__ inline mat4::mat4(vec4 col0, vec4 col1, vec4 col2, vec4 col3) : col0(col0), col1(col1),
+                                                                                        col2(col2),
+                                                                                        col3(col3) {
 
     }
 
     __device__ __host__ inline mat4::mat4(const mat3 &u) : col0({u.col0.x, u.col0.y, u.col0.z, 0}),
-                                                    col1({u.col1.x, u.col1.y, u.col1.z, 0}),
-                                                    col2({u.col2.x, u.col2.y, u.col2.z, 0}),
-                                                    col3({0, 0, 0, 1}) {
+                                                           col1({u.col1.x, u.col1.y, u.col1.z, 0}),
+                                                           col2({u.col2.x, u.col2.y, u.col2.z, 0}),
+                                                           col3({0, 0, 0, 1}) {
 
     }
 
@@ -284,21 +285,29 @@ namespace Bcg::cuda {
                 {col0.w, col1.w, col2.w, col3.w}};
     }
 
-    __device__ __host__ inline float mat4_determinant(float a00, float a01, float a02, float a03,
-                                               float a10, float a11, float a12, float a13,
-                                               float a20, float a21, float a22, float a23,
-                                               float a30, float a31, float a32, float a33) {
-        return a00 * mat3_determinant(a11, a12, a13, a21, a22, a23, a31, a32, a33)
-               - a01 * mat3_determinant(a10, a12, a13, a20, a22, a23, a30, a32, a33)
-               + a02 * mat3_determinant(a10, a11, a13, a20, a21, a23, a30, a31, a33)
-               - a03 * mat3_determinant(a10, a11, a12, a20, a21, a22, a30, a31, a32);
+    __device__ __host__ inline double mat4_determinant(double a00, double a01, double a02, double a03,
+                                                       double a10, double a11, double a12, double a13,
+                                                       double a20, double a21, double a22, double a23,
+                                                       double a30, double a31, double a32, double a33) {
+        return a00 * mat3_determinant(a11, a12, a13,
+                                      a21, a22, a23,
+                                      a31, a32, a33)
+               - a01 * mat3_determinant(a10, a12, a13,
+                                        a20, a22, a23,
+                                        a30, a32, a33)
+               + a02 * mat3_determinant(a10, a11, a13,
+                                        a20, a21, a23,
+                                        a30, a31, a33)
+               - a03 * mat3_determinant(a10, a11, a12,
+                                        a20, a21, a22,
+                                        a30, a31, a32);
     }
 
     __device__ __host__ inline float mat4::determinant() const {
-        return mat4_determinant(col0.x, col0.y, col0.z, col0.w,
-                                col1.x, col1.y, col1.z, col1.w,
-                                col2.x, col2.y, col2.z, col2.w,
-                                col3.x, col3.y, col3.z, col3.w);
+        return mat4_determinant(col0.x, col1.x, col2.x, col3.x,
+                                col0.y, col1.y, col2.y, col3.y,
+                                col0.z, col1.z, col2.z, col3.z,
+                                col0.w, col1.w, col2.w, col3.w);
     }
 
     __device__ __host__ inline mat4 mat4::inverse() const {
@@ -306,40 +315,40 @@ namespace Bcg::cuda {
     }
 
     __device__ __host__ inline mat4 mat4::adjoint() const {
-        return mat4{
+        return cofactor().transpose();
+    }
+
+    __device__ __host__ inline mat4 mat4::cofactor() const {
+        return {//TODO check if this is correct
                 // First row of cofactors
-                vec4{
+                vec4(
                         mat3_determinant(col1.y, col1.z, col1.w, col2.y, col2.z, col2.w, col3.y, col3.z, col3.w),
                         -mat3_determinant(col1.x, col1.z, col1.w, col2.x, col2.z, col2.w, col3.x, col3.z, col3.w),
                         mat3_determinant(col1.x, col1.y, col1.w, col2.x, col2.y, col2.w, col3.x, col3.y, col3.w),
                         -mat3_determinant(col1.x, col1.y, col1.z, col2.x, col2.y, col2.z, col3.x, col3.y, col3.z)
-                },
+                ),
                 // Second row of cofactors
-                vec4{
+                vec4(
                         -mat3_determinant(col0.y, col0.z, col0.w, col2.y, col2.z, col2.w, col3.y, col3.z, col3.w),
                         mat3_determinant(col0.x, col0.z, col0.w, col2.x, col2.z, col2.w, col3.x, col3.z, col3.w),
                         -mat3_determinant(col0.x, col0.y, col0.w, col2.x, col2.y, col2.w, col3.x, col3.y, col3.w),
                         mat3_determinant(col0.x, col0.y, col0.z, col2.x, col2.y, col2.z, col3.x, col3.y, col3.z)
-                },
+                ),
                 // Third row of cofactors
-                vec4{
+                vec4(
                         mat3_determinant(col0.y, col0.z, col0.w, col1.y, col1.z, col1.w, col3.y, col3.z, col3.w),
                         -mat3_determinant(col0.x, col0.z, col0.w, col1.x, col1.z, col1.w, col3.x, col3.z, col3.w),
                         mat3_determinant(col0.x, col0.y, col0.w, col1.x, col1.y, col1.w, col3.x, col3.y, col3.w),
                         -mat3_determinant(col0.x, col0.y, col0.z, col1.x, col1.y, col1.z, col3.x, col3.y, col3.z)
-                },
+                ),
                 // Fourth row of cofactors
-                vec4{
+                vec4(
                         -mat3_determinant(col0.y, col0.z, col0.w, col1.y, col1.z, col1.w, col2.y, col2.z, col2.w),
                         mat3_determinant(col0.x, col0.z, col0.w, col1.x, col1.z, col1.w, col2.x, col2.z, col2.w),
                         -mat3_determinant(col0.x, col0.y, col0.w, col1.x, col1.y, col1.w, col2.x, col2.y, col2.w),
                         mat3_determinant(col0.x, col0.y, col0.z, col1.x, col1.y, col1.z, col2.x, col2.y, col2.z)
-                }
-        }.transpose();
-    }
-
-    __device__ __host__ inline mat4 mat4::cofactor() const {
-        return adjoint();
+                )
+        };
     }
 
     __device__ __host__ inline mat4 operator+(float a, const mat4 &b) {

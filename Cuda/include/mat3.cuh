@@ -255,48 +255,56 @@ namespace Bcg::cuda {
                 {col0.z, col1.z, col2.z}};
     }
 
-    __device__ __host__ inline float mat3_determinant(
-            float a00, float a01, float a02,
-            float a10, float a11, float a12,
-            float a20, float a21, float a22) {
-        return a00 * mat2_determinant(a11, a12, a21, a22)
-               - a01 * mat2_determinant(a10, a12, a20, a22)
-               + a02 * mat2_determinant(a10, a11, a20, a21);
+    __device__ __host__ inline double mat3_determinant(
+            double a, double b, double c,
+            double d, double e, double f,
+            double g, double h, double i) {
+        return a * mat2_determinant(e, f, h, i)
+               - b * mat2_determinant(d, f, g, i)
+               + c * mat2_determinant(d, e, g, h);
     }
 
     __device__ __host__ inline float mat3::determinant() const {
-        return mat3_determinant(col0.x, col0.y, col0.z, col1.x, col1.y, col1.z, col2.x, col2.y, col2.z);
+        return mat3_determinant(col0.x, col1.x, col2.x,
+                                col0.y, col1.y, col2.y,
+                                col0.z, col1.z, col2.z);
     }
 
     __device__ __host__ inline mat3 mat3::inverse() const {
-        return transpose() / determinant();
+        return adjoint() / determinant();
     }
 
     __device__ __host__ inline mat3 mat3::adjoint() const {
-        return mat3{
-                // First row of cofactors
-                vec3{
-                        mat2_determinant(col1.y, col1.z, col2.y, col2.z),
-                        -mat2_determinant(col1.x, col1.z, col2.x, col2.z),
-                        mat2_determinant(col1.x, col1.y, col2.x, col2.y)
-                },
-                // Second row of cofactors
-                vec3{
-                        -mat2_determinant(col0.y, col0.z, col2.y, col2.z),
-                        mat2_determinant(col0.x, col0.z, col2.x, col2.z),
-                        -mat2_determinant(col0.x, col0.y, col2.x, col2.y)
-                },
-                // Third row of cofactors
-                vec3{
-                        mat2_determinant(col0.y, col0.z, col1.y, col1.z),
-                        -mat2_determinant(col0.x, col0.z, col1.x, col1.z),
-                        mat2_determinant(col0.x, col0.y, col1.x, col1.y)
-                }
-        }.transpose();
+        return cofactor().transpose();
     }
 
     __device__ __host__ inline mat3 mat3::cofactor() const {
-        return adjoint();
+        return {
+                vec3(   // First column
+                        mat2_determinant(col1.y, col2.y,
+                                         col1.z, col2.z),
+                        -mat2_determinant(col1.x, col2.x,
+                                          col1.z, col2.z),
+                        mat2_determinant(col1.x, col2.x,
+                                         col1.y, col2.y)
+                ),
+                vec3(   // Second column
+                        -mat2_determinant(col0.y, col2.y,
+                                          col0.z, col2.z),
+                        mat2_determinant(col0.x, col2.x,
+                                         col0.z, col2.z),
+                        -mat2_determinant(col0.x, col2.x,
+                                          col0.y, col2.y)
+                ),
+                vec3(   // Third column
+                        mat2_determinant(col0.y, col1.y,
+                                         col0.z, col1.z),
+                        -mat2_determinant(col0.x, col1.x,
+                                          col0.z, col1.z),
+                        mat2_determinant(col0.x, col1.x,
+                                         col0.y, col1.y)
+                )
+        };
     }
 
     __device__ __host__ inline float mat3::norm() const {

@@ -175,16 +175,16 @@ namespace Bcg::cuda {
                 {col0.y, col1.y}};
     }
 
-    __device__ __host__ inline float mat2_determinant(float a, float b, float c, float d) {
+    __device__ __host__ inline double mat2_determinant(double a, double b, double c, double d) {
         return a * d - b * c;
     }
 
     __device__ __host__ inline float mat2::determinant() const {
-        return mat2_determinant(col0.x, col0.y, col1.x, col1.y);
+        return mat2_determinant(col0.x, col1.x, col0.y, col1.y);
     }
 
     __device__ __host__ inline mat2 mat2::inverse() const {
-        return transpose() / determinant();
+        return adjoint() / determinant();
     }
 
     __device__ __host__ inline mat2 mat2::adjoint() const {
@@ -193,7 +193,8 @@ namespace Bcg::cuda {
     }
 
     __device__ __host__ inline mat2 mat2::cofactor() const {
-        return adjoint();
+        return {{col1.y, -col1.x},
+                {-col0.y, col0.x}};
     }
 
     __device__ __host__ inline mat2 operator+(float a, const mat2 &b) {
