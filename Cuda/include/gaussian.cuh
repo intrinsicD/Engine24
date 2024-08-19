@@ -22,12 +22,14 @@ namespace Bcg::cuda {
     }
 
     __device__ __host__ inline float
-    kullback_leibler_divergence(const vec3 &mean_p, const mat3 &cov_p, const mat3 &inv_cov_p,
+    kullback_leibler_divergence(const vec3 &mean_p, const mat3 &cov_p,
                                 const vec3 &mean_q, const mat3 &cov_q, const mat3 &inv_cov_q) {
-        float trace = (inv_cov_q * cov_p).trace();
+        double trace_term = (inv_cov_q * cov_p).trace();
         vec3 diff = mean_q - mean_p;
-        float exponent = 0.5f * (trace + diff.dot(inv_cov_q * diff) - 3);
-        return 0.5f * exponent;
+        double quadratic_term = diff.dot(inv_cov_q * diff);
+        double log_det_term = logf(cov_q.determinant() / cov_p.determinant());
+        double kl_divergence = 0.5f * (trace_term + quadratic_term - 3 + log_det_term);
+        return kl_divergence;
     }
 
     __device__ __host__ inline mat3

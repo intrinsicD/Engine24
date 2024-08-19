@@ -303,7 +303,7 @@ namespace Bcg::cuda {
         return sqrtf(col0.length2() + col1.length2() + col2.length2());
     }
 
-    __device__ __host__ inline float mat3::trace() const{
+    __device__ __host__ inline float mat3::trace() const {
         return col0.x + col1.y + col2.z;
     }
 

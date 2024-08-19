@@ -30,7 +30,11 @@ namespace Bcg::Gui {
         if (Engine::valid(entity_id)) {
             auto *vertices = GetPrimitives(entity_id).vertices();
             if (vertices) {
-                Show("Vertices", *vertices);
+                if (ImGui::CollapsingHeader(("Vertices #v: " + std::to_string(vertices->size())).c_str())) {
+                    ImGui::PushID("Vertices");
+                    Show("##Vertices", *vertices);
+                    ImGui::PopID();
+                }
                 ImGui::Separator();
                 static int num_closest = 12;
                 ImGui::InputInt("num_closest", &num_closest);
