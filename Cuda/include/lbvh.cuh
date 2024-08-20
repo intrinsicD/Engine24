@@ -4,6 +4,7 @@
 #include "sphere.cuh"
 #include "aabb.cuh"
 #include "bvh.cuh"
+#include "bvh_device.cuh"
 #include "morton_code.cuh"
 #include "predicator.cuh"
 #include "query.cuh"

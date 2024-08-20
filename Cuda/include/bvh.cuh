@@ -262,6 +262,12 @@ namespace Bcg::cuda {
             this->construct();
         }
 
+        void assign_device(const object_type *d_objects, const size_t num_objects) {
+            this->objects_d_.assign(d_objects, d_objects + num_objects);
+            this->objects_h_ = this->objects_d_;
+            this->construct();
+        }
+
         bvh_device<object_type> get_device_repr() noexcept {
             return bvh_device<object_type>{
                     static_cast<unsigned int>(nodes_.size()),
@@ -300,14 +306,15 @@ namespace Bcg::cuda {
 
             this->aabbs_.resize(num_nodes, default_aabb);
 
-            thrust::transform(this->objects_d_.begin(), this->objects_d_.end(),
-                              aabbs_.begin() + num_internal_nodes, aabb_getter_type());
 
-            const auto aabb_whole = thrust::reduce(
-                    aabbs_.begin() + num_internal_nodes, aabbs_.end(), default_aabb,
-                    [] __device__ __host__(const aabb &lhs, const aabb &rhs) {
-                        return merge(lhs, rhs);
-                    });
+             thrust::transform(this->objects_d_.begin(), this->objects_d_.end(),
+                               aabbs_.begin() + num_internal_nodes, aabb_getter_type());
+
+             const auto aabb_whole = thrust::reduce(
+                     aabbs_.begin() + num_internal_nodes, aabbs_.end(), default_aabb,
+                     [] __device__ __host__(const aabb &lhs, const aabb &rhs) {
+                         return merge(lhs, rhs);
+                     });
 
             thrust::device_vector<unsigned int> morton(num_objects);
             thrust::transform(this->objects_d_.begin(), this->objects_d_.end(),

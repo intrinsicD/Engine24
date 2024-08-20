@@ -19,6 +19,11 @@ namespace Bcg::cuda {
 
         }
 
+        __device__ __host__ inline mat2(float m00, float m01,
+                                        float m10, float m11) : col0(m00, m10), col1(m01, m11) {
+
+        }
+
         __device__ __host__ inline static mat2 identity();
 
         __device__ __host__ inline static mat2 constant(float c);
@@ -73,48 +78,48 @@ namespace Bcg::cuda {
     };
 
     __device__ __host__ inline mat2 mat2::identity() {
-        return {{1, 0},
-                {0, 1}};
+        return {1, 0,
+                0, 1};
     }
 
     __device__ __host__ inline mat2 mat2::constant(float c) {
-        return {{c, c},
-                {c, c}};
+        return {c, c,
+                c, c};
     }
 
     __device__ __host__ inline mat2 mat2::reflect_x() {
-        return {{1, 0},
-                {0, -1}};
+        return {1, 0,
+                0, -1};
     }
 
     __device__ __host__ inline mat2 mat2::reflect_y() {
-        return {{-1, 0},
-                {0,  1}};
+        return {-1, 0,
+                0, 1};
     }
 
     __device__ __host__ inline mat2 mat2::rot(float angle) {
         float c = cosf(angle);
         float s = sinf(angle);
-        return {{c, -s},
-                {s, c}};
+        return {c, -s,
+                s, c};
     }
 
     __device__ __host__ inline mat2 mat2::project(float angle) {
         float c = cosf(angle);
         float s = sinf(angle);
         float cs = c * s;
-        return {{c * c, cs},
-                {cs,    s * s}};
+        return {c * c, cs,
+                cs, s * s};
     }
 
     __device__ __host__ inline mat2 mat2::shear_x(float s) {
-        return {{1, s},
-                {0, 1}};
+        return {1, s,
+                0, 1};
     }
 
     __device__ __host__ inline mat2 mat2::shear_y(float s) {
-        return {{1, 0},
-                {s, 1}};
+        return {1, 0,
+                s, 1};
     }
 
     __device__ __host__ inline mat2 mat2::operator-() const {
@@ -146,8 +151,12 @@ namespace Bcg::cuda {
     }
 
     __device__ __host__ inline mat2 mat2::operator*(const mat2 &b) const {
-        return {col0 * b.col0.x + col1 * b.col0.y,
-                col0 * b.col1.x + col1 * b.col1.y};
+        float m00 = col0.x * b.col0.x + col1.x * b.col0.y;
+        float m01 = col0.y * b.col0.x + col1.y * b.col0.y;
+        float m10 = col0.x * b.col1.x + col1.x * b.col1.y;
+        float m11 = col0.y * b.col1.x + col1.y * b.col1.y;
+        return {m00, m01,
+                m10, m11};
     }
 
     __device__ __host__ inline mat2 mat2::operator+(float b) const {
@@ -167,12 +176,13 @@ namespace Bcg::cuda {
     }
 
     __device__ __host__ inline vec2 mat2::operator*(const vec2 &v) const {
-        return {col0 * v.x + col1 * v.y};
+        return {col0.x * v.x + col1.x * v.y,
+                col0.y * v.x + col1.y * v.y};
     }
 
     __device__ __host__ inline mat2 mat2::transpose() const {
-        return {{col0.x, col1.x},
-                {col0.y, col1.y}};
+        return {col0.x, col0.y,
+                col1.x, col1.y};
     }
 
     __device__ __host__ inline double mat2_determinant(double a, double b,
@@ -190,13 +200,13 @@ namespace Bcg::cuda {
     }
 
     __device__ __host__ inline mat2 mat2::adjoint() const {
-        return {{col1.y,  -col0.y},
-                {-col1.x, col0.x}};
+        return {col1.y, -col1.x,
+                -col0.y, col0.x};
     }
 
     __device__ __host__ inline mat2 mat2::cofactor() const {
-        return {{col1.y, -col1.x},
-                {-col0.y, col0.x}};
+        return {col1.y, -col0.y,
+                -col1.x, col0.x};
     }
 
     __device__ __host__ inline mat2 operator+(float a, const mat2 &b) {

@@ -14,13 +14,13 @@ namespace Bcg::cuda {
 // requirements:
 // - OutputIterator should be writable and its object_type should be uint32_t
 //
-    template<typename Objects, bool IsConst, typename QueryObject,typename OutputIterator>
+    template<typename Objects, bool IsConst, typename QueryObject, typename OutputIterator>
     __device__
     unsigned int query_device(
             const detail::basic_device_bvh<Objects, IsConst> &bvh,
             const query_overlap<QueryObject> q, OutputIterator outiter,
             const unsigned int max_buffer_size = 0xFFFFFFFF) noexcept {
-        /*using bvh_type = detail::basic_device_bvh<Objects, IsConst>;
+        using bvh_type = detail::basic_device_bvh<Objects, IsConst>;
         using index_type = typename bvh_type::index_type;
 
         index_type stack[64]; // Consider stack size in relation to BVH depth.
@@ -44,11 +44,12 @@ namespace Bcg::cuda {
                     }
                     ++num_found;
                 } else {
-                    *stack_ptr++ = L_idx;
                     if (stack_ptr - stack >= 64) {
                         // Handle stack overflow, e.g., return early or log an error.
+                        printf("stack overflow\n");
                         return num_found;
                     }
+                    *stack_ptr++ = L_idx;
                 }
             }
 
@@ -60,21 +61,23 @@ namespace Bcg::cuda {
                     }
                     ++num_found;
                 } else {
-                    *stack_ptr++ = R_idx;
                     if (stack_ptr - stack >= 64) {
                         // Handle stack overflow, e.g., return early or log an error.
+                        printf("stack overflow\n");
                         return num_found;
                     }
+                    *stack_ptr++ = R_idx;
                 }
             }
 
             if (num_found >= max_buffer_size) {
+                printf("num_found >= max_buffer_size\n");
                 break;
             }
         } while (stack < stack_ptr);
 
-        return num_found;*/
-        using bvh_type = detail::basic_device_bvh<Objects, IsConst>;
+        return num_found;
+        /*using bvh_type = detail::basic_device_bvh<Objects, IsConst>;
         using index_type = typename bvh_type::index_type;
 
         index_type stack[64]; // is it okay?
@@ -124,7 +127,7 @@ namespace Bcg::cuda {
                 break;
             }
         } while (stack < stack_ptr);
-        return num_found;
+        return num_found;*/
     }
 
 // query object index that is the nearst to the query point.
@@ -425,7 +428,7 @@ namespace Bcg::cuda {
         }
 
         std::vector<std::size_t> stack;
-        stack.reserve(64);
+        stack.reserve(128);
         stack.push_back(0);
 
         unsigned int num_found = 0;
@@ -435,7 +438,7 @@ namespace Bcg::cuda {
             const index_type L_idx = tree.nodes_host()[node].left_idx;
             const index_type R_idx = tree.nodes_host()[node].right_idx;
 
-            if (intersects(q.target, tree.aabbs_host()[L_idx])) {
+            if (L_idx < tree.nodes_host().size() && intersects(q.target, tree.aabbs_host()[L_idx])) {
                 const auto obj_idx = tree.nodes_host()[L_idx].object_idx;
                 if (obj_idx != 0xFFFFFFFF) {
                     outiter.push_back(obj_idx);
@@ -445,7 +448,7 @@ namespace Bcg::cuda {
                     stack.push_back(L_idx);
                 }
             }
-            if (intersects(q.target, tree.aabbs_host()[R_idx])) {
+            if (R_idx < tree.nodes_host().size() && intersects(q.target, tree.aabbs_host()[R_idx])) {
                 const auto obj_idx = tree.nodes_host()[R_idx].object_idx;
                 if (obj_idx != 0xFFFFFFFF) {
                     outiter.push_back(obj_idx);

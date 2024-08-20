@@ -4,12 +4,21 @@
 #include "utility.cuh"
 #include "vec3.cuh"
 #include <thrust/swap.h>
+#include <thrust/reduce.h>
+#include <thrust/device_vector.h>
 #include <cmath>
 
 namespace Bcg::cuda {
     struct aabb {
         vec3 upper;
         vec3 lower;
+    };
+
+    struct aabb_getter {
+        __device__ __host__
+        aabb operator()(const vec3 v) const noexcept {
+            return {v, v};
+        }
     };
 
     __device__ __host__
@@ -71,12 +80,5 @@ namespace Bcg::cuda {
     inline vec3 centroid(const aabb &box) noexcept {
         return (box.upper + box.lower) * 0.5;
     }
-
-    struct aabb_getter {
-        __device__ __host__
-        aabb operator()(const vec3 v) const noexcept {
-            return {v, v};
-        }
-    };
 } // lbvh
 #endif// LBVH_AABB_CUH

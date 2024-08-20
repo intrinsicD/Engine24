@@ -18,6 +18,14 @@ namespace Bcg::cuda {
 
         __device__ __host__ inline mat3(vec3 col0, vec3 col1, vec3 col2);
 
+        __device__ __host__ inline mat3(float m00, float m01, float m02,
+                                        float m10, float m11, float m12,
+                                        float m20, float m21, float m22) : col0(m00, m10, m20),
+                                                                           col1(m01, m11, m21),
+                                                                           col2(m02, m12, m22) {
+
+        }
+
         __device__ __host__ inline static mat3 identity();
 
         __device__ __host__ inline static mat3 constant(float c);
@@ -28,17 +36,17 @@ namespace Bcg::cuda {
 
         __device__ __host__ inline static mat3 reflect_z();
 
-        __device__ __host__ inline static mat3 rot(const vec3 axis, float angle);
+        __device__ __host__ inline static mat3 rot(const vec3 &axis, float angle);
 
-        __device__ __host__ inline static mat3 scale(const vec3 s);
+        __device__ __host__ inline static mat3 scale(const vec3 &s);
 
         __device__ __host__ inline static mat3 project(const vec3 &normal);
 
-        __device__ __host__ inline static mat3 shear_x(float s);
+        __device__ __host__ inline static mat3 shear_x(const vec2 &s);
 
-        __device__ __host__ inline static mat3 shear_y(float s);
+        __device__ __host__ inline static mat3 shear_y(const vec2 &s);
 
-        __device__ __host__ inline static mat3 shear_z(float s);
+        __device__ __host__ inline static mat3 shear_z(const vec2 &s);
 
         __device__ __host__ inline mat2 left_upper() const;
 
@@ -103,95 +111,95 @@ namespace Bcg::cuda {
     }
 
     __device__ __host__ inline mat3 mat3::identity() {
-        return {{1, 0, 0},
-                {0, 1, 0},
-                {0, 0, 1}};
+        return {1, 0, 0,
+                0, 1, 0,
+                0, 0, 1};
     }
 
     __device__ __host__ inline mat3 mat3::constant(float c) {
-        return {{c, c, c},
-                {c, c, c},
-                {c, c, c}};
+        return {c, c, c,
+                c, c, c,
+                c, c, c};
     }
 
     __device__ __host__ inline mat3 mat3::reflect_x() {
-        return {{-1, 0, 0},
-                {0,  1, 0},
-                {0,  0, 1}};
+        return {-1, 0, 0,
+                0, 1, 0,
+                0, 0, 1};
     }
 
     __device__ __host__ inline mat3 mat3::reflect_y() {
-        return {{1, 0,  0},
-                {0, -1, 0},
-                {0, 0,  1}};
+        return {1, 0, 0,
+                0, -1, 0,
+                0, 0, 1};
     }
 
     __device__ __host__ inline mat3 mat3::reflect_z() {
-        return {{1, 0, 0},
-                {0, 1, 0},
-                {0, 0, -1}};
+        return {1, 0, 0,
+                0, 1, 0,
+                0, 0, -1};
     }
 
-    __device__ __host__ inline mat3 mat3::rot(const vec3 axis, float angle) {
+    __device__ __host__ inline mat3 mat3::rot(const vec3 &axis, float angle) {
         float c = cosf(angle);
         float s = sinf(angle);
         float t = 1 - c;
         vec3 a = axis.normalized();
-        return {{t * a.x * a.x + c,       t * a.x * a.y - s * a.z, t * a.x * a.z + s * a.y},
-                {t * a.x * a.y + s * a.z, t * a.y * a.y + c,       t * a.y * a.z - s * a.x},
-                {t * a.x * a.z - s * a.y, t * a.y * a.z + s * a.x, t * a.z * a.z + c}};
+        return {t * a.x * a.x + c, t * a.x * a.y - s * a.z, t * a.x * a.z + s * a.y,
+                t * a.x * a.y + s * a.z, t * a.y * a.y + c, t * a.y * a.z - s * a.x,
+                t * a.x * a.z - s * a.y, t * a.y * a.z + s * a.x, t * a.z * a.z + c};
     }
 
-    __device__ __host__ inline mat3 mat3::scale(const vec3 s) {
-        return {{s.x, 0,   0},
-                {0,   s.y, 0},
-                {0,   0,   s.z}};
+    __device__ __host__ inline mat3 mat3::scale(const vec3 &s) {
+        return {s.x, 0, 0,
+                0, s.y, 0,
+                0, 0, s.z};
     }
 
     __device__ __host__ inline mat3 mat3::project(const vec3 &normal) {
         vec3 n = normal.normalized();
-        return {{1 - n.x * n.x, -n.x * n.y,    -n.x * n.z},
-                {-n.y * n.x,    1 - n.y * n.y, -n.y * n.z},
-                {-n.z * n.x,    -n.z * n.y,    1 - n.z * n.z}};
+        return {1 - n.x * n.x, -n.x * n.y, -n.x * n.z,
+                -n.y * n.x, 1 - n.y * n.y, -n.y * n.z,
+                -n.z * n.x, -n.z * n.y, 1 - n.z * n.z};
     }
 
 
-    __device__ __host__ inline mat3 mat3::shear_x(float s) {
-        return {{1, 0, 0},
-                {s, 1, 0},
-                {0, 0, 1}};
+    __device__ __host__ inline mat3 mat3::shear_x(const vec2 &s) {
+        return {1, s.x, s.y,
+                0, 1, 0,
+                0, 0, 1};
     }
 
-    __device__ __host__ inline mat3 mat3::shear_y(float s) {
-        return {{1, s, 0},
-                {0, 1, 0},
-                {0, 0, 1}};
+    __device__ __host__ inline mat3 mat3::shear_y(const vec2 &s) {
+        return {1, 0, 0,
+                s.x, 1, s.y,
+                0, 0, 1};
     }
 
-    __device__ __host__ inline mat3 mat3::shear_z(float s) {
-        return {{1, 0, s},
-                {0, 1, 0},
-                {0, 0, 1}};
+    __device__ __host__ inline mat3 mat3::shear_z(const vec2 &s) {
+        return {1, 0, 0,
+                0, 1, 0,
+                s.x, s.y, 1};
     }
 
     __device__ __host__ inline mat2 mat3::left_upper() const {
-        return {{col0.x, col0.y},
-                {col1.x, col1.y}};
+        return {col0.x, col1.x,
+                col0.y, col1.y};
     }
 
     __device__ __host__ inline mat2 mat3::right_upper() const {
-        return {{col1.x, col1.y},
-                {col2.x, col1.y}};
+        return {col1.x, col2.x,
+                col1.y, col2.y};
     }
 
     __device__ __host__ inline mat2 mat3::left_lower() const {
-        return {{col0.y, col0.z},
-                {col1.y, col1.z}};
+        return {col0.y, col1.y,
+                col0.z, col1.z};
     }
 
     __device__ __host__ inline mat2 mat3::right_lower() const {
-        return {{col1.y, col1.z},
-                {col2.y, col1.z}};
+        return {col1.y, col2.y,
+                col1.z, col2.z};
     }
 
     __device__ __host__ inline mat3 mat3::operator-() const {
@@ -224,19 +232,21 @@ namespace Bcg::cuda {
     }
 
     __device__ __host__ inline mat3 mat3::operator*(const mat3 &b) const {
-        return {
-                vec3(col0.x * b.col0.x + col1.x * b.col0.y + col2.x * b.col0.z,
-                     col0.y * b.col0.x + col1.y * b.col0.y + col2.y * b.col0.z,
-                     col0.z * b.col0.x + col1.z * b.col0.y + col2.z * b.col0.z),
+        float m00 = col0.x * b.col0.x + col1.x * b.col0.y + col2.x * b.col0.z;
+        float m01 = col0.y * b.col0.x + col1.y * b.col0.y + col2.y * b.col0.z;
+        float m02 = col0.z * b.col0.x + col1.z * b.col0.y + col2.z * b.col0.z;
 
-                vec3(col0.x * b.col1.x + col1.x * b.col1.y + col2.x * b.col1.z,
-                     col0.y * b.col1.x + col1.y * b.col1.y + col2.y * b.col1.z,
-                     col0.z * b.col1.x + col1.z * b.col1.y + col2.z * b.col1.z),
+        float m10 = col0.x * b.col1.x + col1.x * b.col1.y + col2.x * b.col1.z;
+        float m11 = col0.y * b.col1.x + col1.y * b.col1.y + col2.y * b.col1.z;
+        float m12 = col0.z * b.col1.x + col1.z * b.col1.y + col2.z * b.col1.z;
 
-                vec3(col0.x * b.col2.x + col1.x * b.col2.y + col2.x * b.col2.z,
-                     col0.y * b.col2.x + col1.y * b.col2.y + col2.y * b.col2.z,
-                     col0.z * b.col2.x + col1.z * b.col2.y + col2.z * b.col2.z)
-        };
+        float m20 = col0.x * b.col2.x + col1.x * b.col2.y + col2.x * b.col2.z;
+        float m21 = col0.y * b.col2.x + col1.y * b.col2.y + col2.y * b.col2.z;
+        float m22 = col0.z * b.col2.x + col1.z * b.col2.y + col2.z * b.col2.z;
+
+        return {m00, m01, m02,
+                m10, m11, m12,
+                m20, m21, m22};
     }
 
     __device__ __host__ inline mat3 mat3::operator+(float b) const {
@@ -256,13 +266,15 @@ namespace Bcg::cuda {
     }
 
     __device__ __host__ inline vec3 mat3::operator*(const vec3 &v) const {
-        return {col0 * v.x + col1 * v.y + col2 * v.z};
+        return {col0.x * v.x + col1.x * v.y + col2.x * v.z,
+                col0.y * v.x + col1.y * v.y + col2.y * v.z,
+                col0.z * v.x + col1.z * v.y + col2.z * v.z};
     }
 
     __device__ __host__ inline mat3 mat3::transpose() const {
-        return {{col0.x, col1.x, col2.x},
-                {col0.y, col1.y, col2.y},
-                {col0.z, col1.z, col2.z}};
+        return {col0.x, col1.x, col2.x,
+                col0.y, col1.y, col2.y,
+                col0.z, col1.z, col2.z};
     }
 
     __device__ __host__ inline double mat3_determinant(

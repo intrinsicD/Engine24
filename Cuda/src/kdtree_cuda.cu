@@ -5,6 +5,7 @@
 #include "Cuda/KDTreeCuda.h"
 #include "lbvh.cuh"
 #include "Engine.h"
+#include "Logger.h"
 
 #include <vector>
 
@@ -57,6 +58,7 @@ namespace Bcg::cuda {
         vec3 d_query = {query_point[0], query_point[1], query_point[2]};
         QueryResult result;
         std::vector<size_t> indices;
+        Log::Info("query_point {} {} {}", query_point[0], query_point[1], query_point[2]);
         const auto num_found = query_host(bvh, overlaps_sphere(d_query, radius), indices);
         result.indices.reserve(num_found);
         for (const auto idx: indices) {
