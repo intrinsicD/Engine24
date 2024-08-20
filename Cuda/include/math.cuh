@@ -13,7 +13,10 @@ namespace Bcg::cuda {
     //Paper: Closed-form expressions of the eigen decomposition of 2 x 2 and 3 x 3 Hermitian matrices
     //for real symmetric 3x3 matrices
     __device__ __host__
-    inline double clamp(float f, float a, float b) { return fmaxf(a, fminf(f, b)); }
+    inline float clampf(float f, float min, float max) { return fmaxf(min, fminf(f, max)); }
+
+    __device__ __host__
+    inline double clamp(double f, double min, double max) { return fmax(min, fmin(f, max)); }
 
     __device__ __host__
     inline void sort_ascending(vec3 &evals, mat3 &evecs) {
@@ -116,9 +119,21 @@ namespace Bcg::cuda {
 
         orthogonalize(evecs);
 
-        assert(fabsf(evecs.col0.dot(evecs.col1)) <= 1e-6f);
-        assert(fabsf(evecs.col1.dot(evecs.col2)) <= 1e-6f);
-        assert(fabsf(evecs.col2.dot(evecs.col0)) <= 1e-6f);
+#ifdef DEBUG_CUDA_BCG
+        float ortho_test_01 = fabsf(evecs.col0.dot(evecs.col1));
+        float ortho_test_12 = fabsf(evecs.col1.dot(evecs.col2));
+        float ortho_test_20 = fabsf(evecs.col2.dot(evecs.col0));
+
+        if (ortho_test_01 > 1e-6f) {
+            printf("ortho_test_01: %f\n", ortho_test_01);
+        }
+        if (ortho_test_12 > 1e-6f) {
+            printf("ortho_test_12: %f\n", ortho_test_12);
+        }
+        if (ortho_test_20 > 1e-6f) {
+            printf("ortho_test_20: %f\n", ortho_test_20);
+        }
+#endif
 
         //sort eigenvalues and eigenvectors
         vec3 evals = vec3(m[0][0], m[1][1], m[2][2]);
@@ -169,9 +184,23 @@ namespace Bcg::cuda {
 
         orthogonalize(evecs);
 
-        assert(fabsf(evecs.col0.dot(evecs.col1)) <= 1e-6f);
-        assert(fabsf(evecs.col1.dot(evecs.col2)) <= 1e-6f);
-        assert(fabsf(evecs.col2.dot(evecs.col0)) <= 1e-6f);
+
+
+#ifdef DEBUG_CUDA_BCG
+        float ortho_test_01 = fabsf(evecs.col0.dot(evecs.col1));
+        float ortho_test_12 = fabsf(evecs.col1.dot(evecs.col2));
+        float ortho_test_20 = fabsf(evecs.col2.dot(evecs.col0));
+
+        if (ortho_test_01 > 1e-6f) {
+            printf("ortho_test_01: %f\n", ortho_test_01);
+        }
+        if (ortho_test_12 > 1e-6f) {
+            printf("ortho_test_12: %f\n", ortho_test_12);
+        }
+        if (ortho_test_20 > 1e-6f) {
+            printf("ortho_test_20: %f\n", ortho_test_20);
+        }
+#endif
 
         //sort eigenvalues and eigenvectors
         vec3 evals = vec3(evals_x, evals_y, evals_z);

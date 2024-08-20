@@ -183,18 +183,18 @@ namespace Bcg::cuda {
     }
 
     HemDeviceData InitMixture(const std::vector<vec3> &positions, HemParams params) {
-        HemDeviceData parents;
-        parents.means = positions;
-        parents.covs.resize(positions.size());
-        parents.weights.resize(positions.size());
-        parents.nvars.resize(positions.size());
-        parents.is_parent.resize(positions.size());
+        HemDeviceData components;
+        components.means = positions;
+        components.covs.resize(positions.size());
+        components.weights.resize(positions.size());
+        components.nvars.resize(positions.size());
+        components.is_parent.resize(positions.size());
 
-        SeparateParentsChildren(parents);
+        SeparateParentsChildren(components);
 
-        parents.h_bvh = hbvh(positions.begin(), positions.end(), false);
+        components.h_bvh = hbvh(positions.begin(), positions.end(), false);
 
-        HemDeviceDataPtr d_parents = parents.get_device_repr();
+        HemDeviceDataPtr d_components = components.get_device_repr();
 
         thrust::device_vector<float> radii(positions.size(), params.globalInitRadius);
         float *d_radii = radii.data().get();
@@ -205,19 +205,19 @@ namespace Bcg::cuda {
             cudaMemcpy(d_alpha0, &params.alpha0, sizeof(float), cudaMemcpyHostToDevice);
 
             thrust::for_each(thrust::make_counting_iterator<std::uint32_t>(0),
-                             thrust::make_counting_iterator<std::uint32_t>(parents.parents_indices.size()),
-                             [d_parents, d_radii, d_alpha0, params] __device__(unsigned int idx) {
-                                 unsigned int parent_idx = d_parents.parents_indices[idx];
+                             thrust::make_counting_iterator<std::uint32_t>(components.parents_indices.size()),
+                             [d_components, d_radii, d_alpha0, params] __device__(unsigned int idx) {
+                                 unsigned int parent_idx = d_components.parents_indices[idx];
                                  unsigned int indices[32];
-                                 const vec3 &query_point = d_parents.means[parent_idx];
-                                 auto nn = query_device(d_parents.d_bvh_means, knn(query_point, params.knn),
+                                 const vec3 &query_point = d_components.means[parent_idx];
+                                 auto nn = query_device(d_components.d_bvh_means, knn(query_point, params.knn),
                                                         distance_calculator(),
                                                         indices, 32);
                                  float radius;
                                  float alpha0 = *d_alpha0;
 
                                  unsigned int neighbor_idx = indices[1];
-                                 radius = (d_parents.means[parent_idx] - d_parents.means[neighbor_idx]).length();
+                                 radius = (d_components.means[parent_idx] - d_components.means[neighbor_idx]).length();
 
                                  d_radii[idx] = radius * alpha0;
                              });
@@ -229,13 +229,13 @@ namespace Bcg::cuda {
         cudaMemcpy(d_useWeightedPotentials, &params.useWeightedPotentials, sizeof(bool), cudaMemcpyHostToDevice);
 
         thrust::for_each(thrust::make_counting_iterator<std::uint32_t>(0),
-                         thrust::make_counting_iterator<std::uint32_t>(d_parents.num_components),
-                         [d_parents, d_radii, d_useWeightedPotentials] __device__(unsigned int idx) {
-                             const vec3 &query_point = d_parents.means[idx];
+                         thrust::make_counting_iterator<std::uint32_t>(d_components.num_components),
+                         [d_components, d_radii, d_useWeightedPotentials] __device__(unsigned int idx) {
+                             const vec3 &query_point = d_components.means[idx];
                              float radius = d_radii[idx];
 
                              unsigned int indices[64];
-                             auto nn = query_device(d_parents.d_bvh_means, overlaps_sphere(query_point, radius),
+                             auto nn = query_device(d_components.d_bvh_means, overlaps_sphere(query_point, radius),
                                                     indices, 64);
                              nn = nn > 64 ? 64 : nn;
                              const float minus_16_over_h2 = -16.0f / (radius * radius);
@@ -248,7 +248,7 @@ namespace Bcg::cuda {
                              assert(nn > 0);
                              for (unsigned int i = 0; i < nn; ++i) {
                                  unsigned int neighbor_idx = indices[i];
-                                 vec3 neighbor = d_parents.means[neighbor_idx];
+                                 vec3 neighbor = d_components.means[neighbor_idx];
                                  vec3 diff = neighbor - query_point;
                                  cov = cov + outer(diff, diff);
                                  mean = mean + neighbor;
@@ -258,15 +258,28 @@ namespace Bcg::cuda {
                              vec3 o = mean * inv_w - query_point;
                              cov = cov * inv_w - outer(o, o);
 
-                             d_parents.means[idx] = query_point;
-                             d_parents.covs[idx] = conditionCov(cov);
-                             d_parents.weights[idx] = *d_useWeightedPotentials ? 1.0f / density : 1.0f;
+                             d_components.means[idx] = query_point;
+                             d_components.covs[idx] = conditionCov(cov);
+                             d_components.weights[idx] = *d_useWeightedPotentials ? 1.0f / density : 1.0f;
                              mat3 evecs;
                              real_symmetric_3x3_eigendecomposition(cov, evecs);
                              float initialVar = 0.001f;
-                             d_parents.nvars[idx] = evecs.col0 * initialVar;
+                             d_components.nvars[idx] = evecs.col0 * initialVar;
+                             //output all written values
+                             printf("i: %d nn: %d mean: %f %f %f cov: %f %f %f %f %f %f %f %f %f weight: %f nvar: %f %f %f\n",
+                                    idx, nn,
+                                    d_components.means[idx].x,
+                                    d_components.means[idx].y, d_components.means[idx].z,
+                                    d_components.covs[idx].col0.x, d_components.covs[idx].col1.x,
+                                    d_components.covs[idx].col2.x,
+                                    d_components.covs[idx].col0.y, d_components.covs[idx].col1.y,
+                                    d_components.covs[idx].col2.y,
+                                    d_components.covs[idx].col0.z, d_components.covs[idx].col1.z,
+                                    d_components.covs[idx].col2.z,
+                                    d_components.weights[idx],
+                                    d_components.nvars[idx].x, d_components.nvars[idx].y, d_components.nvars[idx].z);
                          });
-        return parents;
+        return components;
     }
 
     template<typename T, int N>
@@ -313,14 +326,14 @@ namespace Bcg::cuda {
                                                                               CudaMatrixRow<bool, 64>::Zeros());
         thrust::device_vector<float> parents_radii(num_parents, 0);
 
-        thrust::device_vector<CudaMatrixRow<float, 64>> comp_likelihoods(num_parents,
-                                                                         CudaMatrixRow<float, 64>::Zeros());
+        thrust::device_vector<CudaMatrixRow<float, 64>> parent_likelihoods(num_parents,
+                                                                           CudaMatrixRow<float, 64>::Zeros());
         thrust::device_vector<float> comp_likelihood_sums(num_components, 0);
 
         thrust::device_vector<unsigned int> nn_found(num_parents, 0);
         CudaMatrixRow<unsigned int, 64> *d_parents_children_indices = parents_children_indices.data().get();
         CudaMatrixRow<bool, 64> *d_parents_children_valid = parents_children_valid.data().get();
-        CudaMatrixRow<float, 64> *d_comp_likelihoods = comp_likelihoods.data().get();
+        CudaMatrixRow<float, 64> *d_parents_likelihoods = parent_likelihoods.data().get();
         float *d_comp_likelihood_sums = comp_likelihood_sums.data().get();
         float *d_parents_radii = parents_radii.data().get();
         unsigned int *d_nn_found = nn_found.data().get();
@@ -339,18 +352,16 @@ namespace Bcg::cuda {
 
         thrust::for_each(thrust::make_counting_iterator<std::uint32_t>(0),
                          thrust::make_counting_iterator<std::uint32_t>(num_parents),
-                         [d_components, d_parents, d_parents_radii, d_alpha, d_max_radius]
+                         [d_components, d_parents_radii, d_alpha, d_max_radius]
                                  __device__(unsigned int s_) {
                              unsigned int parent_idx = d_components.parents_indices[s_];
-                             d_parents.means[s_] = d_components.means[parent_idx];
-                             d_parents.covs[s_] = d_components.covs[parent_idx];
-                             d_parents.nvars[s_] = d_components.nvars[parent_idx];
 
                              float alpha = *d_alpha;
                              float radius = alpha * sqrtf(max_eigenvalues_radius(d_components.covs[parent_idx]));
 
                              d_parents_radii[s_] = radius;
                              atomicMaxFloat(d_max_radius, radius);
+                             printf("Parent %d: radius: %f\n", s_, d_parents_radii[s_]);
                          });
 
         cudaMemcpy(&max_radius, d_max_radius, sizeof(float), cudaMemcpyDeviceToHost);
@@ -358,19 +369,21 @@ namespace Bcg::cuda {
         //TODO this fails... out of bounds access...
         thrust::for_each(thrust::make_counting_iterator<std::uint32_t>(0),
                          thrust::make_counting_iterator<std::uint32_t>(num_parents),
-                         [d_components, d_parents, d_comp_likelihood_sums, d_comp_likelihoods,
+                         [d_components, d_comp_likelihood_sums, d_parents_likelihoods,
                                  d_parents_children_indices, d_parents_children_valid, d_parents_radii, d_alpha, d_nn_found] __device__(
                                  unsigned int s_) {
                              unsigned int parent_idx = d_components.parents_indices[s_];
 
                              CudaMatrixRow<unsigned int, 64> radius_query_indices;
-                             const vec3 &mean_parent = d_parents.means[s_];
-                             const mat3 &cov_parent = d_parents.covs[s_];
-                             const float weight_parent = d_parents.weights[s_];
+                             const vec3 &mean_parent = d_components.means[parent_idx];
+                             const mat3 &cov_parent = d_components.covs[parent_idx];
+                             const float weight_parent = d_components.weights[parent_idx];
                              const mat3 cov_parent_inv = cov_parent.inverse();
-                             CudaMatrixRow<float, 64> &comp_likelihoods = d_comp_likelihoods[s_];
-                             CudaMatrixRow<unsigned int, 64> &parent_children_indices = d_parents_children_indices[s_];
-                             CudaMatrixRow<bool, 64> &parents_children_valid = d_parents_children_valid[s_];
+
+                             CudaMatrixRow<float, 64> &children_likelihoods = d_parents_likelihoods[s_];
+                             CudaMatrixRow<unsigned int, 64> &children_indices = d_parents_children_indices[s_];
+                             CudaMatrixRow<bool, 64> &children_valid = d_parents_children_valid[s_];
+                             float *comp_likelihood_sum = d_comp_likelihood_sums;
 
                              float radius = d_parents_radii[s_];
                              assert(radius > 0.0f);
@@ -391,7 +404,7 @@ namespace Bcg::cuda {
 
                              for (unsigned int i = 0; i < nn; ++i) {
                                  unsigned int child_idx = radius_query_indices[i];
-                                 parent_children_indices[i] = child_idx;
+                                 children_indices[i] = child_idx;
                                  const vec3 &child_mean = d_components.means[child_idx];
                                  const mat3 &child_cov = d_components.covs[child_idx];
                                  mat3 child_cov_inv = child_cov.inverse();
@@ -409,43 +422,57 @@ namespace Bcg::cuda {
                                      continue;
                                  }
 
-                                 parents_children_valid[i] = true;
+                                 children_valid[i] = true;
 
                                  float likelihood = hem_likelihood(mean_parent, cov_parent, child_mean,
                                                                    child_cov, child_weight);
                                  float wL_si = weight_parent * clamp(likelihood, min_likelilhood, max_likelihood);
 
-                                 comp_likelihoods[i] = wL_si;
-                                 //printf("Likelihood: %f weight_parent: %f\n", likelihood, weight_parent);
-                                 atomicAdd(&d_comp_likelihood_sums[child_idx], wL_si);
+                                 children_likelihoods[i] = wL_si;
+                                 printf("nn: %d child_idx: %d valid: %d weight_parent: %f Likelihood: %f wL_si: %f comp_likelihoods[i]: %f kld: %f\n",
+                                        d_nn_found[s_], children_indices[i], children_valid[i],
+                                        weight_parent, likelihood, wL_si, children_likelihoods[i], kld);
+                                 //atomicAdd(&comp_likelihood_sum[child_idx], wL_si);
+                                 atomicAdd(thrust::raw_pointer_cast(&comp_likelihood_sum[child_idx]), wL_si);
                              }
                          });
 
-        thrust::host_vector<CudaMatrixRow<float, 64>> h_comp_likelihood = comp_likelihoods;
+        thrust::host_vector<CudaMatrixRow<float, 64>> h_parent_likelihoods = parent_likelihoods;
         thrust::host_vector<float> h_comp_likelihood_sum = comp_likelihood_sums;
+        thrust::host_vector<CudaMatrixRow<unsigned int, 64>> h_parents_children_indices = parents_children_indices;
 
+        for (size_t i = 0; i < h_parents_children_indices.size(); ++i) {
+            printf("Parent %zu\n", i);
+            for (size_t j = 0; j < 64; ++j) {
+                printf("Child %d: %f\n", h_parents_children_indices[i][j], h_parent_likelihoods[i][j]);
+            }
+        }
+
+        for (size_t i = 0; i < h_comp_likelihood_sum.size(); ++i) {
+            printf("Sum: %f\n", h_comp_likelihood_sum[i]);
+        }
         thrust::for_each(thrust::make_counting_iterator<std::uint32_t>(0),
                          thrust::make_counting_iterator<std::uint32_t>(num_parents),
-                         [d_components, d_parents, d_parents_children_indices, d_parents_children_valid, d_comp_likelihoods, d_comp_likelihood_sums, d_nn_found] __device__(
+                         [d_components, d_parents, d_parents_children_indices, d_parents_children_valid, d_parents_likelihoods, d_comp_likelihood_sums, d_nn_found] __device__(
                                  unsigned int s_) {
                              unsigned int parent_idx = d_components.parents_indices[s_];
 
-                             CudaMatrixRow<unsigned int, 64> &parent_children_indices = d_parents_children_indices[s_];
-                             CudaMatrixRow<float, 64> &comp_likelihoods = d_comp_likelihoods[s_];
-                             CudaMatrixRow<bool, 64> &parents_children_valid = d_parents_children_valid[s_];
+                             CudaMatrixRow<unsigned int, 64> &children_indices = d_parents_children_indices[s_];
+                             CudaMatrixRow<float, 64> &children_likelihoods = d_parents_likelihoods[s_];
+                             CudaMatrixRow<bool, 64> &children_valid = d_parents_children_valid[s_];
 
-                             float w_s = d_parents.weights[s_];
-                             vec3 sum_mu_i = w_s * d_parents.means[s_];
-                             mat3 sum_cov_i = w_s * d_parents.covs[s_];
-                             vec3 resultant = w_s * d_parents.nvars[s_];
+                             float w_s = d_components.weights[parent_idx];
+                             vec3 sum_mu_i = w_s * d_components.means[parent_idx];
+                             mat3 sum_cov_i = w_s * d_components.covs[parent_idx];
+                             vec3 resultant = w_s * d_components.nvars[parent_idx];
                              float nvar = resultant.length();
                              unsigned int nn = d_nn_found[s_];
                              assert(nn > 0);
                              //TODO this loop seems to be never used!!!!
                              for (unsigned int i = 0; i < nn; ++i) {
-                                 unsigned int child_idx = parent_children_indices[i];
+                                 unsigned int child_idx = children_indices[i];
 
-                                 if (child_idx == parent_idx || !parents_children_valid[i] ||
+                                 if (child_idx == parent_idx || !children_valid[i] ||
                                      d_comp_likelihood_sums[child_idx] == 0) {
                                      continue;
                                  }
@@ -455,7 +482,7 @@ namespace Bcg::cuda {
                                  const float child_weight = d_components.weights[child_idx];
                                  const vec3 &child_nvar = d_components.nvars[child_idx];
 
-                                 float r_cp = comp_likelihoods[i] / d_comp_likelihood_sums[child_idx];
+                                 float r_cp = children_likelihoods[i] / d_comp_likelihood_sums[child_idx];
                                  assert(r_cp > 0.0f);
                                  float w = r_cp * child_weight;
                                  assert(w > 0.0f);
@@ -463,25 +490,23 @@ namespace Bcg::cuda {
                                  assert(c_nvar > 0.0f);
                                  vec3 c_normal = child_nvar / c_nvar;
 
-                                 if (c_normal.dot(d_parents.nvars[s_]) < 0.0f) {
+                                 if (c_normal.dot(d_components.nvars[parent_idx]) < 0.0f) {
                                      c_normal = -c_normal;
                                  }
 
                                  w_s += w;
                                  sum_mu_i = sum_mu_i + w * child_mean;
-                                 vec3 diff = child_mean - d_parents.means[s_];
+                                 vec3 diff = child_mean - d_components.means[parent_idx];
                                  sum_cov_i = sum_cov_i + w * (child_cov + outer(diff, diff));
 
                                  resultant = resultant + w * c_normal;
                                  nvar += w * c_nvar;
-                                 printf("inloop\n");
                              }
 
                              float inv_w = 1.0f / w_s;
                              vec3 mu_s = inv_w * sum_mu_i;
-                             vec3 diff = mu_s - d_parents.means[s_];
+                             vec3 diff = mu_s - d_components.means[parent_idx];
                              mat3 cov_s = inv_w * sum_cov_i - outer(diff, diff);
-
 
                              float variance1 = nvar * inv_w;
                              float R = resultant.length();
@@ -500,6 +525,15 @@ namespace Bcg::cuda {
                              d_parents.covs[s_] = cov_s;
                              d_parents.weights[s_] = w_s;
                              d_parents.nvars[s_] = newMeanNormal * (variance1 + variance2);
+
+                             printf("parent: %d nn: %d mean: %f %f %f cov: %f %f %f %f %f %f %f %f %f weight: %f nvar: %f %f %f\n",
+                                    s_, nn,
+                                    d_parents.means[s_].x, d_parents.means[s_].y, d_parents.means[s_].z,
+                                    d_parents.covs[s_].col0.x, d_parents.covs[s_].col1.x, d_parents.covs[s_].col2.x,
+                                    d_parents.covs[s_].col0.y, d_parents.covs[s_].col1.y, d_parents.covs[s_].col2.y,
+                                    d_parents.covs[s_].col0.z, d_parents.covs[s_].col1.z, d_parents.covs[s_].col2.z,
+                                    d_parents.weights[s_],
+                                    d_parents.nvars[s_].x, d_parents.nvars[s_].y, d_parents.nvars[s_].z);
                          });
 
         unsigned int num_children = components.children_indices.size();
@@ -514,6 +548,7 @@ namespace Bcg::cuda {
             return d_comp_likelihood_sums[child_idx] == 0.0f;
         }
         );
+
         orphans_indices.resize(end - orphans_indices.begin());
 
         HemDeviceData orphans;

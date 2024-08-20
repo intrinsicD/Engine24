@@ -175,12 +175,14 @@ namespace Bcg::cuda {
                 {col0.y, col1.y}};
     }
 
-    __device__ __host__ inline double mat2_determinant(double a, double b, double c, double d) {
-        return a * d - b * c;
+    __device__ __host__ inline double mat2_determinant(double a, double b,
+                                                       double c, double d) {
+        return a * d - c * b;
     }
 
     __device__ __host__ inline float mat2::determinant() const {
-        return mat2_determinant(col0.x, col1.x, col0.y, col1.y);
+        return mat2_determinant(col0.x, col1.x,
+                                col0.y, col1.y);
     }
 
     __device__ __host__ inline mat2 mat2::inverse() const {

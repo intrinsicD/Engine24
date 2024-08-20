@@ -361,8 +361,8 @@ namespace Bcg {
             nvars.vector() = result.nvars;
             weights.vector() = result.weights;
 
-            for (size_t i = 0; i < vertices->size(); ++i) {
-                Eigen::SelfAdjointEigenSolver<Eigen::Matrix<float, 3, 3>> eigensolver(result.covs[i]);
+            for (size_t i = 0; i < hem.n_vertices(); ++i) {
+                Eigen::SelfAdjointEigenSolver<Eigen::Matrix<float, 3, 3>> eigensolver(covs.vector()[i]);
                 evecs0.vector()[i] = eigensolver.eigenvectors().col(0);
                 evecs1.vector()[i] = eigensolver.eigenvectors().col(1);
                 evecs2.vector()[i] = eigensolver.eigenvectors().col(2);

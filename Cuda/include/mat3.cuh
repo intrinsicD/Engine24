@@ -224,9 +224,19 @@ namespace Bcg::cuda {
     }
 
     __device__ __host__ inline mat3 mat3::operator*(const mat3 &b) const {
-        return {col0 * b.col0.x + col1 * b.col0.y + col2 * b.col0.z,
-                col0 * b.col1.x + col1 * b.col1.y + col2 * b.col1.z,
-                col0 * b.col2.x + col1 * b.col2.y + col2 * b.col2.z};
+        return {
+                vec3(col0.x * b.col0.x + col1.x * b.col0.y + col2.x * b.col0.z,
+                     col0.y * b.col0.x + col1.y * b.col0.y + col2.y * b.col0.z,
+                     col0.z * b.col0.x + col1.z * b.col0.y + col2.z * b.col0.z),
+
+                vec3(col0.x * b.col1.x + col1.x * b.col1.y + col2.x * b.col1.z,
+                     col0.y * b.col1.x + col1.y * b.col1.y + col2.y * b.col1.z,
+                     col0.z * b.col1.x + col1.z * b.col1.y + col2.z * b.col1.z),
+
+                vec3(col0.x * b.col2.x + col1.x * b.col2.y + col2.x * b.col2.z,
+                     col0.y * b.col2.x + col1.y * b.col2.y + col2.y * b.col2.z,
+                     col0.z * b.col2.x + col1.z * b.col2.y + col2.z * b.col2.z)
+        };
     }
 
     __device__ __host__ inline mat3 mat3::operator+(float b) const {
