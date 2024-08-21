@@ -3,7 +3,6 @@
 
 #include "utility.cuh"
 #include "vec3.cuh"
-#include "functors.cuh"
 #include <thrust/swap.h>
 #include <thrust/reduce.h>
 #include <thrust/device_vector.h>
@@ -14,8 +13,11 @@ namespace Bcg::cuda {
         vec3 upper;
         vec3 lower;
     };
+    template<typename Object>
+    struct aabb_getter;
 
-    struct aabb_getter {
+    template<>
+    struct aabb_getter<vec3> {
         __device__ __host__
         aabb operator()(const vec3 v) const noexcept {
             return {v, v};

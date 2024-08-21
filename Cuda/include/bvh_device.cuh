@@ -25,6 +25,7 @@
 #include <thrust/unique.h>
 
 namespace Bcg::cuda::bvh {
+
     namespace detail {
         struct node {
             std::uint32_t parent_idx; // parent node
@@ -172,14 +173,16 @@ namespace Bcg::cuda::bvh {
         }
     }
 
+    template<typename Object>
     struct host_data {
         using node_type = detail::node;
         using aabb_type = aabb;
+        using object_type = Object;
 
         size_t num_objects;
         thrust::host_vector<node_type> nodes;
         thrust::host_vector<aabb_type> aabbs;
-        //TODO: add objects
+        thrust::host_vector<object_type> *objects;
 
         size_t num_internal_nodes() const {
             return num_objects - 1;
@@ -190,13 +193,16 @@ namespace Bcg::cuda::bvh {
         }
     };
 
+    template<typename Object>
     struct device_data {
         using node_type = detail::node;
         using aabb_type = aabb;
+        using object_type = Object;
 
         size_t num_objects;
         thrust::device_vector<node_type> nodes;
         thrust::device_vector<aabb_type> aabbs;
+        thrust::device_vector<object_type> *objects;
 
         size_t num_internal_nodes() const {
             return num_objects - 1;
@@ -207,27 +213,46 @@ namespace Bcg::cuda::bvh {
         }
     };
 
-    device_data get_device_data(const host_data &host_data) {
-        return {host_data.num_objects, host_data.nodes, host_data.aabbs};
+    template<typename Object>
+    device_data<Object> get_device_data(const host_data<Object> &h_data) {
+        device_data<Object> d_data;
+        d_data.num_objects = h_data.num_objects;
+        d_data.nodes = h_data.nodes;
+        d_data.aabbs = h_data.aabbs;
+        *d_data.objects = *h_data.objects;
+        return d_data;
     }
 
-    host_data get_host_data(const device_data &device_data) {
-        return {device_data.num_objects, device_data.nodes, device_data.aabbs};
+    template<typename Object>
+    host_data<Object> get_host_data(const device_data<Object> &d_data) {
+        host_data<Object> h_data;
+        h_data.num_objects = d_data.num_objects;
+        h_data.nodes = d_data.nodes;
+        h_data.aabbs = d_data.aabbs;
+        *h_data.objects = *d_data.objects;
+        return h_data;
     }
 
-
-    detail::device_ptrs<false> get_device_ptrs(device_data & device_data) {
-        return {device_data.nodes.size(),
-                device_data.num_objects,
-                device_data.nodes.data().get(),
-                device_data.aabbs.data().get()};
+    template<typename Object>
+    detail::device_ptrs<Object, false> get_device_ptrs(device_data<Object> &d_data) {
+        detail::device_ptrs<Object, false> d_ptrs;
+        d_ptrs.num_nodes = d_data.nodes.size();
+        d_ptrs.num_objects = d_data.num_objects;
+        d_ptrs.nodes = d_data.nodes.data().get();
+        d_ptrs.aabbs = d_data.aabbs.data().get();
+        d_ptrs.objects = d_data.objects->data().get();
+        return d_ptrs;
     }
 
-    detail::device_ptrs<true> get_device_ptrs(const device_data &device_data) {
-        return {device_data.nodes.size(),
-                device_data.num_objects,
-                device_data.nodes.data().get(),
-                device_data.aabbs.data().get()};
+    template<typename Object>
+    detail::device_ptrs<Object, true> get_device_ptrs(const device_data<Object> &d_data) {
+        detail::device_ptrs<Object, true> d_ptrs;
+        d_ptrs.num_nodes = d_data.nodes.size();
+        d_ptrs.num_objects = d_data.num_objects;
+        d_ptrs.nodes = d_data.nodes.data().get();
+        d_ptrs.aabbs = d_data.aabbs.data().get();
+        d_ptrs.objects = d_data.objects->data().get();
+        return d_ptrs;
     }
 
     template<typename Source, typename Target>
@@ -240,25 +265,6 @@ namespace Bcg::cuda::bvh {
             return {v, v};
         }
     };
-
-    template<typename Object>
-    struct merge;
-
-    template<>
-    struct merge<aabb> {
-        __host__ __device__
-        aabb operator()(const aabb &lhs, const aabb &rhs) const {
-            aabb merged;
-            merged.upper.x = ::fmaxf(lhs.upper.x, rhs.upper.x);
-            merged.upper.y = ::fmaxf(lhs.upper.y, rhs.upper.y);
-            merged.upper.z = ::fmaxf(lhs.upper.z, rhs.upper.z);
-            merged.lower.x = ::fminf(lhs.lower.x, rhs.lower.x);
-            merged.lower.y = ::fminf(lhs.lower.y, rhs.lower.y);
-            merged.lower.z = ::fminf(lhs.lower.z, rhs.lower.z);
-            return merged;
-        }
-    };
-
 
     struct default_morton_code_calculator {
         aabb whole;
@@ -276,7 +282,25 @@ namespace Bcg::cuda::bvh {
         }
     };
 
-    void construct_device(device_data & kdtree, aabb & aabb_whole) {
+    template<typename Object>
+    void construct_aabbs_per_object(device_data<Object> &kdtree) {
+        if (kdtree.num_objects != kdtree.objects->size()) {
+            kdtree.num_objects = kdtree.objects->size();
+        }
+        if (kdtree.nodes.size() != kdtree.num_nodes()) {
+            kdtree.nodes.resize(kdtree.num_nodes());
+        }
+        if (kdtree.aabbs.size() != kdtree.num_nodes()) {
+            kdtree.aabbs.resize(kdtree.num_nodes());
+        }
+
+        thrust::transform(kdtree.objects->begin(), kdtree.objects->end(),
+                          kdtree.aabbs.begin() + kdtree.num_internal_nodes(), aabb_getter<Object>());
+    }
+
+    //Assumes that the aabbs are already calculated per object and stored in aabbs.begin() + num_internal_nodes to aabbs.end()
+    template<typename Object>
+    void construct_device(device_data<Object> &kdtree, aabb &aabb_whole) {
         using index_type = std::uint32_t;
 
         const unsigned int num_objects = kdtree.num_objects;
@@ -359,6 +383,7 @@ namespace Bcg::cuda::bvh {
         // construct internal nodes
 
         const auto self = get_device_ptrs(kdtree);
+
         if (morton_code_is_unique) {
             const unsigned int *node_code = morton.data().get();
             detail::construct_internal_nodes(self, node_code, num_objects);
@@ -404,7 +429,9 @@ namespace Bcg::cuda::bvh {
                          });
     }
 
-    void construct_device(host_data &kdtree, aabb &aabb_whole) {
+    //Assumes that the aabbs are already calculated per object and stored in aabbs.begin() + num_internal_nodes to aabbs.end()
+    template<typename Object>
+    void construct_host(host_data<Object> &kdtree, aabb &aabb_whole) {
         device_data device_data = get_device_data(kdtree);
         construct_device(device_data, aabb_whole);
         kdtree = get_host_data(device_data);
