@@ -9,5 +9,6 @@
 #include "predicator.cuh"
 #include "query.cuh"
 #include "utility.cuh"
+#include "vec.cuh"
 
 #endif// LBVH_LBVH_CUH

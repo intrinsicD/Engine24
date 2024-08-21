@@ -3,6 +3,7 @@
 
 #include "utility.cuh"
 #include "vec3.cuh"
+#include "functors.cuh"
 #include <thrust/swap.h>
 #include <thrust/reduce.h>
 #include <thrust/device_vector.h>
