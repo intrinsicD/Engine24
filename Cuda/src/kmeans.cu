@@ -11,7 +11,7 @@
 #include "PropertyEigenMap.h"
 
 namespace Bcg::cuda {
-    using hbvh = lbvh<vec3, aabb_getter>;
+    using hbvh = lbvh<vec3, aabb_getter<vec3>>;
     using dbvh = bvh_device<vec3>;
 
     struct KmeansDeviceDataPtr {
@@ -141,12 +141,12 @@ namespace Bcg::cuda {
     }
 
     void AssignClusters(dbvh &bvh,
-                         thrust::device_ptr<vec3> d_positions,
-                         thrust::device_ptr<vec3> d_new_sums,
-                         thrust::device_ptr<unsigned int> d_new_cluster_sizes,
-                         thrust::device_ptr<unsigned int> d_new_labels,
-                         thrust::device_ptr<float> d_new_distances,
-                         size_t num_objects) {
+                        thrust::device_ptr<vec3> d_positions,
+                        thrust::device_ptr<vec3> d_new_sums,
+                        thrust::device_ptr<unsigned int> d_new_cluster_sizes,
+                        thrust::device_ptr<unsigned int> d_new_labels,
+                        thrust::device_ptr<float> d_new_distances,
+                        size_t num_objects) {
 
         struct distance_calculator {
             __device__ __host__
@@ -187,8 +187,8 @@ namespace Bcg::cuda {
     }
 
     void UpdateCentroids(thrust::device_ptr<vec3> new_centroids,
-                          const thrust::device_ptr<vec3> new_sums,
-                          const thrust::device_ptr<unsigned int> &new_cluster_sizes, std::uint32_t k) {
+                         const thrust::device_ptr<vec3> new_sums,
+                         const thrust::device_ptr<unsigned int> &new_cluster_sizes, std::uint32_t k) {
         thrust::for_each(thrust::device,
                          thrust::make_counting_iterator<std::uint32_t>(0),
                          thrust::make_counting_iterator(k),
@@ -255,7 +255,7 @@ namespace Bcg::cuda {
             thrust::fill(d_data.new_cluster_sizes.begin(), d_data.new_cluster_sizes.end(), 0);
 
             AssignClusters(d_ptrs.d_bvh, d_ptrs.d_positions, d_ptrs.d_new_sums, d_ptrs.d_new_cluster_sizes,
-                            d_ptrs.d_labels, d_ptrs.d_distances, num_objects);
+                           d_ptrs.d_labels, d_ptrs.d_distances, num_objects);
 
             UpdateCentroids(d_ptrs.d_centroids, d_ptrs.d_new_sums, d_ptrs.d_new_cluster_sizes, k);
         }
@@ -287,7 +287,7 @@ namespace Bcg::cuda {
 
         KmeansDeviceData d_data = SetupKMeansDeviceData(h_centroids, h_positions);
         d_data.distances = h_distances;
-        
+
         d_data.push_new_cluster(GetMostDistantPoint(d_data));
         current_k = d_data.centroids.size();
 
@@ -302,11 +302,11 @@ namespace Bcg::cuda {
                 thrust::fill(d_data.new_cluster_sizes.begin(), d_data.new_cluster_sizes.end(), 0);
 
                 AssignClusters(d_ptrs.d_bvh, d_ptrs.d_positions, d_ptrs.d_new_sums, d_ptrs.d_new_cluster_sizes,
-                                d_ptrs.d_labels, d_ptrs.d_distances, num_objects);
+                               d_ptrs.d_labels, d_ptrs.d_distances, num_objects);
 
                 UpdateCentroids(d_ptrs.d_centroids, d_ptrs.d_new_sums, d_ptrs.d_new_cluster_sizes, current_k);
             }
-            
+
             d_data.push_new_cluster(GetMostDistantPoint(d_data));
             current_k = d_data.centroids.size();
         }

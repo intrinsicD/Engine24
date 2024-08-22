@@ -14,7 +14,7 @@
 #include <thrust/gather.h>
 
 namespace Bcg::cuda {
-    using hbvh = lbvh<vec3, aabb_getter>;
+    using hbvh = lbvh<vec3, aabb_getter<vec3>>;
     using dbvh = bvh_device<vec3>;
 
     struct HemDeviceDataPtr {

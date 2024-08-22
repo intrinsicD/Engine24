@@ -9,11 +9,7 @@
 
 #include <vector>
 
-namespace Bcg::cuda {
-
-
-    using aabb_getter = aabb_getter;
-
+namespace Bcg::cuda {;
     KDTreeCuda::KDTreeCuda(entt::entity entity_id) : entity_id(entity_id) {
 
     }
@@ -21,7 +17,7 @@ namespace Bcg::cuda {
     KDTreeCuda::~KDTreeCuda() = default;
 
     KDTreeCuda::operator bool() const {
-        return Engine::has<lbvh<vec3, aabb_getter>>(entity_id);
+        return Engine::has<lbvh<vec3,  aabb_getter<vec3>>>(entity_id);
     }
 
     void KDTreeCuda::build(const std::vector<Vector<float, 3>> &positions) {
@@ -29,13 +25,13 @@ namespace Bcg::cuda {
         for (size_t i = 0; i < positions.size(); ++i) {
             ps[i] = {positions[i].x(), positions[i].y(), positions[i].z()};
         }
-        auto &bvh = Engine::require<lbvh<vec3, aabb_getter>>(entity_id);
-        bvh = lbvh<vec3, aabb_getter>(ps.begin(), ps.end(), true);
+        auto &bvh = Engine::require<lbvh<vec3,  aabb_getter<vec3>>>(entity_id);
+        bvh = lbvh<vec3,  aabb_getter<vec3>>(ps.begin(), ps.end(), true);
     }
 
     [[nodiscard]] QueryResult
     KDTreeCuda::knn_query(const Vector<float, 3> &query_point, unsigned int num_closest) const {
-        auto &bvh = Engine::require<lbvh<vec3, aabb_getter>>(entity_id);
+        auto &bvh = Engine::require<lbvh<vec3,  aabb_getter<vec3>>>(entity_id);
         struct distance_calculator {
             __device__ __host__
             float operator()(const vec3 &point, const vec3 &object) const noexcept {
@@ -54,11 +50,10 @@ namespace Bcg::cuda {
     }
 
     [[nodiscard]] QueryResult KDTreeCuda::radius_query(const Vector<float, 3> &query_point, float radius) const {
-        auto &bvh = Engine::require<lbvh<vec3, aabb_getter>>(entity_id);
+        auto &bvh = Engine::require<lbvh<vec3,  aabb_getter<vec3>>>(entity_id);
         vec3 d_query = {query_point[0], query_point[1], query_point[2]};
         QueryResult result;
         std::vector<size_t> indices;
-        Log::Info("query_point {} {} {}", query_point[0], query_point[1], query_point[2]);
         const auto num_found = query_host(bvh, overlaps_sphere(d_query, radius), indices);
         result.indices.reserve(num_found);
         for (const auto idx: indices) {
@@ -68,7 +63,7 @@ namespace Bcg::cuda {
     }
 
     [[nodiscard]] QueryResult KDTreeCuda::closest_query(const Vector<float, 3> &query_point) const {
-        auto &bvh = Engine::require<lbvh<vec3, aabb_getter>>(entity_id);
+        auto &bvh = Engine::require<lbvh<vec3,  aabb_getter<vec3>>>(entity_id);
         struct distance_calculator {
             __device__ __host__
             float operator()(const vec3 &point, const vec3 &object) const noexcept {
