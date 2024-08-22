@@ -13,6 +13,7 @@ namespace Bcg::cuda {
         vec3 upper;
         vec3 lower;
     };
+
     template<typename Object>
     struct aabb_getter;
 

@@ -4,6 +4,7 @@
 
 #include "Cuda/KDTreeCuda.h"
 #include "lbvh.cuh"
+#include "bvh_device.cuh"
 #include "Engine.h"
 #include "Logger.h"
 
@@ -22,11 +23,13 @@ namespace Bcg::cuda {;
 
     void KDTreeCuda::build(const std::vector<Vector<float, 3>> &positions) {
         std::vector<vec3> ps(positions.size());
+        aabb aabb_whole;
         for (size_t i = 0; i < positions.size(); ++i) {
             ps[i] = {positions[i].x(), positions[i].y(), positions[i].z()};
         }
-        auto &bvh = Engine::require<lbvh<vec3,  aabb_getter<vec3>>>(entity_id);
-        bvh = lbvh<vec3,  aabb_getter<vec3>>(ps.begin(), ps.end(), true);
+
+        auto &h_bvh = Engine::require<lbvh<vec3,  aabb_getter<vec3>>>(entity_id);
+        h_bvh = lbvh<vec3,  aabb_getter<vec3>>(ps.begin(), ps.end(), true);
     }
 
     [[nodiscard]] QueryResult

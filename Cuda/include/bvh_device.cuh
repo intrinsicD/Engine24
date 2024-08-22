@@ -35,10 +35,10 @@ namespace Bcg::cuda::bvh {
         };
 
         template<typename Object, bool IsConst>
-        struct device_ptrs;
+        struct basic_device_bvh;
 
         template<typename Object>
-        struct device_ptrs<Object, false> {
+        struct basic_device_bvh<Object, false> {
             using node_type = detail::node;
             using aabb_type = aabb;
             using object_type = Object;
@@ -52,7 +52,7 @@ namespace Bcg::cuda::bvh {
         };
 
         template<typename Object>
-        struct device_ptrs<Object, true> {
+        struct basic_device_bvh<Object, true> {
             using node_type = detail::node;
             using aabb_type = aabb;
             using object_type = Object;
@@ -147,7 +147,7 @@ namespace Bcg::cuda::bvh {
         }
 
         template<typename Object, bool IsConst, typename UInt>
-        void construct_internal_nodes(const device_ptrs<Object, IsConst> &self,
+        void construct_internal_nodes(const basic_device_bvh<Object, IsConst> &self,
                                       UInt const *node_code, const unsigned int num_objects) {
             thrust::for_each(thrust::device,
                              thrust::make_counting_iterator<unsigned int>(0),
@@ -234,8 +234,8 @@ namespace Bcg::cuda::bvh {
     }
 
     template<typename Object>
-    detail::device_ptrs<Object, false> get_device_ptrs(device_data<Object> &d_data) {
-        detail::device_ptrs<Object, false> d_ptrs;
+    detail::basic_device_bvh<Object, false> get_device_ptrs(device_data<Object> &d_data) {
+        detail::basic_device_bvh<Object, false> d_ptrs;
         d_ptrs.num_nodes = d_data.nodes.size();
         d_ptrs.num_objects = d_data.num_objects;
         d_ptrs.nodes = d_data.nodes.data().get();
@@ -245,8 +245,8 @@ namespace Bcg::cuda::bvh {
     }
 
     template<typename Object>
-    detail::device_ptrs<Object, true> get_device_ptrs(const device_data<Object> &d_data) {
-        detail::device_ptrs<Object, true> d_ptrs;
+    detail::basic_device_bvh<Object, true> get_device_ptrs(const device_data<Object> &d_data) {
+        detail::basic_device_bvh<Object, true> d_ptrs;
         d_ptrs.num_nodes = d_data.nodes.size();
         d_ptrs.num_objects = d_data.num_objects;
         d_ptrs.nodes = d_data.nodes.data().get();
