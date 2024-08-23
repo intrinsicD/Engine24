@@ -234,6 +234,8 @@ namespace Bcg {
             return *this;
         }
 
+        bool empty() const { return size_ == 0; }
+
         // returns the current size of the property arrays
         size_t size() const { return size_; }
 
