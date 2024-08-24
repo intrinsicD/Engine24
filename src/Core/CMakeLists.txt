@@ -8,6 +8,7 @@ target_sources(Engine24 PRIVATE
         EntityCommands.cpp
         FileWatcher.cpp
         GetPrimitives.cpp
+        GraphInterface.cpp
         GLFWUtils.cpp
         HandleGlfwKeyEvents.cpp
         Intersections.cpp
@@ -24,6 +25,7 @@ target_sources(Engine24 PRIVATE
         Plugin.cpp
         Plugins.cpp
         PointCloud.cpp
+        PointCloudInterface.cpp
         PointCloudIo.cpp
         PointCloudCompute.cpp
         Sphere.cpp
