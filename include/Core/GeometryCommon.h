@@ -208,7 +208,7 @@ namespace Bcg {
                                      Vertex v = Vertex())
                 : data__(data_) {
             if (data__)
-                halfedge_ = data__->halfedge(v);
+                halfedge_ = data__->get_halfedge(v);
         }
 
         //! are two circulators equal?
@@ -299,7 +299,7 @@ namespace Bcg {
                                        Vertex v = Vertex())
                 : data__(data_) {
             if (data__)
-                halfedge_ = data__->halfedge(v);
+                halfedge_ = data__->get_halfedge(v);
         }
 
         //! are two circulators equal?

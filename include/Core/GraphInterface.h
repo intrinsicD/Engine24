@@ -9,6 +9,9 @@
 
 namespace Bcg {
     struct GraphInterface {
+        using VertexAroundVertexCirculator = VertexAroundVertexCirculatorBase<GraphInterface>;
+        using HalfedgeAroundVertexCirculator = HalfedgeAroundVertexCirculatorBase<GraphInterface>;
+
         GraphInterface(GraphData &data) : vertices(data.vertices), halfedges(data.halfedges), edges(data.edges) {}
 
         GraphInterface(Vertices &vertices, HalfEdges &halfEdges, Edges &edges) : vertices(vertices),
@@ -38,6 +41,24 @@ namespace Bcg {
 
         void set_edge_scalarfield(const std::vector<ScalarType> &escalarfield);
 
+        Property<Vector<IndexType, 2>> get_edges() const;
+
+        inline bool is_isolated(Vertex v) const {
+            return halfedges.is_valid(get_halfedge(v)) && halfedges.is_valid(get_opposite(get_halfedge(v)));
+        }
+
+        inline bool is_boundary(Vertex v) const {
+            return is_boundary(get_halfedge(v));
+        }
+
+        inline bool is_boundary(Halfedge h) const {
+            return get_next(h) == get_opposite(h);
+        }
+
+        inline bool is_boundary(Edge e) const {
+            return is_boundary(get_halfedge(e, 0)) || is_boundary(get_halfedge(e, 1));
+        }
+
         Vertex new_vertex();
 
         Vertex add_vertex(const PointType &p);
@@ -48,35 +69,81 @@ namespace Bcg {
 
         Halfedge find_halfedge(Vertex v0, Vertex v1) const;
 
-        Halfedge get_opposite(Halfedge h) const;
+        inline Halfedge get_opposite(Halfedge h) const {
+            return Halfedge((h.idx() & 1) ? h.idx() - 1 : h.idx() + 1);
+        }
 
-        Halfedge get_halfedge(Vertex v0) const;
+        inline Halfedge get_halfedge(Vertex v0) const {
+            return vconnectivity[v0];
+        }
 
-        Halfedge get_halfedge(Edge e, int i) const;
+        inline Halfedge get_halfedge(Edge e, int i) const {
+            return Halfedge{(e.idx() << 1) + i};
+        }
 
+        inline Vertex get_vertex(Edge e, int i) const {
+            return get_vertex(get_halfedge(e, i));
+        }
 
+        inline void set_vertex(Halfedge h, Vertex v) {
+            hconnectivity[h].v = v;
+        }
 
-        void set_vertex(Halfedge h, Vertex v);
+        inline void set_halfedge(Vertex v, Halfedge h) {
+            vconnectivity[v] = h;
+        }
 
-        void set_halfedge(Vertex v, Halfedge h);
+        inline Vertex get_vertex(Halfedge h) const {
+            return hconnectivity[h].v;
+        }
 
-        Vertex get_vertex(Halfedge h) const;
+        inline void set_next(Halfedge h, Halfedge nh) {
+            hconnectivity[h].nh = nh;
+        }
 
-        void set_next(Halfedge h, Halfedge nh);
+        inline Halfedge get_next(Halfedge h) const {
+            return hconnectivity[h].nh;
+        }
 
-        Halfedge get_next(Halfedge h) const;
+        inline void set_prev(Halfedge h, Halfedge ph) {
+            hconnectivity[h].ph = ph;
+        }
 
-        void set_prev(Halfedge h, Halfedge ph);
+        inline Halfedge get_prev(Halfedge h) const {
+            return hconnectivity[h].ph;
+        }
 
-        Halfedge get_prev(Halfedge h) const;
+        inline Halfedge rotate_cw(Halfedge h) const {
+            return get_next(get_opposite(h));
+        }
+
+        inline Halfedge rotate_ccw(Halfedge h) const {
+            return get_opposite(get_prev(h));
+        }
+
+        inline Edge get_edge(Halfedge h) const {
+            return Edge(h.idx() >> 1);
+        }
+
+        size_t get_valence(Vertex v) const;
 
         void remove_edge(Edge e);
 
         void garbage_collection();
 
-        Vertex split(Edge e, ScalarType t = 0.5); //t ranges from 0 to 1
+        Vertex split(Edge e, Vertex v);
+
+        Vertex split(Edge e, PointType point);
 
         Vertex collapse(Edge e, ScalarType t = 0.5); //t ranges from 0 to 1
+
+        VertexAroundVertexCirculator get_vertices(Vertex v) const {
+            return {this, v};
+        }
+
+        HalfedgeAroundVertexCirculator get_halfedges(Vertex v) const {
+            return {this, v};
+        }
     };
 }
 
