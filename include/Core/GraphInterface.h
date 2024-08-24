@@ -135,15 +135,17 @@ namespace Bcg {
 
         Vertex split(Edge e, PointType point);
 
-        Vertex collapse(Edge e, ScalarType t = 0.5); //t ranges from 0 to 1
+        void collapse(Edge e, ScalarType t = 0.5); //t ranges from 0 to 1
 
-        VertexAroundVertexCirculator get_vertices(Vertex v) const {
+        inline VertexAroundVertexCirculator get_vertices(Vertex v) const {
             return {this, v};
         }
 
-        HalfedgeAroundVertexCirculator get_halfedges(Vertex v) const {
+        inline HalfedgeAroundVertexCirculator get_halfedges(Vertex v) const {
             return {this, v};
         }
+
+
     };
 }
 

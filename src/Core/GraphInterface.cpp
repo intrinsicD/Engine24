@@ -224,5 +224,48 @@ namespace Bcg {
         return split(e, add_vertex(point));
     }
 
-    Vertex GraphInterface::collapse(Edge e, ScalarType t) {}
+    void GraphInterface::collapse(Edge e, ScalarType t) {
+        Halfedge h = get_halfedge(e, 0);
+        Halfedge o = get_halfedge(e, 1);
+
+        Vertex v0 = get_vertex(h);
+        Vertex v1 = get_vertex(o);
+
+        PointType p = (1 - t) * vpoint[v0] + t * vpoint[v1];
+
+        vpoint[v0] = p;
+
+        //TODO rename ccw_rotated_halfedge in the circulator to the correct function name...
+        for(auto h: get_halfedges(v1)){
+            if(get_vertex(h) == v1){
+                set_vertex(h, v0);
+            }
+        }
+
+        Halfedge nh = get_next(h);
+        Halfedge ph = get_prev(h);
+
+        Halfedge no = get_next(o);
+        Halfedge po = get_prev(o);
+
+        set_next(ph, nh);
+        set_prev(nh, ph);
+
+        set_next(po, no);
+        set_prev(no, po);
+
+        set_vertex(h, v0);
+        set_vertex(o, v0);
+
+        set_next(h, Halfedge());
+        set_prev(h, Halfedge());
+        set_next(o, Halfedge());
+        set_prev(o, Halfedge());
+
+        halfedges.hdeleted[h] = true;
+        halfedges.hdeleted[o] = true;
+
+        ++halfedges.deleted_halfedges;
+        ++halfedges.deleted_halfedges;
+    }
 }
