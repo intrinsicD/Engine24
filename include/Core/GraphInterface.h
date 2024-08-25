@@ -158,8 +158,13 @@ namespace Bcg {
         inline HalfedgeAroundVertexCirculator get_halfedges(Vertex v) const {
             return {this, v};
         }
+    };
 
+    struct GraphOwning : public GraphInterface {
+        GraphOwning() : GraphInterface(data) {}
 
+    private:
+        GraphData data;
     };
 }
 

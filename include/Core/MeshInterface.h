@@ -149,28 +149,28 @@ namespace Bcg {
 
         bool is_boundary(Face f) const;
 
-        VertexAroundVertexCirculator get_vertices(Vertex v) const {
-            return VertexAroundVertexCirculator(this, v);
+        inline VertexAroundVertexCirculator get_vertices(Vertex v) const {
+            return {this, v};
         }
 
-        EdgeAroundVertexCirculator get_edges(Vertex v) const {
-            return EdgeAroundVertexCirculator(this, v);
+        inline EdgeAroundVertexCirculator get_edges(Vertex v) const {
+            return {this, v};
         }
 
-        HalfedgeAroundVertexCirculator get_halfedges(Vertex v) const {
-            return HalfedgeAroundVertexCirculator(this, v);
+        inline HalfedgeAroundVertexCirculator get_halfedges(Vertex v) const {
+            return {this, v};
         }
 
-        FaceAroundVertexCirculator get_faces(Vertex v) const {
-            return FaceAroundVertexCirculator(this, v);
+        inline FaceAroundVertexCirculator get_faces(Vertex v) const {
+            return {this, v};
         }
 
-        VertexAroundFaceCirculator get_vertices(Face f) const {
-            return VertexAroundFaceCirculator(this, f);
+        inline VertexAroundFaceCirculator get_vertices(Face f) const {
+            return {this, f};
         }
 
-        HalfedgeAroundFaceCirculator get_halfedges(Face f) const {
-            return HalfedgeAroundFaceCirculator(this, f);
+        inline HalfedgeAroundFaceCirculator get_halfedges(Face f) const {
+            return {this, f};
         }
 
         inline Halfedge insert_vertex(Edge e, const PointType &p) {
@@ -256,6 +256,13 @@ namespace Bcg {
         std::vector<bool> add_face_is_new_;
         std::vector<bool> add_face_needs_adjust_;
         NextCache add_face_next_cache_;
+    };
+
+    struct MeshOwning: public HalfedgeMeshInterface {
+        MeshOwning() : HalfedgeMeshInterface(data) {}
+
+    private:
+        MeshData data;
     };
 }
 
