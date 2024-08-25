@@ -12,11 +12,15 @@ namespace Bcg {
         using VertexAroundVertexCirculator = VertexAroundVertexCirculatorBase<GraphInterface>;
         using HalfedgeAroundVertexCirculator = HalfedgeAroundVertexCirculatorBase<GraphInterface>;
 
-        GraphInterface(GraphData &data) : vertices(data.vertices), halfedges(data.halfedges), edges(data.edges) {}
+        explicit GraphInterface(GraphData &data) : vertices(data.vertices),
+                                                   halfedges(data.halfedges),
+                                                   edges(data.edges) {}
 
-        GraphInterface(Vertices &vertices, HalfEdges &halfEdges, Edges &edges) : vertices(vertices),
-                                                                                 halfedges(halfEdges),
-                                                                                 edges(edges) {}
+        GraphInterface(Vertices &vertices,
+                       HalfEdges &halfEdges,
+                       Edges &edges) : vertices(vertices),
+                                       halfedges(halfEdges),
+                                       edges(edges) {}
 
         Vertices &vertices;
         HalfEdges &halfedges;

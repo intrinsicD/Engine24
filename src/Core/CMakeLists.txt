@@ -17,6 +17,7 @@ target_sources(Engine24 PRIVATE
         Keyboard.cpp
         Line.cpp
         Logger.cpp
+        MeshInterface.cpp
         MeshView.cpp
         Mouse.cpp
         OBB.cpp
