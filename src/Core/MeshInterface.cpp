@@ -1000,7 +1000,7 @@ namespace Bcg {
         Vertex vo = to_vertex(o);
 
         // halfedge -> vertex
-        for (const auto hc: halfedges(vo)) {
+        for (const auto hc: get_halfedges(vo)) {
             set_vertex(opposite_halfedge(hc), vh);
         }
 
