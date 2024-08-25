@@ -137,14 +137,14 @@ namespace Bcg {
     Halfedge SurfaceMesh::find_halfedge(Vertex start, Vertex end) const {
         assert(is_valid(start) && is_valid(end));
 
-        Halfedge h = halfedge(start);
+        Halfedge h = get_halfedge(start);
         const Halfedge hh = h;
 
         if (h.is_valid()) {
             do {
                 if (to_vertex(h) == end)
                     return h;
-                h = cw_rotated_halfedge(h);
+                h = rotate_cw(h);
             } while (h != hh);
         }
 
@@ -157,7 +157,7 @@ namespace Bcg {
     }
 
     void SurfaceMesh::adjust_outgoing_halfedge(Vertex v) {
-        Halfedge h = halfedge(v);
+        Halfedge h = get_halfedge(v);
         const Halfedge hh = h;
 
         if (h.is_valid()) {
@@ -166,7 +166,7 @@ namespace Bcg {
                     set_halfedge(v, h);
                     return;
                 }
-                h = cw_rotated_halfedge(h);
+                h = rotate_cw(h);
             } while (h != hh);
         }
     }
@@ -318,11 +318,11 @@ namespace Bcg {
                         break;
 
                     case 3: // both are new
-                        if (!halfedge(v).is_valid()) {
+                        if (!get_halfedge(v).is_valid()) {
                             set_halfedge(v, outer_next);
                             next_cache.emplace_back(outer_prev, outer_next);
                         } else {
-                            boundary_next = halfedge(v);
+                            boundary_next = get_halfedge(v);
                             boundary_prev = prev_halfedge(boundary_next);
                             next_cache.emplace_back(boundary_prev, outer_next);
                             next_cache.emplace_back(outer_prev, boundary_next);
@@ -333,7 +333,7 @@ namespace Bcg {
                 // set inner link
                 next_cache.emplace_back(inner_prev, inner_next);
             } else
-                needs_adjust[ii] = (halfedge(v) == inner_next);
+                needs_adjust[ii] = (get_halfedge(v) == inner_next);
 
             // set face handle
             set_face(halfedges[i], f);
@@ -387,7 +387,7 @@ namespace Bcg {
         // triangles). The halfedge handles of the new triangles will point to the
         // old halfedges.
 
-        Halfedge hend = halfedge(f);
+        Halfedge hend = get_halfedge(f);
         Halfedge h = next_halfedge(hend);
 
         Halfedge hold = new_edge(to_vertex(hend), v);
@@ -427,8 +427,8 @@ namespace Bcg {
     }
 
     Halfedge SurfaceMesh::split(Edge e, Vertex v) {
-        Halfedge h0 = halfedge(e, 0);
-        Halfedge o0 = halfedge(e, 1);
+        Halfedge h0 = get_halfedge(e, 0);
+        Halfedge o0 = get_halfedge(e, 1);
 
         Vertex v2 = to_vertex(o0);
 
@@ -509,7 +509,7 @@ namespace Bcg {
             set_halfedge(v, e1);
         }
 
-        if (halfedge(v2) == h0)
+        if (get_halfedge(v2) == h0)
             set_halfedge(v2, t1);
 
         return t1;
@@ -607,8 +607,8 @@ namespace Bcg {
             return false;
 
         // check if the flipped edge is already present in the mesh
-        Halfedge h0 = halfedge(e, 0);
-        Halfedge h1 = halfedge(e, 1);
+        Halfedge h0 = get_halfedge(e, 0);
+        Halfedge h1 = get_halfedge(e, 1);
 
         Vertex v0 = to_vertex(next_halfedge(h0));
         Vertex v1 = to_vertex(next_halfedge(h1));
@@ -626,8 +626,8 @@ namespace Bcg {
         //let's make it sure it is actually checked
         assert(is_flip_ok(e));
 
-        Halfedge a0 = halfedge(e, 0);
-        Halfedge b0 = halfedge(e, 1);
+        Halfedge a0 = get_halfedge(e, 0);
+        Halfedge b0 = get_halfedge(e, 1);
 
         Halfedge a1 = next_halfedge(a0);
         Halfedge a2 = next_halfedge(a1);
@@ -661,9 +661,9 @@ namespace Bcg {
         set_halfedge(fa, a0);
         set_halfedge(fb, b0);
 
-        if (halfedge(va0) == b0)
+        if (get_halfedge(va0) == b0)
             set_halfedge(va0, a1);
-        if (halfedge(vb0) == a0)
+        if (get_halfedge(vb0) == a0)
             set_halfedge(vb0, b1);
     }
 
@@ -715,8 +715,8 @@ namespace Bcg {
     }
 
     bool SurfaceMesh::is_removal_ok(Edge e) const {
-        Halfedge h0 = halfedge(e, 0);
-        Halfedge h1 = halfedge(e, 1);
+        Halfedge h0 = get_halfedge(e, 0);
+        Halfedge h1 = get_halfedge(e, 1);
         Vertex v0 = to_vertex(h0);
         Vertex v1 = to_vertex(h1);
         Face f0 = face(h0);
@@ -744,8 +744,8 @@ namespace Bcg {
         if (!is_removal_ok(e))
             return false;
 
-        Halfedge h0 = halfedge(e, 0);
-        Halfedge h1 = halfedge(e, 1);
+        Halfedge h0 = get_halfedge(e, 0);
+        Halfedge h1 = get_halfedge(e, 1);
 
         Vertex v0 = to_vertex(h0);
         Vertex v1 = to_vertex(h1);
@@ -759,9 +759,9 @@ namespace Bcg {
         Halfedge h1_next = next_halfedge(h1);
 
         // adjust vertex->halfedge
-        if (halfedge(v0) == h1)
+        if (get_halfedge(v0) == h1)
             set_halfedge(v0, h0_next);
-        if (halfedge(v1) == h0)
+        if (get_halfedge(v1) == h0)
             set_halfedge(v1, h1_next);
 
         // adjust halfedge->face
@@ -773,7 +773,7 @@ namespace Bcg {
         set_next_halfedge(h0_prev, h1_next);
 
         // adjust face->halfedge
-        if (halfedge(f1) == h1)
+        if (get_halfedge(f1) == h1)
             set_halfedge(f1, h1_next);
 
         // delete face f0 and edge e
@@ -835,7 +835,7 @@ namespace Bcg {
             set_halfedge(fo, on);
 
         // vertex -> halfedge
-        if (halfedge(vh) == o)
+        if (get_halfedge(vh) == o)
             set_halfedge(vh, hn);
         adjust_outgoing_halfedge(vh);
         set_halfedge(vo, Halfedge());
@@ -878,7 +878,7 @@ namespace Bcg {
         adjust_outgoing_halfedge(v1);
 
         // face -> halfedge
-        if (fo.is_valid() && halfedge(fo) == o0)
+        if (fo.is_valid() && get_halfedge(fo) == o0)
             set_halfedge(fo, h1);
 
         // delete stuff
@@ -918,8 +918,8 @@ namespace Bcg {
         if (is_deleted(e))
             return;
 
-        Face f0 = face(halfedge(e, 0));
-        Face f1 = face(halfedge(e, 1));
+        Face f0 = face(get_halfedge(e, 0));
+        Face f1 = face(get_halfedge(e, 1));
 
         if (f0.is_valid())
             delete_face(f0);
@@ -967,12 +967,12 @@ namespace Bcg {
             Vertex v0, v1;
 
             for (; delit != delend; ++delit) {
-                h0 = halfedge(*delit, 0);
+                h0 = get_halfedge(*delit, 0);
                 v0 = to_vertex(h0);
                 next0 = next_halfedge(h0);
                 prev0 = prev_halfedge(h0);
 
-                h1 = halfedge(*delit, 1);
+                h1 = get_halfedge(*delit, 1);
                 v1 = to_vertex(h1);
                 next1 = next_halfedge(h1);
                 prev1 = prev_halfedge(h1);
@@ -988,7 +988,7 @@ namespace Bcg {
                 }
 
                 // update v0
-                if (halfedge(v0) == h1) {
+                if (get_halfedge(v0) == h1) {
                     if (next0 == h1) {
                         if (!vdeleted_[v0]) {
                             vdeleted_[v0] = true;
@@ -999,7 +999,7 @@ namespace Bcg {
                 }
 
                 // update v1
-                if (halfedge(v1) == h0) {
+                if (get_halfedge(v1) == h0) {
                     if (next1 == h0) {
                         if (!vdeleted_[v1]) {
                             vdeleted_[v1] = true;
@@ -1114,7 +1114,7 @@ namespace Bcg {
         for (size_t i = 0; i < nV; ++i) {
             auto v = Vertex(i);
             if (!is_isolated(v))
-                set_halfedge(v, hmap[halfedge(v)]);
+                set_halfedge(v, hmap[get_halfedge(v)]);
         }
 
         // update halfedge connectivity
@@ -1129,7 +1129,7 @@ namespace Bcg {
         // update handles of faces
         for (size_t i = 0; i < nF; ++i) {
             auto f = Face(i);
-            set_halfedge(f, hmap[halfedge(f)]);
+            set_halfedge(f, hmap[get_halfedge(f)]);
         }
 
         // remove handle maps

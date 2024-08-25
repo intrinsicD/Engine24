@@ -32,7 +32,15 @@ namespace Bcg {
             Vertex v;
             Halfedge nh;
             Halfedge ph;
+
+            friend std::ostream &operator<<(std::ostream &os, const HalfedgeConnectivity &hc) {
+                os << "v: " << hc.v.idx_
+                   << "nh: " << hc.nh.idx_
+                   << "ph: " << hc.ph.idx_;
+                return os;
+            }
         };
+
         HalfedgeProperty<HalfedgeConnectivity> hconnectivity;
 
         void set_points(const std::vector<PointType> &points);
@@ -134,6 +142,8 @@ namespace Bcg {
         Vertex split(Edge e, Vertex v);
 
         Vertex split(Edge e, PointType point);
+
+        Vertex split(Edge e, ScalarType t = 0.5);
 
         void collapse(Edge e, ScalarType t = 0.5); //t ranges from 0 to 1
 

@@ -191,7 +191,100 @@ namespace Bcg {
         ++halfedges.deleted_halfedges;
     }
 
-    void GraphInterface::garbage_collection() {}
+    void GraphInterface::garbage_collection() {
+        if(!vertices.deleted_vertices && !edges.deleted_edges && !halfedges.deleted_halfedges) {
+            return;
+        }
+
+        auto nV = vertices.size();
+        auto nE = edges.size();
+        auto nH = halfedges.size();
+
+        // setup handle mapping
+        VertexProperty<Vertex> vmap = vertices.add_vertex_property<Vertex>("v:garbage-collection");
+        HalfedgeProperty<Halfedge> hmap = halfedges.add_halfedge_property<Halfedge>("h:garbage-collection");
+
+        for (size_t i = 0; i < nV; ++i)
+            vmap[Vertex(i)] = Vertex(i);
+
+        for (size_t i = 0; i < nH; ++i)
+            hmap[Halfedge(i)] = Halfedge(i);
+
+        // remove deleted vertices
+        if (nV > 0) {
+            size_t i0 = 0;
+            size_t i1 = nV - 1;
+
+            while (true) {
+                // find first deleted and last un-deleted
+                while (!vertices.vdeleted[Vertex(i0)] && i0 < i1)
+                    ++i0;
+                while (vertices.vdeleted[Vertex(i1)] && i0 < i1)
+                    --i1;
+                if (i0 >= i1)
+                    break;
+
+                // swap
+                vertices.swap(i0, i1);
+            }
+
+            // remember new size
+            nV = vertices.vdeleted[Vertex(i0)] ? i0 : i0 + 1;
+        }
+
+        // remove deleted edges
+        if (nE > 0) {
+            size_t i0 = 0;
+            size_t i1 = nE - 1;
+
+            while (true) {
+                // find first deleted and last un-deleted
+                while (!edges.edeleted[Edge(i0)] && i0 < i1)
+                    ++i0;
+                while (edges.edeleted[Edge(i1)] && i0 < i1)
+                    --i1;
+                if (i0 >= i1)
+                    break;
+
+                // swap
+                edges.swap(i0, i1);
+                halfedges.swap(2 * i0, 2 * i1);
+                halfedges.swap(2 * i0 + 1, 2 * i1 + 1);
+            }
+
+            // remember new size
+            nE = edges.edeleted[Edge(i0)] ? i0 : i0 + 1;
+            nH = 2 * nE;
+        }
+
+        // update vertex connectivity
+        for (size_t i = 0; i < nV; ++i) {
+            auto v = Vertex(i);
+            if (!is_isolated(v))
+                set_halfedge(v, hmap[get_halfedge(v)]);
+        }
+
+        // update halfedge connectivity
+        for (size_t i = 0; i < nH; ++i) {
+            auto h = Halfedge(i);
+            set_vertex(h, vmap[get_vertex(h)]);
+            set_next(h, hmap[get_next(h)]);
+        }
+
+        // remove handle maps
+        vertices.remove_vertex_property(vmap);
+        halfedges.remove_halfedge_property(hmap);
+
+        // finally resize arrays
+        vertices.resize(nV);
+        vertices.free_memory();
+        halfedges.resize(nH);
+        halfedges.free_memory();
+        edges.resize(nE);
+        edges.free_memory();
+
+        vertices.deleted_vertices = edges.deleted_edges = halfedges.deleted_halfedges = 0;
+    }
 
     Vertex GraphInterface::split(Edge e, Vertex v) {
         Halfedge h = get_halfedge(e, 0);
@@ -220,6 +313,11 @@ namespace Bcg {
         return v;
     }
 
+    Vertex GraphInterface::split(Bcg::Edge e, ScalarType t) {
+        return split(e, add_vertex(
+                (1 - t) * vpoint[get_vertex(get_halfedge(e, 0))] + t * vpoint[get_vertex(get_halfedge(e, 1))]));
+    }
+
     Vertex GraphInterface::split(Edge e, PointType point) {
         return split(e, add_vertex(point));
     }
@@ -235,36 +333,27 @@ namespace Bcg {
 
         vpoint[v0] = p;
 
-        //TODO rename ccw_rotated_halfedge in the circulator to the correct function name...
-        for(auto h: get_halfedges(v1)){
-            if(get_vertex(h) == v1){
-                set_vertex(h, v0);
-            }
-        }
-
         Halfedge nh = get_next(h);
         Halfedge ph = get_prev(h);
-
-        Halfedge no = get_next(o);
-        Halfedge po = get_prev(o);
 
         set_next(ph, nh);
         set_prev(nh, ph);
 
+        Halfedge no = get_next(o);
+        Halfedge po = get_prev(o);
+
         set_next(po, no);
         set_prev(no, po);
+        set_halfedge(v0, nh);
 
-        set_vertex(h, v0);
-        set_vertex(o, v0);
+        vertices.vdeleted[v1] = true;
+        ++vertices.deleted_vertices;
 
-        set_next(h, Halfedge());
-        set_prev(h, Halfedge());
-        set_next(o, Halfedge());
-        set_prev(o, Halfedge());
-
+        edges.edeleted[e] = true;
         halfedges.hdeleted[h] = true;
         halfedges.hdeleted[o] = true;
 
+        ++edges.deleted_edges;
         ++halfedges.deleted_halfedges;
         ++halfedges.deleted_halfedges;
     }

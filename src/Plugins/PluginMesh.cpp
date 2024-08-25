@@ -141,7 +141,7 @@ namespace Bcg {
                 continue;
             }
 
-            auto h = mesh.halfedge(f);
+            auto h = mesh.get_halfedge(f);
             if (mesh.to_vertex(h) == mesh.to_vertex(mesh.next_halfedge(h)) ||
                 mesh.to_vertex(h) == mesh.to_vertex(mesh.next_halfedge(mesh.next_halfedge(h))) ||
                 mesh.to_vertex(mesh.next_halfedge(h)) == mesh.to_vertex(mesh.next_halfedge(mesh.next_halfedge(h)))) {

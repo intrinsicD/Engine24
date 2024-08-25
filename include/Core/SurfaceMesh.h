@@ -178,19 +178,19 @@ namespace Bcg {
 
         //! \return an outgoing halfedge of vertex \p v.
         //! if \p v is a boundary vertex this will be a boundary halfedge.
-        inline Halfedge halfedge(Vertex v) const { return vconn_[v].halfedge_; }
+        inline Halfedge get_halfedge(Vertex v) const { return vconn_[v].halfedge_; }
 
         //! set the outgoing halfedge of vertex \p v to \p h
         inline void set_halfedge(Vertex v, Halfedge h) { vconn_[v].halfedge_ = h; }
 
         //! \return whether \p v is a boundary vertex
         inline bool is_boundary(Vertex v) const {
-            Halfedge h(halfedge(v));
+            Halfedge h(get_halfedge(v));
             return (!(h.is_valid() && face(h).is_valid()));
         }
 
         //! \return whether \p v is isolated, i.e., not incident to any edge
-        inline bool is_isolated(Vertex v) const { return !halfedge(v).is_valid(); }
+        inline bool is_isolated(Vertex v) const { return !get_halfedge(v).is_valid(); }
 
         //! \return whether \p v is a manifold vertex (not incident to several patches)
         bool is_manifold(Vertex v) const {
@@ -254,14 +254,14 @@ namespace Bcg {
         //! \return the halfedge that is rotated counter-clockwise around the
         //! start vertex of \p h. it is the opposite halfedge of the previous
         //! halfedge of \p h.
-        inline Halfedge ccw_rotated_halfedge(Halfedge h) const {
+        inline Halfedge rotate_ccw(Halfedge h) const {
             return opposite_halfedge(prev_halfedge(h));
         }
 
         //! \return the halfedge that is rotated clockwise around the start
         //! vertex of \p h. it is the next halfedge of the opposite halfedge of
         //! \p h.
-        inline Halfedge cw_rotated_halfedge(Halfedge h) const {
+        inline Halfedge rotate_cw(Halfedge h) const {
             return next_halfedge(opposite_halfedge(h));
         }
 
@@ -273,7 +273,7 @@ namespace Bcg {
         inline bool is_boundary(Halfedge h) const { return !face(h).is_valid(); }
 
         //! \return the \p i'th halfedge of edge \p e. \p i has to be 0 or 1.
-        inline Halfedge halfedge(Edge e, unsigned int i) const {
+        inline Halfedge get_halfedge(Edge e, unsigned int i) const {
             assert(i <= 1);
             return Halfedge((e.idx() << 1) + i);
         }
@@ -281,30 +281,30 @@ namespace Bcg {
         //! \return the \p i'th vertex of edge \p e. \p i has to be 0 or 1.
         inline Vertex vertex(Edge e, unsigned int i) const {
             assert(i <= 1);
-            return to_vertex(halfedge(e, i));
+            return to_vertex(get_halfedge(e, i));
         }
 
         //! \return the face incident to the \p i'th halfedge of edge \p e. \p i has to be 0 or 1.
         inline Face face(Edge e, unsigned int i) const {
             assert(i <= 1);
-            return face(halfedge(e, i));
+            return face(get_halfedge(e, i));
         }
 
         //! \return whether \p e is a boundary edge, i.e., if one of its
         //! halfedges is a boundary halfedge.
         inline bool is_boundary(Edge e) const {
-            return (is_boundary(halfedge(e, 0)) || is_boundary(halfedge(e, 1)));
+            return (is_boundary(get_halfedge(e, 0)) || is_boundary(get_halfedge(e, 1)));
         }
 
         //! \return a halfedge of face \p f
-        inline Halfedge halfedge(Face f) const { return fconn_[f].halfedge_; }
+        inline Halfedge get_halfedge(Face f) const { return fconn_[f].halfedge_; }
 
         //! sets the halfedge of face \p f to \p h
         inline void set_halfedge(Face f, Halfedge h) { fconn_[f].halfedge_ = h; }
 
         //! \return whether \p f is a boundary face, i.e., it one of its edges is a boundary edge.
         bool is_boundary(Face f) const {
-            Halfedge h = halfedge(f);
+            Halfedge h = get_halfedge(f);
             Halfedge hh = h;
             do {
                 if (is_boundary(opposite_halfedge(h)))
@@ -586,7 +586,7 @@ namespace Bcg {
         //! \sa insert_vertex(Edge, Vertex)
         //! \sa insert_vertex(Halfedge, Vertex)
         inline Halfedge insert_vertex(Edge e, const PointType &p) {
-            return insert_vertex(halfedge(e, 0), add_vertex(p));
+            return insert_vertex(get_halfedge(e, 0), add_vertex(p));
         }
 
         //! Subdivide the edge \p e = (v0,v1) by splitting it into the two edge
@@ -595,7 +595,7 @@ namespace Bcg {
         //! that points to \p p. \sa insert_vertex(Edge, Point) \sa
         //! insert_vertex(Halfedge, Vertex)
         inline Halfedge insert_vertex(Edge e, Vertex v) {
-            return insert_vertex(halfedge(e, 0), v);
+            return insert_vertex(get_halfedge(e, 0), v);
         }
 
         //! Subdivide the halfedge \p h = (v0,v1) by splitting it into the two halfedges

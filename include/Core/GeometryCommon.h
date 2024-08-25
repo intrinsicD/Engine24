@@ -226,7 +226,7 @@ namespace Bcg {
         //! pre-increment (rotate counter-clockwise)
         VertexAroundVertexCirculatorBase &operator++() {
             assert(data__);
-            halfedge_ = data__->ccw_rotated_halfedge(halfedge_);
+            halfedge_ = data__->rotate_cw(halfedge_);
             is_active_ = true;
             return *this;
         }
@@ -241,7 +241,7 @@ namespace Bcg {
         //! pre-decrement (rotate clockwise)
         VertexAroundVertexCirculatorBase &operator--() {
             assert(data__);
-            halfedge_ = data__->cw_rotated_halfedge(halfedge_);
+            halfedge_ = data__->rotate_cw(halfedge_);
             return *this;
         }
 
@@ -317,7 +317,7 @@ namespace Bcg {
         //! pre-increment (rotate counter-clockwise)
         HalfedgeAroundVertexCirculatorBase &operator++() {
             assert(data__);
-            halfedge_ = data__->ccw_rotated_halfedge(halfedge_);
+            halfedge_ = data__->rotate_ccw(halfedge_);
             is_active_ = true;
             return *this;
         }
@@ -332,7 +332,7 @@ namespace Bcg {
         //! pre-decrement (rotate clockwise)
         HalfedgeAroundVertexCirculatorBase &operator--() {
             assert(data__);
-            halfedge_ = data__->cw_rotated_halfedge(halfedge_);
+            halfedge_ = data__->rotate_cw(halfedge_);
             return *this;
         }
 
@@ -384,7 +384,7 @@ namespace Bcg {
                                    Vertex v = Vertex())
                 : data__(data_) {
             if (data__)
-                halfedge_ = data__->halfedge(v);
+                halfedge_ = data__->get_halfedge(v);
         }
 
         //! are two circulators equal?
@@ -402,7 +402,7 @@ namespace Bcg {
         //! pre-increment (rotate counter-clockwise)
         EdgeAroundVertexCirculatorBase &operator++() {
             assert(data__);
-            halfedge_ = data__->ccw_rotated_halfedge(halfedge_);
+            halfedge_ = data__->crotate_cw(halfedge_);
             is_active_ = true;
             return *this;
         }
@@ -417,7 +417,7 @@ namespace Bcg {
         //! pre-decrement (rotate clockwise)
         EdgeAroundVertexCirculatorBase &operator--() {
             assert(data__);
-            halfedge_ = data__->cw_rotated_halfedge(halfedge_);
+            halfedge_ = data__->rotate_cw(halfedge_);
             return *this;
         }
 
@@ -469,7 +469,7 @@ namespace Bcg {
                                    Vertex v = Vertex())
                 : data__(m) {
             if (data__) {
-                halfedge_ = data__->halfedge(v);
+                halfedge_ = data__->get_halfedge(v);
                 if (halfedge_.is_valid() && data__->is_boundary(halfedge_))
                     operator++();
             }
@@ -491,7 +491,7 @@ namespace Bcg {
         FaceAroundVertexCirculatorBase &operator++() {
             assert(data__ && halfedge_.is_valid());
             do {
-                halfedge_ = data__->ccw_rotated_halfedge(halfedge_);
+                halfedge_ = data__->rotate_cw(halfedge_);
             } while (data__->is_boundary(halfedge_));
             is_active_ = true;
             return *this;
@@ -508,7 +508,7 @@ namespace Bcg {
         FaceAroundVertexCirculatorBase &operator--() {
             assert(data__ && halfedge_.is_valid());
             do
-                halfedge_ = data__->cw_rotated_halfedge(halfedge_);
+                halfedge_ = data__->rotate_cw(halfedge_);
             while (data__->is_boundary(halfedge_));
             return *this;
         }
@@ -564,7 +564,7 @@ namespace Bcg {
                                    Face f = Face())
                 : data__(m) {
             if (data__)
-                halfedge_ = data__->halfedge(f);
+                halfedge_ = data__->get_halfedge(f);
         }
 
         //! are two circulators equal?
@@ -649,7 +649,7 @@ namespace Bcg {
                                      Face f = Face())
                 : data__(m) {
             if (data__)
-                halfedge_ = data__->halfedge(f);
+                halfedge_ = data__->get_halfedge(f);
         }
 
         //! are two circulators equal?
