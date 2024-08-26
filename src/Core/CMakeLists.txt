@@ -8,6 +8,7 @@ target_sources(Engine24 PRIVATE
         EntityCommands.cpp
         FileWatcher.cpp
         GetPrimitives.cpp
+        Graph.cpp
         GraphInterface.cpp
         GLFWUtils.cpp
         HandleGlfwKeyEvents.cpp

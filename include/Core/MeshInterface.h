@@ -16,17 +16,22 @@ namespace Bcg {
         using VertexAroundFaceCirculator = VertexAroundFaceCirculatorBase<HalfedgeMeshInterface>;
         using HalfedgeAroundFaceCirculator = HalfedgeAroundFaceCirculatorBase<HalfedgeMeshInterface>;
 
-        explicit HalfedgeMeshInterface(MeshData &data) : vertices(data.vertices),
-                                                         halfedges(data.halfedges),
-                                                         edges(data.edges),
-                                                         faces(data.faces) {}
+        explicit HalfedgeMeshInterface(MeshData &data) : HalfedgeMeshInterface(data.vertices, data.halfedges,
+                                                                               data.edges, data.faces) {}
 
         HalfedgeMeshInterface(Vertices &vertices,
                               HalfEdges &halfEdges,
-                              Edges &edges, Faces &faces) : vertices(vertices),
-                                                            halfedges(halfEdges),
-                                                            edges(edges),
-                                                            faces(faces) {}
+                              Edges &edges, Faces &faces) :
+                vertices(vertices),
+                halfedges(halfEdges),
+                edges(edges),
+                faces(faces),
+                vpoint(vertices.get_vertex_property<PointType>("v:point")),
+                vconnectivity(vertices.get_vertex_property<Halfedge>("v:connectivity")),
+                hconnectivity(halfEdges.get_halfedge_property<HalfedgeConnectivity>("h:connectivity")),
+                fconnectivity(faces.get_face_property<Halfedge>("f:connectivity")),
+                fcolors(faces.get_face_property<ColorType>("f:color")),
+                fscalarfield(faces.get_face_property<ScalarType>("f:scalarfield")) {}
 
         Vertices &vertices;
         HalfEdges &halfedges;
@@ -56,6 +61,109 @@ namespace Bcg {
         FaceProperty<ColorType> fcolors;
         FaceProperty<ScalarType> fscalarfield;
 
+        template<class T>
+        inline VertexProperty<T> add_vertex_property(const std::string &name,
+                                                     const T t = T()) {
+            return VertexProperty<T>(vertices.add<T>(name, t));
+        }
+
+        template<class T>
+        inline VertexProperty<T> get_vertex_property(const std::string &name) const {
+            return VertexProperty<T>(vertices.get<T>(name));
+        }
+
+        template<class T>
+        inline VertexProperty<T> vertex_property(const std::string &name, const T t = T()) {
+            return VertexProperty<T>(vertices.get_or_add<T>(name, t));
+        }
+
+        template<class T>
+        inline void remove_vertex_property(VertexProperty<T> &p) {
+            vertices.remove(p);
+        }
+
+        inline bool has_vertex_property(const std::string &name) const {
+            return vertices.exists(name);
+        }
+
+        template<class T>
+        inline HalfedgeProperty<T> add_halfedge_property(const std::string &name,
+                                                         const T t = T()) {
+            return HalfedgeProperty<T>(halfedges.add<T>(name, t));
+        }
+
+        template<class T>
+        inline HalfedgeProperty<T> get_halfedge_property(const std::string &name) const {
+            return HalfedgeProperty<T>(halfedges.get<T>(name));
+        }
+
+
+        template<class T>
+        inline HalfedgeProperty<T> halfedge_property(const std::string &name, const T t = T()) {
+            return HalfedgeProperty<T>(halfedges.get_or_add<T>(name, t));
+        }
+
+        template<class T>
+        inline void remove_halfedge_property(HalfedgeProperty<T> &p) {
+            halfedges.remove(p);
+        }
+
+        inline bool has_halfedge_property(const std::string &name) const {
+            return halfedges.exists(name);
+        }
+
+
+        template<class T>
+        inline EdgeProperty<T> add_edge_property(const std::string &name,
+                                                 const T t = T()) {
+            return EdgeProperty<T>(edges.add<T>(name, t));
+        }
+
+        template<class T>
+        inline EdgeProperty<T> get_edge_property(const std::string &name) const {
+            return EdgeProperty<T>(edges.get<T>(name));
+        }
+
+
+        template<class T>
+        inline EdgeProperty<T> edge_property(const std::string &name, const T t = T()) {
+            return EdgeProperty<T>(edges.get_or_add<T>(name, t));
+        }
+
+        template<class T>
+        inline void remove_edge_property(EdgeProperty<T> &p) {
+            edges.remove(p);
+        }
+
+        inline bool has_edge_property(const std::string &name) const {
+            return edges.exists(name);
+        }
+
+        template<class T>
+        inline FaceProperty<T> add_face_property(const std::string &name,
+                                                 const T t = T()) {
+            return FaceProperty<T>(faces.add<T>(name, t));
+        }
+
+        template<class T>
+        inline FaceProperty<T> get_face_property(const std::string &name) const {
+            return FaceProperty<T>(faces.get<T>(name));
+        }
+
+        template<class T>
+        inline FaceProperty<T> face_property(const std::string &name, const T t = T()) {
+            return FaceProperty<T>(faces.get_or_add<T>(name, t));
+        }
+
+        template<class T>
+        inline void remove_face_property(FaceProperty<T> &p) {
+            faces.remove(p);
+        }
+
+        inline bool has_face_property(const std::string &name) const {
+            return faces.exists(name);
+        }
+
         void set_points(const std::vector<PointType> &points);
 
         void set_face_colors(const std::vector<ColorType> &colors);
@@ -63,6 +171,10 @@ namespace Bcg {
         void set_face_scalarfield(const std::vector<ScalarType> &fscalarfield);
 
         FaceProperty<Vector<IndexType, 3>> get_triangles() const;
+
+        void reserve(size_t n_vertices, size_t n_edges, size_t n_faces);
+
+        void resize(size_t n_vertices, size_t n_edges, size_t n_faces);
 
         Vertex add_vertex(const PointType &p);
 

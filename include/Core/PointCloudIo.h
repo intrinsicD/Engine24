@@ -6,6 +6,8 @@
 #define ENGINE24_POINTCLOUDIO_H
 
 #include "PointCloud.h"
+#include "PointCloudInterface.h"
+#include "GeometryData.h"
 
 namespace Bcg{
 
@@ -30,6 +32,23 @@ namespace Bcg{
     bool WritePts(const std::string &filepath, const PointCloud &pc, const PointCloudIOFlags &flags = PointCloudIOFlags());
 
     bool WriteXyz(const std::string &filepath, const PointCloud &pc, const PointCloudIOFlags &flags = PointCloudIOFlags());
+
+
+    bool Read(const std::string &filepath, PointCloudInterface &pci);
+
+    bool ReadCsv(const std::string &filepath, PointCloudInterface &pci);
+
+    bool ReadPts(const std::string &filepath, PointCloudInterface &pci);
+
+    bool ReadXyz(const std::string &filepath, PointCloudInterface &pci);
+
+    bool Write(const std::string &filepath, const PointCloudInterface &pci, const PointCloudIOFlags &flags = PointCloudIOFlags());
+
+    bool WriteCsv(const std::string &filepath, const PointCloudInterface &pci, const PointCloudIOFlags &flags = PointCloudIOFlags());
+
+    bool WritePts(const std::string &filepath, const PointCloudInterface &pci, const PointCloudIOFlags &flags = PointCloudIOFlags());
+
+    bool WriteXyz(const std::string &filepath, const PointCloudInterface &pci, const PointCloudIOFlags &flags = PointCloudIOFlags());
 }
 
 #endif //ENGINE24_POINTCLOUDIO_H

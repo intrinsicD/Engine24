@@ -21,7 +21,6 @@ namespace Bcg {
 
         inline bool is_deleted(Vertex v) const { return vdeleted[v]; }
 
-        //! \return whether vertex \p v is valid.
         inline bool is_valid(Vertex v) const { return (v.idx() < size()); }
 
         template<class T>
@@ -30,29 +29,21 @@ namespace Bcg {
             return VertexProperty<T>(add<T>(name, t));
         }
 
-        //! get the vertex property named \p name of type \p T. returns an
-        //! invalid VertexProperty if the property does not exist or if the
-        //! type does not match.
         template<class T>
         inline VertexProperty<T> get_vertex_property(const std::string &name) const {
             return VertexProperty<T>(get<T>(name));
         }
 
-        //! if a vertex property of type \p T with name \p name exists, it is
-        //! returned. otherwise this property is added (with default value \c
-        //! t)
         template<class T>
         inline VertexProperty<T> vertex_property(const std::string &name, const T t = T()) {
             return VertexProperty<T>(get_or_add<T>(name, t));
         }
 
-        //! remove the vertex property \p p
         template<class T>
         inline void remove_vertex_property(VertexProperty<T> &p) {
             remove(p);
         }
 
-        //! does the mesh have a vertex property with name \p name?
         inline bool has_vertex_property(const std::string &name) const {
             return exists(name);
         }
@@ -62,11 +53,19 @@ namespace Bcg {
         inline bool has_garbage() const { return has_garbage_; }
 
         inline VertexIterator begin() {
-            return VertexIterator(Vertex(0), this);
+            return {Vertex(0), this};
         }
 
         inline VertexIterator end() {
-            return VertexIterator(Vertex(size()), this);
+            return {Vertex(size()), this};
+        }
+
+        inline VertexIterator begin() const {
+            return {Vertex(0), this};
+        }
+
+        inline VertexIterator end() const {
+            return {Vertex(size()), this};
         }
     };
 
@@ -115,11 +114,19 @@ namespace Bcg {
         inline bool has_garbage() const { return has_garbage_; }
 
         inline HalfEdgeIterator begin() {
-            return HalfEdgeIterator(Halfedge(0), this);
+            return {Halfedge(0), this};
         }
 
         inline HalfEdgeIterator end() {
-            return HalfEdgeIterator(Halfedge(size()), this);
+            return {Halfedge(size()), this};
+        }
+
+        inline HalfEdgeIterator begin() const {
+            return {Halfedge(0), this};
+        }
+
+        inline HalfEdgeIterator end() const {
+            return {Halfedge(size()), this};
         }
     };
 
@@ -168,11 +175,19 @@ namespace Bcg {
         inline bool has_garbage() const { return has_garbage_; }
 
         inline EdgeIterator begin() {
-            return EdgeIterator(Edge(0), this);
+            return {Edge(0), this};
         }
 
         inline EdgeIterator end() {
-            return EdgeIterator(Edge(size()), this);
+            return {Edge(size()), this};
+        }
+
+        inline EdgeIterator begin() const {
+            return {Edge(0), this};
+        }
+
+        inline EdgeIterator end() const {
+            return {Edge(size()), this};
         }
     };
 
@@ -221,11 +236,19 @@ namespace Bcg {
         inline bool has_garbage() const { return has_garbage_; }
 
         inline FaceIterator begin() {
-            return FaceIterator(Face(0), this);
+            return {Face(0), this};
         }
 
         inline FaceIterator end() {
-            return FaceIterator(Face(size()), this);
+            return {Face(size()), this};
+        }
+
+        inline FaceIterator begin() const {
+            return {Face(0), this};
+        }
+
+        inline FaceIterator end() const {
+            return {Face(size()), this};
         }
     };
 

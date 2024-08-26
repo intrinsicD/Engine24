@@ -6,6 +6,8 @@
 #define ENGINE24_SURFACEMESHIO_H
 
 #include "SurfaceMesh.h"
+#include "MeshInterface.h"
+#include "GeometryData.h"
 
 
 namespace Bcg{
@@ -42,6 +44,30 @@ namespace Bcg{
     bool WriteStl(const std::string &filepath, const SurfaceMesh &mesh, const IOFlags &flags = IOFlags());
 
     bool WritePmp(const std::string &filepath, const SurfaceMesh &mesh, const IOFlags &flags = IOFlags());
+
+    bool Read(const std::string &filepath, HalfedgeMeshInterface &mesh);
+
+    bool ReadObj(const std::string &filepath, HalfedgeMeshInterface &mesh);
+
+    bool ReadOff(const std::string &filepath, HalfedgeMeshInterface &mesh);
+
+    bool ReadPly(const std::string &filepath, HalfedgeMeshInterface &mesh);
+
+    bool ReadStl(const std::string &filepath, HalfedgeMeshInterface &mesh);
+
+    bool ReadPmp(const std::string &filepath, HalfedgeMeshInterface &mesh);
+
+    bool Write(const std::string &filepath, const HalfedgeMeshInterface &mesh, const IOFlags &flags = IOFlags());
+
+    bool WriteObj(const std::string &filepath, const HalfedgeMeshInterface &mesh, const IOFlags &flags = IOFlags());
+
+    bool WriteOff(const std::string &filepath, const HalfedgeMeshInterface &mesh, const IOFlags &flags = IOFlags());
+
+    bool WritePly(const std::string &filepath, const HalfedgeMeshInterface &mesh, const IOFlags &flags = IOFlags());
+
+    bool WriteStl(const std::string &filepath, const HalfedgeMeshInterface &mesh, const IOFlags &flags = IOFlags());
+
+    bool WritePmp(const std::string &filepath, const HalfedgeMeshInterface &mesh, const IOFlags &flags = IOFlags());
 }
 
 #endif //ENGINE24_SURFACEMESHIO_H

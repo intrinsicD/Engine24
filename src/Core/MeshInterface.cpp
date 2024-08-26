@@ -42,6 +42,20 @@ namespace Bcg {
         return triangles;
     }
 
+    void HalfedgeMeshInterface::reserve(size_t n_vertices, size_t n_edges, size_t n_faces){
+        vertices.reserve(n_vertices);
+        halfedges.reserve(2 * n_edges);
+        edges.reserve(n_edges);
+        faces.reserve(n_faces);
+    }
+
+    void HalfedgeMeshInterface::resize(size_t n_vertices, size_t n_edges, size_t n_faces){
+        vertices.resize(n_vertices);
+        halfedges.resize(2 * n_edges);
+        edges.resize(n_edges);
+        faces.resize(n_faces);
+    }
+
     Vertex HalfedgeMeshInterface::add_vertex(const PointType &p) {
         Vertex v = new_vertex();
         if (v.is_valid())
