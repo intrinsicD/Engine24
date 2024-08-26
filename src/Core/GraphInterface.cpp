@@ -11,9 +11,7 @@ namespace Bcg {
             Log::Error("Number of points does not match number of vertices");
             return;
         }
-        if (!vpoint) {
-            vpoint = vertices.add_vertex_property<PointType>("v:point");
-        }
+        vpoint = vertices.vertex_property<PointType>("v:point");
         vpoint.vector() = points;
     }
 
@@ -22,9 +20,7 @@ namespace Bcg {
             Log::Error("Number of edge colors does not match number of edges");
             return;
         }
-        if (!ecolors) {
-            ecolors = edges.add_edge_property<PointType>("e:color");
-        }
+        ecolors = edges.edge_property<PointType>("e:color");
         ecolors.vector() = colors;
     }
 
@@ -33,9 +29,7 @@ namespace Bcg {
             Log::Error("Number of edge scalarfield does not match number of edges");
             return;
         }
-        if (!escalarfield) {
-            escalarfield = edges.add_edge_property<ScalarType>("e:scalarfield");
-        }
+        escalarfield = edges.edge_property<ScalarType>("e:scalarfield");
         escalarfield.vector() = scalarfield;
     }
 
@@ -192,7 +186,7 @@ namespace Bcg {
     }
 
     void GraphInterface::garbage_collection() {
-        if(!vertices.deleted_vertices && !edges.deleted_edges && !halfedges.deleted_halfedges) {
+        if (!vertices.deleted_vertices && !edges.deleted_edges && !halfedges.deleted_halfedges) {
             return;
         }
 

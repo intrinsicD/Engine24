@@ -8,46 +8,47 @@
 namespace Bcg {
     void PointCloudInterface::set_points(const std::vector<PointType> &points) {
         if (points.size() != vertices.size()) {
-            Log::Error("Number of points does not match number of vertices");
+            Log::Error("Size of points does not match Size of vertices");
             return;
         }
-        if (!vpoint) {
-            vpoint = vertices.add_vertex_property<PointType>("v:point");
-        }
+        vpoint = vertices.vertex_property<PointType>("v:point");
         vpoint.vector() = points;
     }
 
     void PointCloudInterface::set_normals(const std::vector<NormalType> &normals) {
         if (normals.size() != vertices.size()) {
-            Log::Error("Number of normals does not match number of vertices");
+            Log::Error("Size of normals does not match Size of vertices");
             return;
         }
-        if (!vnormal) {
-            vnormal = vertices.add_vertex_property<NormalType>("v:normal");
-        }
+        vnormal = vertices.vertex_property<NormalType>("v:normal");
         vnormal.vector() = normals;
     }
 
     void PointCloudInterface::set_colors(const std::vector<ColorType> &colors) {
         if (colors.size() != vertices.size()) {
-            Log::Error("Number of colors does not match number of vertices");
+            Log::Error("Size of colors does not match Size of vertices");
             return;
         }
-        if (!vcolor) {
-            vcolor = vertices.add_vertex_property<ColorType>("v:color");
-        }
+        vcolor = vertices.vertex_property<ColorType>("v:color");
         vcolor.vector() = colors;
     }
 
     void PointCloudInterface::set_scalarfield(const std::vector<ScalarType> &scalarfield) {
         if (scalarfield.size() != vertices.size()) {
-            Log::Error("Number of scalarfield does not match number of vertices");
+            Log::Error("Size of scalarfield does not match Size of vertices");
             return;
         }
-        if (!vcolor) {
-            vcolor = vertices.add_vertex_property<ColorType>("v:scalarfield");
-        }
+        vcolor = vertices.vertex_property<ColorType>("v:scalarfield");
         vscalarfield.vector() = scalarfield;
+    }
+
+    void PointCloudInterface::set_radii(const std::vector<ScalarType> &radii) {
+        if (radii.size() != vertices.size()) {
+            Log::Error("Size of radii does not match Size of vertices");
+            return;
+        }
+        vradius = vertices.vertex_property<ScalarType>("v:radius");
+        vradius.vector() = radii;
     }
 
     Vertex PointCloudInterface::new_vertex() {
@@ -58,17 +59,6 @@ namespace Bcg {
         }
         vertices.push_back();
         return Vertex(static_cast<IndexType>(vertices.size()) - 1);
-    }
-
-    void PointCloudInterface::set_radii(const std::vector<ScalarType> &radii) {
-        if (radii.size() != vertices.size()) {
-            Log::Error("Number of radii does not match number of vertices");
-            return;
-        }
-        if (!vradius) {
-            vradius = vertices.add_vertex_property<ScalarType>("v:radius");
-        }
-        vradius.vector() = radii;
     }
 
     Vertex PointCloudInterface::add_vertex(const PointType &p) {
@@ -85,7 +75,7 @@ namespace Bcg {
         auto nV = vertices.size();
 
         // setup handle mapping
-        VertexProperty<Vertex> vmap = vertices.add_vertex_property<Vertex>("v:garbage-collection");
+        VertexProperty <Vertex> vmap = vertices.add_vertex_property<Vertex>("v:garbage-collection");
 
         for (size_t i = 0; i < nV; ++i)
             vmap[Vertex(i)] = Vertex(i);

@@ -3,8 +3,44 @@
 //
 
 #include "MeshInterface.h"
+#include "Logger.h"
 
 namespace Bcg {
+    void HalfedgeMeshInterface::set_points(const std::vector<PointType> &points) {
+        if (points.size() != vertices.size()) {
+            Log::Error("Size of points does not match Size of vertices");
+            return;
+        }
+        vpoint = vertices.vertex_property<PointType>("v:point");
+        vpoint.vector() = points;
+    }
+
+    void HalfedgeMeshInterface::set_face_colors(const std::vector<ColorType> &colors) {
+        if (colors.size() != faces.size()) {
+            Log::Error("Size of colors does not match Size of vertices");
+            return;
+        }
+        fcolors = faces.face_property<ColorType>("f:color");
+        fcolors.vector() = colors;
+    }
+
+    void HalfedgeMeshInterface::set_face_scalarfield(const std::vector<ScalarType> &scalarfield) {
+        if (scalarfield.size() != faces.size()) {
+            Log::Error("Size of scalarfield does not match size of vertices");
+            return;
+        }
+        fscalarfield = faces.face_property<ScalarType>("f:scalarfield");
+        fscalarfield.vector() = scalarfield;
+    }
+
+    FaceProperty<Vector<IndexType, 3>> HalfedgeMeshInterface::get_triangles() const {
+        auto triangles = faces.face_property<Vector<IndexType, 3>>("f:triangles");
+        for (auto f: faces) {
+            auto h = get_halfedge(f);
+            triangles[f] = {to_vertex(h).idx(), to_vertex(next_halfedge(h)).idx(), to_vertex(prev_halfedge(h)).idx()};
+        }
+        return triangles;
+    }
 
     Vertex HalfedgeMeshInterface::add_vertex(const PointType &p) {
         Vertex v = new_vertex();

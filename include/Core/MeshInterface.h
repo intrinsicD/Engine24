@@ -34,7 +34,6 @@ namespace Bcg {
         Faces &faces;
 
         VertexProperty<PointType> vpoint;
-
         VertexProperty<Halfedge> vconnectivity;
 
         struct HalfedgeConnectivity {
@@ -54,17 +53,27 @@ namespace Bcg {
         HalfedgeProperty<HalfedgeConnectivity> hconnectivity;
 
         FaceProperty<Halfedge> fconnectivity;
-        
+        FaceProperty<ColorType> fcolors;
+        FaceProperty<ScalarType> fscalarfield;
+
+        void set_points(const std::vector<PointType> &points);
+
+        void set_face_colors(const std::vector<ColorType> &colors);
+
+        void set_face_scalarfield(const std::vector<ScalarType> &fscalarfield);
+
+        FaceProperty<Vector<IndexType, 3>> get_triangles() const;
+
         Vertex add_vertex(const PointType &p);
-        
+
         Face add_face(const std::vector<Vertex> &vertices);
-        
+
         Face add_triangle(Vertex v0, Vertex v1, Vertex v2);
-        
+
         Face add_quad(Vertex v0, Vertex v1, Vertex v2, Vertex v3);
-        
+
         void garbage_collection();
-        
+
         inline Halfedge get_halfedge(Vertex v) const { return vconnectivity[v]; }
 
         inline void set_halfedge(Vertex v, Halfedge h) { vconnectivity[v] = h; }
@@ -258,7 +267,7 @@ namespace Bcg {
         NextCache add_face_next_cache_;
     };
 
-    struct MeshOwning: public HalfedgeMeshInterface {
+    struct MeshOwning : public HalfedgeMeshInterface {
         MeshOwning() : HalfedgeMeshInterface(data) {}
 
     private:
