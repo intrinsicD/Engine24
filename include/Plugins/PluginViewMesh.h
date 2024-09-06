@@ -2,8 +2,8 @@
 // Created by alex on 04.08.24.
 //
 
-#ifndef ENGINE24_PLUGINMESHVIEW_H
-#define ENGINE24_PLUGINMESHVIEW_H
+#ifndef ENGINE24_PLUGINVIEWMESH_H
+#define ENGINE24_PLUGINVIEWMESH_H
 
 #include "Plugin.h"
 #include "Command.h"
@@ -11,9 +11,9 @@
 #include "MatVec.h"
 
 namespace Bcg {
-    class PluginMeshView : public Plugin {
+    class PluginViewMesh : public Plugin {
     public:
-        PluginMeshView() : Plugin("MeshView") {}
+        PluginViewMesh() : Plugin("ViewMesh") {}
 
         void activate() override;
 
@@ -118,4 +118,4 @@ namespace Bcg {
         };
     }
 }
-#endif //ENGINE24_PLUGINMESHVIEW_H
+#endif //ENGINE24_PLUGINVIEWMESH_H

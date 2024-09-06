@@ -14,9 +14,9 @@
 #include "PluginCamera.h"
 #include "PluginTransform.h"
 #include "PluginHierarchy.h"
-#include "PluginSphereView.h"
-#include "PluginMeshView.h"
-#include "PluginVectorfieldViews.h"
+#include "PluginViewSphere.h"
+#include "PluginViewMesh.h"
+#include "PluginViewVectorfields.h"
 #include "PluginSelection.h"
 #include "PluginGraphics.h"
 #include "PluginIcp.h"
@@ -37,9 +37,9 @@ namespace Bcg {
         add_plugin(std::make_unique<PluginFrameTimer>());
         add_plugin(std::make_unique<PluginTransform>());
         add_plugin(std::make_unique<PluginHierarchy>());
-        add_plugin(std::make_unique<PluginSphereView>());
-        add_plugin(std::make_unique<PluginMeshView>());
-        add_plugin(std::make_unique<PluginVectorfieldViews>());
+        add_plugin(std::make_unique<PluginViewSphere>());
+        add_plugin(std::make_unique<PluginViewMesh>());
+        add_plugin(std::make_unique<PluginViewVectorfields>());
         add_plugin(std::make_unique<PluginSelection>());
         add_plugin(std::make_unique<PluginIcp>());
     }

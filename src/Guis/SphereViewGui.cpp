@@ -7,7 +7,7 @@
 #include "imgui.h"
 #include "GetPrimitives.h"
 #include "GuiUtils.h"
-#include "PluginSphereView.h"
+#include "PluginViewSphere.h"
 
 namespace Bcg::Gui {
     void Show(SphereView &view) {

@@ -2,7 +2,7 @@
 // Created by alex on 02.08.24.
 //
 
-#include "PluginSphereView.h"
+#include "PluginViewSphere.h"
 #include "Engine.h"
 #include "imgui.h"
 #include "SphereViewGui.h"
@@ -35,32 +35,32 @@ namespace Bcg {
         }
     }
 
-    void PluginSphereView::activate() {
+    void PluginViewSphere::activate() {
         Plugin::activate();
         Engine::Dispatcher().sink<Events::Callback::MouseScroll>().connect<&on_mouse_scroll>();
     }
 
-    void PluginSphereView::begin_frame() {}
+    void PluginViewSphere::begin_frame() {}
 
-    void PluginSphereView::update() {}
+    void PluginViewSphere::update() {}
 
-    void PluginSphereView::end_frame() {}
+    void PluginViewSphere::end_frame() {}
 
-    void PluginSphereView::deactivate() {
+    void PluginViewSphere::deactivate() {
         Plugin::deactivate();
         Engine::Dispatcher().sink<Events::Callback::MouseScroll>().disconnect<&on_mouse_scroll>();
     }
 
     static bool show_gui = false;
 
-    void PluginSphereView::render_menu() {
+    void PluginViewSphere::render_menu() {
         if (ImGui::BeginMenu("Entity")) {
             ImGui::MenuItem("SphereView", nullptr, &show_gui);
             ImGui::EndMenu();
         }
     }
 
-    void PluginSphereView::render_gui() {
+    void PluginViewSphere::render_gui() {
         if (show_gui) {
             auto &picked = Engine::Context().get<Picked>();
             if (ImGui::Begin("SphereView", &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
@@ -70,7 +70,7 @@ namespace Bcg {
         }
     }
 
-    void PluginSphereView::render() {
+    void PluginViewSphere::render() {
         auto rendergroup = Engine::State().view<SphereView>();
         auto &camera = Engine::Context().get<Camera>();
         auto vp = PluginGraphics::get_viewport();

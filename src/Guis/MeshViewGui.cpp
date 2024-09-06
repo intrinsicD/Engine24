@@ -7,7 +7,7 @@
 #include "Engine.h"
 #include "Picker.h"
 #include "GetPrimitives.h"
-#include "PluginMeshView.h"
+#include "PluginViewMesh.h"
 
 namespace Bcg::Gui {
     void Show(MeshView &view) {

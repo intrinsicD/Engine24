@@ -8,7 +8,7 @@
 #include "imgui.h"
 #include "GetPrimitives.h"
 #include "GuiUtils.h"
-#include "PluginVectorfieldViews.h"
+#include "PluginViewVectorfields.h"
 
 namespace Bcg::Gui {
     void Show(VectorfieldView &view) {

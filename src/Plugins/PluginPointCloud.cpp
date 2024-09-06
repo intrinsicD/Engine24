@@ -26,7 +26,7 @@
 #include "Cuda/LocalGaussians.h"
 #include "Cuda/Hem.h"
 #include "Eigen/Eigenvalues"
-#include "PluginSphereView.h"
+#include "PluginViewSphere.h"
 
 namespace Bcg {
     namespace PluginPointCloudInternal {

@@ -2,17 +2,17 @@
 // Created by alex on 02.08.24.
 //
 
-#ifndef ENGINE24_PLUGINSPHEREVIEW_H
-#define ENGINE24_PLUGINSPHEREVIEW_H
+#ifndef ENGINE24_PLUGINVIEWSPHERE_H
+#define ENGINE24_PLUGINVIEWSPHERE_H
 
 #include "Plugin.h"
 #include "Command.h"
 #include "SphereView.h"
 
 namespace Bcg {
-    class PluginSphereView : public Plugin {
+    class PluginViewSphere : public Plugin {
     public:
-        PluginSphereView() : Plugin("SphereView") {}
+        PluginViewSphere() : Plugin("ViewSphere") {}
 
         void activate() override;
 
@@ -117,4 +117,4 @@ namespace Bcg {
     }
 }
 
-#endif //ENGINE24_PLUGINSPHEREVIEW_H
+#endif //ENGINE24_PLUGINVIEWSPHERE_H

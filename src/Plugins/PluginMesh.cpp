@@ -14,13 +14,13 @@
 #include "SurfaceMeshIo.h"
 #include "VertexArrayObject.h"
 #include "Picker.h"
-#include "PluginSphereView.h"
+#include "PluginViewSphere.h"
 #include "SurfaceMeshCompute.h"
 #include "PluginTransform.h"
 #include "PluginHierarchy.h"
 #include "PluginAABB.h"
 #include "PluginCamera.h"
-#include "PluginMeshView.h"
+#include "PluginViewMesh.h"
 
 namespace Bcg {
 

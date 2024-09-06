@@ -10,7 +10,7 @@
 #include "Picker.h"
 #include "EventsPicker.h"
 #include "GetPrimitives.h"
-#include "PluginSphereView.h"
+#include "PluginViewSphere.h"
 #include "PropertyEigenMap.h"
 
 namespace Bcg {

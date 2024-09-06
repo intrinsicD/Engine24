@@ -2,17 +2,17 @@
 // Created by alex on 05.08.24.
 //
 
-#ifndef ENGINE24_PLUGINVECTORFIELDVIEWS_H
-#define ENGINE24_PLUGINVECTORFIELDVIEWS_H
+#ifndef ENGINE24_PLUGINVIEWVECTORFIELDS_H
+#define ENGINE24_PLUGINVIEWVECTORFIELDS_H
 
 #include "Plugin.h"
 #include "Command.h"
 #include "VectorfieldView.h"
 
 namespace Bcg {
-    class PluginVectorfieldViews : public Plugin {
+    class PluginViewVectorfields : public Plugin {
     public:
-        PluginVectorfieldViews() : Plugin("PluginVectorfieldViews") {}
+        PluginViewVectorfields() : Plugin("ViewVectorfields") {}
 
         void activate() override;
 
@@ -112,4 +112,4 @@ namespace Bcg {
         };
     }
 }
-#endif //ENGINE24_PLUGINVECTORFIELDVIEWS_H
+#endif //ENGINE24_PLUGINVIEWVECTORFIELDS_H

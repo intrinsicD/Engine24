@@ -3,7 +3,7 @@
 //
 
 
-#include "PluginMeshView.h"
+#include "PluginViewMesh.h"
 #include "Engine.h"
 #include "imgui.h"
 #include "MeshViewGui.h"
@@ -34,32 +34,32 @@ namespace Bcg {
         openGlState.clear();
     }
 
-    void PluginMeshView::activate() {
+    void PluginViewMesh::activate() {
         Engine::Dispatcher().sink<Events::Entity::Destroy>().connect<&on_destroy>();
         Plugin::activate();
     }
 
-    void PluginMeshView::begin_frame() {}
+    void PluginViewMesh::begin_frame() {}
 
-    void PluginMeshView::update() {}
+    void PluginViewMesh::update() {}
 
-    void PluginMeshView::end_frame() {}
+    void PluginViewMesh::end_frame() {}
 
-    void PluginMeshView::deactivate() {
+    void PluginViewMesh::deactivate() {
         Engine::Dispatcher().sink<Events::Entity::Destroy>().disconnect<&on_destroy>();
         Plugin::deactivate();
     }
 
     static bool show_gui = false;
 
-    void PluginMeshView::render_menu() {
+    void PluginViewMesh::render_menu() {
         if (ImGui::BeginMenu("Entity")) {
             ImGui::MenuItem("MeshView", nullptr, &show_gui);
             ImGui::EndMenu();
         }
     }
 
-    void PluginMeshView::render_gui() {
+    void PluginViewMesh::render_gui() {
         if (show_gui) {
             auto &picked = Engine::Context().get<Picked>();
             if (ImGui::Begin("MeshView", &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
@@ -69,7 +69,7 @@ namespace Bcg {
         }
     }
 
-    void PluginMeshView::render() {
+    void PluginViewMesh::render() {
         auto rendergroup = Engine::State().view<MeshView>();
         auto &camera = Engine::Context().get<Camera>();
         for (auto entity_id: rendergroup) {

@@ -92,4 +92,22 @@ namespace Bcg {
     void PluginTransform::render() {
 
     }
+
+    namespace Commands {
+        void Setup<Transform>::execute() const {
+            PluginTransform::setup(entity_id);
+        }
+
+        void Cleanup<Transform>::execute() const {
+            PluginTransform::cleanup(entity_id);
+        }
+
+        void SetIdentityTransform::execute() const {
+            if (!Engine::valid(entity_id)) { return; }
+            if (!Engine::has<Transform>(entity_id)) { return; }
+            Engine::State().get<Transform>(entity_id).set_local_identity();
+
+            PluginHierarchy::mark_transforms_dirty(entity_id);
+        }
+    }
 }

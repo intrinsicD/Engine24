@@ -2,7 +2,7 @@
 // Created by alex on 05.08.24.
 //
 
-#include "PluginVectorfieldViews.h"
+#include "PluginViewVectorfields.h"
 #include "Engine.h"
 #include "imgui.h"
 #include "VectorfieldViewGui.h"
@@ -17,30 +17,30 @@
 #include <numeric>
 
 namespace Bcg {
-    void PluginVectorfieldViews::activate() {
+    void PluginViewVectorfields::activate() {
         Plugin::activate();
     }
 
-    void PluginVectorfieldViews::begin_frame() {}
+    void PluginViewVectorfields::begin_frame() {}
 
-    void PluginVectorfieldViews::update() {}
+    void PluginViewVectorfields::update() {}
 
-    void PluginVectorfieldViews::end_frame() {}
+    void PluginViewVectorfields::end_frame() {}
 
-    void PluginVectorfieldViews::deactivate() {
+    void PluginViewVectorfields::deactivate() {
         Plugin::deactivate();
     }
 
     static bool show_gui = false;
 
-    void PluginVectorfieldViews::render_menu() {
+    void PluginViewVectorfields::render_menu() {
         if (ImGui::BeginMenu("Entity")) {
             ImGui::MenuItem("VectorfieldViews", nullptr, &show_gui);
             ImGui::EndMenu();
         }
     }
 
-    void PluginVectorfieldViews::render_gui() {
+    void PluginViewVectorfields::render_gui() {
         if (show_gui) {
             auto &picked = Engine::Context().get<Picked>();
             if (ImGui::Begin("VectorfieldViews", &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
@@ -50,7 +50,7 @@ namespace Bcg {
         }
     }
 
-    void PluginVectorfieldViews::render() {
+    void PluginViewVectorfields::render() {
         auto rendergroup = Engine::State().view<VectorfieldViews>();
         auto &camera = Engine::Context().get<Camera>();
         auto vp = PluginGraphics::get_viewport();
