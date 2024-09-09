@@ -13,9 +13,7 @@ namespace Bcg {
 
     class PluginIcp : public Plugin {
     public:
-        PluginIcp() : Plugin("ICP") {
-
-        }
+        PluginIcp();
 
         ~PluginIcp() override = default;
 

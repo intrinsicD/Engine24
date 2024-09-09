@@ -12,8 +12,25 @@ namespace Bcg {
     template<typename T>
     struct AABBbase {
         using Scalar = T;
-        Vector<Scalar, 3> min = Vector<Scalar, 3>::Constant(std::numeric_limits<Scalar>::max());
-        Vector<Scalar, 3> max = Vector<Scalar, 3>::Constant(-std::numeric_limits<Scalar>::max());
+        Vector<Scalar, 3> min;
+        Vector<Scalar, 3> max;
+
+        AABBbase() : min(Vector<Scalar, 3>::Constant(std::numeric_limits<Scalar>::max())),
+                     max(Vector<Scalar, 3>::Constant(-std::numeric_limits<Scalar>::max())) {}
+
+        template<typename InputIterator>
+        AABBbase(InputIterator first, InputIterator last) {
+            for (auto it = first; it != last; ++it) {
+                grow(*it);
+            }
+        }
+
+        explicit AABBbase(const std::vector<Vector<Scalar, 3>> &points) : AABBbase(points.begin(), points.end()) {}
+
+        inline void grow(const Vector<Scalar, 3> &point) {
+            min = min.cwiseMin(point);
+            max = max.cwiseMax(point);
+        }
 
         Vector<Scalar, 3> diagonal() const {
             return max - min;

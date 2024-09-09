@@ -7,6 +7,10 @@
 #include "GuiUtils.h"
 
 namespace Bcg {
+    PluginIcp::PluginIcp() : Plugin("ICP") {
+
+    }
+
     void PluginIcp::activate() {
         Plugin::activate();
     }
