@@ -5,7 +5,7 @@
 #ifndef ENGINE24_AABBGUI_H
 #define ENGINE24_AABBGUI_H
 
-#include "AABB.h"
+#include "AABBStruct.h"
 #include "entt/fwd.hpp"
 
 namespace Bcg::Gui {

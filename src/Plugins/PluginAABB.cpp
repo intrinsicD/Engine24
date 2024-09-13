@@ -83,9 +83,9 @@ namespace Bcg {
             return;
         }
 
-        auto &aabb = Engine::require<AABB>(entity_id);
+        auto &aabb = Engine::State().get_or_emplace<AABB>(entity_id);
         Engine::Dispatcher().trigger(Events::Entity::PreAdd<AABB>{entity_id});
-        Build(aabb, positions.vector());
+        aabb = AABB(positions.vector());
         Engine::Dispatcher().trigger(Events::Entity::PostAdd<AABB>{entity_id});
         Log::Info("{} for entity {}", name, entity_id);
     }

@@ -7,17 +7,28 @@
 
 namespace Bcg::Gui{
     void Show(Camera &camera) {
-        if (ImGui::InputFloat3("v_params.center", camera.v_params.center.data())) {
-            camera.view = look_at_matrix(camera.v_params.eye, camera.v_params.center, camera.v_params.up);
-            camera.v_params.dirty = true;
+        bool changed_view = false;
+        Vector<float, 3> center = camera.v_params.center();
+        if (ImGui::InputFloat3("v_params.center", center.data())) {
+            changed_view = true;
+            camera.v_params.set_center(center);
         }
-        if (ImGui::InputFloat3("v_params.eye", camera.v_params.eye.data())) {
-            camera.view = look_at_matrix(camera.v_params.eye, camera.v_params.center, camera.v_params.up);
-            camera.v_params.dirty = true;
+
+        Vector<float, 3> eye = camera.v_params.eye();
+        if (ImGui::InputFloat3("v_params.eye", eye.data())) {
+            changed_view = true;
+            camera.v_params.set_eye(eye);
         }
-        if (ImGui::InputFloat3("v_params.up", camera.v_params.up.data())) {
-            camera.view = look_at_matrix(camera.v_params.eye, camera.v_params.center, camera.v_params.up);
-            camera.v_params.dirty = true;
+
+        Vector<float, 3> up = camera.v_params.up();
+        if (ImGui::InputFloat3("v_params.up", up.data())) {
+            changed_view = true;
+            camera.v_params.set_up(up);
+        }
+
+        if(changed_view){
+            camera.dirty_view = true;
+            camera.view = look_at_matrix(camera.v_params.eye(), camera.v_params.center(), camera.v_params.up());
         }
 
         static int projection_type = 0;
@@ -61,11 +72,11 @@ namespace Bcg::Gui{
         ss << camera.proj;
         ImGui::Text("ProjectionMatrix\n%s", ss.str().c_str());
         if (ImGui::Button("Reset Camera")) {
-            camera.v_params = ViewParameters();
+            camera.v_params = ViewParameters<float>();
             camera.p_params = PerspParameters();
             camera.o_params = OrthoParameters();
             camera.proj_type = Camera::ProjectionType::PERSPECTIVE;
-            camera.view = look_at_matrix(camera.v_params.eye, camera.v_params.center, camera.v_params.up);
+            camera.view = look_at_matrix(camera.v_params.eye(), camera.v_params.center(), camera.v_params.up());
             camera.proj = perspective_matrix(camera.p_params.fovy, camera.p_params.aspect,
                                              camera.p_params.zNear,
                                              camera.p_params.zFar);

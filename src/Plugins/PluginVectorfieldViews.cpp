@@ -11,7 +11,7 @@
 #include "PluginGraphics.h"
 #include "Transform.h"
 #include "GetPrimitives.h"
-#include "AABB.h"
+#include "AABBStruct.h"
 #include "PropertyEigenMap.h"
 #include "OpenGLState.h"
 #include <numeric>

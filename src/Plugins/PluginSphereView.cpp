@@ -88,7 +88,7 @@ namespace Bcg {
             view.program.set_uniform1f("max_color", view.max_color);
             view.program.set_uniform1i("use_uniform_color", view.use_uniform_color);
             view.program.set_uniform3fv("uniform_color", view.uniform_color.data());
-            view.program.set_uniform3fv("light_position", camera.v_params.eye.data());
+            view.program.set_uniform3fv("light_position", camera.v_params.eye().data());
 
             if (Engine::has<Transform>(entity_id)) {
                 auto &transform = Engine::State().get<Transform>(entity_id);

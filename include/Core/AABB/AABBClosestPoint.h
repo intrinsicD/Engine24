@@ -5,21 +5,17 @@
 #ifndef ENGINE24_AABBCLOSESTPOINT_H
 #define ENGINE24_AABBCLOSESTPOINT_H
 
-#include "AABB.h"
+#include "AABBStruct.h"
 
-namespace Bcg{
+namespace Bcg {
     template<typename T, int N>
-    Vector<T, N> ClosestPoint(const AABBbase<T> &aabb, const Vector<T, N> &point) {
-        Vector<T, N> result;
-        for (size_t i = 0; i < N; ++i) {
-            result[i] = std::clamp(point[i], aabb.min[i], aabb.max[i]);
-        }
-        return result;
+    inline Vector<T, N> AABBClosestPoint(const Vector<T, N> &min, const Vector<T, N> &max, const Vector<T, N> &point) {
+        return point.cwiseMax(min).cwiseMin(max);
     }
 
-    template<typename T>
-    inline Vector<T, 3> ClosestPoint(const AABBbase<T> &aabb, const Vector<T, 3> &point) {
-        return point.cwiseMax(aabb.min).cwiseMin(aabb.max);
+    template<typename T, int N>
+    inline Vector<T, N> ClosestPoint(const AABBStruct<T, N> &aabb, const Vector<T, N> &point) {
+        return AABBClosestPoint(aabb.min, aabb.max, point);
     }
 }
 

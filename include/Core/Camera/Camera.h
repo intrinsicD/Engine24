@@ -7,55 +7,11 @@
 
 #include "RigidTransform.h"
 #include "Buffer.h"
+#include "ViewMatrix.h"
 
 namespace Bcg {
 
-    struct ViewParameters {
-        Vector<float, 3> eye = {0.0, 0.0, 3.0};
-        Vector<float, 3> center = {0.0, 0.0, 0.0};
-        Vector<float, 3> up = {0.0, 1.0, 0.0};
-        bool dirty = false;
 
-        inline Vector<float, 3> front() const {
-            return (center - eye).normalized();
-        }
-
-        inline Vector<float, 3> right() const {
-            return right(front());
-        }
-
-        inline Vector<float, 3> right(const Vector<float, 3> &front_) const {
-            return cross(front_, up).normalized();
-        }
-
-        inline float distance_to_center() const {
-            return (center - eye).norm();
-        }
-    };
-
-    class ViewMatrix : public RigidTransform {
-    public:
-        explicit ViewMatrix(const RigidTransform &model) : RigidTransform(model.inverse().matrix()) {
-
-        }
-
-        explicit ViewMatrix(const ViewParameters &params) : ViewMatrix(params.eye, params.center, params.up) {
-
-        }
-
-        explicit ViewMatrix(const Vector<float, 3> &eye, const Vector<float, 3> &center, const Vector<float, 3> &up) {
-            RigidTransform t = RigidTransform::Identity();
-            t.SetUp(up.normalized());
-            t.SetDir((center - eye).normalized());
-            t.SetRight(t.Up().cross(t.Dir()));
-            t.SetPosition(-eye);
-            m_matrix = t.matrix();
-        }
-
-        [[nodiscard]] RigidTransform model() const {
-            return RigidTransform(m_matrix.inverse().eval());
-        }
-    };
 
     struct PerspParameters {
         float fovy = 45.0f;
@@ -137,12 +93,11 @@ namespace Bcg {
     public:
         Camera() : p_params(), o_params(), v_params() {
             p_params.dirty = true;
-            v_params.dirty = true;
         }
 
         PerspParameters p_params;
         OrthoParameters o_params;
-        ViewParameters v_params;
+        ViewParameters<float> v_params;
 
         enum class ProjectionType {
             PERSPECTIVE, ORTHOGRAPHIC

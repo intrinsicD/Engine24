@@ -14,7 +14,7 @@
 #include "PluginGraphics.h"
 #include "PluginFrameTimer.h"
 #include "Logger.h"
-#include "AABB.h"
+#include "AABBStruct.h"
 #include "Eigen/Geometry"
 #include "CameraGui.h"
 
@@ -40,9 +40,9 @@ namespace Bcg {
 
     void PluginCamera::transform(Camera &camera, const Matrix<float, 4, 4> &transformation) {
         auto &v_params = camera.v_params;
-        v_params.eye = (transformation * v_params.eye.homogeneous()).head<3>();
-        v_params.center = (transformation * v_params.center.homogeneous()).head<3>();
-        v_params.up = transformation.block<3, 3>(0, 0) * v_params.up;
+        v_params.set_eye((transformation * v_params.eye().homogeneous()).head<3>());
+        v_params.set_center((transformation * v_params.center().homogeneous()).head<3>());
+        v_params.set_up(transformation.block<3, 3>(0, 0) * v_params.up());
     }
 
     static Vector<int, 2> last_point_2d_;
@@ -73,7 +73,7 @@ namespace Bcg {
     static void rotate(Camera &camera, const Vector<float, 3> &axis, float angle) {
         // center in eye coordinates
 
-        Vector<float, 4> ec = camera.view * camera.v_params.center.homogeneous();
+        Vector<float, 4> ec = camera.view * camera.v_params.center().homogeneous();
         Vector<float, 3> c(ec[0] / ec[3], ec[1] / ec[3], ec[2] / ec[3]);
         Matrix<float, 4, 4> center_matrix = translation_matrix(c);
         Matrix<float, 4, 4> rot_matrix = rotation_matrix(axis, angle);
@@ -81,8 +81,8 @@ namespace Bcg {
         camera.view = center_matrix * rot_matrix * center_matrix.inverse() * camera.view;
         Matrix<float, 4, 4> inv_view = camera.view.inverse();
         camera.dirty_view = true;
-        camera.v_params.eye = inv_view.block<3, 1>(0, 3);
-        camera.v_params.up = inv_view.block<3, 1>(0, 1);
+        camera.v_params.set_eye(inv_view.block<3, 1>(0, 3));
+        camera.v_params.set_up(inv_view.block<3, 1>(0, 1));
     }
 
     static void rotation(Camera &camera, int x, int y) {
@@ -107,9 +107,8 @@ namespace Bcg {
     }
 
     static void translate(Camera &camera, const Vector<float, 3> &t) {
-        camera.v_params.eye = (translation_matrix(t) * camera.v_params.eye.homogeneous()).head<3>();
-        camera.v_params.center = (translation_matrix(t) * camera.v_params.center.homogeneous()).head<3>();
-        camera.v_params.dirty = true;
+        camera.v_params.set_eye((translation_matrix(t) * camera.v_params.eye().homogeneous()).head<3>());
+        camera.v_params.set_center((translation_matrix(t) * camera.v_params.center().homogeneous()).head<3>());
     }
 
     static void translate(Camera &camera, int x, int y) {
@@ -118,10 +117,10 @@ namespace Bcg {
 
         //translate the camera in worldspace in the image plane
         Vector<float, 3> front = camera.v_params.front();
-        Vector<float, 3> right = camera.v_params.right(front);
-        Vector<float, 3> up = camera.v_params.up;
-        Vector<float, 3> center = camera.v_params.center;
-        Vector<float, 3> eye = camera.v_params.eye;
+        Vector<float, 3> right = camera.v_params.compute_right(front);
+        Vector<float, 3> up = camera.v_params.up();
+        Vector<float, 3> center = camera.v_params.center();
+        Vector<float, 3> eye = camera.v_params.eye();
 
         float distance_to_scene = (center - eye).norm();
         // Project the change in screen coordinates to world coordinates
@@ -140,9 +139,8 @@ namespace Bcg {
 
         // Translate the camera in world space
         Vector<float, 3> translation = up * world_dy - right * world_dx;
-        camera.v_params.center += translation;
-        camera.v_params.eye += translation;
-        camera.v_params.dirty = true;
+        camera.v_params.set_center(center + translation);
+        camera.v_params.set_eye(eye + translation);
 
         // Update the last_point_2d_ to the current cursor position
         last_point_2d_[0] = x;
@@ -187,12 +185,11 @@ namespace Bcg {
             auto &camera = Engine::Context().get<Camera>();
             Vector<float, 3> front = camera.v_params.front();
             float d = camera.v_params.distance_to_center();
-            camera.v_params.center = picked.spaces.wsp;
-            camera.v_params.eye = camera.v_params.center - front * d;
-            camera.v_params.dirty = true;
-            Log::Info("Focus onto: (" + std::to_string(camera.v_params.center[0]) + ", " +
-                      std::to_string(camera.v_params.center[1]) + ", " + std::to_string(camera.v_params.center[2]) +
-                      ")");
+            camera.v_params.set_center(picked.spaces.wsp);
+            camera.v_params.set_eye(camera.v_params.center() - front * d);
+
+            Vector<float, 3> center = camera.v_params.center();
+            Log::Info("Focus onto: {} {} {}", center[0], center[1], center[2]);
         }
     }
 
@@ -204,12 +201,11 @@ namespace Bcg {
                 auto &aabb = Engine::State().get<AABB>(picked.entity.id);
                 float d = aabb.diagonal().maxCoeff() / tan(camera.p_params.fovy / 2.0);
                 Vector<float, 3> front = camera.v_params.front();
-                camera.v_params.center = aabb.center();
-                camera.v_params.eye = camera.v_params.center - front * d;
-                camera.v_params.dirty = true;
-                Log::Info("Center onto: (" + std::to_string(camera.v_params.center[0]) + ", " +
-                          std::to_string(camera.v_params.center[1]) + ", " + std::to_string(camera.v_params.center[2]) +
-                          ")");
+                camera.v_params.set_center(aabb.center());
+                camera.v_params.set_eye(camera.v_params.center() - front * d);
+
+                Vector<float, 3> center = camera.v_params.center();
+                Log::Info("Center onto: {} {} {}", center[0], center[1], center[2]);
             }
         }
     }
@@ -253,20 +249,16 @@ namespace Bcg {
         Vector<float, 3> front = camera.v_params.front();
         if (keyboard.w()) {
             translate(camera, front * dt);
-            camera.v_params.dirty = true;
         }
         if (keyboard.s()) {
             translate(camera, -front * dt);
-            camera.v_params.dirty = true;
         }
-        Vector<float, 3> right = camera.v_params.right(front);
+        Vector<float, 3> right = camera.v_params.compute_right(front);
         if (keyboard.a()) {
             translate(camera, -right * dt);
-            camera.v_params.dirty = true;
         }
         if (keyboard.d()) {
             translate(camera, right * dt);
-            camera.v_params.dirty = true;
         }
     }
 
@@ -274,9 +266,8 @@ namespace Bcg {
         auto &camera = Engine::Context().get<Camera>();
         auto &ubo = Engine::Context().get<CameraUniformBuffer>();
 
-        if (camera.v_params.dirty) {
-            camera.view = look_at_matrix(camera.v_params.eye, camera.v_params.center, camera.v_params.up);
-            camera.v_params.dirty = false;
+        if (camera.v_params.is_dirty()) {
+            camera.view = look_at_matrix(camera.v_params.eye(), camera.v_params.center(), camera.v_params.up());
             camera.dirty_view = true;
         }
         if (camera.proj_type == Camera::ProjectionType::PERSPECTIVE) {
@@ -348,14 +339,13 @@ namespace Bcg {
 
     }
 
-    namespace Commands{
+    namespace Commands {
         void CenterCameraAtDistance::execute() const {
             auto &camera = Engine::Context().get<Camera>();
 
             Vector<float, 3> front = camera.v_params.front();
-            camera.v_params.center = center;
-            camera.v_params.eye = camera.v_params.center - front * distance / tan(camera.p_params.fovy / 2.0);
-            camera.v_params.dirty = true;
+            camera.v_params.set_center(center);
+            camera.v_params.set_eye(camera.v_params.center() - front * distance / tan(camera.p_params.fovy / 2.0));
 
             FitNearAndFarToDistance(distance).execute();
         }

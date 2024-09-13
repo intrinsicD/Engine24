@@ -3,11 +3,12 @@
 //
 
 #include "OBB.h"
+#include "AABBClosestPoint.h"
 
 namespace Bcg{
     Vector<float, 3> ClosestPoint(const OBB &obb, const Vector<float, 3> &point) {
         Vector<float, 3> local_point = obb.orientation.matrix().inverse() * (point - obb.center);
-        Vector<float, 3> closest = AABB::closest_point(-obb.half_extent, obb.half_extent, local_point);
+        Vector<float, 3> closest = AABBClosestPoint<float, 3>(-obb.half_extent, obb.half_extent, local_point);
         return obb.orientation.matrix() * closest + obb.center;
     }
 

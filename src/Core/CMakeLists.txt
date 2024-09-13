@@ -1,5 +1,4 @@
 target_sources(Engine24 PRIVATE
-        AABB.cpp
         Color.cpp
         CommandBuffer.cpp
         CoordinateSystems.cpp

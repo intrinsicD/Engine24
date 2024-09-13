@@ -6,7 +6,7 @@
 #define ENGINE24_OBB_H
 
 #include "Rotation.h"
-#include "AABB.h"
+#include "AABBStruct.h"
 
 namespace Bcg {
     template<typename T>

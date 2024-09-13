@@ -6,7 +6,7 @@
 #define ENGINE24_INTERSECTIONS_H
 
 #include "Frustum.h"
-#include "AABB.h"
+#include "AABBStruct.h"
 #include "Line.h"
 #include "OBB.h"
 #include "Sphere.h"
