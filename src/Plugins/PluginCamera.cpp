@@ -5,6 +5,7 @@
 #include "PluginCamera.h"
 #include "imgui.h"
 #include "Engine.h"
+#include "Entity.h"
 #include "Keyboard.h"
 #include "EventsCallbacks.h"
 #include "EventsKeys.h"

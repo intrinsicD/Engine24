@@ -8,7 +8,14 @@
 #include <string>
 
 namespace Bcg::cuda{
-    bool CudaCheckErrorAndSync(const std::string &func_name = "");
+
+    enum class CudaError {
+        None,
+        FailedKernelLaunch,
+        FailedSynchronisation
+    };
+
+    CudaError CudaCheckErrorAndSync();
 }
 
 #endif //ENGINE24_CUDACOMMON_CUH

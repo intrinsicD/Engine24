@@ -2,15 +2,17 @@
 // Created by alex on 18.06.24.
 //
 
-#include "PluginSurfaceMesh.h"
 #include <unordered_map>
+#include <chrono>
+
+#include "PluginSurfaceMesh.h"
 #include "imgui.h"
 #include "ImGuiFileDialog.h"
 #include "Engine.h"
+#include "Entity.h"
 #include "EventsCallbacks.h"
 #include "EventsEntity.h"
 #include "MeshGui.h"
-#include <chrono>
 #include "SurfaceMeshIo.h"
 #include "VertexArrayObject.h"
 #include "Picker.h"

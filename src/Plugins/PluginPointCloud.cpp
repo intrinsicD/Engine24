@@ -3,15 +3,17 @@
 //
 
 
+#include <chrono>
+
 #include "PluginPointCloud.h"
 #include "Logger.h"
 #include "imgui.h"
 #include "ImGuiFileDialog.h"
 #include "Engine.h"
+#include "Entity.h"
 #include "EventsCallbacks.h"
 #include "EventsEntity.h"
 #include "PointCloudGui.h"
-#include <chrono>
 #include "PointCloud.h"
 #include "PointCloudIo.h"
 #include "Picker.h"

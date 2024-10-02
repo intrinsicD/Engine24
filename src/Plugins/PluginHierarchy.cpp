@@ -5,6 +5,7 @@
 #include "PluginHierarchy.h"
 #include "HierarchyGui.h"
 #include "Engine.h"
+#include "Entity.h"
 #include "Transform.h"
 #include "Logger.h"
 #include "Picker.h"

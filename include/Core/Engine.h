@@ -7,7 +7,6 @@
 
 #include "entt/entity/registry.hpp"
 #include "entt/signal/dispatcher.hpp"
-#include "Entity.h"
 
 namespace Bcg {
     struct Engine {

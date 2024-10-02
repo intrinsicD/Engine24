@@ -5,6 +5,7 @@
 #include "PluginTransform.h"
 #include "imgui.h"
 #include "Engine.h"
+#include "Entity.h"
 #include "EventsGui.h"
 #include "Picker.h"
 #include "RigidTransformGui.h"

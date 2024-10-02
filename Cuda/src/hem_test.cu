@@ -8,7 +8,6 @@
 #include "math.cuh"
 #include "vec_operations.cuh"
 #include "gaussian.cuh"
-#include "Logger.h"
 #include <float.h>
 #include <thrust/random.h>
 #include <thrust/gather.h>

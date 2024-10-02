@@ -4,6 +4,7 @@
 
 #include "PluginAABB.h"
 #include "Engine.h"
+#include "Entity.h"
 #include "AABBGui.h"
 #include "Picker.h"
 #include "imgui.h"

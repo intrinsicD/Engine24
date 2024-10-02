@@ -3,36 +3,31 @@
 //
 
 #include <cuda_runtime_api.h>
-
 #include "CudaCommon.cuh"
-#include "Logger.h"
 
 namespace Bcg::cuda {
     __global__ void kernel() {
         printf("Hello from CUDA Device!\n");
     }
 
-    void HelloFromCudaDevice() {
+    CudaError HelloFromCudaDevice() {
         kernel<<<1, 1>>>();
-        if (CudaCheckErrorAndSync(__func__)) {
-            Log::Info("CUDA kernel " + std::string(__func__) + " executed successfully.");
-        }
+        return CudaCheckErrorAndSync();
     }
 
-    bool CudaCheckErrorAndSync(const std::string &func_name) {
+    CudaError CudaCheckErrorAndSync() {
         // Check for any errors launching the kernel
         cudaError_t err = cudaGetLastError();
         if (err != cudaSuccess) {
-            Log::Error("Failed to launch kernel: " + func_name + " " + std::string(cudaGetErrorString(err)));
-            return false;
+            return CudaError::FailedKernelLaunch;
         }
 
         // Synchronize device
         err = cudaDeviceSynchronize();
         if (err != cudaSuccess) {
-            Log::Error("Failed to synchronize: " + func_name + "  " + std::string(cudaGetErrorString(err)));
-            return false;
+            //Log::Error("Failed to synchronize: " + func_name + "  " + std::string(cudaGetErrorString(err)));
+            return CudaError::FailedSynchronisation;
         }
-        return true;
+        return CudaError::None;
     }
 }

@@ -6,7 +6,6 @@
 #include "lbvh.cuh"
 #include "bvh_device.cuh"
 #include "Engine.h"
-#include "Logger.h"
 
 #include <vector>
 
