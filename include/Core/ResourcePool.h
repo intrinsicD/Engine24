@@ -13,29 +13,29 @@ namespace Bcg {
     template<typename T>
     class ResourcePool {
     public:
-        explicit ResourcePool(unsigned int capacity = 100) : capacity_(capacity),
-                                                             resources_(capacity),
-                                                             deleted_(capacity, true) {
+        explicit ResourcePool(unsigned int capacity = 100) : m_capacity(capacity),
+                                                             m_resources(capacity),
+                                                             m_deleted(capacity, true) {
             for (unsigned int i = 0; i < capacity; ++i) {
-                free_list_.push(i);
+                m_free_list.push(i);
             }
         }
 
         void reserve(unsigned int capacity) {
-            resources_.reserve(capacity);
-            deleted_.reserve(capacity);
-            capacity_ = capacity;
+            m_resources.reserve(capacity);
+            m_deleted.reserve(capacity);
+            m_capacity = capacity;
             for (unsigned int i = 0; i < capacity; ++i) {
-                free_list_.push(i);
+                m_free_list.push(i);
             }
         }
 
         void resize(unsigned int capacity) {
-            resources_.resize(capacity);
-            deleted_.resize(capacity, true);
-            capacity_ = capacity;
+            m_resources.resize(capacity);
+            m_deleted.resize(capacity, true);
+            m_capacity = capacity;
             for (unsigned int i = 0; i < capacity; ++i) {
-                free_list_.push(i);
+                m_free_list.push(i);
             }
         }
 
@@ -44,62 +44,66 @@ namespace Bcg {
         }
 
         ResourceHandle<T, ResourcePool<T>> emplace(const T &resource) {
-            if (free_list_.empty()) {
-                resources_.push_back(resource);
-                deleted_.push_back(false);
-                return ResourceHandle<T, ResourcePool<T>>(resources_.size() - 1, this);
+            if (m_free_list.empty()) {
+                m_resources.push_back(resource);
+                m_ref_counts.push_back(0);
+                m_deleted.push_back(false);
+                return ResourceHandle<T, ResourcePool<T>>(m_resources.size() - 1, this);
             } else {
-                unsigned int index = free_list_.front();
-                free_list_.pop();
-                resources_[index] = resource;
-                deleted_[index] = false;
+                unsigned int index = m_free_list.front();
+                m_free_list.pop();
+                m_resources[index] = resource;
+                m_ref_counts[index] = 0;
+                m_deleted[index] = false;
                 return ResourceHandle<T, ResourcePool<T>>(index, this);
             }
         }
 
         ResourceHandle<T, ResourcePool<T>> emplace(T &&resource) {
-            if (free_list_.empty()) {
-                resources_.emplace_back(std::move(resource));
-                deleted_.push_back(false);
-                return ResourceHandle<T, ResourcePool<T>>(resources_.size() - 1, this);
+            if (m_free_list.empty()) {
+                m_resources.emplace_back(std::move(resource));
+                m_ref_counts.push_back(0);
+                m_deleted.push_back(false);
+                return ResourceHandle<T, ResourcePool<T>>(m_resources.size() - 1, this);
             } else {
-                unsigned int index = free_list_.front();
-                free_list_.pop();
-                resources_[index] = std::move(resource);
-                deleted_[index] = false;
+                unsigned int index = m_free_list.front();
+                m_free_list.pop();
+                m_resources[index] = std::move(resource);
+                m_ref_counts[index] = 0;
+                m_deleted[index] = false;
                 return ResourceHandle<T, ResourcePool<T>>(index, this);
             }
         }
 
         void remove(ResourceHandle<T, ResourcePool<T>> handle) {
-            if (handle.index_ < resources_.size()) {
-                free_list_.push(handle.index_);
-                deleted_[handle.index_] = true;
+            if (handle.index_ < m_resources.size()) {
+                m_free_list.push(handle.index_);
+                m_deleted[handle.index_] = true;
             }
         }
 
         void clear() {
-            free_list_ = std::queue<unsigned int>();
-            for (unsigned int i = 0; i < capacity_; ++i) {
-                free_list_.push(i);
-                deleted_[i] = true;
+            m_free_list = std::queue<unsigned int>();
+            for (unsigned int i = 0; i < m_capacity; ++i) {
+                m_free_list.push(i);
+                m_deleted[i] = true;
             }
         }
 
         inline const T &operator[](const ResourceHandle<T, ResourcePool<T>> &handle) const {
-            return resources_[handle.index];
+            return m_resources[handle.index];
         }
 
         inline T &operator[](ResourceHandle<T, ResourcePool<T>> &handle) {
-            return resources_[handle.index];
+            return m_resources[handle.index];
         }
 
         inline const T &operator[](unsigned int index) const {
-            return resources_[index];
+            return m_resources[index];
         }
 
         inline T &operator[](unsigned int index) {
-            return resources_[index];
+            return m_resources[index];
         }
 
         class Iterator {
@@ -119,14 +123,14 @@ namespace Bcg {
 
             // Prefix increment
             Iterator &operator++() {
-                while (handle_.index_ < handle_.pool_->resources_.size() && handle_.pool_->deleted_[handle_.index_]) {
+                while (handle_.index_ < handle_.pool_->m_resources.size() && handle_.pool_->m_deleted[handle_.index_]) {
                     ++handle_.index_;
                 }
                 return *this;
             }
 
             Iterator &operator--() {
-                while (handle_.index_ > 0 && handle_.pool_->deleted_[handle_.index_]) {
+                while (handle_.index_ > 0 && handle_.pool_->m_deleted[handle_.index_]) {
                     --handle_.index_;
                 }
                 return *this;
@@ -149,7 +153,7 @@ namespace Bcg {
         }
 
         inline Iterator end() {
-            return Iterator(resources_.size(), this);
+            return Iterator(m_resources.size(), this);
         }
 
         inline Iterator begin() const {
@@ -157,16 +161,33 @@ namespace Bcg {
         }
 
         inline Iterator end() const {
-            return Iterator(resources_.size(), this);
+            return Iterator(m_resources.size(), this);
+        }
+
+        unsigned int capacity() const {
+            return m_capacity;
+        }
+
+        unsigned int size() const {
+            return m_resources.size();
+        }
+
+        unsigned int size_active() const {
+            return m_resources.size() - m_free_list.size();
+        }
+
+        unsigned int size_free() const {
+            return m_free_list.size();
         }
 
     private:
         friend class ResourceHandle<T, ResourcePool<T>>;
 
-        unsigned int capacity_;
-        std::vector<T> resources_;
-        std::vector<bool> deleted_;
-        std::queue<unsigned int> free_list_;
+        unsigned int m_capacity;
+        std::vector<T> m_resources;
+        std::vector<int> m_ref_counts;
+        std::vector<bool> m_deleted;
+        std::queue<unsigned int> m_free_list;
     };
 }
 

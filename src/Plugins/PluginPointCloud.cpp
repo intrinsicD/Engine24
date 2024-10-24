@@ -29,6 +29,7 @@
 #include "Cuda/Hem.h"
 #include "Eigen/Eigenvalues"
 #include "PluginViewSphere.h"
+#include "ResourcePool.h"
 
 namespace Bcg {
     namespace PluginPointCloudInternal {
@@ -65,6 +66,7 @@ namespace Bcg {
     PluginPointCloud::PluginPointCloud() : Plugin("PluginPointCloud") {}
 
     void PluginPointCloud::activate() {
+        Engine::Context().emplace<ResourcePool<PointCloud>>();
         Engine::Dispatcher().sink<Events::Callback::Drop>().connect<&PluginPointCloudInternal::on_drop_file>();
         Plugin::activate();
     }

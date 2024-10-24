@@ -9,52 +9,62 @@ namespace Bcg {
     template<typename T, class Pool>
     class ResourceHandle {
     public:
-        ResourceHandle() : index_(-1), pool_(nullptr) {}
+        ResourceHandle() : m_index(-1), m_pool(nullptr) {}
 
-        ResourceHandle(unsigned int index, Pool *pool) : index_(index), pool_(pool) {}
+        ResourceHandle(unsigned int index, Pool *pool) : m_index(index), m_pool(pool) {
+            if(is_valid()){
+                ++m_pool->m_ref_counts[m_index];
+            }
+        }
+
+        ~ResourceHandle() {
+            if(is_valid()){
+                --m_pool->m_ref_counts[m_index];
+            }
+        }
 
         inline unsigned int index() const {
-            return index_;
+            return m_index;
         }
 
         inline operator T &() {
-            return pool_->resources_[index_];
+            return m_pool->resources_[m_index];
         }
 
         inline operator const T &() const {
-            return pool_->resources_[index_];
+            return m_pool->resources_[m_index];
         }
 
         inline T &get() {
-            return pool_->resources_[index_];
+            return m_pool->resources_[m_index];
         }
 
         inline const T &get() const {
-            return pool_->resources_[index_];
+            return m_pool->resources_[m_index];
         }
 
         inline T &operator*() {
-            return pool_->resources_[index_];
+            return m_pool->resources_[m_index];
         }
 
         inline const T &operator*() const {
-            return pool_->resources_[index_];
+            return m_pool->resources_[m_index];
         }
 
         inline T *operator->() {
-            return &pool_->resources_[index_];
+            return &m_pool->resources_[m_index];
         }
 
         inline const T *operator->() const {
-            return &pool_->resources_[index_];
+            return &m_pool->resources_[m_index];
         }
 
         inline  bool is_deleted() const {
-            return pool_->deleted_[index_];
+            return m_pool->deleted_[m_index];
         }
 
         inline  bool is_valid() const {
-            return index_ != -1 && pool_ != nullptr && index_ < pool_->resources_.size();
+            return m_index != -1 && m_pool != nullptr && m_index < m_pool->resources_.size();
         }
 
         inline operator bool() const {
@@ -62,7 +72,7 @@ namespace Bcg {
         }
 
         inline bool operator==(const ResourceHandle<T, Pool> &other) const {
-            return index_ == other.index_ && pool_ == other.pool_;
+            return m_index == other.m_index && m_pool == other.m_pool;
         }
 
         inline bool operator!=(const ResourceHandle<T, Pool> &other) const {
@@ -70,8 +80,8 @@ namespace Bcg {
         }
 
     private:
-        unsigned int index_;
-        Pool *pool_;
+        unsigned int m_index;
+        Pool *m_pool;
     };
 }
 
