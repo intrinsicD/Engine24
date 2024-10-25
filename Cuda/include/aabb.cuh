@@ -2,25 +2,25 @@
 #define LBVH_AABB_CUH
 
 #include "utility.cuh"
-#include "vec3.cuh"
 #include <thrust/swap.h>
 #include <thrust/reduce.h>
 #include <thrust/device_vector.h>
 #include <cmath>
+#include "glm/glm.hpp"
 
 namespace Bcg::cuda {
     struct aabb {
-        vec3 upper;
-        vec3 lower;
+        glm::vec3 upper;
+        glm::vec3 lower;
     };
 
     template<typename Object>
     struct aabb_getter;
 
     template<>
-    struct aabb_getter<vec3> {
+    struct aabb_getter<glm::vec3> {
         __device__ __host__
-        aabb operator()(const vec3 v) const noexcept {
+        aabb operator()(const glm::vec3 v) const noexcept {
             return {v, v};
         }
     };
@@ -50,7 +50,7 @@ namespace Bcg::cuda {
 // - Nick Roussopoulos, Stephen Kelley FredericVincent
 
     __device__ __host__
-    inline float mindist(const aabb &lhs, const vec3 &rhs) noexcept {
+    inline float mindist(const aabb &lhs, const glm::vec3 &rhs) noexcept {
         const float dx = ::fminf(lhs.upper.x, ::fmaxf(lhs.lower.x, rhs.x)) - rhs.x;
         const float dy = ::fminf(lhs.upper.y, ::fmaxf(lhs.lower.y, rhs.y)) - rhs.y;
         const float dz = ::fminf(lhs.upper.z, ::fmaxf(lhs.lower.z, rhs.z)) - rhs.z;
@@ -58,11 +58,11 @@ namespace Bcg::cuda {
     }
 
     __device__ __host__
-    inline float minmaxdist(const aabb &lhs, const vec3 &rhs) noexcept {
-        vec3 lower_diff = lhs.lower - rhs;
-        vec3 upper_diff = lhs.upper - rhs;
-        vec3 rm_sq = vec3(lower_diff.x * lower_diff.x, lower_diff.y * lower_diff.y, lower_diff.z * lower_diff.z);
-        vec3 rM_sq = vec3(upper_diff.x * upper_diff.x, upper_diff.y * upper_diff.y, upper_diff.z * upper_diff.z);
+    inline float minmaxdist(const aabb &lhs, const glm::vec3 &rhs) noexcept {
+        glm::vec3 lower_diff = lhs.lower - rhs;
+        glm::vec3 upper_diff = lhs.upper - rhs;
+        glm::vec3 rm_sq = glm::vec3(lower_diff.x * lower_diff.x, lower_diff.y * lower_diff.y, lower_diff.z * lower_diff.z);
+        glm::vec3 rM_sq = glm::vec3(upper_diff.x * upper_diff.x, upper_diff.y * upper_diff.y, upper_diff.z * upper_diff.z);
 
         if ((lhs.upper.x + lhs.lower.x) * 0.5f < rhs.x) {
             thrust::swap(rm_sq.x, rM_sq.x);
@@ -81,8 +81,8 @@ namespace Bcg::cuda {
     }
 
     __device__ __host__
-    inline vec3 centroid(const aabb &box) noexcept {
-        return (box.upper + box.lower) * 0.5;
+    inline glm::vec3 centroid(const aabb &box) noexcept {
+        return (box.upper + box.lower) * 0.5f;
     }
 } // lbvh
 #endif// LBVH_AABB_CUH

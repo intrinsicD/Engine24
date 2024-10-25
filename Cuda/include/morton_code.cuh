@@ -1,7 +1,7 @@
 #ifndef LBVH_MORTON_CODE_CUH
 #define LBVH_MORTON_CODE_CUH
 
-#include "vec3.cuh"
+#include "glm/glm.hpp"
 #include <cuda_runtime.h>
 #include <cstdint>
 
@@ -19,7 +19,7 @@ namespace Bcg::cuda {
 // Calculates a 30-bit Morton code for the
 // given 3D point located within the unit cube [0,1].
     __device__ __host__
-    inline std::uint32_t morton_code(vec3 xyz, float resolution = 1024.0f) noexcept {
+    inline std::uint32_t morton_code(glm::vec3 xyz, float resolution = 1024.0f) noexcept {
         xyz.x = ::fminf(::fmaxf(xyz.x * resolution, 0.0f), resolution - 1.0f);
         xyz.y = ::fminf(::fmaxf(xyz.y * resolution, 0.0f), resolution - 1.0f);
         xyz.z = ::fminf(::fmaxf(xyz.z * resolution, 0.0f), resolution - 1.0f);

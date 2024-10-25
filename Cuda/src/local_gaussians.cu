@@ -4,26 +4,25 @@
 
 #include "Cuda/LocalGaussians.h"
 #include "lbvh.cuh"
-#include "vec_operations.cuh"
 
 #include "thrust/device_vector.h"
 #include "thrust/for_each.h"
 
 namespace Bcg::cuda {
-    using hbvh = lbvh<vec3, aabb_getter<vec3>>;
-    using dbvh = bvh_device<vec3>;
+    using hbvh = lbvh<glm::vec3, aabb_getter<glm::vec3>>;
+    using dbvh = bvh_device<glm::vec3>;
 
     struct LocalGaussiansDevicePtr {
-        thrust::device_ptr<vec3> d_positions;
-        thrust::device_ptr<vec3> d_means;
-        thrust::device_ptr<mat3> d_covs;
+        thrust::device_ptr<glm::vec3> d_positions;
+        thrust::device_ptr<glm::vec3> d_means;
+        thrust::device_ptr<glm::mat3> d_covs;
         dbvh d_bvh;
     };
 
     struct LocalGaussiansDeviceData {
-        thrust::device_vector<vec3> positions;
-        thrust::device_vector<vec3> means;
-        thrust::device_vector<mat3> covs;
+        thrust::device_vector<glm::vec3> positions;
+        thrust::device_vector<glm::vec3> means;
+        thrust::device_vector<glm::mat3> covs;
         hbvh bvh;
 
         LocalGaussiansDevicePtr GetDevicePtr() {
@@ -34,10 +33,10 @@ namespace Bcg::cuda {
         }
     };
 
-    LocalGaussiansDeviceData SetupLocalGaussiansDeviceData(const thrust::host_vector<vec3> &h_positions) {
+    LocalGaussiansDeviceData SetupLocalGaussiansDeviceData(const thrust::host_vector<glm::vec3> &h_positions) {
         return {h_positions,
-                thrust::device_vector<vec3>(h_positions.size()),
-                thrust::device_vector<mat3>(h_positions.size()),
+                thrust::device_vector<glm::vec3>(h_positions.size()),
+                thrust::device_vector<glm::mat3>(h_positions.size()),
                 hbvh(h_positions.begin(), h_positions.end(), true)
         };
     }
@@ -46,28 +45,28 @@ namespace Bcg::cuda {
         size_t num_objects = data.positions.size();
 
         // Preallocate host vectors with the correct size
-        thrust::host_vector<vec3> h_means = data.means;
+        thrust::host_vector<glm::vec3> h_means = data.means;
         std::vector<Vector<float, 3>> host_means(h_means.size());
         thrust::transform(h_means.begin(), h_means.end(), host_means.begin(),
-                          [] __host__(const vec3 &v) {
+                          [] __host__(const glm::vec3 &v) {
                               return Vector<float, 3>{v.x, v.y, v.z};
                           });
 
         // Copy covariances from device to host and convert to Matrix<float, 3, 3>
-        thrust::host_vector<mat3> h_covs = data.covs;
+        thrust::host_vector<glm::mat3> h_covs = data.covs;
         std::vector<Matrix<float, 3, 3>> host_covs(h_covs.size());
         thrust::transform(h_covs.begin(), h_covs.end(), host_covs.begin(),
-                          [] __host__(const mat3 &m) {
+                          [] __host__(const glm::mat3 &m) {
                               Matrix<float, 3, 3> mat;
-                              mat(0, 0) = m.col0.x;
-                              mat(0, 1) = m.col0.y;
-                              mat(0, 2) = m.col0.z;
-                              mat(1, 0) = m.col1.x;
-                              mat(1, 1) = m.col1.y;
-                              mat(1, 2) = m.col1.z;
-                              mat(2, 0) = m.col2.x;
-                              mat(2, 1) = m.col2.y;
-                              mat(2, 2) = m.col2.z;
+                              mat(0, 0) = m[0].x;
+                              mat(0, 1) = m[0].y;
+                              mat(0, 2) = m[0].z;
+                              mat(1, 0) = m[1].x;
+                              mat(1, 1) = m[1].y;
+                              mat(1, 2) = m[1].z;
+                              mat(2, 0) = m[2].x;
+                              mat(2, 1) = m[2].y;
+                              mat(2, 2) = m[2].z;
                               return mat;
                           });
 
@@ -86,7 +85,7 @@ namespace Bcg::cuda {
 
     struct distance_calculator {
         __device__ __host__
-        float operator()(const vec3 point, const vec3 object) const noexcept {
+        float operator()(const glm::vec3 point, const glm::vec3 object) const noexcept {
             return (point.x - object.x) * (point.x - object.x) +
                    (point.y - object.y) * (point.y - object.y) +
                    (point.z - object.z) * (point.z - object.z);
@@ -95,34 +94,30 @@ namespace Bcg::cuda {
 
     __global__ void compute_means_and_covs_kernel(
             const dbvh d_bvh,
-            const thrust::device_ptr<vec3> d_positions,
-            thrust::device_ptr<vec3> d_means,
-            thrust::device_ptr<mat3> d_covs,
+            const thrust::device_ptr<glm::vec3> d_positions,
+            thrust::device_ptr<glm::vec3> d_means,
+            thrust::device_ptr<glm::mat3> d_covs,
             size_t num_objects, int k) {
         unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
         if (idx < num_objects) {
-            const vec3 query = d_positions[idx];
+            const glm::vec3 query = d_positions[idx];
             unsigned int indices[32];
-            const auto num_found = query_device(d_bvh, knn(query, k),
+            const float num_found = query_device(d_bvh, knn(query, k),
                                                 distance_calculator(), indices);
 
-            vec3 mean = vec3::constant(0);
-            mat3 cov = mat3::constant(0);
-
+            glm::vec3 mean(0);
+            glm::mat3 cov(0);
+      
             // Combine mean and covariance calculation in one loop
             for (int i = 0; i < num_found; ++i) {
-                const vec3 object = d_positions[indices[i]];
+                const glm::vec3 object = d_positions[indices[i]];
                 mean = mean + object;
-                cov = cov + outer(object, object);
+                cov = cov + glm::outerProduct(object, object);
             }
 
             mean = mean / num_found;
-            cov = (cov - num_found * outer(mean, mean)) / num_found;
-
-
-            mean = mean / num_found;
-            cov = (cov - num_found * outer(mean, mean)) / num_found;
+            cov = (cov - num_found * glm::outerProduct(mean, mean)) / num_found;
 
             // Write results to global memory
             d_means[idx] = mean;
@@ -131,9 +126,9 @@ namespace Bcg::cuda {
     }
 
     void ComputeCovs(const dbvh &d_bvh,
-                     thrust::device_ptr<vec3> d_positions,
-                     thrust::device_ptr<vec3> d_means,
-                     thrust::device_ptr<mat3> d_covs,
+                     thrust::device_ptr<glm::vec3> d_positions,
+                     thrust::device_ptr<glm::vec3> d_means,
+                     thrust::device_ptr<glm::mat3> d_covs,
                      size_t num_objects, int k) {
         int blockSize = 256; // Optimal block size based on experimentation
         int numBlocks = (num_objects + blockSize - 1) / blockSize;
@@ -147,9 +142,9 @@ namespace Bcg::cuda {
 
     LocalGaussiansResult LocalGaussians(const std::vector<Vector<float, 3>> &points, int k) {
         size_t num_objects = points.size();
-        thrust::host_vector<vec3> h_positions(num_objects);
+        thrust::host_vector<glm::vec3> h_positions(num_objects);
         for (size_t i = 0; i < num_objects; ++i) {
-            h_positions[i] = vec3{points[i].x(), points[i].y(), points[i].z()};
+            h_positions[i] = glm::vec3{points[i].x(), points[i].y(), points[i].z()};
         }
         LocalGaussiansDeviceData data = SetupLocalGaussiansDeviceData(h_positions);
         LocalGaussiansDevicePtr ptr = data.GetDevicePtr();

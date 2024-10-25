@@ -5,19 +5,19 @@
 #ifndef ENGINE24_SPHERE_CUH
 #define ENGINE24_SPHERE_CUH
 
-#include "vec4.cuh"
+#include "glm/glm.hpp"
 #include "aabb.cuh"
 #include <thrust/swap.h>
 #include <cmath>
 
 namespace Bcg::cuda {
     struct sphere {
-        vec4 center_radius;
+        glm::vec4 center_radius;
 
         sphere() noexcept = default;
 
         __device__ __host__
-        sphere(const vec3 &center, float radius) noexcept: center_radius(center.x, center.y, center.z, radius) {}
+        sphere(const glm::vec3 &center, float radius) noexcept: center_radius(center.x, center.y, center.z, radius) {}
     };
 
     __device__ __host__
@@ -54,7 +54,7 @@ namespace Bcg::cuda {
     }
 
     __device__ __host__
-    inline float mindist(const sphere &sphere, const vec3 &rhs) noexcept {
+    inline float mindist(const sphere &sphere, const glm::vec3 &rhs) noexcept {
         const float sqDist =
                 (rhs.x - sphere.center_radius.x) * (rhs.x - sphere.center_radius.x) +
                 (rhs.y - sphere.center_radius.y) * (rhs.y - sphere.center_radius.y) +
@@ -63,13 +63,13 @@ namespace Bcg::cuda {
     }
 
     __device__ __host__
-    inline float minmaxdist(const sphere &sphere, const vec3 &point) noexcept {
+    inline float minmaxdist(const sphere &sphere, const glm::vec3 &point) noexcept {
         return mindist(sphere, point) + sphere.center_radius.w;
     }
 
     struct sphere_getter {
         __device__ __host__
-        sphere operator()(const vec3 center, float radius) const noexcept {
+        sphere operator()(const glm::vec3 center, float radius) const noexcept {
             sphere retval;
             retval.center_radius.x = center.x;
             retval.center_radius.y = center.y;

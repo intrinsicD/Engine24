@@ -4,23 +4,21 @@
 
 #include "Cuda/Hem.h"
 #include "lbvh.cuh"
-#include "mat3.cuh"
-#include "math.cuh"
-#include "vec_operations.cuh"
+#include "glm/glm.hpp"
 #include "gaussian.cuh"
 #include <float.h>
 #include <thrust/random.h>
 #include <thrust/gather.h>
 
 namespace Bcg::cuda {
-    using hbvh = lbvh<vec3, aabb_getter<vec3>>;
-    using dbvh = bvh_device<vec3>;
+    using hbvh = lbvh<glm::vec3, aabb_getter<glm::vec3>>;
+    using dbvh = bvh_device<glm::vec3>;
 
     struct HemDeviceDataPtr {
-        vec3 *means;
-        mat3 *covs;
+        glm::vec3 *means;
+        glm::mat3 *covs;
         float *weights;
-        vec3 *nvars;
+        glm::vec3 *nvars;
         bool *is_parent;
         unsigned int *parents_indices;
         unsigned int *children_indices;
@@ -49,7 +47,7 @@ namespace Bcg::cuda {
 
     struct distance_calculator {
         __device__ __host__
-        float operator()(const vec3 &point, const vec3 &object) const noexcept {
+        float operator()(const glm::vec3 &point, const glm::vec3 &object) const noexcept {
             return (point.x - object.x) * (point.x - object.x) +
                    (point.y - object.y) * (point.y - object.y) +
                    (point.z - object.z) * (point.z - object.z);
@@ -69,43 +67,35 @@ namespace Bcg::cuda {
     }
 
 
-    __device__ __host__ float max_eigenvalues_radius(const mat3 &cov) {
-        mat3 evecs;
+    __device__ __host__ float max_eigenvalues_radius(const glm::mat3 &cov) {
+        glm::mat3 evecs;
         return real_symmetric_3x3_eigendecomposition(cov, evecs).z;
     }
 
-    __device__ __host__ float geroshin_radius(const mat3 &cov) {
-        return cov.geroshin_radius();
+    __device__ __host__ float trace_radius(const glm::mat3 &cov) {
+        return trace(cov) / 3.0f;
     }
 
-    __device__ __host__ float trace_radius(const mat3 &cov) {
-        return cov.trace() / 3.0f;
+    __device__ __host__ float laplacian_bound(const glm::mat3 &cov) {
+        return norm(cov);
     }
 
-    __device__ __host__ float laplacian_bound(const mat3 &cov) {
-        return cov.norm();
-    }
-
-    __device__ __host__ float max_row_sum(const mat3 &cov) {
-        return cov.max_row_sum();
-    }
-
-    __device__ __host__ float hem_likelihood(const vec3 &mean_parent, const mat3 &inv_cov_parent,
-                                             const vec3 &mean_child, const mat3 &cov_child, float child_weight) {
-        vec3 diff = mean_parent - mean_child;
-        float smd = diff.dot(inv_cov_parent * diff);
-        mat3 ipcCov = inv_cov_parent * cov_child;
-        float ipcTrace = ipcCov.trace();
+    __device__ __host__ float hem_likelihood(const glm::vec3 &mean_parent, const glm::mat3 &inv_cov_parent,
+                                             const glm::vec3 &mean_child, const glm::mat3 &cov_child, float child_weight) {
+        glm::vec3 diff = mean_parent - mean_child;
+        float smd = glm::dot(diff, inv_cov_parent * diff);
+        glm::mat3 ipcCov = inv_cov_parent * cov_child;
+        float ipcTrace = trace(ipcCov);
         float e = -0.5f * (smd + ipcTrace);
-        float f = 0.063493635934241f * sqrtf(inv_cov_parent.determinant()) * expf(e);
+        float f = 0.063493635934241f * sqrtf(glm::determinant(inv_cov_parent)) * expf(e);
         return powf(f, child_weight);
     }
 
     struct HemDeviceData {
-        thrust::device_vector<vec3> means;
-        thrust::device_vector<mat3> covs;
+        thrust::device_vector<glm::vec3> means;
+        thrust::device_vector<glm::mat3> covs;
         thrust::device_vector<float> weights;
-        thrust::device_vector<vec3> nvars;
+        thrust::device_vector<glm::vec3> nvars;
         thrust::device_vector<bool> is_parent;
         thrust::device_vector<unsigned int> parents_indices;
         thrust::device_vector<unsigned int> children_indices;
@@ -181,7 +171,7 @@ namespace Bcg::cuda {
         printf("Separated components into %d parents and %d children\n", num_parents, num_components - num_parents);
     }
 
-    HemDeviceData InitMixture(const std::vector<vec3> &positions, HemParams params) {
+    HemDeviceData InitMixture(const std::vector<glm::vec3> &positions, HemParams params) {
         HemDeviceData components;
         components.means = positions;
         components.covs.resize(positions.size());
@@ -208,7 +198,7 @@ namespace Bcg::cuda {
                              [d_components, d_radii, d_alpha0, params] __device__(unsigned int idx) {
                                  unsigned int parent_idx = d_components.parents_indices[idx];
                                  unsigned int indices[32];
-                                 const vec3 &query_point = d_components.means[parent_idx];
+                                 const glm::vec3 &query_point = d_components.means[parent_idx];
                                  auto nn = query_device(d_components.d_bvh_means, knn(query_point, params.knn),
                                                         distance_calculator(),
                                                         indices, 32);
@@ -230,7 +220,7 @@ namespace Bcg::cuda {
         thrust::for_each(thrust::make_counting_iterator<std::uint32_t>(0),
                          thrust::make_counting_iterator<std::uint32_t>(d_components.num_components),
                          [d_components, d_radii, d_useWeightedPotentials] __device__(unsigned int idx) {
-                             const vec3 &query_point = d_components.means[idx];
+                             const glm::vec3 &query_point = d_components.means[idx];
                              float radius = d_radii[idx];
 
                              unsigned int indices[64];
@@ -242,39 +232,39 @@ namespace Bcg::cuda {
                              float eps = radius * radius * 0.0001f;
                              float density = 0.000001f;
 
-                             vec3 mean = vec3::constant(0);
-                             mat3 cov = mat3::identity() * eps;
+                             glm::vec3 mean = glm::vec3(0);
+                             glm::mat3 cov = glm::mat3(1) * eps;
                              assert(nn > 0);
                              for (unsigned int i = 0; i < nn; ++i) {
                                  unsigned int neighbor_idx = indices[i];
-                                 vec3 neighbor = d_components.means[neighbor_idx];
-                                 vec3 diff = neighbor - query_point;
-                                 cov = cov + outer(diff, diff);
+                                 glm::vec3 neighbor = d_components.means[neighbor_idx];
+                                 glm::vec3 diff = neighbor - query_point;
+                                 cov = cov + glm::outerProduct(diff, diff);
                                  mean = mean + neighbor;
-                                 density += expf(minus_16_over_h2 * diff.dot(diff));
+                                 density += expf(minus_16_over_h2 * glm::dot(diff, diff));
                              }
                              float inv_w = 1.0f / fmaxf(nn, 1.0f);
-                             vec3 o = mean * inv_w - query_point;
-                             cov = cov * inv_w - outer(o, o);
+                             glm::vec3 o = mean * inv_w - query_point;
+                             cov = cov * inv_w - glm::outerProduct(o, o);
 
                              d_components.means[idx] = query_point;
                              d_components.covs[idx] = conditionCov(cov);
                              d_components.weights[idx] = *d_useWeightedPotentials ? 1.0f / density : 1.0f;
-                             mat3 evecs;
+                             glm::mat3 evecs;
                              real_symmetric_3x3_eigendecomposition(cov, evecs);
                              float initialVar = 0.001f;
-                             d_components.nvars[idx] = evecs.col0 * initialVar;
+                             d_components.nvars[idx] = evecs[0] * initialVar;
                              //output all written values
                              printf("i: %d nn: %d mean: %f %f %f cov: %f %f %f %f %f %f %f %f %f weight: %f nvar: %f %f %f\n",
                                     idx, nn,
                                     d_components.means[idx].x,
                                     d_components.means[idx].y, d_components.means[idx].z,
-                                    d_components.covs[idx].col0.x, d_components.covs[idx].col1.x,
-                                    d_components.covs[idx].col2.x,
-                                    d_components.covs[idx].col0.y, d_components.covs[idx].col1.y,
-                                    d_components.covs[idx].col2.y,
-                                    d_components.covs[idx].col0.z, d_components.covs[idx].col1.z,
-                                    d_components.covs[idx].col2.z,
+                                    d_components.covs[idx][0].x, d_components.covs[idx][1].x,
+                                    d_components.covs[idx][2].x,
+                                    d_components.covs[idx][0].y, d_components.covs[idx][1].y,
+                                    d_components.covs[idx][2].y,
+                                    d_components.covs[idx][0].z, d_components.covs[idx][1].z,
+                                    d_components.covs[idx][2].z,
                                     d_components.weights[idx],
                                     d_components.nvars[idx].x, d_components.nvars[idx].y, d_components.nvars[idx].z);
                          });
@@ -374,10 +364,10 @@ namespace Bcg::cuda {
                              unsigned int parent_idx = d_components.parents_indices[s_];
 
                              CudaMatrixRow<unsigned int, 64> radius_query_indices;
-                             const vec3 &mean_parent = d_components.means[parent_idx];
-                             const mat3 &cov_parent = d_components.covs[parent_idx];
+                             const glm::vec3 &mean_parent = d_components.means[parent_idx];
+                             const glm::mat3 &cov_parent = d_components.covs[parent_idx];
                              const float weight_parent = d_components.weights[parent_idx];
-                             const mat3 cov_parent_inv = cov_parent.inverse();
+                             const glm::mat3 cov_parent_inv = glm::inverse(cov_parent);
 
                              CudaMatrixRow<float, 64> &children_likelihoods = d_parents_likelihoods[s_];
                              CudaMatrixRow<unsigned int, 64> &children_indices = d_parents_children_indices[s_];
@@ -404,9 +394,9 @@ namespace Bcg::cuda {
                              for (unsigned int i = 0; i < nn; ++i) {
                                  unsigned int child_idx = radius_query_indices[i];
                                  children_indices[i] = child_idx;
-                                 const vec3 &child_mean = d_components.means[child_idx];
-                                 const mat3 &child_cov = d_components.covs[child_idx];
-                                 mat3 child_cov_inv = child_cov.inverse();
+                                 const glm::vec3 &child_mean = d_components.means[child_idx];
+                                 const glm::mat3 &child_cov = d_components.covs[child_idx];
+                                 glm::mat3 child_cov_inv = glm::inverse(child_cov);
                                  const float child_weight = d_components.weights[child_idx];
 
                                  //TODO! check the kullback leibler divergence
@@ -461,9 +451,9 @@ namespace Bcg::cuda {
                              CudaMatrixRow<bool, 64> &children_valid = d_parents_children_valid[s_];
 
                              float w_s = d_components.weights[parent_idx];
-                             vec3 sum_mu_i = w_s * d_components.means[parent_idx];
-                             mat3 sum_cov_i = w_s * d_components.covs[parent_idx];
-                             vec3 resultant = w_s * d_components.nvars[parent_idx];
+                             glm::vec3 sum_mu_i = w_s * d_components.means[parent_idx];
+                             glm::mat3 sum_cov_i = w_s * d_components.covs[parent_idx];
+                             glm::vec3 resultant = w_s * d_components.nvars[parent_idx];
                              float nvar = resultant.length();
                              unsigned int nn = d_nn_found[s_];
                              assert(nn > 0);
@@ -476,10 +466,10 @@ namespace Bcg::cuda {
                                      continue;
                                  }
 
-                                 const vec3 &child_mean = d_components.means[child_idx];
-                                 const mat3 &child_cov = d_components.covs[child_idx];
+                                 const glm::vec3 &child_mean = d_components.means[child_idx];
+                                 const glm::mat3 &child_cov = d_components.covs[child_idx];
                                  const float child_weight = d_components.weights[child_idx];
-                                 const vec3 &child_nvar = d_components.nvars[child_idx];
+                                 const glm::vec3 &child_nvar = d_components.nvars[child_idx];
 
                                  float r_cp = children_likelihoods[i] / d_comp_likelihood_sums[child_idx];
                                  assert(r_cp > 0.0f);
@@ -487,25 +477,25 @@ namespace Bcg::cuda {
                                  assert(w > 0.0f);
                                  float c_nvar = child_nvar.length();
                                  assert(c_nvar > 0.0f);
-                                 vec3 c_normal = child_nvar / c_nvar;
+                                 glm::vec3 c_normal = child_nvar / c_nvar;
 
-                                 if (c_normal.dot(d_components.nvars[parent_idx]) < 0.0f) {
+                                 if (glm::dot(c_normal, d_components.nvars[parent_idx]) < 0.0f) {
                                      c_normal = -c_normal;
                                  }
 
                                  w_s += w;
                                  sum_mu_i = sum_mu_i + w * child_mean;
-                                 vec3 diff = child_mean - d_components.means[parent_idx];
-                                 sum_cov_i = sum_cov_i + w * (child_cov + outer(diff, diff));
+                                 glm::vec3 diff = child_mean - d_components.means[parent_idx];
+                                 sum_cov_i = sum_cov_i + w * (child_cov + glm::outerProduct(diff, diff));
 
                                  resultant = resultant + w * c_normal;
                                  nvar += w * c_nvar;
                              }
 
                              float inv_w = 1.0f / w_s;
-                             vec3 mu_s = inv_w * sum_mu_i;
-                             vec3 diff = mu_s - d_components.means[parent_idx];
-                             mat3 cov_s = inv_w * sum_cov_i - outer(diff, diff);
+                             glm::vec3 mu_s = inv_w * sum_mu_i;
+                             glm::vec3 diff = mu_s - d_components.means[parent_idx];
+                             glm::mat3 cov_s = inv_w * sum_cov_i - glm::outerProduct(diff, diff);
 
                              float variance1 = nvar * inv_w;
                              float R = resultant.length();
@@ -518,7 +508,7 @@ namespace Bcg::cuda {
                                  variance2 = -2.0f * log(Rmean);
                              }
 
-                             vec3 newMeanNormal = resultant / R;
+                             glm::vec3 newMeanNormal = resultant / R;
 
                              d_parents.means[s_] = mu_s;
                              d_parents.covs[s_] = cov_s;
@@ -528,9 +518,9 @@ namespace Bcg::cuda {
                              printf("parent: %d nn: %d mean: %f %f %f cov: %f %f %f %f %f %f %f %f %f weight: %f nvar: %f %f %f\n",
                                     s_, nn,
                                     d_parents.means[s_].x, d_parents.means[s_].y, d_parents.means[s_].z,
-                                    d_parents.covs[s_].col0.x, d_parents.covs[s_].col1.x, d_parents.covs[s_].col2.x,
-                                    d_parents.covs[s_].col0.y, d_parents.covs[s_].col1.y, d_parents.covs[s_].col2.y,
-                                    d_parents.covs[s_].col0.z, d_parents.covs[s_].col1.z, d_parents.covs[s_].col2.z,
+                                    d_parents.covs[s_][0].x, d_parents.covs[s_][1].x, d_parents.covs[s_][2].x,
+                                    d_parents.covs[s_][0].y, d_parents.covs[s_][1].y, d_parents.covs[s_][2].y,
+                                    d_parents.covs[s_][0].z, d_parents.covs[s_][1].z, d_parents.covs[s_][2].z,
                                     d_parents.weights[s_],
                                     d_parents.nvars[s_].x, d_parents.nvars[s_].y, d_parents.nvars[s_].z);
                          });
@@ -586,7 +576,7 @@ namespace Bcg::cuda {
 
     HemResult Hem(const std::vector<Vector<float, 3>> &positions, unsigned int levels, unsigned int k) {
         HemResult result;
-        std::vector<vec3> ps(positions.size());
+        std::vector<glm::vec3> ps(positions.size());
         for (size_t i = 0; i < positions.size(); ++i) {
             ps[i] = {positions[i].x(), positions[i].y(), positions[i].z()};
         }
@@ -601,10 +591,10 @@ namespace Bcg::cuda {
             data = ClusterLevel(data, params);
         }
 
-        thrust::host_vector<vec3> h_means = data.means;
-        thrust::host_vector<mat3> h_covs = data.covs;
+        thrust::host_vector<glm::vec3> h_means = data.means;
+        thrust::host_vector<glm::mat3> h_covs = data.covs;
         thrust::host_vector<float> h_weights = data.weights;
-        thrust::host_vector<vec3> h_nvars = data.nvars;
+        thrust::host_vector<glm::vec3> h_nvars = data.nvars;
 
         result.means.resize(h_means.size());
         result.covs.resize(h_covs.size());
@@ -613,9 +603,9 @@ namespace Bcg::cuda {
 
         for (size_t i = 0; i < h_means.size(); ++i) {
             result.means[i] = {h_means[i].x, h_means[i].y, h_means[i].z};
-            result.covs[i] << h_covs[i].col0.x, h_covs[i].col0.y, h_covs[i].col0.z,
-                    h_covs[i].col1.x, h_covs[i].col1.y, h_covs[i].col1.z,
-                    h_covs[i].col2.x, h_covs[i].col2.y, h_covs[i].col2.z;
+            result.covs[i] << h_covs[i][0].x, h_covs[i][0].y, h_covs[i][0].z,
+                    h_covs[i][1].x, h_covs[i][1].y, h_covs[i][1].z,
+                    h_covs[i][2].x, h_covs[i][2].y, h_covs[i][2].z;
             result.weights[i] = h_weights[i];
             result.nvars[i] = {h_nvars[i].x, h_nvars[i].y, h_nvars[i].z};
         }

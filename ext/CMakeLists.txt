@@ -4,6 +4,7 @@ target_include_directories(Engine24 SYSTEM PUBLIC ImGuizmo)
 target_include_directories(Engine24 SYSTEM PUBLIC nanoflann/include)
 target_include_directories(Engine24 SYSTEM PUBLIC lbvh)
 target_include_directories(Engine24 SYSTEM PUBLIC happly)
+target_include_directories(Engine24 SYSTEM PUBLIC glm)
 
 set(GLFW_BUILD_WAYLAND OFF)
 add_subdirectory(glfw)

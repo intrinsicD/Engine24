@@ -259,9 +259,9 @@ namespace Bcg::cuda::bvh {
     struct transform;
 
     template<>
-    struct transform<vec3, aabb> {
+    struct transform<glm::vec3, aabb> {
         __host__ __device__
-        aabb operator()(const vec3 &v) const {
+        aabb operator()(const glm::vec3 &v) const {
             return {v, v};
         }
     };
