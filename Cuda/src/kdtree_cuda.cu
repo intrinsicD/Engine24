@@ -22,7 +22,6 @@ namespace Bcg::cuda {;
 
     void KDTreeCuda::build(const std::vector<Vector<float, 3>> &positions) {
         std::vector<glm::vec3> ps(positions.size());
-        aabb aabb_whole;
         for (size_t i = 0; i < positions.size(); ++i) {
             ps[i] = {positions[i].x(), positions[i].y(), positions[i].z()};
         }

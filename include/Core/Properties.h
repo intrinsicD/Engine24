@@ -11,6 +11,7 @@
 #include <vector>
 #include "Exceptions.h"
 #include "MatVec.h"
+#include "GlmToEigen.h"
 
 namespace Bcg {
 
@@ -49,7 +50,8 @@ namespace Bcg {
 
     template<typename T, int N>
     std::ostream &operator<<(std::ostream &os, const Vector<T, N> &vec) {
-        os << vec.transpose();
+        Eigen::Vector<T, N> v = ToEigen(vec);
+        os << v.transpose();
         return os;
     }
 

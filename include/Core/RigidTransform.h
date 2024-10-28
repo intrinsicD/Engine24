@@ -9,22 +9,21 @@
 #include "Eigen/Geometry"
 
 namespace Bcg {
+    template<typename T>
     struct TransformParameters {
-        Vector<float, 3> scale;
-        Vector<float, 3> angle_axis;
-        Vector<float, 3> position;
+        glm::vec<3, T> scale;
+        glm::vec<3, T> angle_axis;
+        glm::vec<3, T> position;
     };
 
-    class RigidTransform : public Eigen::Transform<float, 3, Eigen::Affine> {
+    template<typename T>
+    class RigidTransform : public glm::mat<4, 4, T> {
     public:
-        using Base = Eigen::Transform<float, 3, Eigen::Affine>;
-        using Base::operator=;
-
-        RigidTransform() : Base() {
+        RigidTransform() : glm::mat<4, 4, T>(T(1.0)) {
 
         }
 
-        explicit RigidTransform(const Matrix<float, 4, 4> &matrix) : Base(matrix) {
+        explicit RigidTransform(const Matrix<float, 4, 4> &matrix) : glm::mat<4, 4, T>(matrix) {
 
         }
 

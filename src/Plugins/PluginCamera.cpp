@@ -15,7 +15,7 @@
 #include "PluginGraphics.h"
 #include "PluginFrameTimer.h"
 #include "Logger.h"
-#include "AABBStruct.h"
+#include "AABB.h"
 #include "Eigen/Geometry"
 #include "CameraGui.h"
 

@@ -6,7 +6,7 @@
 #define ENGINE24_PLUGINAABB_H
 
 #include "Plugin.h"
-#include "AABBStruct.h"
+#include "AABB.h"
 #include "Command.h"
 #include "entt/fwd.hpp"
 

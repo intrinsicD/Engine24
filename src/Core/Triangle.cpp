@@ -49,8 +49,8 @@ namespace Bcg{
         Vector<float, 3> closest = FromBarycentricCoordinates(triangle, bary);
 
         Vector<float, 3> diff = point - closest;
-        float sign = n.dot(diff);
-        return sign > 0 ? diff.norm() : -diff.norm();
+        float sign = glm::dot(n, diff);
+        return sign > 0 ? glm::length(diff) : -glm::length(diff);
     }
 
 

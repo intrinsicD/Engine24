@@ -11,7 +11,6 @@ target_sources(Engine24 PRIVATE
         GraphInterface.cpp
         GLFWUtils.cpp
         HandleGlfwKeyEvents.cpp
-        Intersections.cpp
         KDTreeCompute.cpp
         KDTreeCpu.cpp
         Keyboard.cpp
@@ -20,7 +19,6 @@ target_sources(Engine24 PRIVATE
         MeshInterface.cpp
         MeshView.cpp
         Mouse.cpp
-        OBB.cpp
         Picker.cpp
         Plane.cpp
         Plugin.cpp

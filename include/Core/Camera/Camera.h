@@ -5,260 +5,141 @@
 #ifndef ENGINE24_CAMERA_H
 #define ENGINE24_CAMERA_H
 
-#include "RigidTransform.h"
 #include "Buffer.h"
-#include "ViewMatrix.h"
+#include "glm/gtc/type_ptr.hpp"
+#include "glm/gtc/matrix_transform.hpp"
 
 namespace Bcg {
-
-
-
-    struct PerspParameters {
-        float fovy = 45.0f;
-        float aspect = 1.0f;
-        float zNear = 0.1f;
-        float zFar = 1000.0f;
-        bool dirty = true;
-
-        void set_aspect(int width, int height) {
-            aspect = float(width) / float(height);
-            dirty = true;
-        }
-    };
-
-    struct OrthoParameters {
-        float left = -1.0f;
-        float right = 1.0f;
-        float bottom = -1.0f;
-        float top = 1.0f;
-        float zNear = -1.0f;
-        float zFar = 1.0f;
-        bool dirty = false;
-    };
-
-    class ProjectionMatrix {
-    public:
-        explicit ProjectionMatrix(const PerspParameters &params) : ProjectionMatrix(params.fovy, params.aspect,
-                                                                                    params.zNear, params.zFar) {
-
-        }
-
-        explicit ProjectionMatrix(float fovy, float aspect, float zNear, float zFar) :
-                m_matrix(perspective_matrix(fovy, aspect, zNear, zFar)) {
-
-        }
-
-        explicit ProjectionMatrix(const OrthoParameters &params) : ProjectionMatrix(params.left, params.right,
-                                                                                    params.bottom, params.top,
-                                                                                    params.zNear, params.zFar) {
-
-        }
-
-        explicit ProjectionMatrix(float left, float right, float bottom, float top, float zNear, float zFar) :
-                m_matrix(frustum_matrix(left, right, bottom, top, zNear, zFar)) {
-
-        }
-
-        static Matrix<float, 4, 4> frustum_matrix(float l, float r, float b, float t, float n,
-                                                  float f) {
-            Matrix<float, 4, 4> m(Matrix<float, 4, 4>::Zero());
-
-            m(0, 0) = (n + n) / (r - l);
-            m(0, 2) = (r + l) / (r - l);
-            m(1, 1) = (n + n) / (t - b);
-            m(1, 2) = (t + b) / (t - b);
-            m(2, 2) = -(f + n) / (f - n);
-            m(2, 3) = -f * (n + n) / (f - n);
-            m(3, 2) = -1.0f;
-
-            return m;
-        }
-
-        static Matrix<float, 4, 4> perspective_matrix(float fovy, float aspect, float zNear,
-                                                      float zFar) {
-            float t = zNear * tan(fovy * float(std::numbers::pi / 360.0));
-            float b = -t;
-            float l = b * aspect;
-            float r = t * aspect;
-
-            return frustum_matrix(l, r, b, t, float(zNear), float(zFar));
-        }
-
-        auto matrix() const { return m_matrix; }
-
-        Matrix<float, 4, 4> m_matrix;
-    };
-
-    class Camera {
-    public:
-        Camera() : p_params(), o_params(), v_params() {
-            p_params.dirty = true;
-        }
-
-        PerspParameters p_params;
-        OrthoParameters o_params;
-        ViewParameters<float> v_params;
-
+    struct Camera {
         enum class ProjectionType {
             PERSPECTIVE, ORTHOGRAPHIC
         } proj_type = ProjectionType::PERSPECTIVE;
 
-        Matrix<float, 4, 4> view;
-        Matrix<float, 4, 4> proj;
-
-        bool dirty_view = true;
-        bool dirty_proj = true;
+        glm::mat4 view;
+        glm::mat4 proj;
     };
+
+    struct ViewParams {
+        glm::vec3 eye = glm::vec3(0.0f, 0.0f, 1.0f);
+        glm::vec3 center = glm::vec3(0.0f, 0.0f, 0.0f);
+        glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+    };
+
+    struct PerspectiveParams {
+        float fovy = 45.0f;
+        float aspect = 1.0f;
+        float zNear = 0.1f;
+        float zFar = 100.0f;
+        bool dirty = true;
+    };
+
+    struct OrthoParams {
+        float left = -1.0f;
+        float right = 1.0f;
+        float bottom = -1.0f;
+        float top = 1.0f;
+        float zNear = 0.1f;
+        float zFar = 100.0f;
+        bool dirty = true;
+    };
+
+    glm::vec3 get_eye(const Camera &camera) {
+        return glm::vec3(camera.view[3]);
+    }
+
+    ViewParams get_view_params(const Camera &camera) {
+        glm::mat4 model = glm::inverse(camera.view);
+        ViewParams v_params;
+        v_params.eye = model[3];
+        v_params.center = model[3] - model[2];
+        v_params.up = model[1];
+        return v_params;
+    }
+
+    void set_view_params(Camera &camera, const ViewParams &v_params) {
+        camera.view = glm::lookAt(v_params.eye, v_params.center, v_params.up);
+    }
+
+    PerspectiveParams get_perspective_params(const Camera &camera) {
+        PerspectiveParams p_params;
+
+        // Extract near and far planes
+        float m22 = camera.proj[2][2];
+        float m32 = camera.proj[3][2];
+        p_params.zNear = m32 / (m22 - 1.0f);
+        p_params.zFar = m32 / (m22 + 1.0f);
+
+        // Extract field of view and aspect ratio
+        p_params.fovy = 2.0f * atan(1.0f / camera.proj[1][1]);
+        p_params.aspect = camera.proj[1][1] / camera.proj[0][0];
+
+        return p_params;
+    }
+
+    void set_perspective_params(Camera &camera, const PerspectiveParams &p_params) {
+        camera.proj_type = Camera::ProjectionType::PERSPECTIVE;
+        camera.proj = glm::perspective(p_params.fovy, p_params.aspect, p_params.zNear, p_params.zFar);
+    }
+
+    OrthoParams get_ortho_params(const Camera &camera) {
+        OrthoParams o_params;
+
+        // Extract left and right
+        float m00 = camera.proj[0][0];
+        float m03 = camera.proj[3][0];
+        o_params.left = (m03 + 1.0f) / m00;
+        o_params.right = (m03 - 1.0f) / -m00;
+
+        // Extract bottom and top
+        float m11 = camera.proj[1][1];
+        float m13 = camera.proj[3][1];
+        o_params.bottom = (m13 + 1.0f) / m11;
+        o_params.top = (m13 - 1.0f) / -m11;
+
+        // Extract near and far planes
+        float m22 = camera.proj[2][2];
+        float m23 = camera.proj[3][2];
+        o_params.zNear = (m23 + 1.0f) / m22;
+        o_params.zFar = (m23 - 1.0f) / -m22;
+
+        return o_params;
+    }
+
+    void set_ortho_params(Camera &camera, const OrthoParams &o_params) {
+        camera.proj_type = Camera::ProjectionType::ORTHOGRAPHIC;
+        camera.proj = glm::ortho(o_params.left, o_params.right, o_params.bottom, o_params.top, o_params.zNear,
+                                 o_params.zFar);
+    }
+
+    PerspectiveParams Convert(const OrthoParams &o_params) {
+        PerspectiveParams p_params;
+        float height = o_params.top - o_params.bottom;
+        p_params.aspect = (o_params.right - o_params.left) / height;
+        p_params.fovy = 2.0f * atanf(height / (2.0f * o_params.zNear));
+        p_params.zNear = o_params.zNear;
+        p_params.zFar = o_params.zFar;
+        return p_params;
+    }
+
+    OrthoParams Convert(const PerspectiveParams &p_params, float depth/* = p_params.zNear*/){
+        // Compute dimensions at specified depth
+        float height = 2.0f * depth * tanf(p_params.fovy / 2.0f);
+        float width = height * p_params.aspect;
+
+        // Define orthographic parameters
+        OrthoParams o_params;
+        o_params.left = -width / 2.0f;
+        o_params.right = width / 2.0f;
+        o_params.bottom = -height / 2.0f;
+        o_params.top = height / 2.0f;
+        o_params.zNear = depth; //set the depth where the orhto projection should match the perspective projection
+        o_params.zFar = p_params.zFar;
+        return o_params;
+    }
 
     struct CameraUniformBuffer : public UniformBuffer {
 
     };
-
-//! OpenGL viewport matrix with parameters left, bottom, width, height
-    template<typename Scalar>
-    Matrix<Scalar, 4, 4> viewport_matrix(Scalar l, Scalar b, Scalar w, Scalar h) {
-        Matrix<Scalar, 4, 4> m(Matrix<Scalar, 4, 4>::Zero());
-
-        m(0, 0) = 0.5 * w;
-        m(0, 3) = 0.5 * w + l;
-        m(1, 1) = 0.5 * h;
-        m(1, 3) = 0.5 * h + b;
-        m(2, 2) = 0.5;
-        m(2, 3) = 0.5;
-        m(3, 3) = 1.0f;
-
-        return m;
-    }
-
-//! inverse of OpenGL viewport matrix with parameters left, bottom, width, height
-//! \sa viewport_matrix
-    template<typename Scalar>
-    Matrix<Scalar, 4, 4> inverse_viewport_matrix(Scalar l, Scalar b, Scalar w, Scalar h) {
-        Matrix<Scalar, 4, 4> m(Matrix<Scalar, 4, 4>::Zero());
-
-        m(0, 0) = 2.0 / w;
-        m(0, 3) = -1.0 - (l + l) / w;
-        m(1, 1) = 2.0 / h;
-        m(1, 3) = -1.0 - (b + b) / h;
-        m(2, 2) = 2.0;
-        m(2, 3) = -1.0;
-        m(3, 3) = 1.0f;
-
-        return m;
-    }
-
-//! OpenGL frustum matrix with parameters left, right, bottom, top, near, far
-    template<typename Scalar>
-    Matrix<Scalar, 4, 4> frustum_matrix(Scalar l, Scalar r, Scalar b, Scalar t, Scalar n,
-                                        Scalar f) {
-        Matrix<Scalar, 4, 4> m(Matrix<Scalar, 4, 4>::Zero());
-
-        m(0, 0) = (n + n) / (r - l);
-        m(0, 2) = (r + l) / (r - l);
-        m(1, 1) = (n + n) / (t - b);
-        m(1, 2) = (t + b) / (t - b);
-        m(2, 2) = -(f + n) / (f - n);
-        m(2, 3) = -f * (n + n) / (f - n);
-        m(3, 2) = -1.0f;
-
-        return m;
-    }
-
-//! inverse of OpenGL frustum matrix with parameters left, right, bottom, top, near, far
-//! \sa frustum_matrix
-    template<typename Scalar>
-    Matrix<Scalar, 4, 4> inverse_frustum_matrix(Scalar l, Scalar r, Scalar b, Scalar t,
-                                                Scalar n, Scalar f) {
-        Matrix<Scalar, 4, 4> m(Matrix<Scalar, 4, 4>::Zero());
-
-        const Scalar nn = n + n;
-
-        m(0, 0) = (r - l) / nn;
-        m(0, 3) = (r + l) / nn;
-        m(1, 1) = (t - b) / nn;
-        m(1, 3) = (t + b) / nn;
-        m(2, 3) = -1.0;
-        m(3, 2) = (n - f) / (nn * f);
-        m(3, 3) = (n + f) / (nn * f);
-
-        return m;
-    }
-
-//! OpenGL perspective matrix with parameters field of view in y-direction,
-//! aspect ratio, and distance of near and far planes
-    template<typename Scalar>
-    Matrix<Scalar, 4, 4> perspective_matrix(Scalar fovy, Scalar aspect, Scalar zNear,
-                                            Scalar zFar) {
-        Scalar t = Scalar(zNear) * tan(fovy * Scalar(std::numbers::pi / 360.0));
-        Scalar b = -t;
-        Scalar l = b * aspect;
-        Scalar r = t * aspect;
-
-        return frustum_matrix(l, r, b, t, Scalar(zNear), Scalar(zFar));
-    }
-
-//! inverse of perspective matrix
-//! \sa perspective_matrix
-    template<typename Scalar>
-    Matrix<Scalar, 4, 4> inverse_perspective_matrix(Scalar fovy, Scalar aspect,
-                                                    Scalar zNear, Scalar zFar) {
-        Scalar t = zNear * tan(fovy * Scalar(std::numbers::pi / 360.0));
-        Scalar b = -t;
-        Scalar l = b * aspect;
-        Scalar r = t * aspect;
-
-        return inverse_frustum_matrix(l, r, b, t, zNear, zFar);
-    }
-
-//! OpenGL orthogonal projection matrix with parameters left, right, bottom,
-//! top, near, far
-    template<typename Scalar>
-    Matrix<Scalar, 4, 4> ortho_matrix(Scalar left, Scalar right, Scalar bottom, Scalar top,
-                                      Scalar zNear = -1, Scalar zFar = 1) {
-        Matrix<Scalar, 4, 4> m(Matrix<Scalar, 4, 4>::Zero());
-
-        m(0, 0) = Scalar(2) / (right - left);
-        m(1, 1) = Scalar(2) / (top - bottom);
-        m(2, 2) = -Scalar(2) / (zFar - zNear);
-        m(0, 3) = -(right + left) / (right - left);
-        m(1, 3) = -(top + bottom) / (top - bottom);
-        m(2, 3) = -(zFar + zNear) / (zFar - zNear);
-        m(3, 3) = Scalar(1);
-
-        return m;
-    }
-
-//! OpenGL look-at camera matrix with parameters eye position, scene center, up-direction
-    template<typename Scalar>
-    Matrix<Scalar, 4, 4> look_at_matrix(const Vector<Scalar, 3> &eye,
-                                        const Vector<Scalar, 3> &center,
-                                        const Vector<Scalar, 3> &up) {
-        Vector<Scalar, 3> z = (eye - center).normalized();
-        Vector<Scalar, 3> x = (cross(up, z)).normalized();
-        Vector<Scalar, 3> y = (cross(z, x)).normalized();
-
-        // clang-format off
-        Matrix<Scalar, 4, 4> m;
-        m(0, 0) = x[0];
-        m(0, 1) = x[1];
-        m(0, 2) = x[2];
-        m(0, 3) = -dot(x, eye);
-        m(1, 0) = y[0];
-        m(1, 1) = y[1];
-        m(1, 2) = y[2];
-        m(1, 3) = -dot(y, eye);
-        m(2, 0) = z[0];
-        m(2, 1) = z[1];
-        m(2, 2) = z[2];
-        m(2, 3) = -dot(z, eye);
-        m(3, 0) = 0.0;
-        m(3, 1) = 0.0;
-        m(3, 2) = 0.0;
-        m(3, 3) = 1.0;
-        // clang-format on
-
-        return m;
-    }
 }
 
 #endif //ENGINE24_CAMERA_H

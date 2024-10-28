@@ -19,7 +19,7 @@ namespace Bcg {
 
 
         static T area(const Vector<T, 3> vu, const Vector<T, 3> &wu) {
-            return cross(vu, wu).norm();
+            return glm::length(cross(vu, wu));
         }
 
         static Vector<T, 3> to_barycentric_coordinates(const Vector<T, 3> &vu,
@@ -60,7 +60,7 @@ namespace Bcg {
         }
 
         static Vector<T, 3> normal(const Vector<T, 3> &vu, const Vector<T, 3> &wu) {
-            return cross(vu, wu).normalized();
+            return glm::normalize(cross(vu, wu));
         }
 
         static Vector<T, 3> clamped_barycentric_coordinates(const Vector<T, 3> &bary) {

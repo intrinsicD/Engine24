@@ -6,22 +6,22 @@
 
 namespace Bcg{
     Vector<float, 3> ClosestPoint(const Sphere &sphere, const Vector<float, 3> &point) {
-        return sphere.center + (point - sphere.center).normalized() * sphere.radius;
+        return sphere.center + glm::normalize(point - sphere.center) * sphere.radius;
     }
 
 
     float Volume(const Sphere &sphere) {
-        return (4.0 / 3.0) * M_PI * std::pow(sphere.radius, 3);
+        return (4.0f / 3.0f) * M_PI * std::pow(sphere.radius, 3);
     }
 
 
     float SurfaceArea(const Sphere &sphere) {
-        return 4.0 * M_PI * std::pow(sphere.radius, 2);
+        return 4.0f * M_PI * std::pow(sphere.radius, 2);
     }
 
 
     float Distance(const Sphere &sphere, const Vector<float, 3> &point) {
-        return (point - sphere.center).norm() - sphere.radius;
+        return glm::length(point - sphere.center) - sphere.radius;
     }
 
 

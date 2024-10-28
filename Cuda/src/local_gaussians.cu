@@ -110,7 +110,7 @@ namespace Bcg::cuda {
             glm::mat3 cov(0);
       
             // Combine mean and covariance calculation in one loop
-            for (int i = 0; i < num_found; ++i) {
+            for (int i = 0; i < int(num_found); ++i) {
                 const glm::vec3 object = d_positions[indices[i]];
                 mean = mean + object;
                 cov = cov + glm::outerProduct(object, object);

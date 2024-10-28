@@ -6,7 +6,7 @@
 
 namespace Bcg{
     float Distance(const Plane &plane, const Vector<float, 3> &point) {
-        return plane.normal.dot(point) - plane.d;
+        return glm::dot(plane.normal, point) - plane.d;
     }
 
     float UnsignedDistance(const Plane &plane, const Vector<float, 3> &point) {

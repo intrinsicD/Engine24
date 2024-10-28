@@ -22,7 +22,7 @@ namespace Bcg {
         }
 
         static T parameter(const Vector<T, 3> &diff, const Vector<T, 3> start_to_point) {
-            return start_to_point.dot(diff) / diff.dot(diff);
+            return glm::dot(start_to_point, diff) / glm::dot(diff, diff);
         }
 
         static Vector<T, 3> closest_point(const Vector<T, 3> start, const Vector<T, 3> &diff,
@@ -33,7 +33,7 @@ namespace Bcg {
 
         static T distance(const Vector<T, 3> start, const Vector<T, 3> &vec_to_end,
                           const Vector<T, 3> &point, const Vector<T, 3> start_to_point) {
-            return closest_point(start, vec_to_end, point, start_to_point).norm();
+            return glm::length(closest_point(start, vec_to_end, point, start_to_point));
         }
     };
 

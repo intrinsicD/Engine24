@@ -49,7 +49,7 @@ namespace Bcg {
         PointTransformer(float dpi, const Vector<int, 4> &viewport_dpi_adjusted,
                          const Matrix<float, 4, 4> &proj,
                          const Matrix<float, 4, 4> &view,
-                         const Matrix<float, 4, 4> &model = Matrix<float, 4, 4>::Identity());
+                         const Matrix<float, 4, 4> &model = Matrix<float, 4, 4>(1.0f));
 
         [[nodiscard]] Points apply(const ScreenSpacePos &p, float z = 0) const;
 
