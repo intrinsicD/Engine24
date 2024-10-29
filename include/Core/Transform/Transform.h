@@ -9,6 +9,28 @@
 #include "glm/gtc/type_ptr.hpp"
 
 namespace Bcg {
+    struct Transform{
+        glm::mat4 local = glm::mat4(1.0f);
+
+        glm::mat4 world() const {
+            return cached_parent_world * local;
+        }
+
+        void set_parent_world(const glm::mat4 &parent_world){
+            cached_parent_world = parent_world;
+        }
+    private:
+        glm::mat4 cached_parent_world = glm::mat4(1.0f);
+    };
+
+    void pre_transform(Transform &t, glm::mat4 &other){
+        t.local = local * t.other;
+    }
+
+    void post_transform(Transform &t, glm::mat4 &other){
+        t.local = other * t.local;
+    }
+
     struct Transform {
         glm::mat4 local;
 

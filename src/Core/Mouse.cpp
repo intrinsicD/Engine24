@@ -27,7 +27,7 @@ namespace Bcg {
             ImGui::Text("Middle: %d", mouse.middle());
             ImGui::Text("Right: %d", mouse.right());
             ImGui::Text("Scrolling: %d", mouse.scrolling);
-            ImGui::Text("Scroll Offset: %lf, %lf", mouse.scroll_offset.x(), mouse.scroll_offset.y());
+            ImGui::Text("Scroll Offset: %lf, %lf", mouse.scroll_offset.x, mouse.scroll_offset.y);
             Show(mouse.cursor);
             ImGui::Text("Current Buttons: {");
             ImGui::SameLine();

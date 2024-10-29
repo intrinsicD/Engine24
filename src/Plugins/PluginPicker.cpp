@@ -9,8 +9,8 @@
 #include "EventsCallbacks.h"
 #include "Mouse.h"
 #include "imgui.h"
-#include "Intersections.h"
 #include "Transform.h"
+#include "AABB.h"
 //#include "KDTreeCpu.h"
 #include "Cuda/KDTreeCuda.h"
 #include "PointCloud.h"
@@ -35,12 +35,12 @@ namespace Bcg {
         auto &mouse = Engine::Context().get<Mouse>();
         auto &picked = last_picked();
         picked.spaces = mouse.cursor.last_left.press;
-        picked.entity.is_background = picked.spaces.ndc.z() == 1.0;
+        picked.entity.is_background = picked.spaces.ndc.z == 1.0;
         auto view = Engine::State().view<AABB, Transform>();
         for (const auto entity_id: view) {
             auto &aabb = Engine::State().get<AABB>(entity_id);
             auto &transform = Engine::State().get<Transform>(entity_id);
-            if (Intersect(aabb, (transform.world().inverse() * picked.spaces.wsp.homogeneous()).head<3>())) {
+            if (contains(aabb, (glm::inverse(transform.world()) * glm::vec4(picked.spaces.wsp, 1.0f)))) {
                 picked.entity.id = entity_id;
                 break;
             }
@@ -50,7 +50,7 @@ namespace Bcg {
         if (Engine::valid(entity_id) && !picked.entity.is_background) {
             if (Engine::has<Transform>(entity_id)) {
                 auto &transform = Engine::State().get<Transform>(entity_id);
-                picked.spaces.osp = transform.world().inverse() * picked.spaces.wsp;
+                picked.spaces.osp = glm::inverse(transform.world()) * glm::vec4(picked.spaces.wsp, 1.0f);
             }
 /*            if (!Engine::has<KDTreeCpu>(entity_id)) {
                 auto &kdtree = Engine::State().emplace<KDTreeCpu>(entity_id);

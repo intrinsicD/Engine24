@@ -4,90 +4,103 @@
 
 #include "CameraGui.h"
 #include "imgui.h"
+#include "PluginGraphics.h"
 
-namespace Bcg::Gui{
-    void Show(Camera &camera) {
-        bool changed_v = false;
-        ViewParams view_params = get_view_params(camera);
-        if (ImGui::InputFloat3("v_params.center", glm::value_ptr(view_params.center))) {
-            changed_v = true;
-        }
-        if (ImGui::InputFloat3("v_params.eye", glm::value_ptr(view_params.eye))) {
-            changed_v = true;
-        }
-        if (ImGui::InputFloat3("v_params.up", glm::value_ptr(view_params.up))) {
-            changed_v = true;
-        }
+namespace Bcg::Gui {
+    bool Show(ViewParams &v_params) {
+        bool changed_v = ImGui::InputFloat3("v_params.center", glm::value_ptr(v_params.center));
+        changed_v |= ImGui::InputFloat3("v_params.eye", glm::value_ptr(v_params.eye));
+        changed_v |= ImGui::InputFloat3("v_params.up", glm::value_ptr(v_params.up));
+        return changed_v;
+    }
 
-        if(changed_v){
-            set_view_params(camera, view_params);
-        }
+    bool Show(PerspectiveParams &p_params) {
+        bool changed_p = ImGui::InputFloat("p_params.fovy", &p_params.fovy);
+        changed_p |= ImGui::InputFloat("p_params.aspect", &p_params.aspect);
+        changed_p |= ImGui::InputFloat("p_params.zNear", &p_params.zNear);
+        changed_p |= ImGui::InputFloat("p_params.zFar", &p_params.zFar);
+        return changed_p;
+    }
 
-        static int projection_type = 0;
+    bool Show(OrthoParams &o_params) {
+        bool changed_o = ImGui::InputFloat("o_params.left", &o_params.left);
+        changed_o |= ImGui::InputFloat("o_params.right", &o_params.right);
+        changed_o |= ImGui::InputFloat("o_params.bottom", &o_params.bottom);
+        changed_o |= ImGui::InputFloat("o_params.top", &o_params.top);
+        changed_o |= ImGui::InputFloat("o_params.zNear", &o_params.zNear);
+        changed_o |= ImGui::InputFloat("o_params.zFar", &o_params.zFar);
+        return changed_o;
+    }
 
+    void ShowMatrix(const glm::mat4 &m) {
+        ImGui::Text("%f %f %f %f\n%f %f %f %f\n%f %f %f %f\n%f %f %f %f",
+                    m[0][0], m[1][0], m[2][0], m[3][0],
+                    m[0][1], m[1][1], m[2][1], m[3][1],
+                    m[0][2], m[1][2], m[2][2], m[3][2],
+                    m[0][3], m[1][3], m[2][3], m[3][3]);
+    }
+
+    void ShowProjection(Camera &camera) {
         if (camera.proj_type == Camera::ProjectionType::PERSPECTIVE) {
             PerspectiveParams p_params = get_perspective_params(camera);
-            bool changed_p = ImGui::InputFloat("p_params.fovy", &p_params.fovy);
-            changed_p |= ImGui::InputFloat("p_params.aspect", &p_params.aspect);
-            changed_p |= ImGui::InputFloat("p_params.zNear", &p_params.zNear);
-            changed_p |= ImGui::InputFloat("p_params.zFar", &p_params.zFar);
-            if (changed_p) {
+            if (Show(p_params)) {
                 set_perspective_params(camera, p_params);
             }
-        } else {
-            OrthoParams o_params = get_ortho_params(camera);
-            bool changed_o = ImGui::InputFloat("o_params.left", &o_params.left);
-            changed_o |= ImGui::InputFloat("o_params.right", &o_params.right);
-            changed_o |= ImGui::InputFloat("o_params.bottom", &o_params.bottom);
-            changed_o |= ImGui::InputFloat("o_params.top", &o_params.top);
-            changed_o |= ImGui::InputFloat("o_params.zNear", &o_params.zNear);
-            changed_o |= ImGui::InputFloat("o_params.zFar", &o_params.zFar);
-            if (changed_o) {
-                set_ortho_params(camera, o_params);
+            static float depth = p_params.zNear;
+            bool changed_depth = ImGui::SliderFloat("Depth", &depth, p_params.zNear, p_params.zFar);
+            if (ImGui::Button("Convert to Ortho") || changed_depth) {
+                {
+                    OrthoParams o_params = Convert(p_params, depth);
+                    set_ortho_params(camera, o_params);
+                }
+            } else {
+                OrthoParams o_params = get_ortho_params(camera);
+                if (Show(o_params)) {
+                    set_ortho_params(camera, o_params);
+                }
+                if (ImGui::Button("Convert to Perspective")) {
+                    PerspectiveParams p_params = Convert(o_params);
+                    set_perspective_params(camera, p_params);
+                }
             }
         }
-        //TODO set from camera;
-        //TODO Convert one to the other ...
-        static OrthoParams o_params;
-        static PerspectiveParams p_params;
-        if (ImGui::RadioButton("Perspective", &projection_type, 0)) {
-            if(camera.proj_type == Camera::ProjectionType::ORTHOGRAPHIC){
-                o_params = get_ortho_params(camera);
-                p_params = Convert(o_params);
-            }else{
-                p_params = get_perspective_params(camera);
-            }
-            set_perspective_params(camera, p_params);
+    }
+
+    void Show(Camera &camera) {
+        ViewParams view_params = get_view_params(camera);
+        if (Show(view_params)) {
+            set_view_params(camera, view_params);
+        }
+        if (ImGui::CollapsingHeader("ViewMatrix")) {
+            ShowMatrix(camera.view);
         }
 
-        if (ImGui::RadioButton("Orthographic", &projection_type, 1)) {
-            if(camera.proj_type == Camera::ProjectionType::PERSPECTIVE){
-                p_params = get_perspective_params(camera);
-                o_params = Convert(p_params);
-            }else{
-                o_params = get_ortho_params(camera);
-            }
-            set_ortho_params(camera, o_params);
+        ShowProjection(camera);
+
+        if (ImGui::CollapsingHeader(
+                camera.proj_type == Camera::ProjectionType::PERSPECTIVE ? "Perspective ProjectionMatrix"
+                                                                        : "Ortho ProjectionMatrix")) {
+            ShowMatrix(camera.proj);
         }
 
-        std::stringstream ss;
-        ss << camera.view;
-        ImGui::Text("ViewMatrix\n%s", ss.str().c_str());
-        //reuse the stringstream
-        ss.str("");
-        ss << camera.proj;
-        ImGui::Text("ProjectionMatrix\n%s", ss.str().c_str());
         if (ImGui::Button("Reset Camera")) {
-            camera.v_params = ViewParameters<float>();
-            camera.p_params = PerspParameters();
-            camera.o_params = OrthoParameters();
+            view_params.eye = glm::vec3(0, 0, 1);
+            view_params.center = glm::vec3(0, 0, 0);
+            view_params.up = glm::vec3(0, 1, 0);
             camera.proj_type = Camera::ProjectionType::PERSPECTIVE;
-            camera.view = look_at_matrix(camera.v_params.eye(), camera.v_params.center(), camera.v_params.up());
-            camera.proj = perspective_matrix(camera.p_params.fovy, camera.p_params.aspect,
-                                             camera.p_params.zNear,
-                                             camera.p_params.zFar);
-            camera.dirty_view = true;
-            camera.dirty_proj = true;
+            set_view_params(camera, view_params);
+
+            auto vp = PluginGraphics::get_viewport();
+            auto viewport_width = vp[2];
+            auto viewport_height = vp[3];
+
+            float aspect_ratio = float(viewport_width) / float(viewport_height);
+            PerspectiveParams p_params = get_perspective_params(camera);
+            p_params.fovy = 45.0f;
+            p_params.aspect = aspect_ratio;
+            p_params.zNear = 0.1f;
+            p_params.zFar = 100.0f;
+            set_perspective_params(camera, p_params);
         }
     }
 }
