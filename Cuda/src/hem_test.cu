@@ -6,6 +6,7 @@
 #include "lbvh.cuh"
 #include "glm/glm.hpp"
 #include "gaussian.cuh"
+#include "PropertyEigenMap.h"
 #include <float.h>
 #include <thrust/random.h>
 #include <thrust/gather.h>
@@ -578,7 +579,7 @@ namespace Bcg::cuda {
         HemResult result;
         std::vector<glm::vec3> ps(positions.size());
         for (size_t i = 0; i < positions.size(); ++i) {
-            ps[i] = {positions[i].x(), positions[i].y(), positions[i].z()};
+            ps[i] = {positions[i].x, positions[i].y, positions[i].z};
         }
 
         HemParams params;
@@ -603,7 +604,7 @@ namespace Bcg::cuda {
 
         for (size_t i = 0; i < h_means.size(); ++i) {
             result.means[i] = {h_means[i].x, h_means[i].y, h_means[i].z};
-            result.covs[i] << h_covs[i][0].x, h_covs[i][0].y, h_covs[i][0].z,
+            Map(result.covs[i]) << h_covs[i][0].x, h_covs[i][0].y, h_covs[i][0].z,
                     h_covs[i][1].x, h_covs[i][1].y, h_covs[i][1].z,
                     h_covs[i][2].x, h_covs[i][2].y, h_covs[i][2].z;
             result.weights[i] = h_weights[i];

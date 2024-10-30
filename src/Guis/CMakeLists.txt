@@ -10,8 +10,8 @@ target_sources(Engine24 PRIVATE
         PickerGui.cpp
         PointCloudGui.cpp
         PropertiesGui.cpp
-        RigidTransformGui.cpp
         SelectionGui.cpp
         SphereViewGui.cpp
+        TransfromGui.cpp
         VectorfieldViewGui.cpp
 )

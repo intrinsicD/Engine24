@@ -91,7 +91,7 @@ namespace Bcg {
                 return;
             }
             auto *vertices = GetPrimitives(entity_id).vertices();
-            auto selected_vertices = vertices->get_or_add<Vector<float, 3>>(property_name, Vector<float, 3>::Ones());
+            auto selected_vertices = vertices->get_or_add<Vector<float, 3>>(property_name, Vector<float, 3>(1.0f));
 
             Map(selected_vertices.vector()).setOnes();
             auto &selection = Engine::State().get<Selection>(entity_id);

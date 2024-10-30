@@ -8,6 +8,7 @@
 #include "Plugin.h"
 #include "Camera.h"
 #include "Command.h"
+#include "MatVec.h"
 
 namespace Bcg {
     class PluginCamera : public Plugin {
@@ -19,8 +20,6 @@ namespace Bcg {
         static Camera *setup(entt::entity entity_id);
 
         static void cleanup(entt::entity entity_id);
-
-        static void transform(Camera &camera, const Matrix<float, 4, 4> &transformation);
 
         void activate() override;
 

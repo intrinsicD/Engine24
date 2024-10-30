@@ -509,14 +509,14 @@ namespace Bcg {
 
         mesh.vprops_.reserve(vPos.size());
         for (const auto &point: vPos) {
-            mesh.add_vertex(Vector<double, 3>(point.data()).cast<float>());
+            mesh.add_vertex(glm::vec3(point[0], point[1], point[2]));
         }
 
         if (!vCol.empty()) {
             for (const auto &v: mesh.vertices()) {
                 const Eigen::Vector<double, 3> color(vCol[v.idx()][0] / 255.0, vCol[v.idx()][1] / 255.0,
                                                      vCol[v.idx()][2] / 255.0);
-                colors[v] = color.cast<float>();
+                colors[v] = glm::vec3(color[0], color[1], color[2]);
             }
         } else {
             mesh.vprops_.remove(colors);
@@ -1650,14 +1650,14 @@ namespace Bcg {
 
         mesh.vertices.reserve(vPos.size());
         for (const auto &point: vPos) {
-            mesh.add_vertex(Vector<double, 3>(point.data()).cast<float>());
+            mesh.add_vertex(glm::vec3(point[0], point[1], point[2]));
         }
 
         if (!vCol.empty()) {
             for (const auto &v: mesh.vertices) {
                 const Eigen::Vector<double, 3> color(vCol[v.idx()][0] / 255.0, vCol[v.idx()][1] / 255.0,
                                                      vCol[v.idx()][2] / 255.0);
-                colors[v] = color.cast<float>();
+                colors[v] = glm::vec3(color[0], color[1], color[2]);
             }
         } else {
             mesh.vertices.remove(colors);

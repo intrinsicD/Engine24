@@ -58,15 +58,15 @@ namespace Bcg::cuda {
         thrust::transform(h_covs.begin(), h_covs.end(), host_covs.begin(),
                           [] __host__(const glm::mat3 &m) {
                               Matrix<float, 3, 3> mat;
-                              mat(0, 0) = m[0].x;
-                              mat(0, 1) = m[0].y;
-                              mat(0, 2) = m[0].z;
-                              mat(1, 0) = m[1].x;
-                              mat(1, 1) = m[1].y;
-                              mat(1, 2) = m[1].z;
-                              mat(2, 0) = m[2].x;
-                              mat(2, 1) = m[2].y;
-                              mat(2, 2) = m[2].z;
+                              mat[0][0] = m[0].x;
+                              mat[1][0] = m[0].y;
+                              mat[2][0] = m[0].z;
+                              mat[0][1] = m[1].x;
+                              mat[1][1] = m[1].y;
+                              mat[2][1] = m[1].z;
+                              mat[0][2] = m[2].x;
+                              mat[1][2] = m[2].y;
+                              mat[2][2] = m[2].z;
                               return mat;
                           });
 
@@ -144,7 +144,7 @@ namespace Bcg::cuda {
         size_t num_objects = points.size();
         thrust::host_vector<glm::vec3> h_positions(num_objects);
         for (size_t i = 0; i < num_objects; ++i) {
-            h_positions[i] = glm::vec3{points[i].x(), points[i].y(), points[i].z()};
+            h_positions[i] = glm::vec3{points[i].x, points[i].y, points[i].z};
         }
         LocalGaussiansDeviceData data = SetupLocalGaussiansDeviceData(h_positions);
         LocalGaussiansDevicePtr ptr = data.GetDevicePtr();

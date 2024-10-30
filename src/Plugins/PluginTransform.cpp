@@ -8,7 +8,7 @@
 #include "Entity.h"
 #include "EventsGui.h"
 #include "Picker.h"
-#include "RigidTransformGui.h"
+#include "TransformGui.h"
 #include "PluginHierarchy.h"
 #include "CommandDoubleBuffer.h"
 #include "PluginHierarchy.h"
@@ -106,7 +106,7 @@ namespace Bcg {
         void SetIdentityTransform::execute() const {
             if (!Engine::valid(entity_id)) { return; }
             if (!Engine::has<Transform>(entity_id)) { return; }
-            Engine::State().get<Transform>(entity_id).set_local_identity();
+            Engine::State().get<Transform>(entity_id).set_local(glm::mat4(1.0f));
 
             PluginHierarchy::mark_transforms_dirty(entity_id);
         }

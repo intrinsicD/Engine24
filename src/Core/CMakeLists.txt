@@ -1,4 +1,6 @@
 target_sources(Engine24 PRIVATE
+        AABB.cpp
+        Camera.cpp
         Color.cpp
         CommandBuffer.cpp
         CoordinateSystems.cpp
@@ -34,6 +36,7 @@ target_sources(Engine24 PRIVATE
         SurfaceMeshTriangles.cpp
         SphereView.cpp
         Triangle.cpp
+        Transform.cpp
         Utils.cpp
         VectorfieldView.cpp
 )

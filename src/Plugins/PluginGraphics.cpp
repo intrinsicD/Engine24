@@ -202,7 +202,7 @@ namespace Bcg {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_PROGRAM_POINT_SIZE);
         Vector<int, 2> fbs = PluginGraphics::get_framebuffer_size();
-        Engine::Dispatcher().enqueue(Events::Callback::FramebufferResize{global_window.handle, fbs.x(), fbs.y()});
+        Engine::Dispatcher().enqueue(Events::Callback::FramebufferResize{global_window.handle, fbs.x, fbs.y});
         Engine::Context().emplace<FileWatcher>();
         return true;
     }
@@ -323,7 +323,7 @@ namespace Bcg {
 
     Vector<int, 4> PluginGraphics::get_viewport() {
         Vector<int, 4> viewport;
-        glGetIntegerv(GL_VIEWPORT, viewport.data());
+        glGetIntegerv(GL_VIEWPORT, glm::value_ptr(viewport));
         return std::move(viewport);
     }
 

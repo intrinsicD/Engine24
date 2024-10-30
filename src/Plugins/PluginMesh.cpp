@@ -84,7 +84,7 @@ namespace Bcg {
 
         struct VertexEqual {
             bool operator()(const PointType &p1, const PointType &p2) const {
-                return (p1 - p2).norm() < tol;
+                return glm::length(p1 - p2) < tol;
             }
 
             float tol;
@@ -263,8 +263,8 @@ namespace Bcg {
             message += " Done.";
 
             Log::Info(message);
-            float d = aabb.diagonal().maxCoeff();
-            CenterCameraAtDistance(aabb.center(), d).execute();
+            float d = glm::compMax(diagonal(aabb));
+            CenterCameraAtDistance(center(aabb), d).execute();
             ComputeSurfaceMeshVertexNormals(entity_id);
         }
 

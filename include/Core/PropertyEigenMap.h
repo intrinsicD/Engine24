@@ -11,40 +11,73 @@
 #include <type_traits>
 
 namespace Bcg {
-    template<typename T, typename Enable = void>
-    struct MapTraits;
-
-    template<typename Scalar, int Rows>
-    struct MapTraits<Eigen::Matrix<Scalar, Rows, 1>, typename std::enable_if<Rows != Eigen::Dynamic>::type> {
-        using Type = Eigen::Map<Eigen::Matrix<Scalar, Rows, Eigen::Dynamic>>;
-    };
-
-    template<typename Scalar, int Cols>
-    struct MapTraits<Eigen::Matrix<Scalar, 1, Cols>, typename std::enable_if<Cols != Eigen::Dynamic>::type> {
-        using Type = Eigen::Map<Eigen::Matrix<Scalar, Eigen::Dynamic, Cols>>;
-    };
-
-// Specialization for scalar types
-    template<typename Scalar>
-    struct MapTraits<Scalar, typename std::enable_if<std::is_arithmetic<Scalar>::value>::type> {
-        using Type = Eigen::Map<Eigen::Matrix<Scalar, Eigen::Dynamic, 1>>;
-    };
 
     template<typename T>
-    auto Map(std::vector<T> &p) {
-        using MatrixType = typename MapTraits<T>::Type;
-        if constexpr (std::is_arithmetic<T>::value) {
-            return MatrixType(p.data(), p.size(), 1);
-        } else if constexpr (T::RowsAtCompileTime != 1) {
-            return MatrixType(&p[0][0], T::RowsAtCompileTime, p.size());
-        } else if constexpr (T::ColsAtCompileTime != 1) {
-            return MatrixType(&p[0][0], p.size(), T::ColsAtCompileTime);
-        }
+    auto Map(std::vector<T> &data, int rows, int cols){
+        return Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>(data.data(), rows, cols);
     }
 
-    template<typename T, int N, int M>
-    auto Map(std::vector<T> &p, int rows, int cols) {
-        return Eigen::Map<Eigen::Matrix<T, N, M>>(p.data(), rows, cols);
+    template<typename T>
+    auto MapConst(const std::vector<T> &data, int rows, int cols){
+        return Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>(data.data(), rows, cols);
+    }
+
+    inline Eigen::Map<Eigen::Vector<float, Eigen::Dynamic>> Map(std::vector<float> &data) {
+        return Eigen::Map<Eigen::Vector<float, Eigen::Dynamic>>(data.data(), data.size());
+    }
+
+    inline Eigen::Map<const Eigen::Vector<float, Eigen::Dynamic>> MapConst(const std::vector<float> &data) {
+        return Eigen::Map<const Eigen::Vector<float, Eigen::Dynamic>>(data.data(), data.size());
+    }
+
+    inline Eigen::Map<Eigen::Vector<double, Eigen::Dynamic>> Map(std::vector<double> &data) {
+        return Eigen::Map<Eigen::Vector<double, Eigen::Dynamic>>(data.data(), data.size());
+    }
+
+    inline Eigen::Map<const Eigen::Vector<double, Eigen::Dynamic>> MapConst(const std::vector<double> &data) {
+        return Eigen::Map<const Eigen::Vector<double, Eigen::Dynamic>>(data.data(), data.size());
+    }
+
+    inline Eigen::Map<Eigen::Vector<int, Eigen::Dynamic>> Map(std::vector<int> &data) {
+        return Eigen::Map<Eigen::Vector<int, Eigen::Dynamic>>(data.data(), data.size());
+    }
+
+    inline Eigen::Map<const Eigen::Vector<int, Eigen::Dynamic>> MapConst(const std::vector<int> &data) {
+        return Eigen::Map<const Eigen::Vector<int, Eigen::Dynamic>>(data.data(), data.size());
+    }
+
+    inline Eigen::Map<Eigen::Vector<unsigned int, Eigen::Dynamic>> Map(std::vector<unsigned int> &data) {
+        return Eigen::Map<Eigen::Vector<unsigned int, Eigen::Dynamic>>(data.data(), data.size());
+    }
+
+    inline Eigen::Map<const Eigen::Vector<unsigned int, Eigen::Dynamic>> MapConst(const std::vector<unsigned int> &data) {
+        return Eigen::Map<const Eigen::Vector<unsigned int, Eigen::Dynamic>>(data.data(), data.size());
+    }
+
+    template<typename T, int N>
+    inline Eigen::Map<Eigen::Matrix<T, N, Eigen::Dynamic>> Map(std::vector<Eigen::Vector<T, N>> &data) {
+        return Eigen::Map<Eigen::Matrix<T, N, Eigen::Dynamic>>(data.data(), N, data.size());
+    }
+
+    template<typename T, int N>
+    inline Eigen::Map<const Eigen::Matrix<T, N, Eigen::Dynamic>> MapConst(const std::vector<Eigen::Vector<T, N>> &data) {
+        return Eigen::Map<const Eigen::Matrix<T, N, Eigen::Dynamic>>(data.data(), N, data.size());
+    }
+
+    // Mapping a std::vector of glm::vec to an Eigen::Matrix
+    template<typename T, int N, glm::qualifier Q = glm::defaultp>
+    inline Eigen::Map<Eigen::Matrix<T, N, Eigen::Dynamic>> Map(std::vector<glm::vec<N, T, Q>> &data) {
+        static_assert(sizeof(glm::vec<N, T, Q>) == N * sizeof(T),
+                      "glm::vec<N, T, Q> has padding, cannot map directly.");
+        return Eigen::Map<Eigen::Matrix<T, N, Eigen::Dynamic>>(reinterpret_cast<T *>(data.data()), N, data.size());
+    }
+
+    template<typename T, int N, glm::qualifier Q = glm::defaultp>
+    inline Eigen::Map<const Eigen::Matrix<T, N, Eigen::Dynamic>> MapConst(const std::vector<glm::vec<N, T, Q>> &data) {
+        static_assert(sizeof(glm::vec<N, T, Q>) == N * sizeof(T),
+                      "glm::vec<N, T, Q> has padding, cannot map directly.");
+        return Eigen::Map<const Eigen::Matrix<T, N, Eigen::Dynamic>>(reinterpret_cast<const T *>(data.data()), N,
+                                                                     data.size());
     }
 }
 

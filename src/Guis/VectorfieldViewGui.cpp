@@ -86,7 +86,7 @@ namespace Bcg::Gui {
                     }
 
                     if (view.use_uniform_color) {
-                        ImGui::ColorEdit3("##uniform_color_vectorfield_view", view.uniform_color.data());
+                        ImGui::ColorEdit3("##uniform_color_vectorfield_view", glm::value_ptr(view.uniform_color));
                     } else {
                         ImGui::InputFloat("min_color", &view.min_color);
                         ImGui::InputFloat("max_color", &view.max_color);

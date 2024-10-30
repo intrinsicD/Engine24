@@ -10,6 +10,7 @@
 #include "glm/glm.hpp"
 #define  GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/component_wise.hpp"
+#include "glm/gtc/type_ptr.hpp"
 
 namespace Bcg {
 /*    template<typename T, int N>
@@ -18,11 +19,11 @@ namespace Bcg {
     template<typename T, int M, int N>
     using Matrix = Eigen::Matrix<T, M, N>;
     */
-    template<typename T, int N>
-    using Vector = glm::vec<N, T>;
+    template<typename T, int N, glm::qualifier Q = glm::defaultp>
+    using Vector = glm::vec<N, T, Q>;
 
-    template<typename T, int M, int N>
-    using Matrix = glm::mat<M, N, T>;
+    template<typename T, int M, int N, glm::qualifier Q = glm::defaultp>
+    using Matrix = glm::mat<M, N, T, Q>;
 
     template<typename T, int N>
     Vector<T, N> SafeNormalize(const Vector<T, N> &v, T length, T epsilon = 1e-6) {
@@ -136,142 +137,6 @@ namespace Bcg {
         inv(2, 2) = (m(0, 0) * m(1, 1) - m(0, 1) * m(1, 0)) / det;
 
         return inv;
-    }
-
-    //! OpenGL matrix for translation by vector t
-    template<typename T>
-    Matrix<T, 4, 4> translation_matrix(const Vector<T, 3> &t) {
-        Matrix<T, 4, 4> m(Matrix<T, 4, 4>::Zero());
-        m(0, 0) = m(1, 1) = m(2, 2) = m(3, 3) = 1.0f;
-        m(0, 3) = t[0];
-        m(1, 3) = t[1];
-        m(2, 3) = t[2];
-
-        return m;
-    }
-
-//! OpenGL matrix for scaling x/y/z by s
-    template<typename T>
-    Matrix<T, 4, 4> scaling_matrix(const T s) {
-        Matrix<T, 4, 4> m(Matrix<T, 4, 4>::Zero());
-        m(0, 0) = m(1, 1) = m(2, 2) = s;
-        m(3, 3) = 1.0f;
-
-        return m;
-    }
-
-//! OpenGL matrix for scaling x/y/z by the components of s
-    template<typename T>
-    Matrix<T, 4, 4> scaling_matrix(const Vector<T, 3> &s) {
-        Matrix<T, 4, 4> m(Matrix<T, 4, 4>::Zero());
-        m(0, 0) = s[0];
-        m(1, 1) = s[1];
-        m(2, 2) = s[2];
-        m(3, 3) = 1.0f;
-
-        return m;
-    }
-
-//! OpenGL matrix for rotation around x-axis by given angle (in degrees)
-    template<typename T>
-    Matrix<T, 4, 4> rotation_matrix_x(T angle) {
-        T ca = cos(angle * T(std::numbers::pi / 180.0));
-        T sa = sin(angle * T(std::numbers::pi / 180.0));
-
-        Matrix<T, 4, 4> m(Matrix<T, 4, 4>::Zero());
-        m(0, 0) = 1.0;
-        m(1, 1) = ca;
-        m(1, 2) = -sa;
-        m(2, 2) = ca;
-        m(2, 1) = sa;
-        m(3, 3) = 1.0;
-
-        return m;
-    }
-
-//! OpenGL matrix for rotation around y-axis by given angle (in degrees)
-    template<typename T>
-    Matrix<T, 4, 4> rotation_matrix_y(T angle) {
-        T ca = cos(angle * T(std::numbers::pi / 180.0));
-        T sa = sin(angle * T(std::numbers::pi / 180.0));
-
-        Matrix<T, 4, 4> m(Matrix<T, 4, 4>::Zero());
-        m(0, 0) = ca;
-        m(0, 2) = sa;
-        m(1, 1) = 1.0;
-        m(2, 0) = -sa;
-        m(2, 2) = ca;
-        m(3, 3) = 1.0;
-
-        return m;
-    }
-
-//! OpenGL matrix for rotation around z-axis by given angle (in degrees)
-    template<typename T>
-    Matrix<T, 4, 4> rotation_matrix_z(T angle) {
-        T ca = cos(angle * T(std::numbers::pi / 180.0));
-        T sa = sin(angle * T(std::numbers::pi / 180.0));
-
-        Matrix<T, 4, 4> m(Matrix<T, 4, 4>::Zero());
-        m(0, 0) = ca;
-        m(0, 1) = -sa;
-        m(1, 0) = sa;
-        m(1, 1) = ca;
-        m(2, 2) = 1.0;
-        m(3, 3) = 1.0;
-
-        return m;
-    }
-
-//! OpenGL matrix for rotation around given axis by given angle (in degrees)
-    template<typename T>
-    Matrix<T, 4, 4> rotation_matrix(const Vector<T, 3> &axis, T angle) {
-        Matrix<T, 4, 4> m(Matrix<T, 4, 4>::Zero());
-        T a = angle * T(std::numbers::pi / 180.0);
-        T c = cosf(a);
-        T s = sinf(a);
-        T one_m_c = T(1) - c;
-        Vector<T, 3> ax = axis.normalized();
-
-        m(0, 0) = ax[0] * ax[0] * one_m_c + c;
-        m(0, 1) = ax[0] * ax[1] * one_m_c - ax[2] * s;
-        m(0, 2) = ax[0] * ax[2] * one_m_c + ax[1] * s;
-
-        m(1, 0) = ax[1] * ax[0] * one_m_c + ax[2] * s;
-        m(1, 1) = ax[1] * ax[1] * one_m_c + c;
-        m(1, 2) = ax[1] * ax[2] * one_m_c - ax[0] * s;
-
-        m(2, 0) = ax[2] * ax[0] * one_m_c - ax[1] * s;
-        m(2, 1) = ax[2] * ax[1] * one_m_c + ax[0] * s;
-        m(2, 2) = ax[2] * ax[2] * one_m_c + c;
-
-        m(3, 3) = 1.0f;
-
-        return m;
-    }
-
-//! OpenGL matrix for rotation specified by unit quaternion
-    template<typename T>
-    Matrix<T, 4, 4> rotation_matrix(const Vector<T, 4> &quat) {
-        Matrix<T, 4, 4> m(Matrix<T, 4, 4>::Zero());
-        T s1(1);
-        T s2(2);
-
-        m(0, 0) = s1 - s2 * quat[1] * quat[1] - s2 * quat[2] * quat[2];
-        m(1, 0) = s2 * quat[0] * quat[1] + s2 * quat[3] * quat[2];
-        m(2, 0) = s2 * quat[0] * quat[2] - s2 * quat[3] * quat[1];
-
-        m(0, 1) = s2 * quat[0] * quat[1] - s2 * quat[3] * quat[2];
-        m(1, 1) = s1 - s2 * quat[0] * quat[0] - s2 * quat[2] * quat[2];
-        m(2, 1) = s2 * quat[1] * quat[2] + s2 * quat[3] * quat[0];
-
-        m(0, 2) = s2 * quat[0] * quat[2] + s2 * quat[3] * quat[1];
-        m(1, 2) = s2 * quat[1] * quat[2] - s2 * quat[3] * quat[0];
-        m(2, 2) = s1 - s2 * quat[0] * quat[0] - s2 * quat[1] * quat[1];
-
-        m(3, 3) = 1.0f;
-
-        return m;
     }
 
 //! return upper 3x3 matrix from given 4x4 matrix, corresponding to the

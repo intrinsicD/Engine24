@@ -113,7 +113,7 @@ namespace Bcg {
     void PluginInput::end_frame() {
         auto &mouse = Engine::Context().get<Mouse>();
         mouse.scrolling = false;
-        mouse.scroll_offset.setZero();
+        mouse.scroll_offset = glm::vec2(0.0f);
     }
 
     void PluginInput::deactivate() {

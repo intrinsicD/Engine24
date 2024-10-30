@@ -67,9 +67,9 @@ namespace Bcg::Gui {
                     }
 
                     if (view.use_uniform_color) {
-                        if (ImGui::ColorEdit3("##uniform_color_mesh_view", view.uniform_color.data())) {
+                        if (ImGui::ColorEdit3("##uniform_color_mesh_view", glm::value_ptr(view.uniform_color))) {
                             view.vao.bind();
-                            view.color.set_default(view.uniform_color.data());
+                            view.color.set_default(glm::value_ptr(view.uniform_color));
                             view.color.disable();
                             view.vao.unbind();
                         }

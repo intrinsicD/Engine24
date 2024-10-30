@@ -48,16 +48,16 @@ namespace Bcg {
             //old way, changed the local transform resulted in repositioned guizmo
 
             //update the child transform to be relative to the parent
-            c_transform.set_local(p_transform.world().inverse() * c_transform.world().matrix());
+            c_transform.set_local(glm::inverse(p_transform.world()) * c_transform.world());
 
             // Update the child's world transform
-            c_transform.update_world(p_transform.world());
+            c_transform.set_parent_world(p_transform.world());
         } else {
             //update the child transform to be relative to the parent
-            c_transform.set_local(p_transform.world().inverse() * c_transform.world().matrix());
+            c_transform.set_local(glm::inverse(p_transform.world()) * c_transform.world());
 
             // Update the child's world transform
-            c_transform.update_world(p_transform.world());
+            c_transform.set_parent_world(p_transform.world());
         }
 
 
@@ -112,10 +112,10 @@ namespace Bcg {
         auto &c_transform = Engine::State().get<Transform>(overlay);
 
         //update the child transform to be relative to the parent
-        c_transform.set_local(p_transform.world().inverse() * c_transform.world().matrix());
+        c_transform.set_local(glm::inverse(p_transform.world()) * c_transform.world());
 
         // Update the child's world transform
-        c_transform.update_world(p_transform.world());
+        c_transform.set_parent_world(p_transform.world());
         PluginHierarchy::mark_transforms_dirty(overlay);
     }
 
@@ -147,7 +147,7 @@ namespace Bcg {
             // Update the child's world transform to be independent of the parent
             auto &o_transform = Engine::State().get<Transform>(overlay);
             o_transform.set_local(o_transform.world());
-            o_transform.update_world(Matrix<float, 4, 4>::Identity());
+            o_transform.set_parent_world(Matrix<float, 4, 4>(1.0f));
         } else {
             Log::Warn("Called detach overlay on entity with Hierarchy component but parent is not set.");
             return false;
@@ -165,7 +165,7 @@ namespace Bcg {
             // Update the child's world transform to be independent of the parent
             auto &c_transform = Engine::State().get<Transform>(child);
             c_transform.set_local(c_transform.world());
-            c_transform.update_world(Matrix<float, 4, 4>::Identity());
+            c_transform.set_parent_world(Matrix<float, 4, 4>(1.0f));
         }
         p_hierarchy.children.clear();
     }
@@ -180,7 +180,7 @@ namespace Bcg {
             // Update the overlay's world transform to be independent of the parent
             auto &o_transform = Engine::State().get<Transform>(overlay);
             o_transform.set_local(o_transform.world());
-            o_transform.update_world(Matrix<float, 4, 4>::Identity());
+            o_transform.set_parent_world(Matrix<float, 4, 4>(1.0f));
         }
         p_hierarchy.overlays.clear();
     }
@@ -212,7 +212,7 @@ namespace Bcg {
             // Update the child's world transform to be independent of the parent
             auto &c_transform = Engine::State().get<Transform>(child);
             c_transform.set_local(c_transform.world());
-            c_transform.update_world(Matrix<float, 4, 4>::Identity());
+            c_transform.set_parent_world(Matrix<float, 4, 4>(1.0f));
         } else {
             Log::Warn("Called detach child on entity with Hierarchy component but parent is not set.");
             return false;
@@ -224,14 +224,14 @@ namespace Bcg {
         if (!Engine::valid(entity) || !Engine::has<Transform>(entity)) return;
 
         auto &p_transform = Engine::State().get<Transform>(entity);
-        p_transform.mark_dirty();
+        p_transform.dirty = true;
 
         if (!Engine::has<Hierarchy>(entity)) return;
 
         auto &p_hierarchy = Engine::State().get<Hierarchy>(entity);
         for (auto child: p_hierarchy.children) {
             auto &c_transform = Engine::State().get<Transform>(child);
-            if (c_transform.is_dirty()) continue;
+            if (c_transform.dirty) continue;
             PluginHierarchy::mark_transforms_dirty(child);
         }
     }
@@ -240,24 +240,24 @@ namespace Bcg {
     void PluginHierarchy::update_transforms(entt::entity entity) {
         if (!Engine::valid(entity) || !Engine::has<Hierarchy>(entity)) return;
         auto &e_transform = Engine::State().get<Transform>(entity);
-        if (!e_transform.is_dirty()) return;
+        if (!e_transform.dirty) return;
 
         if (!Engine::has<Hierarchy>(entity)) {
-            e_transform.update_world(Matrix<float, 4, 4>::Identity());
+            e_transform.set_parent_world(Matrix<float, 4, 4>(1.0f));
         } else {
             auto &e_hierarchy = Engine::State().get<Hierarchy>(entity);
             if (Engine::valid(e_hierarchy.parent)) {
                 auto &p_transform = Engine::State().get<Transform>(e_hierarchy.parent);
-                e_transform.update_world(p_transform.world());
+                e_transform.set_parent_world(p_transform.world());
             } else {
-                e_transform.update_world(Matrix<float, 4, 4>::Identity());
+                e_transform.set_parent_world(Matrix<float, 4, 4>(1.0f));
             }
 
             for (auto child: e_hierarchy.children) {
                 PluginHierarchy::update_transforms(child);
             }
         }
-        e_transform.mark_clean();
+        e_transform.dirty = false;
     }
 
     void PluginHierarchy::activate() {

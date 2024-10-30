@@ -29,7 +29,6 @@
 #include "Cuda/Hem.h"
 #include "Eigen/Eigenvalues"
 #include "PluginViewSphere.h"
-#include "ResourcePool.h"
 
 namespace Bcg {
     namespace PluginPointCloudInternal {
@@ -66,7 +65,6 @@ namespace Bcg {
     PluginPointCloud::PluginPointCloud() : Plugin("PluginPointCloud") {}
 
     void PluginPointCloud::activate() {
-        Engine::Context().emplace<ResourcePool<PointCloud>>();
         Engine::Dispatcher().sink<Events::Callback::Drop>().connect<&PluginPointCloudInternal::on_drop_file>();
         Plugin::activate();
     }
@@ -157,10 +155,10 @@ namespace Bcg {
             Setup<AABB>(entity_id).execute();
             CenterAndScaleByAABB(entity_id, pc.vpoint_.name()).execute();
             auto &aabb = Engine::require<AABB>(entity_id);
-            Vector<float, 3> center = aabb.center();
+            Vector<float, 3> c = center(aabb);
 
-            aabb.min -= center;
-            aabb.max -= center;
+            aabb.min -= c;
+            aabb.max -= c;
 
 
             auto &transform = Engine::require<Transform>(entity_id);
@@ -174,7 +172,7 @@ namespace Bcg {
             message += " Done.";
 
             Log::Info(message);
-            CenterCameraAtDistance(aabb.center(), aabb.diagonal().maxCoeff()).execute();
+            CenterCameraAtDistance(c, glm::compMax(diagonal(aabb))).execute();
         }
 
         void Cleanup<PointCloud>::execute() const {
@@ -219,26 +217,26 @@ namespace Bcg {
             }
             auto &kdtree = Engine::require<KDTreeCpu>(entity_id);
 
-            auto evecs0 = vertices->get_or_add<Vector<float, 3>>("v:pca_evecs0", Vector<float, 3>::Unit(0));
-            auto evecs1 = vertices->get_or_add<Vector<float, 3>>("v:pca_evecs1", Vector<float, 3>::Unit(1));
-            auto evecs2 = vertices->get_or_add<Vector<float, 3>>("v:pca_evecs2", Vector<float, 3>::Unit(2));
-            auto evals = vertices->get_or_add<Vector<float, 3>>("v:pca_evals", Vector<float, 3>::Ones());
+            auto evecs0 = vertices->get_or_add<Vector<float, 3>>("v:pca_evecs0", Vector<float, 3>(1.0f, 0.0f, 0.0f));
+            auto evecs1 = vertices->get_or_add<Vector<float, 3>>("v:pca_evecs1", Vector<float, 3>(0.0f, 1.0f, 0.0f));
+            auto evecs2 = vertices->get_or_add<Vector<float, 3>>("v:pca_evecs2", Vector<float, 3>(0.0f, 0.0f, 1.0f));
+            auto evals = vertices->get_or_add<Vector<float, 3>>("v:pca_evals", Vector<float, 3>(1.0f));
             for (size_t i = 0; i < vertices->size(); ++i) {
                 auto query_point = positions[i];
                 auto result = kdtree.knn_query(query_point, num_closest);
-                Matrix<float, 3, 3> cov = Matrix<float, 3, 3>::Zero();
+                Matrix<float, 3, 3> cov = Matrix<float, 3, 3>(0.0f);
                 for (auto &knn_idx: result.indices) {
                     Vector<float, 3> diff = positions[knn_idx] - query_point;
-                    cov += diff * diff.transpose();
+                    cov += glm::outerProduct(diff, diff);
                 }
 
                 cov /= num_closest;
 
-                Eigen::SelfAdjointEigenSolver<Eigen::Matrix<float, 3, 3>> eigensolver(cov);
-                evecs0[i] = eigensolver.eigenvectors().col(0);
-                evecs1[i] = eigensolver.eigenvectors().col(1);
-                evecs2[i] = eigensolver.eigenvectors().col(2);
-                evals[i] = eigensolver.eigenvalues();
+                Eigen::SelfAdjointEigenSolver<Eigen::Matrix<float, 3, 3>> eigensolver(MapConst(cov));
+                Map(evecs0[i]) = eigensolver.eigenvectors().col(0);
+                Map(evecs1[i]) = eigensolver.eigenvectors().col(1);
+                Map(evecs2[i]) = eigensolver.eigenvectors().col(2);
+                Map(evals[i]) = eigensolver.eigenvalues();
             }
         }
 
@@ -321,10 +319,10 @@ namespace Bcg {
             means.vector() = result.means;
 
             for (size_t i = 0; i < vertices->size(); ++i) {
-                Eigen::SelfAdjointEigenSolver<Eigen::Matrix<float, 3, 3>> eigensolver(result.covs[i]);
-                evecs0[i] = eigensolver.eigenvectors().col(0);
-                evecs1[i] = eigensolver.eigenvectors().col(1);
-                evecs2[i] = eigensolver.eigenvectors().col(2);
+                Eigen::SelfAdjointEigenSolver<Eigen::Matrix<float, 3, 3>> eigensolver(MapConst(result.covs[i]));
+                Map(evecs0[i]) = eigensolver.eigenvectors().col(0);
+                Map(evecs1[i]) = eigensolver.eigenvectors().col(1);
+                Map(evecs2[i]) = eigensolver.eigenvectors().col(2);
             }
         }
 
@@ -366,10 +364,10 @@ namespace Bcg {
             weights.vector() = result.weights;
 
             for (size_t i = 0; i < hem.n_vertices(); ++i) {
-                Eigen::SelfAdjointEigenSolver<Eigen::Matrix<float, 3, 3>> eigensolver(covs.vector()[i]);
-                evecs0.vector()[i] = eigensolver.eigenvectors().col(0);
-                evecs1.vector()[i] = eigensolver.eigenvectors().col(1);
-                evecs2.vector()[i] = eigensolver.eigenvectors().col(2);
+                Eigen::SelfAdjointEigenSolver<Eigen::Matrix<float, 3, 3>> eigensolver(MapConst(covs.vector()[i]));
+                Map(evecs0.vector()[i]) = eigensolver.eigenvectors().col(0);
+                Map(evecs1.vector()[i]) = eigensolver.eigenvectors().col(1);
+                Map(evecs2.vector()[i]) = eigensolver.eigenvectors().col(2);
             }
 
             Setup<PointCloud>(entity_id).execute();

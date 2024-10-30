@@ -8,8 +8,8 @@
 
 namespace Bcg::Gui {
     void Show(const AABB &aabb) {
-        ImGui::Text("Min: (%f, %f, %f)", aabb.min.x(), aabb.min.y(), aabb.min.z());
-        ImGui::Text("Max: (%f, %f, %f)", aabb.max.x(), aabb.max.y(), aabb.max.z());
+        ImGui::Text("Min: (%f, %f, %f)", aabb.min.x, aabb.min.y, aabb.min.z);
+        ImGui::Text("Max: (%f, %f, %f)", aabb.max.x, aabb.max.y, aabb.max.z);
     }
 
 

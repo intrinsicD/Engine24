@@ -78,17 +78,17 @@ namespace Bcg {
 
             view.vao.bind();
             view.program.use();
-            view.program.set_uniform3fv("light_position", camera.v_params.eye().data());
+            view.program.set_uniform3fv("light_position", glm::value_ptr(get_view_params(camera).eye));
             view.program.set_uniform1f("min_color", view.min_color);
             view.program.set_uniform1f("max_color", view.max_color);
             view.program.set_uniform1i("use_uniform_color", view.use_uniform_color);
-            view.program.set_uniform3fv("uniform_color", view.uniform_color.data());
+            view.program.set_uniform3fv("uniform_color", glm::value_ptr(view.uniform_color));
 
             if (Engine::has<Transform>(entity_id)) {
                 auto &transform = Engine::State().get<Transform>(entity_id);
-                view.program.set_uniform4fm("model", transform.data(), false);
+                view.program.set_uniform4fm("model", glm::value_ptr(transform.world()), false);
             } else {
-                view.program.set_uniform4fm("model", Transform().data(), false);
+                view.program.set_uniform4fm("model", glm::value_ptr(glm::mat4(1.0f)), false);
             }
 
             view.draw();
@@ -255,7 +255,7 @@ namespace Bcg {
             view.vao.bind();
             view.color.bound_buffer_name = "uniform_color";
             view.color.disable();
-            view.color.set_default(view.uniform_color.data());
+            view.color.set_default(glm::value_ptr(view.uniform_color));
             view.use_uniform_color = true;
         }
         view.vao.unbind();
@@ -274,7 +274,7 @@ namespace Bcg {
         }
 
         auto v_colorf = vertices->get<float>(property_name);
-        Vector<float, -1> t(vertices->size());
+        Eigen::Vector<float, -1> t(vertices->size());
         if (v_colorf) {
             t = Map(v_colorf.vector());
         }
@@ -295,8 +295,8 @@ namespace Bcg {
 
         auto v_colorf3 = vertices->get_or_add<Vector<float, 3>>(property_name + "Color3d");
         t = (t.array() - t.minCoeff()) / (t.maxCoeff() - t.minCoeff());
-        Map(v_colorf3.vector()).transpose() = t * Vector<float, 3>::Unit(0).transpose() +
-                                              (1.0f - t.array()).matrix() * Vector<float, 3>::Unit(1).transpose();
+        Map(v_colorf3.vector()).transpose() = t * Eigen::Vector<float, 3>::Unit(0).transpose() +
+                                              (1.0f - t.array()).matrix() * Eigen::Vector<float, 3>::Unit(1).transpose();
         SetColorMeshView(entity_id, property_name + "Color3d").execute();
     }
 

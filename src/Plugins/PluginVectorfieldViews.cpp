@@ -69,13 +69,13 @@ namespace Bcg {
                 view.program.set_uniform1f("min_color", view.min_color);
                 view.program.set_uniform1f("max_color", view.max_color);
                 view.program.set_uniform1i("use_uniform_color", view.use_uniform_color);
-                view.program.set_uniform3fv("uniform_color", view.uniform_color.data());
+                view.program.set_uniform3fv("uniform_color", glm::value_ptr(view.uniform_color));
 
                 if (Engine::has<Transform>(entity_id)) {
                     auto &transform = Engine::State().get<Transform>(entity_id);
-                    view.program.set_uniform4fm("model", transform.data(), false);
+                    view.program.set_uniform4fm("model", glm::value_ptr(transform.world()), false);
                 } else {
-                    view.program.set_uniform4fm("model", Transform().data(), false);
+                    view.program.set_uniform4fm("model", glm::value_ptr(glm::mat4(1.0f)), false);
                 }
 
                 view.draw();
@@ -118,7 +118,7 @@ namespace Bcg {
         SetColorVectorfieldView(entity_id, vectorfield_name, "uniform_color").execute();
 
         auto &aabb = Engine::require<AABB>(entity_id);
-        view.uniform_length = aabb.diagonal().norm() / 100.0f;
+        view.uniform_length = glm::length(diagonal(aabb)) / 100.0f;
 
         auto v_indices = vertices->get<unsigned int>("v:indices");
         if (!v_indices) {

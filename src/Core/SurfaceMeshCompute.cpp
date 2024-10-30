@@ -462,7 +462,7 @@ namespace Bcg {
         }
 
         // Set up PX buffer
-        auto px = source.vprops_.get_or_add<Vector<float, 3>>("v:PX", Vector<float, 3>::Zero());
+        auto px = source.vprops_.get_or_add<Vector<float, 3>>("v:PX", Vector<float, 3>(0.0f));
         auto b_px = openGlState.get_buffer(px.name());
         if (!b_px) {
             b_px = ArrayBuffer();

@@ -50,7 +50,7 @@ namespace Bcg {
 
     template<typename T, int N>
     std::ostream &operator<<(std::ostream &os, const Vector<T, N> &vec) {
-        Eigen::Vector<T, N> v = ToEigen(vec);
+        Eigen::Vector<T, N> v = MapConst(vec);
         os << v.transpose();
         return os;
     }
@@ -129,8 +129,27 @@ namespace Bcg {
         const std::string &name() const override { return name_; }
 
         std::string element_string(size_t i) const override {
+            return ToString(data_[i]);
+        }
+
+        template<typename S>
+        std::string ToString(const S &t) const {
             std::stringstream ss;
-            ss << data_[i];
+            ss << t;
+            return ss.str();
+        }
+
+        template<typename S, int L, glm::qualifier Q = glm::defaultp>
+        std::string ToString(const glm::vec<L, S, Q> &t) const {
+            std::stringstream ss;
+            ss << MapConst(t);
+            return ss.str();
+        }
+
+        template<typename S, int C, int R, glm::qualifier Q = glm::defaultp>
+        std::string ToString(const glm::mat<C, R, S, Q> &t) const {
+            std::stringstream ss;
+            ss << MapConst(t);
             return ss.str();
         }
 

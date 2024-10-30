@@ -10,7 +10,7 @@
 namespace Bcg{
     template<typename Scalar, int N>
     Vector<Scalar, N> Mean(const std::vector<Vector<Scalar, N>> &points) {
-        Vector<Scalar, N> mean = Vector<Scalar, N>::Zero();
+        Vector<Scalar, N> mean = Vector<Scalar, N>(0.0f);
         for (const Vector<Scalar, N> &point: points) {
             mean += point;
         }
@@ -20,7 +20,7 @@ namespace Bcg{
 
     template<typename Scalar, int N>
     Matrix<Scalar, N, N> Covariance(const std::vector<Vector<Scalar, N>> &points, const Vector<Scalar, N> &mean) {
-        Matrix<Scalar, N, N> cov = Matrix<Scalar, N, N>::Zero();
+        Matrix<Scalar, N, N> cov = Matrix<Scalar, N, N>(0.0f);
         for (const Vector<Scalar, N> &point: points) {
             Vector<Scalar, N> d = point - mean;
             cov += d * d.transpose();
@@ -32,7 +32,7 @@ namespace Bcg{
     template<typename Scalar, int N>
     Matrix<Scalar, N, N>
     CovarianceUnbiased(const std::vector<Vector<Scalar, N>> &points, const Vector<Scalar, N> &mean) {
-        Matrix<Scalar, N, N> cov = Matrix<Scalar, N, N>::Zero();
+        Matrix<Scalar, N, N> cov = Matrix<Scalar, N, N>(0.0f);
         for (const Vector<Scalar, N> &point: points) {
             Vector<Scalar, N> d = point - mean;
             cov += d * d.transpose();

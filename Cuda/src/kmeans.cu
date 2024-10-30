@@ -235,11 +235,11 @@ namespace Bcg::cuda {
 
         thrust::host_vector<glm::vec3> h_centroids(k);
         for (size_t i = 0; i < k; ++i) {
-            h_centroids[i] = {init_means[i].x(), init_means[i].y(), init_means[i].z()};
+            h_centroids[i] = {init_means[i].x, init_means[i].y, init_means[i].z};
         }
         thrust::host_vector<glm::vec3> h_positions(num_objects);
         for (size_t i = 0; i < num_objects; ++i) {
-            h_positions[i] = {points[i].x(), points[i].y(), points[i].z()};
+            h_positions[i] = {points[i].x, points[i].y, points[i].z};
         }
 
         KmeansDeviceData d_data = SetupKMeansDeviceData(h_centroids, h_positions);
@@ -277,12 +277,13 @@ namespace Bcg::cuda {
         const Vector<float, 3> mean = Mean(points);
         thrust::host_vector<glm::vec3> h_centroids;
         thrust::host_vector<float> h_distances(num_objects);
-        h_centroids.push_back({mean.x(), mean.y(), mean.z()});
+        h_centroids.push_back({mean.x, mean.y, mean.z});
 
         thrust::host_vector<glm::vec3> h_positions(num_objects);
         for (size_t i = 0; i < num_objects; ++i) {
-            h_positions[i] = {points[i].x(), points[i].y(), points[i].z()};
-            h_distances[i] = (points[i] - mean).squaredNorm();
+            h_positions[i] = {points[i].x, points[i].y, points[i].z};
+            glm::vec3 diff = points[i] - mean;
+            h_distances[i] = glm::dot(diff, diff);
         }
 
         KmeansDeviceData d_data = SetupKMeansDeviceData(h_centroids, h_positions);
