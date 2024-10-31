@@ -50,7 +50,7 @@ namespace Bcg {
 
         float aspect_ratio = float(viewport_width) / float(viewport_height);
         PerspectiveParams p_params = get_perspective_params(camera);
-        p_params.fovy = 45.0f;
+        p_params.fovy_degrees = 45.0f;
         p_params.aspect = aspect_ratio;
         p_params.zNear = 0.1f;
         p_params.zFar = 100.0f;
@@ -149,7 +149,7 @@ namespace Bcg {
         auto vp = PluginGraphics::get_viewport();
         float viewport_width = vp[2];
         float viewport_height = vp[3];
-        float fov = p_params.fovy; // Field of view in radians
+        float fov = p_params.fovy_degrees; // Field of view in radians
 
         // Compute the scale factors for screen to world space translation
         float aspect_ratio = viewport_width / viewport_height;
@@ -196,10 +196,10 @@ namespace Bcg {
 
         // Adjust the field of view based on scroll input
         PerspectiveParams p_params = get_perspective_params(camera);
-        p_params.fovy -= event.yoffset;
+        p_params.fovy_degrees -= event.yoffset;
 
         // Ensure the field of view stays within reasonable bounds
-        p_params.fovy = std::clamp(p_params.fovy, min_fovy, max_fovy);
+        p_params.fovy_degrees = std::clamp(p_params.fovy_degrees, min_fovy, max_fovy);
         set_perspective_params(camera, p_params);
     }
 
@@ -361,7 +361,7 @@ namespace Bcg {
 
             glm::vec3 front = v_params.center - v_params.eye;
             v_params.center = center;
-            v_params.eye = center - front * distance / tanf(p_params.fovy / 2.0f);
+            v_params.eye = center - front * distance / tanf(p_params.fovy_degrees / 2.0f);
             set_view_params(camera, v_params);
             FitNearAndFarToDistance(distance).execute();
         }

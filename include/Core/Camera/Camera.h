@@ -28,7 +28,7 @@ namespace Bcg {
     };
 
     struct PerspectiveParams {
-        float fovy = 45.0f;
+        float fovy_degrees = 45.0f;
         float aspect = 1.0f;
         float zNear = 0.1f;
         float zFar = 100.0f;

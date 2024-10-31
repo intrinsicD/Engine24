@@ -15,7 +15,7 @@ namespace Bcg::Gui {
     }
 
     bool Show(PerspectiveParams &p_params) {
-        bool changed_p = ImGui::InputFloat("p_params.fovy", &p_params.fovy);
+        bool changed_p = ImGui::InputFloat("p_params.fovy", &p_params.fovy_degrees);
         changed_p |= ImGui::InputFloat("p_params.aspect", &p_params.aspect);
         changed_p |= ImGui::InputFloat("p_params.zNear", &p_params.zNear);
         changed_p |= ImGui::InputFloat("p_params.zFar", &p_params.zFar);
@@ -96,7 +96,7 @@ namespace Bcg::Gui {
 
             float aspect_ratio = float(viewport_width) / float(viewport_height);
             PerspectiveParams p_params = get_perspective_params(camera);
-            p_params.fovy = 45.0f;
+            p_params.fovy_degrees = 45.0f;
             p_params.aspect = aspect_ratio;
             p_params.zNear = 0.1f;
             p_params.zFar = 100.0f;
