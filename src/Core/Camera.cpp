@@ -29,7 +29,7 @@ namespace Bcg{
         p_params.zFar = m32 / (m22 + 1.0f);
 
         // Extract field of view and aspect ratio
-        p_params.fovy = 2.0f * atan(1.0f / camera.proj[1][1]);
+        p_params.fovy = glm::degrees(2.0f * atan(1.0f / camera.proj[1][1]));
         p_params.aspect = camera.proj[1][1] / camera.proj[0][0];
 
         return p_params;
@@ -37,7 +37,7 @@ namespace Bcg{
 
     void set_perspective_params(Camera &camera, const PerspectiveParams &p_params) {
         camera.proj_type = Camera::ProjectionType::PERSPECTIVE;
-        camera.proj = glm::perspective(p_params.fovy, p_params.aspect, p_params.zNear, p_params.zFar);
+        camera.proj = glm::perspective(glm::radians(p_params.fovy), p_params.aspect, p_params.zNear, p_params.zFar);
         camera.dirty_proj = true;
     }
 

@@ -19,6 +19,8 @@ namespace Bcg {
 
         static Camera *setup(entt::entity entity_id);
 
+        static void setup(Camera &camera);
+
         static void cleanup(entt::entity entity_id);
 
         void activate() override;

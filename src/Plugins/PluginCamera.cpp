@@ -30,21 +30,31 @@ namespace Bcg {
         if (Engine::has<Camera>(entity_id)) { return &Engine::State().get<Camera>(entity_id); }
 
         Log::Info("Camera setup for entity: {}", entity_id);
-        ViewParams v_params;
-        v_params.eye = glm::vec3(0.0f, 0.0f, 2.0f);
-        v_params.center = glm::vec3(0.0f, 0.0f, 0.0f);
-        v_params.up = glm::vec3(0.0f, 1.0f, 0.0f);
         auto &camera = Engine::State().emplace<Camera>(entity_id, Camera());
-        set_view_params(camera, v_params);
+        setup(camera);
+
+        return &camera;
+    }
+
+    void PluginCamera::setup(Camera &camera) {
+        ViewParams view_params = get_view_params(camera);
+        view_params.eye = glm::vec3(0, 0, 1);
+        view_params.center = glm::vec3(0, 0, 0);
+        view_params.up = glm::vec3(0, 1, 0);
+        camera.proj_type = Camera::ProjectionType::PERSPECTIVE;
+        set_view_params(camera, view_params);
+
         auto vp = PluginGraphics::get_viewport();
-        PerspectiveParams p_params;
+        auto viewport_width = vp[2];
+        auto viewport_height = vp[3];
+
+        float aspect_ratio = float(viewport_width) / float(viewport_height);
+        PerspectiveParams p_params = get_perspective_params(camera);
         p_params.fovy = 45.0f;
-        p_params.aspect = vp[2] / vp[3];
+        p_params.aspect = aspect_ratio;
         p_params.zNear = 0.1f;
         p_params.zFar = 100.0f;
         set_perspective_params(camera, p_params);
-
-        return &camera;
     }
 
     void PluginCamera::cleanup(entt::entity entity_id) {
@@ -216,7 +226,7 @@ namespace Bcg {
                 auto &aabb = Engine::State().get<AABB>(picked.entity.id);
                 PerspectiveParams p_params = get_perspective_params(camera);
                 ViewParams v_params = get_view_params(camera);
-                float d = glm::compMax(diagonal(aabb)) / tan(p_params.fovy / 2.0);
+                float d = glm::compMax(diagonal(aabb)) /*/ tan(p_params.fovy / 2.0)*/;
                 glm::vec3 front = v_params.center - v_params.eye;
                 v_params.center = center(aabb);
                 v_params.eye = v_params.center - front * d;
@@ -239,13 +249,15 @@ namespace Bcg {
             set_ortho_params(camera, o_params);
         } else {
             PerspectiveParams p_params = get_perspective_params(camera);
-            p_params.aspect = event.width / event.height;
+            p_params.aspect = float(event.width) / float(event.height);
             set_perspective_params(camera, p_params);
         }
     }
 
     void PluginCamera::activate() {
-        Engine::Context().emplace<Camera>();
+        auto &camera = Engine::Context().emplace<Camera>();
+        setup(camera);
+
         if (!Engine::Context().find<CameraUniformBuffer>()) {
             auto &ubo = Engine::Context().emplace<CameraUniformBuffer>();
             ubo.create();
