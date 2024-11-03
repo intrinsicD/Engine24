@@ -86,7 +86,7 @@ namespace Bcg {
 
         auto &aabb = Engine::State().get_or_emplace<AABB>(entity_id);
         Engine::Dispatcher().trigger(Events::Entity::PreAdd<AABB>{entity_id});
-        build(aabb, positions.vector());
+        Build(aabb, positions.vector());
         Engine::Dispatcher().trigger(Events::Entity::PostAdd<AABB>{entity_id});
         Log::Info("{} for entity {}", name, entity_id);
     }
@@ -132,7 +132,7 @@ namespace Bcg {
 
         auto &aabb = Engine::require<AABB>(entity_id);
 
-        Vector<float, 3> c = center(aabb);
+        Vector<float, 3> c = Center(aabb);
         float s = glm::compMax(aabb.max - aabb.min);
 
         for (auto &point: data.vector()) {

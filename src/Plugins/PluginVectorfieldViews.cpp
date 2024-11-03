@@ -118,7 +118,7 @@ namespace Bcg {
         SetColorVectorfieldView(entity_id, vectorfield_name, "uniform_color").execute();
 
         auto &aabb = Engine::require<AABB>(entity_id);
-        view.uniform_length = glm::length(diagonal(aabb)) / 100.0f;
+        view.uniform_length = glm::length(Diagonal(aabb)) / 100.0f;
 
         auto v_indices = vertices->get<unsigned int>("v:indices");
         if (!v_indices) {

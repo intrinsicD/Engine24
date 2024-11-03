@@ -40,7 +40,7 @@ namespace Bcg {
         for (const auto entity_id: view) {
             auto &aabb = Engine::State().get<AABB>(entity_id);
             auto &transform = Engine::State().get<Transform>(entity_id);
-            if (contains(aabb, (glm::inverse(transform.world()) * glm::vec4(picked.spaces.wsp, 1.0f)))) {
+            if (Contains(aabb, (glm::inverse(transform.world()) * glm::vec4(picked.spaces.wsp, 1.0f)))) {
                 picked.entity.id = entity_id;
                 break;
             }

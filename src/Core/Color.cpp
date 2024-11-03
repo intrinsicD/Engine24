@@ -9,12 +9,13 @@ namespace Bcg {
         return (value < minVal ? minVal : (value > maxVal ? maxVal : value));
     }
 
-    uint32_t floatColorToUint32(float r, float g, float b, float a) {
+    uint32_t floatColorToUint32(const glm::vec4 &rgba) {
         // Clamp the values to ensure they are within the 0.0 to 1.0 range
-        r = clamp(r, 0.0f, 1.0f);
-        g = clamp(g, 0.0f, 1.0f);
-        b = clamp(b, 0.0f, 1.0f);
-        a = clamp(a, 0.0f, 1.0f);
+
+        float r = clamp(rgba.r, 0.0f, 1.0f);
+        float g = clamp(rgba.g, 0.0f, 1.0f);
+        float b = clamp(rgba.b, 0.0f, 1.0f);
+        float a = clamp(rgba.a, 0.0f, 1.0f);
 
         // Convert to 8-bit per channel
         uint8_t red = static_cast<uint8_t>(r * 255.0f);
@@ -26,17 +27,17 @@ namespace Bcg {
         return color;
     }
 
-    void uint32ToFloatColor(uint32_t color, float &r, float &g, float &b, float &a) {
+    void uint32ToFloatColor(uint32_t uicolor, glm::vec4 &rgba) {
         // Extract each component by masking and shifting
-        uint8_t alpha = (color >> 0) & 0xFF;
-        uint8_t blue = (color >> 8) & 0xFF;
-        uint8_t green = (color >> 16) & 0xFF;
-        uint8_t red = (color >> 24) & 0xFF;
+        uint8_t alpha = (uicolor >> 0) & 0xFF;
+        uint8_t blue = (uicolor >> 8) & 0xFF;
+        uint8_t green = (uicolor >> 16) & 0xFF;
+        uint8_t red = (uicolor >> 24) & 0xFF;
 
         // Convert to float in the range [0.0, 1.0]
-        r = red / 255.0f;
-        g = green / 255.0f;
-        b = blue / 255.0f;
-        a = alpha / 255.0f;
+        rgba.r = red / 255.0f;
+        rgba.g = green / 255.0f;
+        rgba.b = blue / 255.0f;
+        rgba.a = alpha / 255.0f;
     }
 }

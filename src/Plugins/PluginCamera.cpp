@@ -226,9 +226,9 @@ namespace Bcg {
                 auto &aabb = Engine::State().get<AABB>(picked.entity.id);
                 PerspectiveParams p_params = get_perspective_params(camera);
                 ViewParams v_params = get_view_params(camera);
-                float d = glm::compMax(diagonal(aabb)) /*/ tan(p_params.fovy / 2.0)*/;
+                float d = glm::compMax(Diagonal(aabb)) /*/ tan(p_params.fovy / 2.0)*/;
                 glm::vec3 front = v_params.center - v_params.eye;
-                v_params.center = center(aabb);
+                v_params.center = Center(aabb);
                 v_params.eye = v_params.center - front * d;
                 set_view_params(camera, v_params);
                 Log::Info("Center onto: {} {} {}", v_params.center[0], v_params.center[1], v_params.center[2]);

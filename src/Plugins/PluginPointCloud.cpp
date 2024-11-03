@@ -155,7 +155,7 @@ namespace Bcg {
             Setup<AABB>(entity_id).execute();
             CenterAndScaleByAABB(entity_id, pc.vpoint_.name()).execute();
             auto &aabb = Engine::require<AABB>(entity_id);
-            Vector<float, 3> c = center(aabb);
+            Vector<float, 3> c = Center(aabb);
 
             aabb.min -= c;
             aabb.max -= c;
@@ -172,7 +172,7 @@ namespace Bcg {
             message += " Done.";
 
             Log::Info(message);
-            CenterCameraAtDistance(c, glm::compMax(diagonal(aabb))).execute();
+            CenterCameraAtDistance(c, glm::compMax(Diagonal(aabb))).execute();
         }
 
         void Cleanup<PointCloud>::execute() const {
