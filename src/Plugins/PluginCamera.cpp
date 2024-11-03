@@ -37,24 +37,24 @@ namespace Bcg {
     }
 
     void PluginCamera::setup(Camera &camera) {
-        ViewParams view_params = get_view_params(camera);
+        ViewParams view_params = GetViewParams(camera);
         view_params.eye = glm::vec3(0, 0, 1);
         view_params.center = glm::vec3(0, 0, 0);
         view_params.up = glm::vec3(0, 1, 0);
         camera.proj_type = Camera::ProjectionType::PERSPECTIVE;
-        set_view_params(camera, view_params);
+        SetViewParams(camera, view_params);
 
         auto vp = PluginGraphics::get_viewport();
         auto viewport_width = vp[2];
         auto viewport_height = vp[3];
 
         float aspect_ratio = float(viewport_width) / float(viewport_height);
-        PerspectiveParams p_params = get_perspective_params(camera);
+        PerspectiveParams p_params = GetPerspectiveParams(camera);
         p_params.fovy_degrees = 45.0f;
         p_params.aspect = aspect_ratio;
         p_params.zNear = 0.1f;
         p_params.zFar = 100.0f;
-        set_perspective_params(camera, p_params);
+        SetPerspectiveParams(camera, p_params);
     }
 
     void PluginCamera::cleanup(entt::entity entity_id) {
@@ -92,7 +92,7 @@ namespace Bcg {
     static void rotate(Camera &camera, const glm::vec3 &axis, float angle) {
         // center in eye coordinates
 
-        ViewParams v_params = get_view_params(camera);
+        ViewParams v_params = GetViewParams(camera);
         glm::vec4 ec = camera.view * glm::vec4(v_params.center, 1.0f);
         glm::vec3 c(ec[0] / ec[3], ec[1] / ec[3], ec[2] / ec[3]);
         glm::mat4 center_matrix = translation_matrix(c);
@@ -102,7 +102,7 @@ namespace Bcg {
         glm::mat4 inv_view = glm::inverse(camera.view);
         v_params.eye = glm::vec3(inv_view[3]);
         v_params.up = glm::vec3(inv_view[1]);
-        set_view_params(camera, v_params);
+        SetViewParams(camera, v_params);
     }
 
     static void rotation(Camera &camera, int x, int y) {
@@ -127,10 +127,10 @@ namespace Bcg {
     }
 
     static void translate(Camera &camera, const glm::vec3 &t) {
-        ViewParams v_params = get_view_params(camera);
+        ViewParams v_params = GetViewParams(camera);
         v_params.eye += t;
         v_params.center += t;
-        set_view_params(camera, v_params);
+        SetViewParams(camera, v_params);
     }
 
     static void translate(Camera &camera, int x, int y) {
@@ -138,14 +138,14 @@ namespace Bcg {
         float dy = y - last_point_2d_[1];
 
         //translate the camera in worldspace in the image plane
-        ViewParams v_params = get_view_params(camera);
+        ViewParams v_params = GetViewParams(camera);
         glm::vec3 front = v_params.center - v_params.eye;
         glm::vec3 up = v_params.up;
         glm::vec3 right = glm::cross(front, up);
 
         float distance_to_scene = glm::length(front);
         // Project the change in screen coordinates to world coordinates
-        PerspectiveParams p_params = get_perspective_params(camera);
+        PerspectiveParams p_params = GetPerspectiveParams(camera);
         auto vp = PluginGraphics::get_viewport();
         float viewport_width = vp[2];
         float viewport_height = vp[3];
@@ -167,7 +167,7 @@ namespace Bcg {
         // Update the last_point_2d_ to the current cursor position
         last_point_2d_[0] = x;
         last_point_2d_[1] = y;
-        set_view_params(camera, v_params);
+        SetViewParams(camera, v_params);
     }
 
     static void on_mouse_cursor(const Events::Callback::MouseCursor &event) {
@@ -195,25 +195,25 @@ namespace Bcg {
         const float max_fovy = 45.0f;  // Maximum field of view in degrees
 
         // Adjust the field of view based on scroll input
-        PerspectiveParams p_params = get_perspective_params(camera);
+        PerspectiveParams p_params = GetPerspectiveParams(camera);
         p_params.fovy_degrees -= event.yoffset;
 
         // Ensure the field of view stays within reasonable bounds
         p_params.fovy_degrees = std::clamp(p_params.fovy_degrees, min_fovy, max_fovy);
-        set_perspective_params(camera, p_params);
+        SetPerspectiveParams(camera, p_params);
     }
 
     static void on_key_focus(const Events::Key::F &event) {
         if (event.action) {
             auto &picked = Engine::Context().get<Picked>();
             auto &camera = Engine::Context().get<Camera>();
-            ViewParams v_params = get_view_params(camera);
+            ViewParams v_params = GetViewParams(camera);
             glm::vec3 front = v_params.center - v_params.eye;
 
             float d = glm::length(front);
             v_params.center = picked.spaces.wsp;
             v_params.eye = v_params.center - front * d;
-            set_view_params(camera, v_params);
+            SetViewParams(camera, v_params);
             Log::Info("Focus onto: {} {} {}", v_params.center[0], v_params.center[1], v_params.center[2]);
         }
     }
@@ -224,13 +224,13 @@ namespace Bcg {
             auto &camera = Engine::Context().get<Camera>();
             if (Engine::valid(picked.entity.id)) {
                 auto &aabb = Engine::State().get<AABB>(picked.entity.id);
-                PerspectiveParams p_params = get_perspective_params(camera);
-                ViewParams v_params = get_view_params(camera);
+                PerspectiveParams p_params = GetPerspectiveParams(camera);
+                ViewParams v_params = GetViewParams(camera);
                 float d = glm::compMax(Diagonal(aabb)) /*/ tan(p_params.fovy / 2.0)*/;
                 glm::vec3 front = v_params.center - v_params.eye;
                 v_params.center = Center(aabb);
                 v_params.eye = v_params.center - front * d;
-                set_view_params(camera, v_params);
+                SetViewParams(camera, v_params);
                 Log::Info("Center onto: {} {} {}", v_params.center[0], v_params.center[1], v_params.center[2]);
             }
         }
@@ -241,16 +241,16 @@ namespace Bcg {
         if (camera.proj_type == Camera::ProjectionType::ORTHOGRAPHIC) {
             float half_width = event.width * 0.5f;
             float half_height = event.height * 0.5f;
-            OrthoParams o_params = get_ortho_params(camera);
+            OrthoParams o_params = GetOrthoParams(camera);
             o_params.left = -half_width;
             o_params.right = half_width;
             o_params.top = half_height;
             o_params.bottom = -half_height;
-            set_ortho_params(camera, o_params);
+            SetOrthoParams(camera, o_params);
         } else {
-            PerspectiveParams p_params = get_perspective_params(camera);
+            PerspectiveParams p_params = GetPerspectiveParams(camera);
             p_params.aspect = float(event.width) / float(event.height);
-            set_perspective_params(camera, p_params);
+            SetPerspectiveParams(camera, p_params);
         }
     }
 
@@ -278,7 +278,7 @@ namespace Bcg {
         auto &camera = Engine::Context().get<Camera>();
         auto &keyboard = Engine::Context().get<Keyboard>();
         auto dt = PluginFrameTimer::delta();
-        ViewParams v_params = get_view_params(camera);
+        ViewParams v_params = GetViewParams(camera);
         glm::vec3 front = v_params.center - v_params.eye;
         if (keyboard.w()) {
             translate(camera, front * dt);
@@ -298,7 +298,7 @@ namespace Bcg {
     void PluginCamera::update() {
         auto &camera = Engine::Context().get<Camera>();
         auto &ubo = Engine::Context().get<CameraUniformBuffer>();
-        ViewParams v_params = get_view_params(camera);
+        ViewParams v_params = GetViewParams(camera);
 
         ubo.bind();
         if (camera.dirty_view) {
@@ -356,13 +356,13 @@ namespace Bcg {
     namespace Commands {
         void CenterCameraAtDistance::execute() const {
             auto &camera = Engine::Context().get<Camera>();
-            ViewParams v_params = get_view_params(camera);
-            PerspectiveParams p_params = get_perspective_params(camera);
+            ViewParams v_params = GetViewParams(camera);
+            PerspectiveParams p_params = GetPerspectiveParams(camera);
 
             glm::vec3 front = v_params.center - v_params.eye;
             v_params.center = center;
             v_params.eye = center - front * distance / tanf(p_params.fovy_degrees / 2.0f);
-            set_view_params(camera, v_params);
+            SetViewParams(camera, v_params);
             FitNearAndFarToDistance(distance).execute();
         }
 
@@ -370,15 +370,15 @@ namespace Bcg {
             auto &camera = Engine::Context().get<Camera>();
 
             if (camera.proj_type == Camera::ProjectionType::PERSPECTIVE) {
-                PerspectiveParams p_params = get_perspective_params(camera);
+                PerspectiveParams p_params = GetPerspectiveParams(camera);
                 p_params.zNear = distance / 100.0f;
                 p_params.zFar = distance * 3.0f;
-                set_perspective_params(camera, p_params);
+                SetPerspectiveParams(camera, p_params);
             } else if (camera.proj_type == Camera::ProjectionType::ORTHOGRAPHIC) {
-                OrthoParams o_params = get_ortho_params(camera);
+                OrthoParams o_params = GetOrthoParams(camera);
                 o_params.zNear = distance / 100.0f;
                 o_params.zFar = distance * 3.0f;
-                set_ortho_params(camera, o_params);
+                SetOrthoParams(camera, o_params);
             }
         }
     }

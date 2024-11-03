@@ -5,9 +5,6 @@
 #ifndef ENGINE24_PICKER_H
 #define ENGINE24_PICKER_H
 
-#include "entt/fwd.hpp"
-#include "MatVec.h"
-#include "Plugin.h"
 #include "GuiUtils.h"
 #include "CoordinateSystems.h"
 

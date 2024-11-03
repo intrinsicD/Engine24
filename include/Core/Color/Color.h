@@ -6,11 +6,12 @@
 #define ENGINE24_COLOR_H
 
 #include <cstdint>
+#include "glm/glm.hpp"
 
 namespace Bcg {
-    uint32_t floatColorToUint32(float r, float g, float b, float a);
+    uint32_t floatColorToUint32(const glm::vec4 &rgba);
 
-    void uint32ToFloatColor(uint32_t color, float &r, float &g, float &b, float &a);
+    void uint32ToFloatColor(uint32_t uicolor, glm::vec4 &rgba);
 }
 
 #endif //ENGINE24_COLOR_H

@@ -22,7 +22,7 @@ namespace Bcg {
 
         //! copy constructor: copies \p rhs to \p *this. performs a deep copy of all
         //! properties.
-        inline PointCloud(const PointCloud &rhs) { operator=(rhs); }
+        PointCloud(const PointCloud &rhs) { operator=(rhs); }
 
         //! assign \p rhs to \p *this. performs a deep copy of all properties.
         PointCloud &operator=(const PointCloud &rhs);
@@ -34,13 +34,13 @@ namespace Bcg {
         Vertex add_vertex(const PointType &p);
 
         //! \return number of (deleted and valid) vertices in the mesh
-        inline size_t vertices_size() const { return vprops_.size(); }
+        [[nodiscard]] size_t vertices_size() const { return vprops_.size(); }
 
         //! \return number of vertices in the mesh
-        inline size_t n_vertices() const { return vertices_size() - deleted_vertices_; }
+        [[nodiscard]] size_t n_vertices() const { return vertices_size() - deleted_vertices_; }
 
         //! \return true if the mesh is empty, i.e., has no vertices
-        inline bool is_empty() const { return n_vertices() == 0; }
+        [[nodiscard]] bool is_empty() const { return n_vertices() == 0; }
 
         //! clear mesh: remove all vertices, edges, faces
         virtual void clear();
@@ -56,10 +56,10 @@ namespace Bcg {
 
         //! \return whether vertex \p v is deleted
         //! \sa garbage_collection()
-        inline bool is_deleted(Vertex v) const { return vdeleted_[v]; }
+        [[nodiscard]] bool is_deleted(Vertex v) const { return vdeleted_[v]; }
 
         //! \return whether vertex \p v is valid.
-        inline bool is_valid(Vertex v) const { return (v.idx() < vertices_size()); }
+        [[nodiscard]] bool is_valid(Vertex v) const { return (v.idx() < vertices_size()); }
 
         //!@}
         //! \name Property handling
@@ -70,8 +70,8 @@ namespace Bcg {
         //! since the name has to be unique. in this case it returns an
         //! invalid property
         template<class T>
-        inline VertexProperty<T> add_vertex_property(const std::string &name,
-                                                     const T t = T()) {
+        VertexProperty<T> add_vertex_property(const std::string &name,
+                                              const T t = T()) {
             return VertexProperty<T>(vprops_.add<T>(name, t));
         }
 
@@ -79,7 +79,7 @@ namespace Bcg {
         //! invalid VertexProperty if the property does not exist or if the
         //! type does not match.
         template<class T>
-        inline VertexProperty<T> get_vertex_property(const std::string &name) const {
+        VertexProperty<T> get_vertex_property(const std::string &name) const {
             return VertexProperty<T>(vprops_.get<T>(name));
         }
 
@@ -87,23 +87,23 @@ namespace Bcg {
         //! returned. otherwise this property is added (with default value \c
         //! t)
         template<class T>
-        inline VertexProperty<T> vertex_property(const std::string &name, const T t = T()) {
+        VertexProperty<T> vertex_property(const std::string &name, const T t = T()) {
             return VertexProperty<T>(vprops_.get_or_add<T>(name, t));
         }
 
         //! remove the vertex property \p p
         template<class T>
-        inline void remove_vertex_property(VertexProperty<T> &p) {
+        void remove_vertex_property(VertexProperty<T> &p) {
             vprops_.remove(p);
         }
 
         //! does the mesh have a vertex property with name \p name?
-        inline bool has_vertex_property(const std::string &name) const {
+        [[nodiscard]] bool has_vertex_property(const std::string &name) const {
             return vprops_.exists(name);
         }
 
         //! \return the names of all vertex properties
-        inline std::vector<std::string> vertex_properties() const {
+        [[nodiscard]] std::vector<std::string> vertex_properties() const {
             return vprops_.properties();
         }
 
@@ -112,31 +112,31 @@ namespace Bcg {
         //!@{
 
         //! \return start iterator for vertices
-        VertexIterator vertices_begin() const {
-            return VertexIterator(Vertex(0), this);
+        [[nodiscard]] VertexIterator vertices_begin() const {
+            return {Vertex(0), this};
         }
 
         //! \return end iterator for vertices
-        VertexIterator vertices_end() const {
-            return VertexIterator(Vertex(static_cast<IndexType>(vertices_size())),
-                                  this);
+        [[nodiscard]] VertexIterator vertices_end() const {
+            return {Vertex(static_cast<IndexType>(vertices_size())),
+                                  this};
         }
 
         //! \return vertex container for C++11 range-based for-loops
-        VertexContainer vertices() const {
-            return VertexContainer(vertices_begin(), vertices_end());
+        [[nodiscard]] VertexContainer vertices() const {
+            return {vertices_begin(), vertices_end()};
         }
 
         //! position of a vertex (read only)
-        inline const PointType &position(Vertex v) const { return vpoint_[v]; }
+        [[nodiscard]] const PointType &position(Vertex v) const { return vpoint_[v]; }
 
         //! position of a vertex
-        inline PointType &position(Vertex v) { return vpoint_[v]; }
+        PointType &position(Vertex v) { return vpoint_[v]; }
 
         //! \return vector of point positions
-        inline std::vector<PointType> &positions() { return vpoint_.vector(); }
+        std::vector<PointType> &positions() { return vpoint_.vector(); }
 
-        inline Vertex new_vertex() {
+        Vertex new_vertex() {
             if (vertices_size() == BCG_MAX_INDEX - 1) {
                 auto what =
                         "SurfaceMesh: cannot allocate vertex, max. index reached";
@@ -147,7 +147,7 @@ namespace Bcg {
         }
 
         // are there any deleted entities?
-        inline bool has_garbage() const { return has_garbage_; }
+        [[nodiscard]] bool has_garbage() const { return has_garbage_; }
 
         PropertyContainer vprops_;
 

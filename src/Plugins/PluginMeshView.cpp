@@ -78,7 +78,7 @@ namespace Bcg {
 
             view.vao.bind();
             view.program.use();
-            view.program.set_uniform3fv("light_position", glm::value_ptr(get_view_params(camera).eye));
+            view.program.set_uniform3fv("light_position", glm::value_ptr(GetViewParams(camera).eye));
             view.program.set_uniform1f("min_color", view.min_color);
             view.program.set_uniform1f("max_color", view.max_color);
             view.program.set_uniform1i("use_uniform_color", view.use_uniform_color);

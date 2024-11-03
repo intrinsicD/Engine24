@@ -42,34 +42,34 @@ namespace Bcg::Gui {
 
     void ShowProjection(Camera &camera) {
         if (camera.proj_type == Camera::ProjectionType::PERSPECTIVE) {
-            PerspectiveParams p_params = get_perspective_params(camera);
+            PerspectiveParams p_params = GetPerspectiveParams(camera);
             if (Show(p_params)) {
-                set_perspective_params(camera, p_params);
+                SetPerspectiveParams(camera, p_params);
             }
             static float depth = p_params.zNear;
             bool changed_depth = ImGui::SliderFloat("Depth", &depth, p_params.zNear, p_params.zFar);
             if (ImGui::Button("Convert to Ortho") || changed_depth) {
                 {
                     OrthoParams o_params = Convert(p_params, depth);
-                    set_ortho_params(camera, o_params);
+                    SetOrthoParams(camera, o_params);
                 }
             } else {
-                OrthoParams o_params = get_ortho_params(camera);
+                OrthoParams o_params = GetOrthoParams(camera);
                 if (Show(o_params)) {
-                    set_ortho_params(camera, o_params);
+                    SetOrthoParams(camera, o_params);
                 }
                 if (ImGui::Button("Convert to Perspective")) {
                     PerspectiveParams p_params = Convert(o_params);
-                    set_perspective_params(camera, p_params);
+                    SetPerspectiveParams(camera, p_params);
                 }
             }
         }
     }
 
     void Show(Camera &camera) {
-        ViewParams view_params = get_view_params(camera);
+        ViewParams view_params = GetViewParams(camera);
         if (Show(view_params)) {
-            set_view_params(camera, view_params);
+            SetViewParams(camera, view_params);
         }
         if (ImGui::CollapsingHeader("ViewMatrix")) {
             ShowMatrix(camera.view);
@@ -88,19 +88,19 @@ namespace Bcg::Gui {
             view_params.center = glm::vec3(0, 0, 0);
             view_params.up = glm::vec3(0, 1, 0);
             camera.proj_type = Camera::ProjectionType::PERSPECTIVE;
-            set_view_params(camera, view_params);
+            SetViewParams(camera, view_params);
 
             auto vp = PluginGraphics::get_viewport();
             auto viewport_width = vp[2];
             auto viewport_height = vp[3];
 
             float aspect_ratio = float(viewport_width) / float(viewport_height);
-            PerspectiveParams p_params = get_perspective_params(camera);
+            PerspectiveParams p_params = GetPerspectiveParams(camera);
             p_params.fovy_degrees = 45.0f;
             p_params.aspect = aspect_ratio;
             p_params.zNear = 0.1f;
             p_params.zFar = 100.0f;
-            set_perspective_params(camera, p_params);
+            SetPerspectiveParams(camera, p_params);
         }
     }
 }

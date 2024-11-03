@@ -7,6 +7,7 @@ target_sources(Engine24 PRIVATE
         HierarchyGui.cpp
         MeshGui.cpp
         MeshViewGui.cpp
+        MouseGui.cpp
         PickerGui.cpp
         PointCloudGui.cpp
         PropertiesGui.cpp

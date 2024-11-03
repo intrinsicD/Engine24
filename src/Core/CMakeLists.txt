@@ -35,6 +35,7 @@ target_sources(Engine24 PRIVATE
         SurfaceMeshIo.cpp
         SurfaceMeshTriangles.cpp
         SphereView.cpp
+        Timer.cpp
         Triangle.cpp
         Transform.cpp
         Utils.cpp

@@ -53,8 +53,8 @@ namespace Bcg {
 
     void PluginAABB::render_gui() {
         if (show_gui) {
-            auto &picked = Engine::Context().get<Picked>();
-            if (ImGui::Begin("AABB", &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
+            if (ImGui::Begin(name, &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
+                auto &picked = Engine::Context().get<Picked>();
                 Gui::Show(picked.entity.id);
             }
             ImGui::End();

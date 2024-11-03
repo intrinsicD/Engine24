@@ -50,14 +50,6 @@ namespace Bcg {
 
         Cursor cursor;
     };
-
-
-    namespace Gui {
-        void Show(const Mouse &mouse);
-        void Show(const Mouse &mouse);
-
-        void Show(const Mouse::Cursor &cursor);
-    };
 }
 
 #endif //ENGINE24_MOUSE_H

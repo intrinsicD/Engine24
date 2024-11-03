@@ -16,4 +16,5 @@ target_sources(Engine24 PRIVATE
         PluginSphereView.cpp
         PluginEntity.cpp
         PluginVectorfieldViews.cpp
+        PluginPointCloudSampling.cpp
 )

@@ -6,6 +6,7 @@
 #include "Engine.h"
 #include "Camera.h"
 #include "PluginGraphics.h"
+#include "MouseGui.h"
 #include "imgui.h"
 
 namespace Bcg {

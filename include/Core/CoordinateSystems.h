@@ -9,23 +9,28 @@
 #include "Eigen/Geometry"
 
 namespace Bcg {
-    //Todo user these functions to avoid mistakes in the camera and picker code...
+    //Todo use these functions to avoid mistakes in the camera and picker code...
 
     struct ScreenSpacePos : public Vector<float, 2> {
         using Vector<float, 2>::Vector;
     };
+
     struct ScreenSpacePosDpiAdjusted : public Vector<float, 2> {
         using Vector<float, 2>::Vector;
     };
+
     struct NdcSpacePos : public Vector<float, 3> {
         using Vector<float, 3>::Vector;
     };
+
     struct ViewSpacePos : public Vector<float, 3> {
         using Vector<float, 3>::Vector;
     };
+
     struct WorldSpacePos : public Vector<float, 3> {
         using Vector<float, 3>::Vector;
     };
+
     struct ObjectSpacePos : public Vector<float, 3> {
         using Vector<float, 3>::Vector;
     };
@@ -68,22 +73,21 @@ namespace Bcg {
 
     ScreenSpacePosDpiAdjusted AdjustForDPI(const ScreenSpacePos &pos, float dpi_scaling_factor);
 
-    NdcSpacePos screen_to_ndc(const Vector<int, 4> &viewport, const ScreenSpacePosDpiAdjusted &pos, float z);
+    NdcSpacePos ScreenToNdc(const Vector<int, 4> &viewport, const ScreenSpacePosDpiAdjusted &pos, float z);
 
-    ScreenSpacePosDpiAdjusted ndc_to_screen(const Vector<int, 4> &viewport, const NdcSpacePos &pos, float &z_out);
+    ScreenSpacePosDpiAdjusted NdcToScreen(const Vector<int, 4> &viewport, const NdcSpacePos &pos, float &z_out);
 
-    ViewSpacePos ndc_to_view(const Matrix<float, 4, 4> &proj_inv, const NdcSpacePos &pos);
+    ViewSpacePos NdcToView(const Matrix<float, 4, 4> &proj_inv, const NdcSpacePos &pos);
 
-    NdcSpacePos view_to_ndc(const Matrix<float, 4, 4> &proj, const ViewSpacePos &pos);
+    NdcSpacePos ViewToNdc(const Matrix<float, 4, 4> &proj, const ViewSpacePos &pos);
 
-    ViewSpacePos world_to_view(const Matrix<float, 4, 4> &view, const WorldSpacePos &pos);
+    ViewSpacePos WorldToView(const Matrix<float, 4, 4> &view, const WorldSpacePos &pos);
 
-    WorldSpacePos view_to_world(const Matrix<float, 4, 4> &view_inv, const ViewSpacePos &pos);
+    WorldSpacePos ViewToWorld(const Matrix<float, 4, 4> &view_inv, const ViewSpacePos &pos);
 
-    WorldSpacePos object_to_world(const Matrix<float, 4, 4> &model, const ObjectSpacePos &pos);
+    WorldSpacePos ObjectToWorld(const Matrix<float, 4, 4> &model, const ObjectSpacePos &pos);
 
-    ObjectSpacePos world_to_object(const Matrix<float, 4, 4> &model_inv, const WorldSpacePos &pos);
-
+    ObjectSpacePos WorldToObject(const Matrix<float, 4, 4> &model_inv, const WorldSpacePos &pos);
 }
 
 #endif //ENGINE24_COORDINATESYSTEMS_H

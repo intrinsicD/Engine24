@@ -8,7 +8,13 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-add_library(Engine24)
+add_library(Engine24
+        include/Guis/MouseGui.h
+        src/Guis/MouseGui.cpp
+        src/Core/Timer.cpp
+        include/Plugins/PluginPointCloudSampling.h
+        src/Plugins/PluginPointCloudSampling.cpp
+)
 
 include(${CMAKE_SOURCE_DIR}/CopyShaders.cmake)
 

@@ -19,6 +19,7 @@
 #include "PluginViewVectorfields.h"
 #include "PluginSelection.h"
 #include "PluginGraphics.h"
+#include "PluginPointCloudSampling.h"
 #include "PluginIcp.h"
 #include <unordered_map>
 
@@ -42,6 +43,7 @@ namespace Bcg {
         add_plugin(std::make_unique<PluginViewVectorfields>());
         add_plugin(std::make_unique<PluginSelection>());
         add_plugin(std::make_unique<PluginIcp>());
+        add_plugin(std::make_unique<PluginPointCloudSampling>());
     }
 
     void Plugins::init_user_plugin(const std::string &name) {

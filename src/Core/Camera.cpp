@@ -5,7 +5,7 @@
 #include "Camera.h"
 
 namespace Bcg{
-    ViewParams get_view_params(const Camera &camera) {
+    ViewParams GetViewParams(const Camera &camera) {
         glm::mat4 model = glm::inverse(camera.view);
         ViewParams v_params;
         v_params.eye = model[3];
@@ -14,12 +14,12 @@ namespace Bcg{
         return v_params;
     }
 
-    void set_view_params(Camera &camera, const ViewParams &v_params) {
+    void SetViewParams(Camera &camera, const ViewParams &v_params) {
         camera.view = glm::lookAt(v_params.eye, v_params.center, v_params.up);
         camera.dirty_view = true;
     }
 
-    PerspectiveParams get_perspective_params(const Camera &camera) {
+    PerspectiveParams GetPerspectiveParams(const Camera &camera) {
         PerspectiveParams p_params;
 
         // Extract near and far planes
@@ -35,13 +35,13 @@ namespace Bcg{
         return p_params;
     }
 
-    void set_perspective_params(Camera &camera, const PerspectiveParams &p_params) {
+    void SetPerspectiveParams(Camera &camera, const PerspectiveParams &p_params) {
         camera.proj_type = Camera::ProjectionType::PERSPECTIVE;
         camera.proj = glm::perspective(glm::radians(p_params.fovy_degrees), p_params.aspect, p_params.zNear, p_params.zFar);
         camera.dirty_proj = true;
     }
 
-    OrthoParams get_ortho_params(const Camera &camera) {
+    OrthoParams GetOrthoParams(const Camera &camera) {
         OrthoParams o_params;
 
         // Extract left and right
@@ -65,7 +65,7 @@ namespace Bcg{
         return o_params;
     }
 
-    void set_ortho_params(Camera &camera, const OrthoParams &o_params) {
+    void SetOrthoParams(Camera &camera, const OrthoParams &o_params) {
         camera.proj_type = Camera::ProjectionType::ORTHOGRAPHIC;
         camera.proj = glm::ortho(o_params.left, o_params.right, o_params.bottom, o_params.top, o_params.zNear,
                                  o_params.zFar);

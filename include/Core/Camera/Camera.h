@@ -43,17 +43,17 @@ namespace Bcg {
         float zFar = 100.0f;
     };
 
-    ViewParams get_view_params(const Camera &camera);
+    ViewParams GetViewParams(const Camera &camera);
 
-    void set_view_params(Camera &camera, const ViewParams &v_params);
+    void SetViewParams(Camera &camera, const ViewParams &v_params);
 
-    PerspectiveParams get_perspective_params(const Camera &camera);
+    PerspectiveParams GetPerspectiveParams(const Camera &camera);
 
-    void set_perspective_params(Camera &camera, const PerspectiveParams &p_params);
+    void SetPerspectiveParams(Camera &camera, const PerspectiveParams &p_params);
 
-    OrthoParams get_ortho_params(const Camera &camera);
+    OrthoParams GetOrthoParams(const Camera &camera);
 
-    void set_ortho_params(Camera &camera, const OrthoParams &o_params);
+    void SetOrthoParams(Camera &camera, const OrthoParams &o_params);
 
     PerspectiveParams Convert(const OrthoParams &o_params);
 
