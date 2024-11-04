@@ -321,6 +321,7 @@ namespace Bcg::cuda {
                               aabbs_.begin() + num_internal_nodes, morton.begin(),
                               morton_code_calculator_type(aabb_whole));
 
+
             // --------------------------------------------------------------------
             // sort object-indices by morton code
 
@@ -333,6 +334,8 @@ namespace Bcg::cuda {
                                        thrust::make_zip_iterator(
                                                thrust::make_tuple(aabbs_.begin() + num_internal_nodes,
                                                                   indices.begin())));
+
+
 
             // --------------------------------------------------------------------
             // check morton codes are unique
@@ -352,6 +355,7 @@ namespace Bcg::cuda {
                                       return m64;
                                   });
             }
+
 
             // --------------------------------------------------------------------
             // construct leaf nodes and aabbs
