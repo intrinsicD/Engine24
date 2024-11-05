@@ -14,6 +14,8 @@ add_library(Engine24
         src/Core/Timer.cpp
         include/Plugins/PluginPointCloudSampling.h
         src/Plugins/PluginPointCloudSampling.cpp
+        include/Core/Traits/StringTraits.h
+        include/Core/Traits/DimTraits.h
 )
 
 include(${CMAKE_SOURCE_DIR}/CopyShaders.cmake)

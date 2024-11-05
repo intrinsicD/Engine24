@@ -9,7 +9,6 @@
 #include <fstream>
 
 namespace Bcg {
-
     bool Read(const std::string &filepath, PointCloud &pc) {
         auto ext = std::filesystem::path(filepath).extension().string();
         std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);

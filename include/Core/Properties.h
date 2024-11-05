@@ -12,9 +12,10 @@
 #include "Exceptions.h"
 #include "MatVec.h"
 #include "GlmToEigen.h"
+#include "StringTraits.h"
+#include "DimTraits.h"
 
 namespace Bcg {
-
     class BasePropertyArray {
     public:
         //! Destructor.
@@ -36,16 +37,16 @@ namespace Bcg {
         virtual void swap(size_t i0, size_t i1) = 0;
 
         //! Return a deep copy of self.
-        virtual BasePropertyArray *clone() const = 0;
+        [[nodiscard]] virtual BasePropertyArray *clone() const = 0;
 
         //! Return the name of the property
-        virtual const std::string &name() const = 0;
+        [[nodiscard]] virtual const std::string &name() const = 0;
 
-        virtual std::string element_string(size_t i) const = 0;
+        [[nodiscard]] virtual std::string element_string(size_t i) const = 0;
 
-        virtual size_t size() const = 0;
+        [[nodiscard]] virtual size_t size() const = 0;
 
-        virtual size_t dims() const = 0;
+        [[nodiscard]] virtual size_t dims() const = 0;
     };
 
     template<typename T, int N>
@@ -55,36 +56,16 @@ namespace Bcg {
         return os;
     }
 
-    template<typename S>
-    inline size_t GetDims(const S &) {
-        return 1;
-    }
-
-    template<>
-    inline size_t GetDims(const Vector<float, 2> &) {
-        return 2;
-    }
-
-    template<>
-    inline size_t GetDims(const Vector<float, 3> &) {
-        return 3;
-    }
-
-    template<>
-    inline size_t GetDims(const Vector<float, 4> &) {
-        return 4;
-    }
-
     template<class T>
-    class PropertyArray : public BasePropertyArray {
+    class PropertyArray final : public BasePropertyArray {
     public:
         using ValueType = T;
         using VectorType = std::vector<ValueType>;
         using reference = typename VectorType::reference;
         using const_reference = typename VectorType::const_reference;
 
-        PropertyArray(std::string name, T t = T())
-                : name_(std::move(name)), value_(std::move(t)) {
+        explicit PropertyArray(std::string name, T t = T())
+            : name_(std::move(name)), value_(std::move(t)) {
         }
 
         void reserve(size_t n) override { data_.reserve(n); }
@@ -101,14 +82,14 @@ namespace Bcg {
             data_[i1] = d;
         }
 
-        BasePropertyArray *clone() const override {
+        [[nodiscard]] BasePropertyArray *clone() const override {
             auto *p = new PropertyArray<T>(name_, value_);
             p->data_ = data_;
             return p;
         }
 
         //! Get pointer to array (does not work for T==bool)
-        const T *data() const { return &data_[0]; }
+        [[nodiscard]] const T *data() const { return &data_[0]; }
 
         //! Get reference to the underlying vector
         std::vector<T> &vector() { return data_; }
@@ -126,39 +107,18 @@ namespace Bcg {
         }
 
         //! Return the name of the property
-        const std::string &name() const override { return name_; }
+        [[nodiscard]] const std::string &name() const override { return name_; }
 
-        std::string element_string(size_t i) const override {
-            return ToString(data_[i]);
+        [[nodiscard]] std::string element_string(size_t i) const override {
+            return StringTraits<T>::ToString(data_[i]);
         }
 
-        template<typename S>
-        std::string ToString(const S &t) const {
-            std::stringstream ss;
-            ss << t;
-            return ss.str();
-        }
-
-        template<typename S, int L, glm::qualifier Q = glm::defaultp>
-        std::string ToString(const glm::vec<L, S, Q> &t) const {
-            std::stringstream ss;
-            ss << MapConst(t);
-            return ss.str();
-        }
-
-        template<typename S, int C, int R, glm::qualifier Q = glm::defaultp>
-        std::string ToString(const glm::mat<C, R, S, Q> &t) const {
-            std::stringstream ss;
-            ss << MapConst(t);
-            return ss.str();
-        }
-
-        size_t size() const override {
+        [[nodiscard]] size_t size() const override {
             return data_.size();
         }
 
-        size_t dims() const override {
-            return GetDims(value_);
+        [[nodiscard]] size_t dims() const override {
+            return DimTraits<T>::GetDims(value_);
         }
 
     private:
@@ -167,7 +127,7 @@ namespace Bcg {
         ValueType value_;
     };
 
-// specialization for bool properties
+    // specialization for bool properties
     template<>
     inline const bool *PropertyArray<bool>::data() const {
         assert(false);
@@ -188,13 +148,14 @@ namespace Bcg {
 
         friend class PointCloud;
 
-        explicit Property(PropertyArray<T> *p = nullptr) : parray_(p) {}
+        explicit Property(PropertyArray<T> *p = nullptr) : parray_(p) {
+        }
 
         void reset() { parray_ = nullptr; }
 
         explicit operator bool() const { return parray_ != nullptr; }
 
-        const std::string &name() const { return parray_->name(); }
+        [[nodiscard]] const std::string &name() const { return parray_->name(); }
 
         reference operator[](size_t i) {
             assert(parray_ != nullptr);
@@ -216,7 +177,7 @@ namespace Bcg {
             return parray_->vector();
         }
 
-        const BasePropertyArray *base() const {
+        [[nodiscard]] const BasePropertyArray *base() const {
             return parray_;
         }
 
@@ -251,22 +212,23 @@ namespace Bcg {
                 clear();
                 parrays_.resize(rhs.n_properties());
                 size_ = rhs.size();
-                for (size_t i = 0; i < parrays_.size(); ++i)
+                for (size_t i = 0; i < parrays_.size(); ++i) {
                     parrays_[i] = rhs.parrays_[i]->clone();
+                }
             }
             return *this;
         }
 
-        bool empty() const { return size_ == 0; }
+        [[nodiscard]] bool empty() const { return size_ == 0; }
 
         // returns the current size of the property arrays
-        size_t size() const { return size_; }
+        [[nodiscard]] size_t size() const { return size_; }
 
         // returns the number of property arrays
-        size_t n_properties() const { return parrays_.size(); }
+        [[nodiscard]] size_t n_properties() const { return parrays_.size(); }
 
         // returns a vector of all property names
-        std::vector<std::string> properties(std::initializer_list<int> filter_dims = {}) const {
+        [[nodiscard]] std::vector<std::string> properties(std::initializer_list<int> filter_dims = {}) const {
             //TODO figure out filtering by type, float, int, other custom types ...
             std::vector<std::string> names;
             names.reserve(parrays_.size());
@@ -304,26 +266,27 @@ namespace Bcg {
         }
 
         // do we have a property with a given name?
-        bool exists(const std::string &name) const {
-            for (auto parray: parrays_)
-                if (parray->name() == name)
-                    return true;
-            return false;
+        [[nodiscard]] bool exists(const std::string &name) const {
+            return std::ranges::any_of(parrays_, [&name](auto *p) { return (*p).name() == name; });
         }
 
         // get a property by its name. returns invalid property if it does not exist.
         template<class T>
         Property<T> get(const std::string &name) const {
-            for (auto parray: parrays_)
-                if (parray->name() == name)
+            for (auto parray: parrays_) {
+                if (parray->name() == name) {
                     return Property<T>(dynamic_cast<PropertyArray<T> *>(parray));
+                }
+            }
             return Property<T>();
         }
 
-        BasePropertyArray *get_base(const std::string &name) const {
-            for (auto parray: parrays_)
-                if (parray->name() == name)
+        [[nodiscard]] BasePropertyArray *get_base(const std::string &name) const {
+            for (auto parray: parrays_) {
+                if (parray->name() == name) {
                     return parray;
+                }
+            }
             return nullptr;
         }
 
@@ -331,16 +294,17 @@ namespace Bcg {
         template<class T>
         Property<T> get_or_add(const std::string &name, const T t = T()) {
             Property<T> p = get<T>(name);
-            if (!p)
+            if (!p) {
                 p = add<T>(name, t);
+            }
             return p;
         }
 
         // delete a property
         template<class T>
         void remove(Property<T> &h) {
-            auto it = parrays_.begin(), end = parrays_.end();
-            for (; it != end; ++it) {
+            const auto end = parrays_.end();
+            for (auto it = parrays_.begin(); it != end; ++it) {
                 if (*it == h.parray_) {
                     delete *it;
                     parrays_.erase(it);
@@ -352,45 +316,51 @@ namespace Bcg {
 
         // delete all properties
         void clear() {
-            for (auto &parray: parrays_)
+            for (auto &parray: parrays_) {
                 delete parray;
+            }
             parrays_.clear();
             size_ = 0;
         }
 
         // reserve memory for n entries in all arrays
         void reserve(size_t n) const {
-            for (auto parray: parrays_)
+            for (auto parray: parrays_) {
                 parray->reserve(n);
+            }
         }
 
         // resize all arrays to size n
         void resize(size_t n) {
-            for (auto &parray: parrays_)
+            for (auto &parray: parrays_) {
                 parray->resize(n);
+            }
             size_ = n;
         }
 
         // free unused space in all arrays
         void free_memory() const {
-            for (auto parray: parrays_)
+            for (auto parray: parrays_) {
                 parray->free_memory();
+            }
         }
 
         // add a new element to each vector
         void push_back() {
-            for (auto &parray: parrays_)
+            for (auto &parray: parrays_) {
                 parray->push_back();
+            }
             ++size_;
         }
 
         // swap elements i0 and i1 in all arrays
         void swap(size_t i0, size_t i1) const {
-            for (auto parray: parrays_)
+            for (auto parray: parrays_) {
                 parray->swap(i0, i1);
+            }
         }
 
-        const std::vector<BasePropertyArray *> &get_parray() const {
+        [[nodiscard]] const std::vector<BasePropertyArray *> &get_parray() const {
             return parrays_;
         }
 
@@ -398,5 +368,4 @@ namespace Bcg {
         std::vector<BasePropertyArray *> parrays_;
         size_t size_{0};
     };
-
 } // namespace pmp
