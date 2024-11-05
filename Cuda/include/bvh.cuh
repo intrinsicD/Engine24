@@ -45,6 +45,7 @@ namespace Bcg::cuda {
             node_type *nodes;
             aabb *aabbs;
             object_type *objects;
+            std::uint32_t *samples;
         };
 
         template<typename Object>
@@ -59,6 +60,7 @@ namespace Bcg::cuda {
             node_type const *nodes;
             aabb const *aabbs;
             object_type const *objects;
+            std::uint32_t const *samples;
         };
 
         template<typename UInt>
@@ -247,6 +249,8 @@ namespace Bcg::cuda {
             this->aabbs_.clear();
             this->nodes_h_.clear();
             this->nodes_.clear();
+            this->samples_h_.clear();
+            this->samples_.clear();
         }
 
         template<typename InputIterator>
@@ -272,7 +276,7 @@ namespace Bcg::cuda {
             return bvh_device<object_type>{
                     static_cast<unsigned int>(nodes_.size()),
                     static_cast<unsigned int>(objects_d_.size()),
-                    nodes_.data().get(), aabbs_.data().get(), objects_d_.data().get()
+                    nodes_.data().get(), aabbs_.data().get(), objects_d_.data().get(), samples_.data().get()
             };
         }
 
@@ -280,7 +284,7 @@ namespace Bcg::cuda {
             return cbvh_device<object_type>{
                     static_cast<unsigned int>(nodes_.size()),
                     static_cast<unsigned int>(objects_d_.size()),
-                    nodes_.data().get(), aabbs_.data().get(), objects_d_.data().get()
+                    nodes_.data().get(), aabbs_.data().get(), objects_d_.data().get(), samples_.data().get()
             };
         }
 
@@ -306,15 +310,14 @@ namespace Bcg::cuda {
 
             this->aabbs_.resize(num_nodes, default_aabb);
 
+            thrust::transform(this->objects_d_.begin(), this->objects_d_.end(),
+                              aabbs_.begin() + num_internal_nodes, aabb_getter_type());
 
-             thrust::transform(this->objects_d_.begin(), this->objects_d_.end(),
-                               aabbs_.begin() + num_internal_nodes, aabb_getter_type());
-
-             const auto aabb_whole = thrust::reduce(
-                     aabbs_.begin() + num_internal_nodes, aabbs_.end(), default_aabb,
-                     [] __device__ __host__(const aabb &lhs, const aabb &rhs) {
-                         return merge(lhs, rhs);
-                     });
+            const auto aabb_whole = thrust::reduce(
+                    aabbs_.begin() + num_internal_nodes, aabbs_.end(), default_aabb,
+                    [] __device__ __host__(const aabb &lhs, const aabb &rhs) {
+                        return merge(lhs, rhs);
+                    });
 
             thrust::device_vector<unsigned int> morton(num_objects);
             thrust::transform(this->objects_d_.begin(), this->objects_d_.end(),
@@ -367,6 +370,7 @@ namespace Bcg::cuda {
             default_node.object_idx = 0xFFFFFFFF;
             this->nodes_.resize(num_nodes, default_node);
 
+
             thrust::transform(indices.begin(), indices.end(),
                               this->nodes_.begin() + num_internal_nodes,
                               [] __device__(const index_type idx) {
@@ -377,6 +381,31 @@ namespace Bcg::cuda {
                                   n.object_idx = idx;
                                   return n;
                               });
+
+
+            // -- New Sampling Begin --
+            this->samples_.resize(num_nodes, 0xFFFFFFFF);
+            this->samples_h_.resize(num_nodes, 0xFFFFFFFF);
+            this->nodes_h_.resize(num_nodes, default_node);
+
+            thrust::transform(indices.begin(), indices.end(),
+                              this->samples_.begin() + num_internal_nodes,
+                              [] __device__(const index_type idx) {
+                                  return idx;
+                              });
+
+            //assert that all leaf nodes have samples set to idx
+            //movel samples data to host do be debuggable:
+
+            thrust::copy(this->samples_.begin() + num_internal_nodes, this->samples_.end(), this->samples_h_.begin() + num_internal_nodes);
+            thrust::copy(this->nodes_.begin() + num_internal_nodes, this->nodes_.end(), this->nodes_h_.begin() + num_internal_nodes);
+            //assert that all leaf nodes have samples set to idx
+            for (int i = num_internal_nodes; i < num_nodes; i++) {
+                const auto sample_idx = this->samples_h_[i];
+                const auto node = this->nodes_h_[i];
+                assert(sample_idx == node.object_idx);
+            }
+            // -- New Sampling End --
 
             // --------------------------------------------------------------------
             // construct internal nodes
@@ -400,10 +429,11 @@ namespace Bcg::cuda {
             thrust::for_each(thrust::device,
                              thrust::make_counting_iterator<index_type>(num_internal_nodes),
                              thrust::make_counting_iterator<index_type>(num_nodes),
-                             [self, flags] __device__(index_type idx) {
+                             [self, flags, inf] __device__(index_type idx) {
                                  unsigned int parent = self.nodes[idx].parent_idx;
                                  while (parent != 0xFFFFFFFF) // means idx == 0
                                  {
+
                                      const int old = atomicCAS(flags + parent, 0, 1);
                                      if (old == 0) {
                                          // this is the first thread entered here.
@@ -412,7 +442,7 @@ namespace Bcg::cuda {
                                      }
                                      assert(old == 1);
                                      // here, the flag has already been 1. it means that this
-                                     // thread is the 2nd thread. merge AABB of both childlen.
+                                     // thread is the 2nd thread. merge AABB of both children.
 
                                      const auto lidx = self.nodes[parent].left_idx;
                                      const auto ridx = self.nodes[parent].right_idx;
@@ -420,8 +450,30 @@ namespace Bcg::cuda {
                                      const auto rbox = self.aabbs[ridx];
                                      self.aabbs[parent] = merge(lbox, rbox);
 
+                                     assert(self.aabbs[lidx].upper.x != -inf);
+                                     assert(self.aabbs[ridx].upper.x != -inf);
+
+                                     // -- New Sampling Begin --
+                                     const auto lsample_idx = self.samples[lidx];
+                                     const auto rsample_idx = self.samples[ridx];
+
+                                     assert(lsample_idx != 0xFFFFFFFF);
+                                     assert(rsample_idx != 0xFFFFFFFF);
+                                     assert(lsample_idx < self.num_objects);
+                                     assert(rsample_idx < self.num_objects);
+
+                                     const glm::vec3 &lpoint = self.objects[lsample_idx];
+                                     const glm::vec3 &rpoint = self.objects[rsample_idx];
+                                     const glm::vec3 center = centroid(self.aabbs[parent]);
+                                     if (glm::distance(lpoint, center) < glm::distance(rpoint, center)) {
+                                         self.samples[parent] = lsample_idx;
+                                     } else {
+                                         self.samples[parent] = rsample_idx;
+                                     }
+                                     // -- New Sampling End --
                                      // look the next parent...
                                      parent = self.nodes[parent].parent_idx;
+                                     __threadfence(); //WTF, i did not expect this to be necessary
                                  }
                                  return;
                              });
@@ -452,6 +504,8 @@ namespace Bcg::cuda {
         thrust::device_vector<aabb> aabbs_;
         thrust::host_vector<node_type> nodes_h_;
         thrust::device_vector<node_type> nodes_;
+        thrust::host_vector<std::uint32_t> samples_h_;
+        thrust::device_vector<std::uint32_t> samples_;
         bool query_host_enabled_;
     };
 

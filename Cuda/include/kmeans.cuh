@@ -9,7 +9,7 @@
 #include <thrust/host_vector.h>
 #include <thrust/transform.h>
 #include <thrust/fill.h>
-#include "bvh.cuh"
+#include "lbvh.cuh"
 
 namespace Bcg::Cuda {
     inline void check_cuda() {
