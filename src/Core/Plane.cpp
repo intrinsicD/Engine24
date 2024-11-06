@@ -4,9 +4,14 @@
 
 #include "Plane.h"
 
-namespace Bcg{
+namespace Bcg {
+
+    Vector<float, 3> Project(const Plane &plane, const Vector<float, 3> &point) {
+        return Plane::project(plane.normal, plane.d, point);
+    }
+
     float Distance(const Plane &plane, const Vector<float, 3> &point) {
-        return glm::dot(plane.normal, point) - plane.d;
+        return Plane::signed_distance(plane.normal, plane.d, point);
     }
 
     float UnsignedDistance(const Plane &plane, const Vector<float, 3> &point) {
@@ -14,6 +19,6 @@ namespace Bcg{
     }
 
     Vector<float, 3> ClosestPoint(const Plane &plane, const Vector<float, 3> &point) {
-        return point - Distance(plane, point) * plane.normal;
+        return Plane::closest_point(plane.normal, plane.d, point);
     }
 }

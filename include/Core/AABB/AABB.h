@@ -8,30 +8,34 @@
 #include "MatVec.h"
 
 namespace Bcg {
-    struct AABB{
-        glm::vec3 min;
-        glm::vec3 max;
+    template<typename T>
+    struct AABBBase{
+        Vector<T, 3> min;
+        Vector<T, 3> max;
     };
-    
+
+    using AABBf = AABBBase<float>;
+    using AABB = AABBf;
+
     void Clear(AABB &aabb);
 
-    void Grow(AABB &aabb, const glm::vec3 &point);
+    void Grow(AABB &aabb, const Vector<float, 3> &point);
 
-    void Build(AABB &aabb, const std::vector<glm::vec3> &points);
+    void Build(AABB &aabb, const std::vector<Vector<float, 3>> &points);
 
     AABB Merge(const AABB &a, const AABB &b);
 
-    glm::vec3 Diagonal(const AABB &aabb);
+    Vector<float, 3> Diagonal(const AABB &aabb);
 
-    glm::vec3 HalfExtent(const AABB &aabb);
+    Vector<float, 3> HalfExtent(const AABB &aabb);
 
-    glm::vec3 Center(const AABB &aabb);
+    Vector<float, 3> Center(const AABB &aabb);
 
     float Volume(const AABB &aabb);
 
-    glm::vec3 ClosestPoint(const AABB &aabb, const glm::vec3 &point);
+    Vector<float, 3> ClosestPoint(const AABB &aabb, const Vector<float, 3> &point);
 
-    bool Contains(const AABB &aabb, const glm::vec3 &point);
+    bool Contains(const AABB &aabb, const Vector<float, 3> &point);
 
     bool Contains(const AABB &aabb, const AABB &other);
 
@@ -39,7 +43,7 @@ namespace Bcg {
 
     AABB Intersection(const AABB &a, const AABB &b);
     
-    float Distance(const AABB &aabb, const glm::vec3 &point);
+    float Distance(const AABB &aabb, const Vector<float, 3> &point);
 }
 
 #endif //ENGINE24_AABB_H
