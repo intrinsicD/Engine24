@@ -210,7 +210,7 @@ namespace Bcg::cuda {
     using cbvh_device = detail::basic_device_bvh<Object, true>;
 
     template<typename Object, typename AABBGetter,
-        typename MortonCodeCalculator = default_morton_code_calculator<Object> >
+            typename MortonCodeCalculator = default_morton_code_calculator<Object> >
     class lbvh {
     public:
         using index_type = std::uint32_t;
@@ -222,8 +222,8 @@ namespace Bcg::cuda {
     public:
         template<typename InputIterator>
         lbvh(InputIterator first, InputIterator last, bool query_host_enabled = false)
-            : objects_h_(first, last), objects_d_(objects_h_),
-              query_host_enabled_(query_host_enabled) {
+                : objects_h_(first, last), objects_d_(objects_h_),
+                  query_host_enabled_(query_host_enabled) {
             this->construct();
         }
 
@@ -275,17 +275,17 @@ namespace Bcg::cuda {
 
         bvh_device<object_type> get_device_repr() noexcept {
             return bvh_device<object_type>{
-                static_cast<unsigned int>(nodes_.size()),
-                static_cast<unsigned int>(objects_d_.size()),
-                nodes_.data().get(), aabbs_.data().get(), objects_d_.data().get(), samples_.data().get()
+                    static_cast<unsigned int>(nodes_.size()),
+                    static_cast<unsigned int>(objects_d_.size()),
+                    nodes_.data().get(), aabbs_.data().get(), objects_d_.data().get(), samples_.data().get()
             };
         }
 
         cbvh_device<object_type> get_device_repr() const noexcept {
             return cbvh_device<object_type>{
-                static_cast<unsigned int>(nodes_.size()),
-                static_cast<unsigned int>(objects_d_.size()),
-                nodes_.data().get(), aabbs_.data().get(), objects_d_.data().get(), samples_.data().get()
+                    static_cast<unsigned int>(nodes_.size()),
+                    static_cast<unsigned int>(objects_d_.size()),
+                    nodes_.data().get(), aabbs_.data().get(), objects_d_.data().get(), samples_.data().get()
             };
         }
 
@@ -315,10 +315,10 @@ namespace Bcg::cuda {
                               aabbs_.begin() + num_internal_nodes, aabb_getter_type());
 
             const auto aabb_whole = thrust::reduce(
-                aabbs_.begin() + num_internal_nodes, aabbs_.end(), default_aabb,
-                [] __device__ __host__(const aabb &lhs, const aabb &rhs) {
-                    return merge(lhs, rhs);
-                });
+                    aabbs_.begin() + num_internal_nodes, aabbs_.end(), default_aabb,
+                    [] __device__ __host__(const aabb &lhs, const aabb &rhs) {
+                        return merge(lhs, rhs);
+                    });
 
             thrust::device_vector<unsigned int> morton(num_objects);
             thrust::transform(this->objects_d_.begin(), this->objects_d_.end(),
@@ -336,8 +336,8 @@ namespace Bcg::cuda {
             // keep indices ascending order
             thrust::stable_sort_by_key(morton.begin(), morton.end(),
                                        thrust::make_zip_iterator(
-                                           thrust::make_tuple(aabbs_.begin() + num_internal_nodes,
-                                                              indices.begin())));
+                                               thrust::make_tuple(aabbs_.begin() + num_internal_nodes,
+                                                                  indices.begin())));
 
 
             // --------------------------------------------------------------------
@@ -509,10 +509,64 @@ namespace Bcg::cuda {
                              });
         }
 
+        unsigned int compute_num_levels(unsigned int num_objects) {
+            if (num_objects == 0) {
+                throw std::invalid_argument("N must be greater than 0");
+            }
+            num_objects--;
+            unsigned int L = 0;
+            while (num_objects > 0) {
+                num_objects >>= 1;
+                L++;
+            }
+            return L;
+        }
+
+        void compute_level(unsigned int level, unsigned int max_level, unsigned int num_objects, unsigned int &num_objects_in_level,
+                           unsigned int &start_idx) {
+            if (num_objects == 0) {
+                throw std::invalid_argument("num_objects must be greater than 0");
+            }
+
+            if (level >= max_level) {
+                throw std::invalid_argument("l must be less than num_levels");
+            }
+
+            // Compute number of objects at level l
+            num_objects_in_level = (num_objects + (1u << level) - 1u) / (1u << level);
+
+            // Compute cumulative nodes below level l
+            unsigned int cumulative_nodes_below = 0;
+            for (unsigned int k = level + 1; k < max_level; ++k) {
+                cumulative_nodes_below += (num_objects + (1u << k) - 1u) / (1u << k);
+            }
+
+            // Compute starting index for level l
+            start_idx = samples_.size() - cumulative_nodes_below - num_objects_in_level;
+        }
+
         thrust::host_vector<std::uint32_t> get_samples(unsigned int level) {
-            //compute number of samples in level
-            //compute offset into this->samples where level begins
-            //copy sample indices into host_vector
+            //TODO test this code!
+            // Ensure that host queries are enabled
+            if (!this->query_host_enabled_) {
+                throw std::runtime_error("Host query is not enabled. Set query_host_enabled_ to true before construction.");
+            }
+
+            unsigned int num_objects = objects_h_.size();
+            unsigned int num_objects_in_level;
+            unsigned int start_idx;
+
+            unsigned int max_level = compute_num_levels(num_objects) - 1;
+            level = std::min(level, max_level);
+            compute_level(level, max_level, num_objects, num_objects_in_level, start_idx);
+
+            // Extract samples at the level
+            thrust::host_vector<std::uint32_t> samples(
+                    samples_h_.begin() + start_idx,
+                    samples_h_.begin() + start_idx + num_objects_in_level
+            );
+
+            return samples;
         }
 
         thrust::host_vector<object_type> const &objects_host() const noexcept { return objects_h_; }
