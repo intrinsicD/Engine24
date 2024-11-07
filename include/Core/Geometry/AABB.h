@@ -12,6 +12,30 @@ namespace Bcg {
     struct AABBBase{
         Vector<T, 3> min;
         Vector<T, 3> max;
+
+        inline static Vector<T, 3> diagonal(const Vector<T, 3> &min, const Vector<T, 3> &max) {
+            return max - min;
+        }
+
+        inline static Vector<T, 3> half_extent(const Vector<T, 3> &min, const Vector<T, 3> &max) {
+            return diagonal(min, max) * 0.5f;
+        }
+
+        inline static Vector<T, 3> center(const Vector<T, 3> &min, const Vector<T, 3> &max) {
+            return (min + max) * 0.5f;
+        }
+
+        inline static Vector<T, 3> closest_point(const Vector<T, 3> &min, const Vector<T, 3> &max, const Vector<T, 3> &point) {
+            return glm::clamp(point, min, max);
+        }
+
+        inline static T distance(const Vector<T, 3> &min, const Vector<T, 3> &max, const Vector<T, 3> &point) {
+            return glm::length(closest_point(min, max, point));
+        }
+
+        inline static T volume(const Vector<T, 3> &min, const Vector<T, 3> &max) {
+            return glm::compMul(diagonal(min, max));
+        }
     };
 
     using AABBf = AABBBase<float>;

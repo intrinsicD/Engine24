@@ -9,7 +9,7 @@ namespace Bcg {
         return Line::closest_point(line.start, line.vec_to_end(), point, point - line.start);
     }
 
-    float Distance(const Line &line, const Vector<float, 3> &point, const Vector<float, 3> start_to_point) {
+    float Distance(const Line &line, const Vector<float, 3> &point, const Vector<float, 3> &start_to_point) {
         return Line::distance(line.start, line.vec_to_end(), point, start_to_point);
     }
 

@@ -29,6 +29,7 @@ target_sources(Engine24 PRIVATE
         PointCloudInterface.cpp
         PointCloudIo.cpp
         PointCloudCompute.cpp
+        Segment.cpp
         Sphere.cpp
         SurfaceMesh.cpp
         SurfaceMeshCompute.cpp

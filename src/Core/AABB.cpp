@@ -30,23 +30,23 @@ namespace Bcg {
     }
 
     Vector<float, 3> Diagonal(const AABB &aabb) {
-        return aabb.max - aabb.min;
+        return AABB::diagonal(aabb.min, aabb.max);
     }
 
     Vector<float, 3> HalfExtent(const AABB &aabb) {
-        return Diagonal(aabb) * 0.5f;
+        return AABB::half_extent(aabb.min, aabb.max);
     }
 
     Vector<float, 3> Center(const AABB &aabb) {
-        return (aabb.min + aabb.max) * 0.5f;
+        return AABB::center(aabb.min, aabb.max);
     }
 
     float Volume(const AABB &aabb) {
-        return glm::compMul(Diagonal(aabb));
+        return AABB::volume(aabb.min, aabb.max);
     }
 
     Vector<float, 3> ClosestPoint(const AABB &aabb, const Vector<float, 3> &point) {
-        return glm::clamp(point, aabb.min, aabb.max);
+        return AABB::closest_point(aabb.min, aabb.max, point);
     }
 
     bool Contains(const AABB &aabb, const Vector<float, 3> &point) {
@@ -73,7 +73,6 @@ namespace Bcg {
     }
 
     float Distance(const AABB &aabb, const Vector<float, 3> &point) {
-        Vector<float, 3> d = ClosestPoint(aabb, point) - point;
-        return glm::length(d);
+        return AABB::distance(aabb.min, aabb.max, point);
     }
 }

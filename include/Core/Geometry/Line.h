@@ -42,7 +42,7 @@ namespace Bcg {
 
     Vector<float, 3> ClosestPoint(const Line &line, const Vector<float, 3> &point);
 
-    float Distance(const Line &line, const Vector<float, 3> &point, const Vector<float, 3> start_to_point);
+    float Distance(const Line &line, const Vector<float, 3> &point, const Vector<float, 3> &start_to_point);
 
     float Distance(const Line &line, const Vector<float, 3> &point);
 
