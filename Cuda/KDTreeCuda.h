@@ -27,6 +27,12 @@ namespace Bcg::cuda {
 
         [[nodiscard]] QueryResult closest_query(const Vector<float, 3> &query_point) const;
 
+        std::vector<std::uint32_t> get_samples(unsigned int level) const;
+
+        unsigned int compute_num_levels() const;
+
+        void fill_samples() const;
+
     private:
         entt::entity entity_id;
     };

@@ -10,9 +10,7 @@
 namespace Bcg {
     class PluginKDTree : public Plugin {
     public:
-        PluginKDTree() : Plugin("KDTree") {
-
-        }
+        PluginKDTree();
 
         ~PluginKDTree() override = default;
 

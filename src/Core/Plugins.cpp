@@ -21,6 +21,7 @@
 #include "PluginGraphics.h"
 #include "PluginPointCloudSampling.h"
 #include "PluginIcp.h"
+#include "PluginKDTree.h"
 #include <unordered_map>
 
 namespace Bcg {
@@ -44,6 +45,7 @@ namespace Bcg {
         add_plugin(std::make_unique<PluginSelection>());
         add_plugin(std::make_unique<PluginIcp>());
         add_plugin(std::make_unique<PluginPointCloudSampling>());
+        add_plugin(std::make_unique<PluginKDTree>());
     }
 
     void Plugins::init_user_plugin(const std::string &name) {

@@ -19,6 +19,7 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/execution_policy.h>
 #include <thrust/unique.h>
+#include <queue>
 
 namespace Bcg::cuda {
     namespace detail {
@@ -500,6 +501,19 @@ namespace Bcg::cuda {
                                      } else {
                                          self.samples[parent] = rsample_idx;
                                      }
+                                     //pick a random sample from the two children
+                                     unsigned int hash = parent;
+                                     hash ^= hash >> 17;
+                                     hash ^= hash << 31;
+                                     hash ^= hash >> 8;
+
+                                     bool pick_left = (hash & 1) == 0; // Use least significant bit
+
+                                     if (pick_left) {
+                                         self.samples[parent] = lsample_idx;
+                                     } else {
+                                         self.samples[parent] = rsample_idx;
+                                     }
                                      // -- New Sampling End --
                                      // look the next parent...
                                      parent = self.nodes[parent].parent_idx;
@@ -507,13 +521,16 @@ namespace Bcg::cuda {
                                  }
                                  return;
                              });
+            //copy from samples_ to samples_h_
+            if (this->query_host_enabled_) {
+                samples_h_ = samples_;
+            }
         }
 
         unsigned int compute_num_levels(unsigned int num_objects) {
             if (num_objects == 0) {
                 throw std::invalid_argument("N must be greater than 0");
             }
-            num_objects--;
             unsigned int L = 0;
             while (num_objects > 0) {
                 num_objects >>= 1;
@@ -529,23 +546,14 @@ namespace Bcg::cuda {
             }
 
             if (level >= max_level) {
-                throw std::invalid_argument("l must be less than num_levels");
+                throw std::invalid_argument("level must be less than num_levels");
             }
 
-            // Compute number of objects at level l
-            num_objects_in_level = (num_objects + (1u << level) - 1u) / (1u << level);
-
-            // Compute cumulative nodes below level l
-            unsigned int cumulative_nodes_below = 0;
-            for (unsigned int k = level + 1; k < max_level; ++k) {
-                cumulative_nodes_below += (num_objects + (1u << k) - 1u) / (1u << k);
-            }
-
-            // Compute starting index for level l
-            start_idx = samples_.size() - cumulative_nodes_below - num_objects_in_level;
+            num_objects_in_level = 1 << level; // 2^level
+            start_idx = (1 << level) - 1;      // 2^level - 1
         }
 
-        thrust::host_vector<std::uint32_t> get_samples(unsigned int level) {
+        /*thrust::host_vector<std::uint32_t> get_samples(unsigned int level) {
             //TODO test this code!
             // Ensure that host queries are enabled
             if (!this->query_host_enabled_) {
@@ -567,7 +575,72 @@ namespace Bcg::cuda {
             );
 
             return samples;
+        }*/
+
+        thrust::host_vector<std::uint32_t> get_samples(unsigned int level) {
+            // Ensure that host queries are enabled
+            if (!this->query_host_enabled_) {
+                throw std::runtime_error("Host query is not enabled. Set query_host_enabled_ to true before construction.");
+            }
+
+            // Ensure that host copies of nodes and samples are available
+            if (nodes_h_.empty() || samples_h_.empty()) {
+                throw std::runtime_error("Host copies of nodes or samples are not available.");
+            }
+
+            auto max_level = compute_num_levels(objects_h_.size());
+
+            if(level > max_level) {
+                level = max_level;
+            }
+
+            thrust::host_vector<std::uint32_t> samples;
+
+            // Perform BFS to find nodes at the specified level
+            struct NodeInfo {
+                unsigned int node_idx;
+                unsigned int current_level;
+            };
+
+            std::queue<NodeInfo> node_queue;
+            node_queue.push({0, 0}); // Start from the root node at level 0
+
+            while (!node_queue.empty()) {
+                NodeInfo current = node_queue.front();
+                node_queue.pop();
+
+                if (current.current_level == level) {
+                    // Collect the sample at this node
+                    samples.push_back(samples_h_[current.node_idx]);
+                    // No need to explore further from this node
+                    continue;
+                }
+
+                // If the current level is less than the desired level, keep traversing
+                if (current.current_level < level) {
+                    // Get the current node
+                    const node_type &node = nodes_h_[current.node_idx];
+
+                    // Enqueue left child if it exists
+                    if (node.left_idx != 0xFFFFFFFF) {
+                        node_queue.push({node.left_idx, current.current_level + 1});
+                    }
+
+                    // Enqueue right child if it exists
+                    if (node.right_idx != 0xFFFFFFFF) {
+                        node_queue.push({node.right_idx, current.current_level + 1});
+                    }
+                }
+            }
+
+            // If no samples were found at the specified level, handle accordingly
+            if (samples.empty()) {
+                throw std::out_of_range("Requested level exceeds tree depth.");
+            }
+
+            return samples;
         }
+
 
         thrust::host_vector<object_type> const &objects_host() const noexcept { return objects_h_; }
 

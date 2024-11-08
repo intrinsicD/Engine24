@@ -28,7 +28,7 @@ namespace Bcg {
             Engine::Context().emplace<Picked>();
         }
 
-        Engine::State().on_construct<entt::entity>().connect<&on_construct_entity>();
+
     }
 
     Picked &PluginPicker::pick(const ScreenSpacePos &pos) {
@@ -112,6 +112,7 @@ namespace Bcg {
             Engine::Context().emplace<Picked>();
         }
         Engine::Dispatcher().sink<Events::Callback::MouseButton>().connect<&on_mouse_button>();
+        Engine::State().on_construct<entt::entity>().connect<&on_construct_entity>();
         Plugin::activate();
     }
 
@@ -123,6 +124,7 @@ namespace Bcg {
 
     void PluginPicker::deactivate() {
         Engine::Dispatcher().sink<Events::Callback::MouseButton>().disconnect<&on_mouse_button>();
+        Engine::State().on_construct<entt::entity>().disconnect<&on_construct_entity>();
         Plugin::deactivate();
     }
 

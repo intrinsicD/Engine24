@@ -5,6 +5,7 @@ target_sources(Engine24 PRIVATE
         FrameTimerGui.cpp
         GuiUtils.cpp
         HierarchyGui.cpp
+        KDTreeGui.cpp
         MeshGui.cpp
         MeshViewGui.cpp
         MouseGui.cpp
