@@ -21,10 +21,11 @@ namespace Bcg::Gui {
                 ImGui::Text("Max Level: %d", max_level);
             }
             if (ImGui::InputInt("Level", &level)) {
-
+                level = std::max(0, std::min(level, max_level));
             }
             if (ImGui::Button("Sample level")) {
                 auto samples = kdtree.get_samples(level);
+
                 auto vertices = GetPrimitives(entity_id).vertices();
                 auto v_color = vertices->get_or_add<Vector<float, 3>>("v_samples", Vector<float, 3>(0.0f));
                 std::fill(v_color.vector().begin(), v_color.vector().end(), Vector<float, 3>(0.0f));

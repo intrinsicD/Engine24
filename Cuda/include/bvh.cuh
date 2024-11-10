@@ -211,7 +211,7 @@ namespace Bcg::cuda {
     using cbvh_device = detail::basic_device_bvh<Object, true>;
 
     template<typename Object, typename AABBGetter,
-            typename MortonCodeCalculator = default_morton_code_calculator<Object> >
+        typename MortonCodeCalculator = default_morton_code_calculator<Object> >
     class lbvh {
     public:
         using index_type = std::uint32_t;
@@ -223,8 +223,8 @@ namespace Bcg::cuda {
     public:
         template<typename InputIterator>
         lbvh(InputIterator first, InputIterator last, bool query_host_enabled = false)
-                : objects_h_(first, last), objects_d_(objects_h_),
-                  query_host_enabled_(query_host_enabled) {
+            : objects_h_(first, last), objects_d_(objects_h_),
+              query_host_enabled_(query_host_enabled) {
             this->construct();
         }
 
@@ -276,17 +276,17 @@ namespace Bcg::cuda {
 
         bvh_device<object_type> get_device_repr() noexcept {
             return bvh_device<object_type>{
-                    static_cast<unsigned int>(nodes_.size()),
-                    static_cast<unsigned int>(objects_d_.size()),
-                    nodes_.data().get(), aabbs_.data().get(), objects_d_.data().get(), samples_.data().get()
+                static_cast<unsigned int>(nodes_.size()),
+                static_cast<unsigned int>(objects_d_.size()),
+                nodes_.data().get(), aabbs_.data().get(), objects_d_.data().get(), samples_.data().get()
             };
         }
 
         cbvh_device<object_type> get_device_repr() const noexcept {
             return cbvh_device<object_type>{
-                    static_cast<unsigned int>(nodes_.size()),
-                    static_cast<unsigned int>(objects_d_.size()),
-                    nodes_.data().get(), aabbs_.data().get(), objects_d_.data().get(), samples_.data().get()
+                static_cast<unsigned int>(nodes_.size()),
+                static_cast<unsigned int>(objects_d_.size()),
+                nodes_.data().get(), aabbs_.data().get(), objects_d_.data().get(), samples_.data().get()
             };
         }
 
@@ -316,10 +316,10 @@ namespace Bcg::cuda {
                               aabbs_.begin() + num_internal_nodes, aabb_getter_type());
 
             const auto aabb_whole = thrust::reduce(
-                    aabbs_.begin() + num_internal_nodes, aabbs_.end(), default_aabb,
-                    [] __device__ __host__(const aabb &lhs, const aabb &rhs) {
-                        return merge(lhs, rhs);
-                    });
+                aabbs_.begin() + num_internal_nodes, aabbs_.end(), default_aabb,
+                [] __device__ __host__(const aabb &lhs, const aabb &rhs) {
+                    return merge(lhs, rhs);
+                });
 
             thrust::device_vector<unsigned int> morton(num_objects);
             thrust::transform(this->objects_d_.begin(), this->objects_d_.end(),
@@ -337,8 +337,8 @@ namespace Bcg::cuda {
             // keep indices ascending order
             thrust::stable_sort_by_key(morton.begin(), morton.end(),
                                        thrust::make_zip_iterator(
-                                               thrust::make_tuple(aabbs_.begin() + num_internal_nodes,
-                                                                  indices.begin())));
+                                           thrust::make_tuple(aabbs_.begin() + num_internal_nodes,
+                                                              indices.begin())));
 
 
             // --------------------------------------------------------------------
@@ -528,18 +528,47 @@ namespace Bcg::cuda {
         }
 
         unsigned int compute_num_levels(unsigned int num_objects) {
-            if (num_objects == 0) {
-                throw std::invalid_argument("N must be greater than 0");
+            // Ensure that host copies of nodes are available
+            if (nodes_h_.empty()) {
+                throw std::runtime_error("Host copies of nodes are not available.");
             }
-            unsigned int L = 0;
-            while (num_objects > 0) {
-                num_objects >>= 1;
-                L++;
+
+            unsigned int max_level = 0;
+
+            // Perform BFS to find the maximum depth
+            struct NodeInfo {
+                unsigned int node_idx;
+                unsigned int current_level;
+            };
+
+            std::queue<NodeInfo> node_queue;
+            node_queue.push({0, 0}); // Start from the root node at level 0
+
+            while (!node_queue.empty()) {
+                NodeInfo current = node_queue.front();
+                node_queue.pop();
+
+                max_level = std::max(max_level, current.current_level);
+
+                // Get the current node
+                const node_type &node = nodes_h_[current.node_idx];
+
+                // Enqueue left child if it exists
+                if (node.left_idx != 0xFFFFFFFF) {
+                    node_queue.push({node.left_idx, current.current_level + 1});
+                }
+
+                // Enqueue right child if it exists
+                if (node.right_idx != 0xFFFFFFFF) {
+                    node_queue.push({node.right_idx, current.current_level + 1});
+                }
             }
-            return L;
+
+            return max_level;
         }
 
-        void compute_level(unsigned int level, unsigned int max_level, unsigned int num_objects, unsigned int &num_objects_in_level,
+        void compute_level(unsigned int level, unsigned int max_level, unsigned int num_objects,
+                           unsigned int &num_objects_in_level,
                            unsigned int &start_idx) {
             if (num_objects == 0) {
                 throw std::invalid_argument("num_objects must be greater than 0");
@@ -550,7 +579,7 @@ namespace Bcg::cuda {
             }
 
             num_objects_in_level = 1 << level; // 2^level
-            start_idx = (1 << level) - 1;      // 2^level - 1
+            start_idx = (1 << level) - 1; // 2^level - 1
         }
 
         /*thrust::host_vector<std::uint32_t> get_samples(unsigned int level) {
@@ -580,18 +609,13 @@ namespace Bcg::cuda {
         thrust::host_vector<std::uint32_t> get_samples(unsigned int level) {
             // Ensure that host queries are enabled
             if (!this->query_host_enabled_) {
-                throw std::runtime_error("Host query is not enabled. Set query_host_enabled_ to true before construction.");
+                throw std::runtime_error(
+                    "Host query is not enabled. Set query_host_enabled_ to true before construction.");
             }
 
             // Ensure that host copies of nodes and samples are available
             if (nodes_h_.empty() || samples_h_.empty()) {
                 throw std::runtime_error("Host copies of nodes or samples are not available.");
-            }
-
-            auto max_level = compute_num_levels(objects_h_.size());
-
-            if(level > max_level) {
-                level = max_level;
             }
 
             thrust::host_vector<std::uint32_t> samples;
@@ -605,11 +629,15 @@ namespace Bcg::cuda {
             std::queue<NodeInfo> node_queue;
             node_queue.push({0, 0}); // Start from the root node at level 0
 
+            unsigned int max_level = 0;
+
             while (!node_queue.empty()) {
                 NodeInfo current = node_queue.front();
                 node_queue.pop();
 
-                if (current.current_level == level) {
+                max_level = std::max(max_level, current.current_level);
+                const node_type &node = nodes_h_[current.node_idx];
+                if (current.current_level == level || node.object_idx != 0xFFFFFFFF) {
                     // Collect the sample at this node
                     samples.push_back(samples_h_[current.node_idx]);
                     // No need to explore further from this node
@@ -633,9 +661,12 @@ namespace Bcg::cuda {
                 }
             }
 
-            // If no samples were found at the specified level, handle accordingly
+            // Adjust the level if the requested level exceeds the maximum level
             if (samples.empty()) {
-                throw std::out_of_range("Requested level exceeds tree depth.");
+                std::cerr << "Requested level " << level << " exceeds maximum tree depth " << max_level <<
+                        ". Collecting samples at maximum level instead." << std::endl;
+                level = max_level;
+                return get_samples(level); // Recurse with maximum level
             }
 
             return samples;
