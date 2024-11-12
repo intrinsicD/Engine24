@@ -11,6 +11,8 @@
 #include "GetPrimitives.h"
 #include "EventsEntity.h"
 #include "Types.h"
+#include "PoolGui.h"
+#include "BoundingVolumes.h"
 
 namespace Bcg {
 
@@ -23,6 +25,10 @@ namespace Bcg {
     void PluginAABB::activate() {
         Engine::Dispatcher().sink<Events::Entity::CleanupComponents>().connect<&on_cleanup_components>();
         Plugin::activate();
+        if (!Engine::Context().find<Pool<AABB>>()) {
+            auto &pool = Engine::Context().emplace<Pool<AABB>>();
+            pool.create();
+        }
     }
 
     void PluginAABB::begin_frame() {
@@ -43,10 +49,12 @@ namespace Bcg {
     }
 
     static bool show_gui = false;
+    static bool show_pool_gui = false;
 
     void PluginAABB::render_menu() {
         if (ImGui::BeginMenu("Entity")) {
             ImGui::MenuItem(name, nullptr, &show_gui);
+            ImGui::MenuItem("Pool", nullptr, &show_pool_gui);
             ImGui::EndMenu();
         }
     }
@@ -56,6 +64,13 @@ namespace Bcg {
             if (ImGui::Begin(name, &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
                 auto &picked = Engine::Context().get<Picked>();
                 Gui::Show(picked.entity.id);
+            }
+            ImGui::End();
+        }
+        if (show_pool_gui) {
+            if (ImGui::Begin("Pool", &show_pool_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
+                auto &pool = Engine::Context().get<Pool<AABB>>();
+                Gui::ShowPool(pool);
             }
             ImGui::End();
         }
@@ -84,10 +99,11 @@ namespace Bcg {
             return;
         }
 
-        auto &aabb = Engine::State().get_or_emplace<AABB>(entity_id);
-        Engine::Dispatcher().trigger(Events::Entity::PreAdd<AABB>{entity_id});
-        Build(aabb, positions.vector());
-        Engine::Dispatcher().trigger(Events::Entity::PostAdd<AABB>{entity_id});
+        auto &pool = Engine::Context().get<Pool<AABB>>();
+        auto h_aabb = pool.create();
+        Build(*h_aabb, positions.vector());
+        auto &bv = Engine::State().get_or_emplace<BoundingVolumes>(entity_id);
+        bv.h_aabb = h_aabb;
         Log::Info("{} for entity {}", name, entity_id);
     }
 
@@ -97,14 +113,20 @@ namespace Bcg {
             return;
         }
 
-        if (!Engine::has<AABB>(entity_id)) {
-            Log::Warn(name + "Entity does not have a PointCloud. Abort Command");
+        if (!Engine::has<BoundingVolumes>(entity_id) ||
+            Engine::State().get<BoundingVolumes>(entity_id).h_aabb.is_valid()) {
+            Log::Warn(name + "Entity does not have an AABB. Abort Command");
             return;
         }
 
-        Engine::Dispatcher().trigger(Events::Entity::PreRemove<AABB>{entity_id});
-        Engine::State().remove<AABB>(entity_id);
-        Engine::Dispatcher().trigger(Events::Entity::PostRemove<AABB>{entity_id});
+        auto &bv = Engine::State().get<BoundingVolumes>(entity_id);
+
+        if (bv.h_aabb.is_valid()) {
+            auto &pool = Engine::Context().get<Pool<AABB>>();
+            pool.destroy(bv.h_aabb);
+            assert(!bv.h_aabb.is_valid());
+        }
+
         Log::Info("{} for entity {}", name, entity_id);
     }
 
@@ -113,9 +135,16 @@ namespace Bcg {
             return;
         }
 
-        if (!Engine::has<AABB>(entity_id)) {
+        if (!Engine::has<BoundingVolumes>(entity_id)) {
             return;
         }
+
+        auto &bv = Engine::State().get<BoundingVolumes>(entity_id);
+        if (!bv.h_aabb.is_valid()) {
+            return;
+        }
+
+        auto &aabb = *bv.h_aabb;
 
         auto *vertices = GetPrimitives(entity_id).vertices();
 
@@ -129,8 +158,6 @@ namespace Bcg {
             Log::Warn("{} failed, entity {} has no property {}.", name, entity_id, property_name);
             return;
         }
-
-        auto &aabb = Engine::require<AABB>(entity_id);
 
         Vector<float, 3> c = Center(aabb);
         float s = glm::compMax(aabb.max - aabb.min);

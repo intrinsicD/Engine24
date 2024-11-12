@@ -11,7 +11,7 @@
 #include "PluginGraphics.h"
 #include "Transform.h"
 #include "GetPrimitives.h"
-#include "AABB.h"
+#include "BoundingVolumes.h"
 #include "PropertyEigenMap.h"
 #include "OpenGLState.h"
 #include <numeric>
@@ -117,8 +117,13 @@ namespace Bcg {
         SetVectorVectorfieldView(entity_id, vectorfield_name, vectorfield_name).execute();
         SetColorVectorfieldView(entity_id, vectorfield_name, "uniform_color").execute();
 
-        auto &aabb = Engine::require<AABB>(entity_id);
-        view.uniform_length = glm::length(Diagonal(aabb)) / 100.0f;
+        if (Engine::has<BoundingVolumes>(entity_id)) {
+            auto &bv = Engine::State().get<BoundingVolumes>(entity_id);
+            auto &aabb = *bv.h_aabb;
+            view.uniform_length = glm::length(Diagonal(aabb)) / 100.0f;
+        } else {
+            view.uniform_length = 1.0f;
+        }
 
         auto v_indices = vertices->get<unsigned int>("v:indices");
         if (!v_indices) {

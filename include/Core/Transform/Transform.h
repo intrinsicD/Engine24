@@ -11,6 +11,8 @@
 
 #include "glm/gtx/matrix_decompose.hpp"
 #include "glm/gtx/quaternion.hpp"
+#include "StringTraits.h"
+#include "GlmToEigen.h"
 
 #include <numbers>
 

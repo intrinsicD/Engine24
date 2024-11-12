@@ -11,6 +11,7 @@
 #include "imgui.h"
 #include "Transform.h"
 #include "AABB.h"
+#include "BoundingVolumes.h"
 //#include "KDTreeCpu.h"
 #include "Cuda/KDTreeCuda.h"
 #include "PointCloud.h"
@@ -38,7 +39,8 @@ namespace Bcg {
         picked.entity.is_background = picked.spaces.ndc.z == 1.0;
         auto view = Engine::State().view<AABB, Transform>();
         for (const auto entity_id: view) {
-            auto &aabb = Engine::State().get<AABB>(entity_id);
+            auto &bv = Engine::State().get<BoundingVolumes>(entity_id);
+            auto &aabb = *bv.h_aabb;
             auto &transform = Engine::State().get<Transform>(entity_id);
             if (Contains(aabb, (glm::inverse(transform.world()) * glm::vec4(picked.spaces.wsp, 1.0f)))) {
                 picked.entity.id = entity_id;

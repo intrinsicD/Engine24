@@ -16,6 +16,7 @@
 #include "PluginFrameTimer.h"
 #include "Logger.h"
 #include "AABB.h"
+#include "BoundingVolumes.h"
 #include "Eigen/Geometry"
 #include "CameraGui.h"
 #include "Transform.h"
@@ -223,7 +224,8 @@ namespace Bcg {
             auto &picked = Engine::Context().get<Picked>();
             auto &camera = Engine::Context().get<Camera>();
             if (Engine::valid(picked.entity.id)) {
-                auto &aabb = Engine::State().get<AABB>(picked.entity.id);
+                auto &bv = Engine::State().get<BoundingVolumes>(picked.entity.id);
+                auto &aabb = *bv.h_aabb;
                 PerspectiveParams p_params = GetPerspectiveParams(camera);
                 ViewParams v_params = GetViewParams(camera);
                 float d = glm::compMax(Diagonal(aabb)) /*/ tan(p_params.fovy / 2.0)*/;

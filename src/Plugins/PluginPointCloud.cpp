@@ -17,6 +17,7 @@
 #include "PointCloud.h"
 #include "PointCloudIo.h"
 #include "Picker.h"
+#include "BoundingVolumes.h"
 #include "PluginAABB.h"
 #include "PluginCamera.h"
 #include "PluginTransform.h"
@@ -154,7 +155,8 @@ namespace Bcg {
 
             Setup<AABB>(entity_id).execute();
             CenterAndScaleByAABB(entity_id, pc.vpoint_.name()).execute();
-            auto &aabb = Engine::require<AABB>(entity_id);
+            auto &bv = Engine::State().get<BoundingVolumes>(entity_id);
+            auto &aabb = *bv.h_aabb;
             Vector<float, 3> c = Center(aabb);
 
             aabb.min -= c;

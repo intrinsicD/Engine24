@@ -7,9 +7,12 @@
 #include "imgui.h"
 
 namespace Bcg::Gui {
-    bool Combo(const char *combo_label, std::pair<int, std::string> &curr, BasePropertyArray &a_property) {
+    bool Combo(const char *combo_label, std::pair<int, std::string> &curr, const BasePropertyArray &a_property) {
         // Begin the combo box
         bool changed = false;
+        if(a_property.size() == 0){
+            return false;
+        }
         if (ImGui::BeginCombo(combo_label, a_property.element_string(curr.first).c_str())) {
             ImGuiListClipper clipper;
             clipper.Begin(a_property.size(), ImGui::GetTextLineHeightWithSpacing());
@@ -31,9 +34,12 @@ namespace Bcg::Gui {
         return changed;
     }
 
-    bool ListBox(const char *listbox_label, std::pair<int, std::string> &curr, BasePropertyArray &a_property) {
+    bool ListBox(const char *listbox_label, std::pair<int, std::string> &curr, const BasePropertyArray &a_property) {
         // Begin the list box
         bool changed = false;
+        if(a_property.size() == 0){
+            return false;
+        }
         if (ImGui::BeginListBox(listbox_label, ImVec2(-FLT_MIN, 3 * ImGui::GetTextLineHeightWithSpacing()))) {
             ImGuiListClipper clipper;
             clipper.Begin(a_property.size(), ImGui::GetTextLineHeightWithSpacing());
@@ -70,6 +76,13 @@ namespace Bcg::Gui {
     }
 
     void Show(BasePropertyArray &a_property) {
+        static std::pair<int, std::string> curr = {0, ""};
+        ImGui::PushID((a_property.name() + curr.second).c_str());
+        Combo((curr.second + "##values").c_str(), curr, a_property);
+        ImGui::PopID();
+    }
+
+    void Show(const BasePropertyArray &a_property) {
         static std::pair<int, std::string> curr = {0, ""};
         ImGui::PushID((a_property.name() + curr.second).c_str());
         Combo((curr.second + "##values").c_str(), curr, a_property);

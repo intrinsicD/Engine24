@@ -6,7 +6,7 @@
 #define STRINGTRAITS_H
 
 #include <sstream>
-#include "glm/glm.hpp"
+#include "GlmToEigen.h"
 
 namespace Bcg {
     template<typename T>

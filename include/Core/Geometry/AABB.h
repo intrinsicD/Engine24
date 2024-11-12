@@ -6,10 +6,11 @@
 #define ENGINE24_AABB_H
 
 #include "MatVec.h"
+#include "StringTraits.h"
 
 namespace Bcg {
     template<typename T>
-    struct AABBBase{
+    struct AABBBase {
         Vector<T, 3> min;
         Vector<T, 3> max;
 
@@ -25,7 +26,8 @@ namespace Bcg {
             return (min + max) * 0.5f;
         }
 
-        inline static Vector<T, 3> closest_point(const Vector<T, 3> &min, const Vector<T, 3> &max, const Vector<T, 3> &point) {
+        inline static Vector<T, 3>
+        closest_point(const Vector<T, 3> &min, const Vector<T, 3> &max, const Vector<T, 3> &point) {
             return glm::clamp(point, min, max);
         }
 
@@ -66,8 +68,13 @@ namespace Bcg {
     bool Intersects(const AABB &a, const AABB &b);
 
     AABB Intersection(const AABB &a, const AABB &b);
-    
+
     float Distance(const AABB &aabb, const Vector<float, 3> &point);
+
+    template<>
+    struct StringTraits<AABB> {
+        static std::string ToString(const AABB &aabb);
+    };
 }
 
 #endif //ENGINE24_AABB_H

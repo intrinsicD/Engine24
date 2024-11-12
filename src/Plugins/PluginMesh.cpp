@@ -16,6 +16,7 @@
 #include "SurfaceMeshIo.h"
 #include "VertexArrayObject.h"
 #include "Picker.h"
+#include "BoundingVolumes.h"
 #include "PluginViewSphere.h"
 #include "SurfaceMeshCompute.h"
 #include "PluginTransform.h"
@@ -251,7 +252,8 @@ namespace Bcg {
             Setup<AABB>(entity_id).execute();
             CenterAndScaleByAABB(entity_id, mesh.vpoint_.name()).execute();
 
-            auto &aabb = Engine::require<AABB>(entity_id);
+            auto &bv = Engine::State().get<BoundingVolumes>(entity_id);
+            auto &aabb = *bv.h_aabb;
             auto &transform = *PluginTransform::setup(entity_id);
             auto &hierarchy = Engine::require<Hierarchy>(entity_id);
 

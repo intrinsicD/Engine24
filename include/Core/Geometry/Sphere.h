@@ -6,6 +6,7 @@
 #define ENGINE24_SPHERE_H
 
 #include "MatVec.h"
+#include "StringTraits.h"
 
 namespace Bcg {
     template<typename T>
@@ -26,5 +27,14 @@ namespace Bcg {
     float Distance(const Sphere &sphere, const Vector<float, 3> &point);
 
     float UnsignedDistance(const Sphere &sphere, const Vector<float, 3> &point);
+
+    template<typename T>
+    struct StringTraits<SphereBase<T>> {
+    static std::string ToString(const SphereBase<T> &sphere) {
+        std::stringstream ss;
+        ss << MapConst(sphere.center).transpose() << ", " << sphere.radius;
+        return ss.str();
+    }
+};
 }
 #endif //ENGINE24_SPHERE_H

@@ -3,6 +3,7 @@
 //
 
 #include "AABB.h"
+#include "GlmToEigen.h"
 
 namespace Bcg {
     void Clear(AABB &aabb) {
@@ -74,5 +75,11 @@ namespace Bcg {
 
     float Distance(const AABB &aabb, const Vector<float, 3> &point) {
         return AABB::distance(aabb.min, aabb.max, point);
+    }
+
+    std::string StringTraits<AABB>::ToString(const Bcg::AABB &aabb) {
+        std::stringstream ss;
+        ss << MapConst(aabb.min).transpose() << " " << MapConst(aabb.max).transpose();
+        return ss.str();
     }
 }

@@ -456,7 +456,6 @@ namespace Bcg::cuda {
                                   return n.object_idx;
                               });
 
-
             thrust::device_vector<int> flag_container(num_internal_nodes, 0);
             const auto flags = flag_container.data().get();
 
@@ -502,7 +501,7 @@ namespace Bcg::cuda {
                                          self.samples[parent] = rsample_idx;
                                      }
                                      //pick a random sample from the two children
-                                     unsigned int hash = parent;
+                        /*             unsigned int hash = parent;
                                      hash ^= hash >> 17;
                                      hash ^= hash << 31;
                                      hash ^= hash >> 8;
@@ -513,7 +512,7 @@ namespace Bcg::cuda {
                                          self.samples[parent] = lsample_idx;
                                      } else {
                                          self.samples[parent] = rsample_idx;
-                                     }
+                                     }*/
                                      // -- New Sampling End --
                                      // look the next parent...
                                      parent = self.nodes[parent].parent_idx;
