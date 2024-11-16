@@ -20,6 +20,8 @@ namespace Bcg {
 
         }
 
+        virtual ~Pool() = default;
+
         PropertyContainer properties;
         Property<size_t> ref_count;
         Property<T> objects;

@@ -16,8 +16,8 @@ add_library(Engine24
         src/Plugins/PluginPointCloudSampling.cpp
         include/Core/Traits/StringTraits.h
         include/Core/Traits/DimTraits.h
-        include/Commands/VertexColors.h
-        src/Commands/VertexColors.cpp
+        include/Commands/PointCloudVertexColors.h
+        src/Commands/PointCloudVertexColors.cpp
 )
 
 include(${CMAKE_SOURCE_DIR}/CopyShaders.cmake)

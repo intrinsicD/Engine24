@@ -2,18 +2,21 @@
 // Created by alex on 11/10/24.
 //
 
-#include "VertexColors.h"
+#include "PointCloudVertexColors.h"
 #include "GetPrimitives.h"
 #include "Engine.h"
 #include "SphereView.h"
 #include "OpenGLState.h"
 #include "PropertyEigenMap.h"
+#include "Pool.h"
 
 
 namespace Bcg::Commands {
-    void SetVertexColors3D::execute() const {
+    void SetPointCloudVertexColors3D::execute() const {
         auto *vertices = GetPrimitives(entity_id).vertices();
         if (!vertices) return;
+
+
 
         if (!Engine::has<SphereView>(entity_id)) {
             Setup<SphereView>(entity_id).execute();
@@ -64,15 +67,15 @@ namespace Bcg::Commands {
         }
     }
 
-    void SetVertexColorsScalarfield::execute() const {
+    void SetPointCloudVertexColorsScalarfield::execute() const {
         //TODO
     }
 
-    void SetVertexColorsSelection3D::execute() const {
+    void SetPointCloudVertexColorsSelection3D::execute() const {
 
     }
 
-    void SetVertexColorsSelectionScalarfield::execute() const {
+    void SetPointCloudVertexColorsSelectionScalarfield::execute() const {
 
     }
 
