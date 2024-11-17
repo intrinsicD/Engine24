@@ -7,57 +7,62 @@
 
 #include "MatVec.h"
 #include "StringTraits.h"
+#include "VecTraits.h"
+#include "Macros.h"
 
 namespace Bcg {
     template<typename T>
     struct AABBBase {
-        Vector<T, 3> min;
-        Vector<T, 3> max;
+        Vector<T, 3> min = Vector<T, 3>(std::numeric_limits<T>::max());
+        Vector<T, 3> max = Vector<T, 3>(std::numeric_limits<T>::lowest());
 
-        inline static Vector<T, 3> diagonal(const Vector<T, 3> &min, const Vector<T, 3> &max) {
+        CUDA_HOST_DEVICE static AABBBase FromPoint(const Vector<T, 3> &point) {
+            return {point, point};
+        }
+
+        template<typename Iterator>
+        CUDA_HOST static AABBBase Build(const Iterator &begin, const Iterator &end) {
+            AABBBase result;
+            for (auto it = begin; it != end; ++it) {
+                result.grow(*it);
+            }
+            return result;
+        }
+
+        CUDA_HOST_DEVICE void clear() {
+            min = Vector<T, 3>(std::numeric_limits<T>::max());
+            max = Vector<T, 3>(std::numeric_limits<T>::lowest());
+        }
+
+        CUDA_HOST_DEVICE void merge(const AABBBase &other) {
+            min = VecTraits<Vector<T, 3> >::cwiseMin(min, other.min);
+            max = VecTraits<Vector<T, 3> >::cwiseMax(max, other.max);
+        }
+
+        CUDA_HOST_DEVICE void grow(const Vector<T, 3> &point) {
+            min = VecTraits<Vector<T, 3> >::cwiseMin(min, point);
+            max = VecTraits<Vector<T, 3> >::cwiseMax(max, point);
+        }
+
+        CUDA_HOST_DEVICE Vector<T, 3> diagonal() const {
             return max - min;
         }
 
-        inline static Vector<T, 3> half_extent(const Vector<T, 3> &min, const Vector<T, 3> &max) {
-            return diagonal(min, max) * 0.5f;
+        CUDA_HOST_DEVICE Vector<T, 3> half_extent() const {
+            return diagonal() * 0.5f;
         }
 
-        inline static Vector<T, 3> center(const Vector<T, 3> &min, const Vector<T, 3> &max) {
+        CUDA_HOST_DEVICE Vector<T, 3> center() const {
             return (min + max) * 0.5f;
         }
 
-        inline static Vector<T, 3>
-        closest_point(const Vector<T, 3> &min, const Vector<T, 3> &max, const Vector<T, 3> &point) {
-            return glm::clamp(point, min, max);
-        }
-
-        inline static T distance(const Vector<T, 3> &min, const Vector<T, 3> &max, const Vector<T, 3> &point) {
-            return glm::length(closest_point(min, max, point));
-        }
-
-        inline static T volume(const Vector<T, 3> &min, const Vector<T, 3> &max) {
-            return glm::compMul(diagonal(min, max));
+        CUDA_HOST_DEVICE T volume() const {
+            return VecTraits<Vector<T, 3> >::prod(diagonal());
         }
     };
 
     using AABBf = AABBBase<float>;
     using AABB = AABBf;
-
-    void Clear(AABB &aabb);
-
-    void Grow(AABB &aabb, const Vector<float, 3> &point);
-
-    void Build(AABB &aabb, const std::vector<Vector<float, 3>> &points);
-
-    AABB Merge(const AABB &a, const AABB &b);
-
-    Vector<float, 3> Diagonal(const AABB &aabb);
-
-    Vector<float, 3> HalfExtent(const AABB &aabb);
-
-    Vector<float, 3> Center(const AABB &aabb);
-
-    float Volume(const AABB &aabb);
 
     Vector<float, 3> ClosestPoint(const AABB &aabb, const Vector<float, 3> &point);
 

@@ -6,6 +6,7 @@
 #define ENGINE24_BOUNDINGVOLUMES_H
 
 #include "Pool.h"
+#include "PoolHandle.h"
 #include "AABB.h"
 #include "Sphere.h"
 

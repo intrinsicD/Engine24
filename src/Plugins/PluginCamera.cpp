@@ -228,9 +228,9 @@ namespace Bcg {
                 auto &aabb = *bv.h_aabb;
                 PerspectiveParams p_params = GetPerspectiveParams(camera);
                 ViewParams v_params = GetViewParams(camera);
-                float d = glm::compMax(Diagonal(aabb)) /*/ tan(p_params.fovy / 2.0)*/;
+                float d = glm::compMax(aabb.diagonal()) /*/ tan(p_params.fovy / 2.0)*/;
                 glm::vec3 front = v_params.center - v_params.eye;
-                v_params.center = Center(aabb);
+                v_params.center = aabb.center();
                 v_params.eye = v_params.center - front * d;
                 SetViewParams(camera, v_params);
                 Log::Info("Center onto: {} {} {}", v_params.center[0], v_params.center[1], v_params.center[2]);

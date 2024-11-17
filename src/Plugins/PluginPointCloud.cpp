@@ -157,7 +157,7 @@ namespace Bcg {
             CenterAndScaleByAABB(entity_id, pc.vpoint_.name()).execute();
             auto &bv = Engine::State().get<BoundingVolumes>(entity_id);
             auto &aabb = *bv.h_aabb;
-            Vector<float, 3> c = Center(aabb);
+            Vector<float, 3> c = aabb.center();
 
             aabb.min -= c;
             aabb.max -= c;
@@ -174,7 +174,7 @@ namespace Bcg {
             message += " Done.";
 
             Log::Info(message);
-            CenterCameraAtDistance(c, glm::compMax(Diagonal(aabb))).execute();
+            CenterCameraAtDistance(c, glm::compMax(aabb.diagonal())).execute();
         }
 
         void Cleanup<PointCloud>::execute() const {

@@ -18,6 +18,9 @@ add_library(Engine24
         include/Core/Traits/DimTraits.h
         include/Commands/PointCloudVertexColors.h
         src/Commands/PointCloudVertexColors.cpp
+        include/Core/Pool/PoolHandle.h
+        include/Core/Geometry/AABBUtils.h
+        include/Core/Traits/VecTraits.h
 )
 
 include(${CMAKE_SOURCE_DIR}/CopyShaders.cmake)

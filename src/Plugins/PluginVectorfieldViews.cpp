@@ -120,7 +120,7 @@ namespace Bcg {
         if (Engine::has<BoundingVolumes>(entity_id)) {
             auto &bv = Engine::State().get<BoundingVolumes>(entity_id);
             auto &aabb = *bv.h_aabb;
-            view.uniform_length = glm::length(Diagonal(aabb)) / 100.0f;
+            view.uniform_length = glm::length(aabb.diagonal()) / 100.0f;
         } else {
             view.uniform_length = 1.0f;
         }

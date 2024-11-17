@@ -3,51 +3,13 @@
 //
 
 #include "AABB.h"
+#include "AABBUtils.h"
 #include "GlmToEigen.h"
+#include "VecTraits.h"
 
 namespace Bcg {
-    void Clear(AABB &aabb) {
-        aabb.min = Vector<float, 3>(std::numeric_limits<float>::max());
-        aabb.max = Vector<float, 3>(std::numeric_limits<float>::lowest());
-    }
-
-    void Grow(AABB &aabb, const Vector<float, 3> &point) {
-        aabb.min = glm::min(aabb.min, point);
-        aabb.max = glm::max(aabb.max, point);
-    }
-
-    void Build(AABB &aabb, const std::vector<Vector<float, 3>> &points) {
-        Clear(aabb);
-        for (const auto &point: points) {
-            Grow(aabb, point);
-        }
-    }
-
-    AABB Merge(const AABB &a, const AABB &b) {
-        AABB result{};
-        result.min = glm::min(a.min, b.min);
-        result.max = glm::max(a.max, b.max);
-        return result;
-    }
-
-    Vector<float, 3> Diagonal(const AABB &aabb) {
-        return AABB::diagonal(aabb.min, aabb.max);
-    }
-
-    Vector<float, 3> HalfExtent(const AABB &aabb) {
-        return AABB::half_extent(aabb.min, aabb.max);
-    }
-
-    Vector<float, 3> Center(const AABB &aabb) {
-        return AABB::center(aabb.min, aabb.max);
-    }
-
-    float Volume(const AABB &aabb) {
-        return AABB::volume(aabb.min, aabb.max);
-    }
-
     Vector<float, 3> ClosestPoint(const AABB &aabb, const Vector<float, 3> &point) {
-        return AABB::closest_point(aabb.min, aabb.max, point);
+        return AABBUtils::closest_point(aabb.min, aabb.max, point);
     }
 
     bool Contains(const AABB &aabb, const Vector<float, 3> &point) {
@@ -74,7 +36,7 @@ namespace Bcg {
     }
 
     float Distance(const AABB &aabb, const Vector<float, 3> &point) {
-        return AABB::distance(aabb.min, aabb.max, point);
+        return AABBUtils::distance(aabb.min, aabb.max, point);
     }
 
     std::string StringTraits<AABB>::ToString(const Bcg::AABB &aabb) {

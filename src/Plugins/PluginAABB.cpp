@@ -15,32 +15,29 @@
 #include "BoundingVolumes.h"
 
 namespace Bcg {
-
     static void on_cleanup_components(const Events::Entity::CleanupComponents &event) {
         Commands::Cleanup<AABB>(event.entity_id).execute();
     }
 
-    PluginAABB::PluginAABB() : Plugin("AABB") {}
+    PluginAABB::PluginAABB() : Plugin("AABB") {
+    }
 
     void PluginAABB::activate() {
         Engine::Dispatcher().sink<Events::Entity::CleanupComponents>().connect<&on_cleanup_components>();
         Plugin::activate();
-        if (!Engine::Context().find<Pool<AABB>>()) {
-            auto &pool = Engine::Context().emplace<Pool<AABB>>();
+        if (!Engine::Context().find<Pool<AABB> >()) {
+            auto &pool = Engine::Context().emplace<Pool<AABB> >();
             pool.create();
         }
     }
 
     void PluginAABB::begin_frame() {
-
     }
 
     void PluginAABB::update() {
-
     }
 
     void PluginAABB::end_frame() {
-
     }
 
     void PluginAABB::deactivate() {
@@ -69,7 +66,7 @@ namespace Bcg {
         }
         if (show_pool_gui) {
             if (ImGui::Begin("Pool", &show_pool_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
-                auto &pool = Engine::Context().get<Pool<AABB>>();
+                auto &pool = Engine::Context().get<Pool<AABB> >();
                 Gui::ShowPool(pool);
             }
             ImGui::End();
@@ -77,7 +74,6 @@ namespace Bcg {
     }
 
     void PluginAABB::render() {
-
     }
 
 
@@ -99,11 +95,10 @@ namespace Bcg {
             return;
         }
 
-        auto &pool = Engine::Context().get<Pool<AABB>>();
-        auto h_aabb = pool.create();
-        Build(*h_aabb, positions.vector());
+        auto &pool = Engine::Context().get<Pool<AABB> >();
         auto &bv = Engine::State().get_or_emplace<BoundingVolumes>(entity_id);
-        bv.h_aabb = h_aabb;
+        bv.h_aabb = pool.create();
+        *bv.h_aabb = AABB::Build(positions.vector().begin(), positions.vector().end());
         Log::Info("{} for entity {}", name, entity_id);
     }
 
@@ -122,7 +117,7 @@ namespace Bcg {
         auto &bv = Engine::State().get<BoundingVolumes>(entity_id);
 
         if (bv.h_aabb.is_valid()) {
-            auto &pool = Engine::Context().get<Pool<AABB>>();
+            auto &pool = Engine::Context().get<Pool<AABB> >();
             pool.destroy(bv.h_aabb);
             assert(!bv.h_aabb.is_valid());
         }
@@ -159,7 +154,7 @@ namespace Bcg {
             return;
         }
 
-        Vector<float, 3> c = Center(aabb);
+        Vector<float, 3> c = aabb.center();
         float s = glm::compMax(aabb.max - aabb.min);
 
         for (auto &point: data.vector()) {
@@ -170,5 +165,4 @@ namespace Bcg {
         aabb.min = (aabb.min - c) / s;
         aabb.max = (aabb.max - c) / s;
     }
-
 }
