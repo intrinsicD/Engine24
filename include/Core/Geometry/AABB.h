@@ -65,7 +65,7 @@ namespace Bcg {
     using AABBf = AABBBase<float>;
     using AABB = AABBf;
 
-    //TODO define free functions to make use of AABBBase<T> with GeometricTraits.h easier for a concise API
+    //TODO define free functions to make use of AABBBase<T> with GeometricTraits.h easier for a concise APIgit
 
     Vector<float, 3> ClosestPoint(const AABB &aabb, const Vector<float, 3> &point);
 
