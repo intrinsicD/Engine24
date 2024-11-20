@@ -12,7 +12,7 @@
 #include "Exceptions.h"
 #include "MatVec.h"
 #include "GlmToEigen.h"
-#include "StringTraits.h"
+#include "GlmStringTraits.h"
 #include "DimTraits.h"
 
 namespace Bcg {

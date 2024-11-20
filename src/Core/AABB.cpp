@@ -23,9 +23,10 @@ namespace Bcg {
     }
 
     bool Intersects(const AABB &a, const AABB &b) {
-        const glm::bvec3 cond1 = glm::lessThanEqual(a.min, b.max);
-        const glm::bvec3 cond2 = glm::greaterThanEqual(a.max, b.min);
-        return glm::all(cond1) && glm::all(cond2);
+        if (a.max.x < b.min.x || b.max.x < a.min.x) { return false; }
+        if (a.max.y < b.min.y || b.max.y < a.min.y) { return false; }
+        if (a.max.z < b.min.z || b.max.z < a.min.z) { return false; }
+        return true;
     }
 
     AABB Intersection(const AABB &a, const AABB &b) {
