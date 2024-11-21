@@ -192,12 +192,12 @@ namespace Bcg::cuda {
         __device__ __host__
         inline unsigned int operator()(const Object &, const aabb &box) noexcept {
             auto p = centroid(box);
-            p.x -= whole.lower.x;
-            p.y -= whole.lower.y;
-            p.z -= whole.lower.z;
-            p.x /= (whole.upper.x - whole.lower.x);
-            p.y /= (whole.upper.y - whole.lower.y);
-            p.z /= (whole.upper.z - whole.lower.z);
+            p.x -= whole.min.x;
+            p.y -= whole.min.y;
+            p.z -= whole.min.z;
+            p.x /= (whole.max.x - whole.min.x);
+            p.y /= (whole.max.y - whole.min.y);
+            p.z /= (whole.max.z - whole.min.z);
             return morton_code(p);
         }
 
@@ -303,12 +303,12 @@ namespace Bcg::cuda {
 
             const auto inf = std::numeric_limits<float>::infinity();
             aabb default_aabb;
-            default_aabb.upper.x = -inf;
-            default_aabb.lower.x = inf;
-            default_aabb.upper.y = -inf;
-            default_aabb.lower.y = inf;
-            default_aabb.upper.z = -inf;
-            default_aabb.lower.z = inf;
+            default_aabb.max.x = -inf;
+            default_aabb.min.x = inf;
+            default_aabb.max.y = -inf;
+            default_aabb.min.y = inf;
+            default_aabb.max.z = -inf;
+            default_aabb.min.z = inf;
 
             this->aabbs_.resize(num_nodes, default_aabb);
 
@@ -426,8 +426,8 @@ namespace Bcg::cuda {
                                      const auto rbox = self.aabbs[ridx];
                                      self.aabbs[parent] = merge(lbox, rbox);
 
-                                     assert(self.aabbs[lidx].upper.x != -inf);
-                                     assert(self.aabbs[ridx].upper.x != -inf);
+                                     assert(self.aabbs[lidx].max.x != -inf);
+                                     assert(self.aabbs[ridx].max.x != -inf);
                                      // look the next parent...
                                      parent = self.nodes[parent].parent_idx;
                                      __threadfence(); //WTF, i did not expect this to be necessary
@@ -580,30 +580,6 @@ namespace Bcg::cuda {
             num_objects_in_level = 1 << level; // 2^level
             start_idx = (1 << level) - 1; // 2^level - 1
         }
-
-        /*thrust::host_vector<std::uint32_t> get_samples(unsigned int level) {
-            //TODO test this code!
-            // Ensure that host queries are enabled
-            if (!this->query_host_enabled_) {
-                throw std::runtime_error("Host query is not enabled. Set query_host_enabled_ to true before construction.");
-            }
-
-            unsigned int num_objects = objects_h_.size();
-            unsigned int num_objects_in_level;
-            unsigned int start_idx;
-
-            unsigned int max_level = compute_num_levels(num_objects) - 1;
-            level = std::min(level, max_level);
-            compute_level(level, max_level, num_objects, num_objects_in_level, start_idx);
-
-            // Extract samples at the level
-            thrust::host_vector<std::uint32_t> samples(
-                    samples_h_.begin() + start_idx,
-                    samples_h_.begin() + start_idx + num_objects_in_level
-            );
-
-            return samples;
-        }*/
 
         thrust::host_vector<std::uint32_t> get_samples(unsigned int level) {
             // Ensure that host queries are enabled

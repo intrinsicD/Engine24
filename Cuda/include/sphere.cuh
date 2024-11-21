@@ -24,26 +24,26 @@ namespace Bcg::cuda {
     inline bool intersects(const sphere &sphere, const aabb &box) noexcept {
         float sqDist = 0.0f;
 
-        if (sphere.center_radius.x < box.lower.x)
-            sqDist += (box.lower.x - sphere.center_radius.x) *
-                      (box.lower.x - sphere.center_radius.x);
-        if (sphere.center_radius.x > box.upper.x)
-            sqDist += (sphere.center_radius.x - box.upper.x) *
-                      (sphere.center_radius.x - box.upper.x);
+        if (sphere.center_radius.x < box.min.x)
+            sqDist += (box.min.x - sphere.center_radius.x) *
+                      (box.min.x - sphere.center_radius.x);
+        if (sphere.center_radius.x > box.max.x)
+            sqDist += (sphere.center_radius.x - box.max.x) *
+                      (sphere.center_radius.x - box.max.x);
 
-        if (sphere.center_radius.y < box.lower.y)
-            sqDist += (box.lower.y - sphere.center_radius.y) *
-                      (box.lower.y - sphere.center_radius.y);
-        if (sphere.center_radius.y > box.upper.y)
-            sqDist += (sphere.center_radius.y - box.upper.y) *
-                      (sphere.center_radius.y - box.upper.y);
+        if (sphere.center_radius.y < box.min.y)
+            sqDist += (box.min.y - sphere.center_radius.y) *
+                      (box.min.y - sphere.center_radius.y);
+        if (sphere.center_radius.y > box.max.y)
+            sqDist += (sphere.center_radius.y - box.max.y) *
+                      (sphere.center_radius.y - box.max.y);
 
-        if (sphere.center_radius.z < box.lower.z)
-            sqDist += (box.lower.z - sphere.center_radius.z) *
-                      (box.lower.z - sphere.center_radius.z);
-        if (sphere.center_radius.z > box.upper.z)
-            sqDist += (sphere.center_radius.z - box.upper.z) *
-                      (sphere.center_radius.z - box.upper.z);
+        if (sphere.center_radius.z < box.min.z)
+            sqDist += (box.min.z - sphere.center_radius.z) *
+                      (box.min.z - sphere.center_radius.z);
+        if (sphere.center_radius.z > box.max.z)
+            sqDist += (sphere.center_radius.z - box.max.z) *
+                      (sphere.center_radius.z - box.max.z);
 
         return sqDist <= sphere.center_radius.w * sphere.center_radius.w;
     }

@@ -10,8 +10,8 @@
 
 namespace Bcg::cuda {
     struct aabb {
-        glm::vec3 upper;
-        glm::vec3 lower;
+        glm::vec3 max;
+        glm::vec3 min;
     };
 
     template<typename Object>
@@ -27,21 +27,21 @@ namespace Bcg::cuda {
 
     __device__ __host__
     inline bool intersects(const aabb &lhs, const aabb &rhs) noexcept {
-        if (lhs.upper.x < rhs.lower.x || rhs.upper.x < lhs.lower.x) { return false; }
-        if (lhs.upper.y < rhs.lower.y || rhs.upper.y < lhs.lower.y) { return false; }
-        if (lhs.upper.z < rhs.lower.z || rhs.upper.z < lhs.lower.z) { return false; }
+        if (lhs.max.x < rhs.min.x || rhs.max.x < lhs.min.x) { return false; }
+        if (lhs.max.y < rhs.min.y || rhs.max.y < lhs.min.y) { return false; }
+        if (lhs.max.z < rhs.min.z || rhs.max.z < lhs.min.z) { return false; }
         return true;
     }
 
     __device__ __host__
     inline aabb merge(const aabb &lhs, const aabb &rhs) noexcept {
         aabb merged;
-        merged.upper.x = ::fmaxf(lhs.upper.x, rhs.upper.x);
-        merged.upper.y = ::fmaxf(lhs.upper.y, rhs.upper.y);
-        merged.upper.z = ::fmaxf(lhs.upper.z, rhs.upper.z);
-        merged.lower.x = ::fminf(lhs.lower.x, rhs.lower.x);
-        merged.lower.y = ::fminf(lhs.lower.y, rhs.lower.y);
-        merged.lower.z = ::fminf(lhs.lower.z, rhs.lower.z);
+        merged.max.x = ::fmaxf(lhs.max.x, rhs.max.x);
+        merged.max.y = ::fmaxf(lhs.max.y, rhs.max.y);
+        merged.max.z = ::fmaxf(lhs.max.z, rhs.max.z);
+        merged.min.x = ::fminf(lhs.min.x, rhs.min.x);
+        merged.min.y = ::fminf(lhs.min.y, rhs.min.y);
+        merged.min.z = ::fminf(lhs.min.z, rhs.min.z);
         return merged;
     }
 
@@ -51,26 +51,26 @@ namespace Bcg::cuda {
 
     __device__ __host__
     inline float mindist(const aabb &lhs, const glm::vec3 &rhs) noexcept {
-        const float dx = ::fminf(lhs.upper.x, ::fmaxf(lhs.lower.x, rhs.x)) - rhs.x;
-        const float dy = ::fminf(lhs.upper.y, ::fmaxf(lhs.lower.y, rhs.y)) - rhs.y;
-        const float dz = ::fminf(lhs.upper.z, ::fmaxf(lhs.lower.z, rhs.z)) - rhs.z;
+        const float dx = ::fminf(lhs.max.x, ::fmaxf(lhs.min.x, rhs.x)) - rhs.x;
+        const float dy = ::fminf(lhs.max.y, ::fmaxf(lhs.min.y, rhs.y)) - rhs.y;
+        const float dz = ::fminf(lhs.max.z, ::fmaxf(lhs.min.z, rhs.z)) - rhs.z;
         return dx * dx + dy * dy + dz * dz;
     }
 
     __device__ __host__
     inline float minmaxdist(const aabb &lhs, const glm::vec3 &rhs) noexcept {
-        glm::vec3 lower_diff = lhs.lower - rhs;
-        glm::vec3 upper_diff = lhs.upper - rhs;
+        glm::vec3 lower_diff = lhs.min - rhs;
+        glm::vec3 upper_diff = lhs.max - rhs;
         glm::vec3 rm_sq = glm::vec3(lower_diff.x * lower_diff.x, lower_diff.y * lower_diff.y, lower_diff.z * lower_diff.z);
         glm::vec3 rM_sq = glm::vec3(upper_diff.x * upper_diff.x, upper_diff.y * upper_diff.y, upper_diff.z * upper_diff.z);
 
-        if ((lhs.upper.x + lhs.lower.x) * 0.5f < rhs.x) {
+        if ((lhs.max.x + lhs.min.x) * 0.5f < rhs.x) {
             thrust::swap(rm_sq.x, rM_sq.x);
         }
-        if ((lhs.upper.y + lhs.lower.y) * 0.5f < rhs.y) {
+        if ((lhs.max.y + lhs.min.y) * 0.5f < rhs.y) {
             thrust::swap(rm_sq.y, rM_sq.y);
         }
-        if ((lhs.upper.z + lhs.lower.z) * 0.5f < rhs.z) {
+        if ((lhs.max.z + lhs.min.z) * 0.5f < rhs.z) {
             thrust::swap(rm_sq.z, rM_sq.z);
         }
 
@@ -82,7 +82,7 @@ namespace Bcg::cuda {
 
     __device__ __host__
     inline glm::vec3 centroid(const aabb &box) noexcept {
-        return (box.upper + box.lower) * 0.5f;
+        return (box.max + box.min) * 0.5f;
     }
 } // lbvh
 #endif// LBVH_AABB_CUH

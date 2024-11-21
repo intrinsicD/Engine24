@@ -272,12 +272,12 @@ namespace Bcg::cuda::bvh {
         __device__ __host__
         inline unsigned int operator()(const aabb &box) noexcept {
             auto p = centroid(box);
-            p.x -= whole.lower.x;
-            p.y -= whole.lower.y;
-            p.z -= whole.lower.z;
-            p.x /= (whole.upper.x - whole.lower.x);
-            p.y /= (whole.upper.y - whole.lower.y);
-            p.z /= (whole.upper.z - whole.lower.z);
+            p.x -= whole.min.x;
+            p.y -= whole.min.y;
+            p.z -= whole.min.z;
+            p.x /= (whole.max.x - whole.min.x);
+            p.y /= (whole.max.y - whole.min.y);
+            p.z /= (whole.max.z - whole.min.z);
             return morton_code(p);
         }
     };
@@ -310,22 +310,22 @@ namespace Bcg::cuda::bvh {
         // --------------------------------------------------------------------
         // calculate morton code of each points
 
-        if (aabb_whole.lower.x == std::numeric_limits<float>::infinity() ||
-            aabb_whole.lower.y == std::numeric_limits<float>::infinity() ||
-            aabb_whole.lower.z == std::numeric_limits<float>::infinity() ||
-            aabb_whole.upper.x == -std::numeric_limits<float>::infinity() ||
-            aabb_whole.upper.y == -std::numeric_limits<float>::infinity() ||
-            aabb_whole.upper.z == -std::numeric_limits<float>::infinity()) {
+        if (aabb_whole.min.x == std::numeric_limits<float>::infinity() ||
+            aabb_whole.min.y == std::numeric_limits<float>::infinity() ||
+            aabb_whole.min.z == std::numeric_limits<float>::infinity() ||
+            aabb_whole.max.x == -std::numeric_limits<float>::infinity() ||
+            aabb_whole.max.y == -std::numeric_limits<float>::infinity() ||
+            aabb_whole.max.z == -std::numeric_limits<float>::infinity()) {
             // calculate whole AABB if it is not given.
 
             const auto inf = std::numeric_limits<float>::infinity();
             aabb default_aabb;
-            default_aabb.upper.x = -inf;
-            default_aabb.lower.x = inf;
-            default_aabb.upper.y = -inf;
-            default_aabb.lower.y = inf;
-            default_aabb.upper.z = -inf;
-            default_aabb.lower.z = inf;
+            default_aabb.max.x = -inf;
+            default_aabb.min.x = inf;
+            default_aabb.max.y = -inf;
+            default_aabb.min.y = inf;
+            default_aabb.max.z = -inf;
+            default_aabb.min.z = inf;
 
             aabb_whole = thrust::reduce(
                     kdtree.aabbs.begin() + num_internal_nodes, kdtree.aabbs.end(), default_aabb,

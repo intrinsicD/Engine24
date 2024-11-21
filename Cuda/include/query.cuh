@@ -9,11 +9,11 @@
 #include <queue>
 
 namespace Bcg::cuda {
-// query object indices that potentially overlaps with query aabb.
-//
-// requirements:
-// - OutputIterator should be writable and its object_type should be uint32_t
-//
+    // query object indices that potentially overlaps with query aabb.
+    //
+    // requirements:
+    // - OutputIterator should be writable and its object_type should be uint32_t
+    //
     template<typename Objects, bool IsConst, typename QueryObject, typename OutputIterator>
     __device__
     unsigned int query_device(
@@ -130,11 +130,11 @@ namespace Bcg::cuda {
         return num_found;*/
     }
 
-// query object index that is the nearst to the query point.
-//
-// requirements:
-// - DistanceCalculator must be able to calc distance between a point to an object.
-//
+    // query object index that is the nearst to the query point.
+    //
+    // requirements:
+    // - DistanceCalculator must be able to calc distance between a point to an object.
+    //
     template<typename Objects, bool IsConst, typename DistanceCalculator>
     __device__
     thrust::pair<unsigned int, float> query_device(
@@ -205,119 +205,17 @@ namespace Bcg::cuda {
     }
 
 
-// query object index that is the nearst to the query point.
-//
-// requirements:
-// - DistanceCalculator must be able to calc distance between a point to an object.
-//
-    /*template<typename Objects, bool IsConst, typename DistanceCalculator, typename OutputIterator>
-    __device__ unsigned int query_device(
-            const detail::basic_device_bvh<Objects, IsConst> &bvh,
-            const query_knn &q, DistanceCalculator calc_dist,
-            OutputIterator outiter,
-            const unsigned int max_buffer_size = 0xFFFFFFFF) {
-
-        using index_type = typename detail::basic_device_bvh<Objects, true>::index_type;
-
-        // We will store the k-nearest neighbors in this fixed-size array
-        unsigned int result[32];  // Adjust size as necessary for your max `k`
-        float distances[32];  // Corresponding distances
-
-        const unsigned int k = q.k_closest;
-
-        for (unsigned int i = 0; i < k; ++i) {
-            result[i] = 0xFFFFFFFF;  // Initialize with invalid indices
-            distances[i] = INFINITY;  // Initialize with max distance
-        }
-
-        int stack[64];  // Traversal stack
-        int stack_ptr = 0;
-        stack[stack_ptr++] = 0;  // Start with root node
-
-        while (stack_ptr > 0) {
-            const int node = stack[--stack_ptr];
-
-            const index_type L_idx = bvh.nodes[node].left_idx;
-            const index_type R_idx = bvh.nodes[node].right_idx;
-
-            const auto &L_aabb = bvh.aabbs[L_idx];
-            const auto &R_aabb = bvh.aabbs[R_idx];
-
-            // Check left child
-            if (L_idx != 0xFFFFFFFF) {
-                float dist = mindist(L_aabb, q.target);
-                if (dist < distances[0]) {
-                    if (bvh.nodes[L_idx].object_idx != 0xFFFFFFFF) {
-                        // Leaf node, calculate the distance to the object
-                        index_type obj_idx = bvh.nodes[L_idx].object_idx;
-                        float obj_dist = calc_dist(q.target, bvh.objects[obj_idx]);
-                        if (obj_dist < distances[0]) {
-                            // Insert this object into the heap (max-heap logic with fixed size)
-                            result[0] = obj_idx;
-                            distances[0] = obj_dist;
-
-                            // Maintain max-heap property (simple sort for small k)
-                            for (int i = 1; i < k; ++i) {
-                                if (distances[i - 1] < distances[i]) {
-                                    thrust::swap(distances[i - 1], distances[i]);
-                                    thrust::swap(result[i - 1], result[i]);
-                                }
-                            }
-                        }
-                    } else {
-                        // Internal node, push to stack for further traversal
-                        stack[stack_ptr++] = L_idx;
-                    }
-                }
-            }
-
-            // Check right child
-            if (R_idx != 0xFFFFFFFF) {
-                float dist = mindist(R_aabb, q.target);
-                if (dist < distances[0]) {
-                    if (bvh.nodes[R_idx].object_idx != 0xFFFFFFFF) {
-                        // Leaf node, calculate the distance to the object
-                        index_type obj_idx = bvh.nodes[R_idx].object_idx;
-                        float obj_dist = calc_dist(q.target, bvh.objects[obj_idx]);
-                        if (obj_dist < distances[0]) {
-                            // Insert this object into the heap (max-heap logic with fixed size)
-                            result[0] = obj_idx;
-                            distances[0] = obj_dist;
-
-                            // Maintain max-heap property (simple sort for small k)
-                            for (int i = 1; i < k; ++i) {
-                                if (distances[i - 1] < distances[i]) {
-                                    thrust::swap(distances[i - 1], distances[i]);
-                                    thrust::swap(result[i - 1], result[i]);
-                                }
-                            }
-                        }
-                    } else {
-                        // Internal node, push to stack for further traversal
-                        stack[stack_ptr++] = R_idx;
-                    }
-                }
-            }
-        }
-
-        // Copy results to output iterator
-        unsigned int num_found = 0;
-        for (unsigned int i = 0; i < k && i < max_buffer_size; ++i) {
-            if (result[i] != 0xFFFFFFFF) {
-                *outiter++ = result[i];
-                ++num_found;
-            }
-        }
-
-        return num_found;
-    }*/
-
+    // query object index that is the nearst to the query point.
+    //
+    // requirements:
+    // - DistanceCalculator must be able to calc distance between a point to an object.
+    //
     template<typename Objects, bool IsConst, typename DistanceCalculator, typename OutputIterator>
     __device__ unsigned int query_device(
             const detail::basic_device_bvh<Objects, IsConst> &bvh,
             const query_knn &q, DistanceCalculator calc_dist,
             OutputIterator outiter,
-            const unsigned int max_buffer_size = 0xFFFFFFFF) {
+            const unsigned int max_buffer_size = 0xFFFFFFFF) noexcept {
 
         using index_type = typename detail::basic_device_bvh<Objects, true>::index_type;
 
@@ -466,7 +364,7 @@ namespace Bcg::cuda {
             typename MortonCodeCalculator, typename DistanceCalculator>
     std::pair<unsigned int, float> query_host(
             const lbvh<Objects, AABBGetter, MortonCodeCalculator> &tree,
-            const query_nearest &q, DistanceCalculator calc_dist) noexcept {
+            const query_nearest &q, DistanceCalculator calc_dist)  {
         using bvh_type = lbvh<Objects, AABBGetter, MortonCodeCalculator>;
         using index_type = typename bvh_type::index_type;
 

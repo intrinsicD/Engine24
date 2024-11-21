@@ -22,8 +22,8 @@ namespace Bcg {
     template<typename T, int N, glm::qualifier Q = glm::defaultp>
     using Vector = glm::vec<N, T, Q>;
 
-    template<typename T, int M, int N, glm::qualifier Q = glm::defaultp>
-    using Matrix = glm::mat<M, N, T, Q>;
+    template<typename T, int C, int R, glm::qualifier Q = glm::defaultp>
+    using Matrix = glm::mat<C, R, T, Q>;
 
     template<typename T, int N>
     Vector<T, N> SafeNormalize(const Vector<T, N> &v, T length, T epsilon = 1e-6) {
