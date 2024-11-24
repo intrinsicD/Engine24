@@ -19,8 +19,10 @@ add_library(Engine24
         include/Commands/PointCloudVertexColors.h
         src/Commands/PointCloudVertexColors.cpp
         include/Core/Pool/PoolHandle.h
-        include/Core/Geometry/AABBUtils.h
+        include/Core/Geometry/AABB/AABBUtils.h
         include/Core/Traits/VecTraits.h
+        include/Core/Module/Module.h
+        include/Core/Module/RenderModule.h
 )
 
 include(${CMAKE_SOURCE_DIR}/CopyShaders.cmake)

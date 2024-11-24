@@ -11,7 +11,7 @@
 #include "GetPrimitives.h"
 #include "EventsEntity.h"
 #include "Types.h"
-#include "PoolGui.h"
+#include "PropertiesGui.h"
 #include "BoundingVolumes.h"
 
 namespace Bcg {
@@ -50,8 +50,11 @@ namespace Bcg {
 
     void PluginAABB::render_menu() {
         if (ImGui::BeginMenu("Entity")) {
-            ImGui::MenuItem(name, nullptr, &show_gui);
-            ImGui::MenuItem("Pool", nullptr, &show_pool_gui);
+            if(ImGui::BeginMenu(name)) {
+                ImGui::MenuItem("Instance", nullptr, &show_gui);
+                ImGui::MenuItem("Pool", nullptr, &show_pool_gui);
+                ImGui::EndMenu();
+            }
             ImGui::EndMenu();
         }
     }
@@ -67,7 +70,7 @@ namespace Bcg {
         if (show_pool_gui) {
             if (ImGui::Begin("Pool", &show_pool_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
                 auto &pool = Engine::Context().get<Pool<AABB> >();
-                Gui::ShowPool(pool);
+                Gui::Show("AABBPoolProperties",pool.properties);
             }
             ImGui::End();
         }
