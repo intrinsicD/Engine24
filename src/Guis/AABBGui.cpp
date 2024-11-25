@@ -23,7 +23,6 @@ namespace Bcg::Gui {
         if (Engine::State().all_of<BoundingVolumes>(entity_id)) {
             auto &bv = Engine::State().get<BoundingVolumes>(entity_id);
             Show(bv.h_aabb);
-            return;
         }
     }
 }

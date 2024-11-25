@@ -1,5 +1,6 @@
 target_sources(Engine24 PRIVATE
         AABB.cpp
+        AABBGuiModule.cpp
         Camera.cpp
         Color.cpp
         CommandBuffer.cpp
