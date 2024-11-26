@@ -28,6 +28,10 @@ namespace Bcg {
             other.idx = std::numeric_limits<size_t>::max();
         }
 
+        size_t get_index() const {
+            return idx;
+        }
+
         PoolHandle& operator=(const PoolHandle& other) {
             if (this != &other) {
                 // Decrement current reference

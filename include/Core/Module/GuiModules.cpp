@@ -2,10 +2,13 @@
 // Created by alex on 25.11.24.
 //
 
+#include <unordered_map>
 #include "GuiModules.h"
 #include "Logger.h"
 
 namespace Bcg {
+    static std::unordered_map<std::string, std::unique_ptr<GuiModule>> gui_modules;
+
     void GuiModules::activate() {
         active = true;
         Log::Info("GuiModules activated");
@@ -16,8 +19,8 @@ namespace Bcg {
         Log::Info("GuiModules deactivated");
     }
 
-    void GuiModules::add(const std::string &name, std::unique_ptr<GuiModule> uptr) {
-        gui_modules[name] = std::forward<std::unique_ptr<GuiModule>>(uptr);
+    void GuiModules::add(std::unique_ptr<GuiModule> uptr) {
+        gui_modules[uptr->name] = std::forward<std::unique_ptr<GuiModule>>(uptr);
     }
 
     void GuiModules::remove(const std::string &name) {

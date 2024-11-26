@@ -1,3 +1,4 @@
+add_subdirectory(Geometry)
 target_sources(Engine24 PRIVATE
         AABB.cpp
         AABBGuiModule.cpp

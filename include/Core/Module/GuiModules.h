@@ -6,7 +6,7 @@
 #define GUIMODULES_H
 
 #include <memory>
-#include <unordered_map>
+
 #include "GuiModule.h"
 
 namespace Bcg {
@@ -16,7 +16,7 @@ namespace Bcg {
 
         void deactivate();
 
-        void add(const std::string &name, std::unique_ptr<GuiModule> uptr);
+        void add(std::unique_ptr<GuiModule> uptr);
 
         void remove(const std::string &name);
 
@@ -26,8 +26,7 @@ namespace Bcg {
 
         void render_gui();
 
-        std::unordered_map<std::string, std::unique_ptr<GuiModule>> gui_modules;
-        bool active = false;
+        bool active = true;
     };
 }
 

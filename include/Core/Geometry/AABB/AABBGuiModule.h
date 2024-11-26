@@ -12,7 +12,7 @@
 namespace Bcg {
     class AABBGuiModule : public GuiModule {
     public:
-        AABBGuiModule() : GuiModule() {};
+        AABBGuiModule() : GuiModule("AABBGuiModule") {};
 
         ~AABBGuiModule() override = default;
 

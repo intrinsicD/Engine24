@@ -61,25 +61,18 @@ namespace Bcg::Gui {
         return changed;
     }
 
-    bool Combo(const char *label, std::pair<int, std::string> &curr, PropertyContainer &container) {
+    bool Combo(const char *label, std::pair<int, std::string> &curr, const PropertyContainer &container) {
         auto property_names = container.properties();
         auto result = Combo(label, curr, property_names);
         curr.second = property_names[curr.first];
         return result;
     }
 
-    bool ListBox(const char *label, std::pair<int, std::string> &curr, PropertyContainer &container) {
+    bool ListBox(const char *label, std::pair<int, std::string> &curr, const PropertyContainer &container) {
         auto property_names = container.properties();
         auto result = ListBox(label, curr, property_names);
         curr.second = property_names[curr.first];
         return result;
-    }
-
-    void Show(BasePropertyArray &a_property) {
-        static std::pair<int, std::string> curr = {0, ""};
-        ImGui::PushID((a_property.name() + curr.second).c_str());
-        Combo((curr.second + "##values").c_str(), curr, a_property);
-        ImGui::PopID();
     }
 
     void Show(const BasePropertyArray &a_property) {
@@ -89,17 +82,9 @@ namespace Bcg::Gui {
         ImGui::PopID();
     }
 
-    void Show(const char *label, PropertyContainer &container) {
+    void Show(const char *label, const PropertyContainer &container) {
         static std::pair<int, std::string> curr_property = {0, ""};
         Combo(label, curr_property, container);
         Show(*container.get_parray()[curr_property.first]);
-        /*for (auto &a_property: container.get_parray()) {
-            if (ImGui::TreeNode(a_property->name().c_str())) {
-                ImGui::PushID(a_property->name().c_str());
-                Show(*a_property);
-                ImGui::PopID();
-                ImGui::TreePop();
-            }
-        }*/
     }
 }
