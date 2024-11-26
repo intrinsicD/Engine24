@@ -10,7 +10,7 @@
 namespace Bcg {
     class Module {
     public:
-        Module(const std::string &name) : name(name) {}
+        explicit Module(const std::string &name) : name(name) {}
 
         virtual ~Module() = default;
 
