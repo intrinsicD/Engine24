@@ -9,17 +9,13 @@
 
 namespace Bcg{
     struct DoubleCommandBuffer {
-        CommandBuffer &current() {
-            return *p_current;
-        }
+        CommandBuffer &current();
 
-        CommandBuffer &next() {
-            return *p_next;
-        }
+        CommandBuffer &next();
 
-        void swap_buffers() {
-            std::swap(p_current, p_next);
-        }
+        void swap_buffers();
+
+        void handle();
 
     private:
         CommandBuffer a, b;

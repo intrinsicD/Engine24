@@ -5,16 +5,21 @@
 #include "Engine.h"
 #include "entt/entt.hpp"
 #include "CommandDoubleBuffer.h"
+#include "MainLoop.h"
 
 namespace Bcg {
     Engine::Engine() {
         entt::locator<Bcg::Engine *>::emplace<Bcg::Engine *>(this);
         state.ctx().emplace<DoubleCommandBuffer>();
+        state.ctx().emplace<Commands::InitializationCommands>("Engine Initialization");
+        state.ctx().emplace<Commands::StartupCommands>("Engine Startup");
+        state.ctx().emplace<Commands::ShutdownCommands>("Engine Shutdown");
+        state.ctx().emplace<Commands::MainLoop>();
         assert(Instance() == this);
     }
 
     bool Engine::valid(entt::entity entity) {
-        return State().valid(entity);
+        return entity != entt::null && State().valid(entity);
     }
 
     Engine *Engine::Instance() {
@@ -35,11 +40,12 @@ namespace Bcg {
         return Instance()->dispatcher;
     }
 
-    void Engine::ExecuteCmdBuffer() {
+    void Engine::handle_command_double_buffer() {
         auto &double_cmd_buffer = Engine::Context().get<DoubleCommandBuffer>();
-        double_cmd_buffer.current().execute();
-        double_cmd_buffer.current().clear();
-        double_cmd_buffer.swap_buffers();
+        double_cmd_buffer.handle();
+    }
+
+    void Engine::handle_buffered_events() {
         Engine::Dispatcher().update();
         Engine::Dispatcher().clear();
     }

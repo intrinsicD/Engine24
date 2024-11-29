@@ -34,7 +34,9 @@ namespace Bcg {
 
         static entt::dispatcher &Dispatcher();
 
-        static void ExecuteCmdBuffer();
+        static void handle_command_double_buffer();
+
+        static void handle_buffered_events();
 
         entt::registry state;
         entt::dispatcher dispatcher;

@@ -21,24 +21,28 @@ namespace Bcg {
         }
     };
 
+    MeshModule::MeshModule() : ComponentModule("MeshModule") {}
+
     void MeshModule::activate() {
-        if (!Engine::Context().find<Pool<SurfaceMesh> >()) {
-            Engine::Context().emplace<Pool<SurfaceMesh> >();
+        if(base_activate()){
+            if (!Engine::Context().find<Pool<SurfaceMesh> >()) {
+                Engine::Context().emplace<Pool<SurfaceMesh> >();
+            }
+            if(!Engine::Context().find<Cache<SurfaceMesh> >()) {
+                Engine::Context().emplace<Cache<SurfaceMesh> >();
+            }
         }
-        if(!Engine::Context().find<Cache<SurfaceMesh> >()) {
-            Engine::Context().emplace<Cache<SurfaceMesh> >();
-        }
-        Log::Info(name + " activated");
     }
 
     void MeshModule::deactivate() {
-        if (Engine::Context().find<Pool<SurfaceMesh> >()) {
-            Engine::Context().erase<Pool<SurfaceMesh> >();
+        if(base_deactivate()){
+            if (Engine::Context().find<Pool<SurfaceMesh> >()) {
+                Engine::Context().erase<Pool<SurfaceMesh> >();
+            }
+            if(Engine::Context().find<Cache<SurfaceMesh> >()) {
+                Engine::Context().erase<Cache<SurfaceMesh> >();
+            }
         }
-        if(Engine::Context().find<Cache<SurfaceMesh> >()) {
-            Engine::Context().erase<Cache<SurfaceMesh> >();
-        }
-        Log::Info(name + " deactivated");
     }
 
     PoolHandle<SurfaceMesh> MeshModule::make_handle(const SurfaceMesh &mesh) {

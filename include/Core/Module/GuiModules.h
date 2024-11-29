@@ -26,7 +26,7 @@ namespace Bcg {
 
         void render_gui();
 
-        bool active = true;
+        bool active = false;
     };
 }
 

@@ -9,12 +9,13 @@
 #include "SurfaceMesh.h"
 #include "PoolHandle.h"
 #include "MeshComponent.h"
+#include "EventsGui.h"
 #include "entt/fwd.hpp"
 
 namespace Bcg{
     class MeshGuiModule : public GuiModule {
     public:
-        MeshGuiModule() : GuiModule("MeshGuiModule") {}
+        MeshGuiModule();
 
         ~MeshGuiModule() override = default;
 
@@ -37,6 +38,14 @@ namespace Bcg{
         void render_menu() override;
 
         void render_gui() override;
+
+        void register_events(entt::dispatcher &dispatcher);
+
+        void unregister_events(entt::dispatcher &dispatcher);
+
+        void on_render_menu(const Events::Gui::Menu::Render &event);
+
+        void on_render(const Events::Gui::Render &event);
     };
 }
 

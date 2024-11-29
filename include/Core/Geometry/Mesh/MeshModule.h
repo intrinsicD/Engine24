@@ -11,7 +11,7 @@
 namespace Bcg {
     class MeshModule : public ComponentModule<SurfaceMesh> {
     public:
-        MeshModule() : ComponentModule("MeshModule") {}
+        MeshModule();
 
         ~MeshModule() override = default;
 

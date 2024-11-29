@@ -21,7 +21,7 @@ namespace Bcg{
     }
 
     void Modules::add(std::unique_ptr<Module> uptr){
-        modules[uptr->name] = std::move(uptr);
+        modules[uptr->get_name()] = std::move(uptr);
     }
 
     void Modules::remove(const std::string &name){
@@ -29,6 +29,6 @@ namespace Bcg{
     }
 
     void Modules::remove(std::unique_ptr<Module> uptr){
-        modules.erase(uptr->name);
+        modules.erase(uptr->get_name());
     }
 }

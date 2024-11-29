@@ -23,11 +23,19 @@ namespace fmt {
 namespace Bcg {
     class Entity {
     public:
+        Entity();
+
         explicit Entity(entt::entity entity_id);
 
         operator bool() const;
 
+        bool is_valid() const;
+
         operator entt::entity() const;
+
+        Entity &create();
+
+        Entity &destroy();
 
         [[nodiscard]] entt::entity id() const;
 

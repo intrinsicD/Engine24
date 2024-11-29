@@ -14,12 +14,20 @@
 #include "Picker.h"
 
 namespace Bcg {
+    MeshGuiModule::MeshGuiModule() : GuiModule("MeshGuiModule") {}
+
     void MeshGuiModule::activate() {
-        Log::Info(name + " activated");
+        if(base_activate()){
+            Engine::Dispatcher().sink<Events::Gui::Menu::Render>().connect<&MeshGuiModule::on_render_menu>(this);
+            Engine::Dispatcher().sink<Events::Gui::Render>().connect<&MeshGuiModule::on_render>(this);
+        }
     }
 
     void MeshGuiModule::deactivate() {
-        Log::Info(name + " deactivated");
+        if(base_deactivate()){
+            Engine::Dispatcher().sink<Events::Gui::Menu::Render>().disconnect<&MeshGuiModule::on_render_menu>(this);
+            Engine::Dispatcher().sink<Events::Gui::Render>().disconnect<&MeshGuiModule::on_render>(this);
+        }
     }
 
     void MeshGuiModule::render_filedialog() {
@@ -134,4 +142,24 @@ namespace Bcg {
             ImGui::End();
         }
     };
+
+    void MeshGuiModule::register_events(entt::dispatcher &dispatcher){
+        Engine::Dispatcher().sink<Events::Gui::Menu::Render>().connect<&MeshGuiModule::on_render_menu>(this);
+        Engine::Dispatcher().sink<Events::Gui::Render>().connect<&MeshGuiModule::on_render>(this);
+        Log::Info("MeshGuiModule registered events");
+    }
+
+    void MeshGuiModule::unregister_events(entt::dispatcher &dispatcher){
+        Engine::Dispatcher().sink<Events::Gui::Menu::Render>().disconnect<&MeshGuiModule::on_render_menu>(this);
+        Engine::Dispatcher().sink<Events::Gui::Render>().disconnect<&MeshGuiModule::on_render>(this);
+        Log::Info("MeshGuiModule unregistered events");
+    }
+
+    void MeshGuiModule::on_render_menu(const Events::Gui::Menu::Render &event){
+
+    }
+
+    void MeshGuiModule::on_render(const Events::Gui::Render &event){
+
+    }
 }
