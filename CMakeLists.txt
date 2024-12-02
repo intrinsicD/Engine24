@@ -22,7 +22,7 @@ add_library(Engine24
         include/Core/Geometry/AABB/AABBUtils.h
         include/Core/Traits/VecTraits.h
         include/Core/Module/Module.h
-        include/Core/Module/RenderModule.h
+        include/Core/Module/OpenGLRenderModule.h
         include/Core/Geometry/Mesh/SurfaceMeshVertexNormals.h
         src/Core/Geometry/Mesh/SurfaceMeshVertexNormals.cpp
         include/Core/Geometry/Mesh/SurfaceMeshFaceNormals.h

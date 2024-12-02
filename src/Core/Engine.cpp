@@ -11,9 +11,9 @@ namespace Bcg {
     Engine::Engine() {
         entt::locator<Bcg::Engine *>::emplace<Bcg::Engine *>(this);
         state.ctx().emplace<DoubleCommandBuffer>();
-        state.ctx().emplace<Commands::InitializationCommands>("Engine Initialization");
-        state.ctx().emplace<Commands::StartupCommands>("Engine Startup");
-        state.ctx().emplace<Commands::ShutdownCommands>("Engine Shutdown");
+        state.ctx().emplace<Commands::InitializationCommands>();
+        state.ctx().emplace<Commands::StartupCommands>();
+        state.ctx().emplace<Commands::ShutdownCommands>();
         state.ctx().emplace<Commands::MainLoop>();
         assert(Instance() == this);
     }

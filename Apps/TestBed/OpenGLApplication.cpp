@@ -18,7 +18,8 @@ namespace Bcg {
     }
 
     void Application::init(int width, int height, const char *title) {
-        Engine::Context().get<Bcg::Commands::InitializationCommands>().execute();
+        Engine::Dispatcher().trigger<Bcg::Events::Initialize>();
+        Engine::Context().get<Bcg::Commands::InitializationCommands>().handle();
 
         if (Bcg::PluginGraphics::init(width, height, title)) {
             Bcg::PluginGraphics::set_window_title(title);
@@ -35,7 +36,8 @@ namespace Bcg {
     }
 
     void Application::run() {
-        Engine::Context().get<Bcg::Commands::StartupCommands>().execute();
+        Engine::Dispatcher().trigger<Bcg::Events::Startup>();
+        Engine::Context().get<Bcg::Commands::StartupCommands>().handle();
 
         auto &modules = Engine::Context().get<Modules>();
         modules.activate();
@@ -43,8 +45,10 @@ namespace Bcg {
         auto &gui_modules = Engine::Context().get<GuiModules>();
         gui_modules.activate();
         // Game loop
+
+        auto &main_loop = Engine::Context().get<Bcg::Commands::MainLoop>();
         while (!Bcg::PluginGraphics::should_close()) {
-            Engine::Context().get<Bcg::Commands::MainLoop>().execute();
+            main_loop.handle(Engine::Dispatcher());
             {
                 Bcg::PluginGraphics::poll_events();
                 Bcg::Plugins::begin_frame_all();
@@ -69,10 +73,11 @@ namespace Bcg {
                 Bcg::PluginGraphics::swap_buffers();
             }
         }
-        Engine::Context().get<Bcg::Commands::ShutdownCommands>().execute();
     }
 
     void Application::cleanup() {
+        Engine::Dispatcher().trigger<Bcg::Events::Shutdown>();
+        Engine::Context().get<Bcg::Commands::ShutdownCommands>().handle();
         auto &modules = Engine::Context().get<Modules>();
         modules.deactivate();
         auto &gui_modules = Engine::Context().emplace<GuiModules>();

@@ -8,6 +8,7 @@
 #include "MatVec.h"
 #include "entt/fwd.hpp"
 #include "Plugin.h"
+#include "Command.h"
 
 struct GLFWwindow;
 

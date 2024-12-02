@@ -5,31 +5,33 @@
 #ifndef ENGINE24_MAINLOOP_H
 #define ENGINE24_MAINLOOP_H
 
-#include "Command.h"
+#include "CommandDoubleBuffer.h"
+#include "EventsMain.h"
+#include "entt/signal/dispatcher.hpp"
 
 namespace Bcg::Commands {
-    using InitializationCommands = CompositeCommand;
-    using StartupCommands = CompositeCommand;
-    using ShutdownCommands = CompositeCommand;
+    using InitializationCommands = DoubleCommandBuffer;
+    using StartupCommands = DoubleCommandBuffer;
+    using ShutdownCommands = DoubleCommandBuffer;
 
     struct MainLoop {
-        CompositeCommand begin_loop{"begin_loop"};     // Engine initialization
-        CompositeCommand prepare_scene{"prepare_scene"};  // Combines begin_scene + update_scene
-        CompositeCommand end_scene{"end_scene"};      // Scene cleanup
-        CompositeCommand prepare_render{"prepare_render"}; // Combines begin_render + render_scene
-        CompositeCommand end_render{"end_render"};     // Render cleanup
-        CompositeCommand render_gui{"render_gui"};     // Combines begin_gui, render_gui, end_gui
-        CompositeCommand end_loop{"end_loop"};       // Final loop tasks
+        DoubleCommandBuffer begin_loop;     // Engine initialization
+        DoubleCommandBuffer prepare_scene;  // Combines begin_scene + update_scene
+        DoubleCommandBuffer end_scene;      // Scene cleanup
+        DoubleCommandBuffer prepare_render; // Combines begin_render + render_scene
+        DoubleCommandBuffer end_render;     // Render cleanup
+        DoubleCommandBuffer render_gui;     // Combines begin_gui, render_gui, end_gui
+        DoubleCommandBuffer end_loop;       // Final loop tasks
 
-        //TODO ensure thread safety and introduce double buffering (vector swapping)
-        void execute() const {
-            begin_loop.execute();
-            prepare_scene.execute();
-            end_scene.execute();
-            prepare_render.execute();
-            end_render.execute();
-            render_gui.execute();
-            end_loop.execute();
+        void handle(entt::dispatcher &dispatcher) {
+            dispatcher.trigger<Events::Synchronize>();
+            begin_loop.handle();
+            prepare_scene.handle();
+            end_scene.handle();
+            prepare_render.handle();
+            end_render.handle();
+            render_gui.handle();
+            end_loop.handle();
         }
     };
 }

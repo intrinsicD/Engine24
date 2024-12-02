@@ -9,6 +9,8 @@
 #include "entt/signal/dispatcher.hpp"
 
 namespace Bcg {
+    struct Module;
+    struct Plugin;
     struct Engine {
         Engine();
 
@@ -37,6 +39,16 @@ namespace Bcg {
         static void handle_command_double_buffer();
 
         static void handle_buffered_events();
+
+        template<typename Module>
+        static Module &add_module() {
+            return Context().emplace<Module>(Dispatcher());
+        }
+
+        template<typename Plugin>
+        static Plugin &add_plugin() {
+            return Context().emplace<Plugin>(Dispatcher());
+        }
 
         entt::registry state;
         entt::dispatcher dispatcher;

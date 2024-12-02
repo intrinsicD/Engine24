@@ -6,6 +6,7 @@
 #define ENGINE24_COMMANDBUFFER_H
 
 #include "Command.h"
+#include <mutex>
 
 namespace Bcg {
     struct CommandBuffer {
@@ -21,6 +22,7 @@ namespace Bcg {
         void clear();
 
     private:
+        mutable std::mutex m_mutex;
         std::vector<std::shared_ptr<Commands::AbstractCommand>> commands;
     };
 }
