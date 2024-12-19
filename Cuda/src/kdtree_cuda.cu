@@ -8,6 +8,7 @@
 #include "Engine.h"
 
 #include <vector>
+#include <numeric>
 
 namespace Bcg::cuda { ;
 
@@ -100,7 +101,38 @@ namespace Bcg::cuda { ;
 
     void KDTreeCuda::fill_samples() const {
         auto &bvh = Engine::require<lbvh<glm::vec3, aabb_getter<glm::vec3>>>(entity_id);
-        bvh.fill_samples();
+        size_t num_closest = 64;
+        auto &points = bvh.objects_host();
+        std::vector<std::vector<size_t>> knns(points.size());
+        std::vector<std::vector<float>> dists(points.size());
+        for (size_t i = 0; i < points.size(); ++i) {
+            std::vector<size_t> indices = knn_query({points[i].x, points[i].y, points[i].z}, num_closest).indices;
+            std::vector<float> distances;
+
+            for(size_t j = 0; j < knns[i].size(); ++j){
+                distances.push_back((points[i].x - points[knns[i][j]].x) * (points[i].x - points[knns[i][j]].x) +
+                                   (points[i].y - points[knns[i][j]].y) * (points[i].y - points[knns[i][j]].y) +
+                                   (points[i].z - points[knns[i][j]].z) * (points[i].z - points[knns[i][j]].z));
+            }
+            //sort by distance in ascending order
+            std::vector<size_t> sorted_indices(knns[i].size());
+            std::iota(sorted_indices.begin(), sorted_indices.end(), 0); // Create index mapping.
+
+            std::sort(sorted_indices.begin(), sorted_indices.end(), [&distances](size_t a, size_t b) {
+                return distances[a] < distances[b];
+            });
+
+            std::vector<size_t> sorted_knns;
+            std::vector<float> sorted_dists;
+            for (size_t idx : sorted_indices) {
+                sorted_knns.push_back(indices[idx]);
+                sorted_dists.push_back(distances[idx]);
+            }
+
+            knns[i] = std::move(sorted_knns);
+            dists[i] = std::move(sorted_dists);
+        }
+        bvh.fill_samples(&knns, &dists);
     }
 
 }

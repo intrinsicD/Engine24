@@ -21,6 +21,8 @@
 #include <thrust/unique.h>
 #include <queue>
 
+#include <thrust/extrema.h>
+
 namespace Bcg::cuda {
     namespace detail {
         struct node {
@@ -211,7 +213,7 @@ namespace Bcg::cuda {
     using cbvh_device = detail::basic_device_bvh<Object, true>;
 
     template<typename Object, typename AABBGetter,
-        typename MortonCodeCalculator = default_morton_code_calculator<Object> >
+            typename MortonCodeCalculator = default_morton_code_calculator<Object> >
     class lbvh {
     public:
         using index_type = std::uint32_t;
@@ -223,8 +225,8 @@ namespace Bcg::cuda {
     public:
         template<typename InputIterator>
         lbvh(InputIterator first, InputIterator last, bool query_host_enabled = false)
-            : objects_h_(first, last), objects_d_(objects_h_),
-              query_host_enabled_(query_host_enabled) {
+                : objects_h_(first, last), objects_d_(objects_h_),
+                  query_host_enabled_(query_host_enabled) {
             this->construct();
         }
 
@@ -276,17 +278,17 @@ namespace Bcg::cuda {
 
         bvh_device<object_type> get_device_repr() noexcept {
             return bvh_device<object_type>{
-                static_cast<unsigned int>(nodes_.size()),
-                static_cast<unsigned int>(objects_d_.size()),
-                nodes_.data().get(), aabbs_.data().get(), objects_d_.data().get(), samples_.data().get()
+                    static_cast<unsigned int>(nodes_.size()),
+                    static_cast<unsigned int>(objects_d_.size()),
+                    nodes_.data().get(), aabbs_.data().get(), objects_d_.data().get(), samples_.data().get()
             };
         }
 
         cbvh_device<object_type> get_device_repr() const noexcept {
             return cbvh_device<object_type>{
-                static_cast<unsigned int>(nodes_.size()),
-                static_cast<unsigned int>(objects_d_.size()),
-                nodes_.data().get(), aabbs_.data().get(), objects_d_.data().get(), samples_.data().get()
+                    static_cast<unsigned int>(nodes_.size()),
+                    static_cast<unsigned int>(objects_d_.size()),
+                    nodes_.data().get(), aabbs_.data().get(), objects_d_.data().get(), samples_.data().get()
             };
         }
 
@@ -316,10 +318,10 @@ namespace Bcg::cuda {
                               aabbs_.begin() + num_internal_nodes, aabb_getter_type());
 
             const auto aabb_whole = thrust::reduce(
-                aabbs_.begin() + num_internal_nodes, aabbs_.end(), default_aabb,
-                [] __device__ __host__(const aabb &lhs, const aabb &rhs) {
-                    return merge(lhs, rhs);
-                });
+                    aabbs_.begin() + num_internal_nodes, aabbs_.end(), default_aabb,
+                    [] __device__ __host__(const aabb &lhs, const aabb &rhs) {
+                        return merge(lhs, rhs);
+                    });
 
             thrust::device_vector<unsigned int> morton(num_objects);
             thrust::transform(this->objects_d_.begin(), this->objects_d_.end(),
@@ -337,8 +339,8 @@ namespace Bcg::cuda {
             // keep indices ascending order
             thrust::stable_sort_by_key(morton.begin(), morton.end(),
                                        thrust::make_zip_iterator(
-                                           thrust::make_tuple(aabbs_.begin() + num_internal_nodes,
-                                                              indices.begin())));
+                                               thrust::make_tuple(aabbs_.begin() + num_internal_nodes,
+                                                                  indices.begin())));
 
 
             // --------------------------------------------------------------------
@@ -439,11 +441,9 @@ namespace Bcg::cuda {
                 aabbs_h_ = aabbs_;
                 nodes_h_ = nodes_;
             }
-
-            fill_samples();
         }
 
-        void fill_samples() {
+        void fill_samples(std::vector<std::vector<size_t>> *knns, std::vector<std::vector<float>> *dists) {
             const unsigned int num_objects = objects_h_.size();
             const unsigned int num_internal_nodes = num_objects - 1;
             const unsigned int num_nodes = num_objects * 2 - 1;
@@ -459,11 +459,31 @@ namespace Bcg::cuda {
             thrust::device_vector<int> flag_container(num_internal_nodes, 0);
             const auto flags = flag_container.data().get();
 
+            thrust::device_vector<int> used_knn_indices_container(num_objects, -1);
+            auto used_knn_indices = used_knn_indices_container.data().get();
+
+            // Create a device vector to store the indices of the used distances as an Nx64 matrix
+            constexpr int max_knns = 64;
+
+            thrust::device_vector<int> d_knns(num_objects * max_knns, -1);
+            thrust::device_vector<float> d_dists(num_objects * max_knns, -1);
+            //copy the knns and dists to device
+            for (int i = 0; i < knns->size(); ++i) {
+                for (int j = 0; j < (*knns)[i].size(); ++j) {
+                    d_knns[i * max_knns + j] = (*knns)[i][j];
+                    d_dists[i * max_knns + j] = (*dists)[i][j];
+                }
+            }
+
+
+            auto d_knns_ptr = d_knns.data().get();
+            auto d_dists_ptr = d_dists.data().get();
+
             const auto self = this->get_device_repr();
             thrust::for_each(thrust::device,
                              thrust::make_counting_iterator<index_type>(num_internal_nodes),
                              thrust::make_counting_iterator<index_type>(num_nodes),
-                             [self, flags] __device__(index_type idx) {
+                             [self, flags, d_knns_ptr, d_dists_ptr, used_knn_indices] __device__(index_type idx) {
                                  unsigned int parent = self.nodes[idx].parent_idx;
                                  while (parent != 0xFFFFFFFF) // means idx == 0
                                  {
@@ -492,27 +512,76 @@ namespace Bcg::cuda {
                                      assert(lsample_idx < self.num_objects);
                                      assert(rsample_idx < self.num_objects);
 
-                                     const glm::vec3 &lpoint = self.objects[lsample_idx];
-                                     const glm::vec3 &rpoint = self.objects[rsample_idx];
-                                     const glm::vec3 center = centroid(self.aabbs[parent]);
-                                     if (distance(lpoint, center) < distance(rpoint, center)) {
-                                         self.samples[parent] = lsample_idx;
-                                     } else {
-                                         self.samples[parent] = rsample_idx;
+                                     /*                  const glm::vec3 &lpoint = self.objects[lsample_idx];
+                                                       const glm::vec3 &rpoint = self.objects[rsample_idx];
+                                                       const glm::vec3 center = centroid(self.aabbs[parent]);
+                                                       if (distance(lpoint, center) < distance(rpoint, center)) {
+                                                           self.samples[parent] = lsample_idx;
+                                                       } else {
+                                                           self.samples[parent] = rsample_idx;
+                                                       }*/
+
+                                     {
+                                         // Get the KNN data for each sample
+
+                                         // Compute starting indices for KNN data
+                                         const int l_knn_start = lsample_idx * max_knns;
+                                         const int r_knn_start = rsample_idx * max_knns;
+
+                                         int l_current_knn_idx = -1;
+                                         int r_current_knn_idx = -1;
+
+                                         // Access KNN data for left sample
+                                         for (int i = 0; i < max_knns; ++i) {
+                                             int knn_idx = d_knns_ptr[l_knn_start + i];
+                                             if (knn_idx == -1) break; // End of valid KNN data
+                                             if(used_knn_indices[knn_idx] == -1){
+                                                 l_current_knn_idx = i;
+                                                 break;
+                                             }
+
+                                         }
+
+                                         // Access KNN data for right sample
+                                         for (int i = 0; i < max_knns; ++i) {
+                                             int knn_idx = d_knns_ptr[r_knn_start + i];
+                                             if (knn_idx == -1) break; // End of valid KNN data
+
+                                             if (used_knn_indices[knn_idx] == -1) {
+                                                 r_current_knn_idx = i;
+                                                 break;
+                                             }
+                                         }
+
+                                         // Fallback to last KNN if no unused indices were found
+                                         if (l_current_knn_idx == -1) l_current_knn_idx = max_knns - 1;
+                                         if (r_current_knn_idx == -1) r_current_knn_idx = max_knns - 1;
+
+                                         const float l_dist = d_dists_ptr[l_knn_start + l_current_knn_idx];
+                                         const float r_dist = d_dists_ptr[r_knn_start + r_current_knn_idx];
+
+                                         // Compare distances and choose sample with larger "empty sphere"
+                                         if (l_dist > r_dist) {
+                                             self.samples[parent] = lsample_idx;
+                                             atomicCAS(used_knn_indices + lsample_idx, -1, lsample_idx);
+                                         } else {
+                                             self.samples[parent] = rsample_idx;
+                                             atomicCAS(used_knn_indices + rsample_idx, -1, rsample_idx);
+                                         }
                                      }
                                      //pick a random sample from the two children
-                        /*             unsigned int hash = parent;
-                                     hash ^= hash >> 17;
-                                     hash ^= hash << 31;
-                                     hash ^= hash >> 8;
+                                     /*             unsigned int hash = parent;
+                                                  hash ^= hash >> 17;
+                                                  hash ^= hash << 31;
+                                                  hash ^= hash >> 8;
 
-                                     bool pick_left = (hash & 1) == 0; // Use least significant bit
+                                                  bool pick_left = (hash & 1) == 0; // Use least significant bit
 
-                                     if (pick_left) {
-                                         self.samples[parent] = lsample_idx;
-                                     } else {
-                                         self.samples[parent] = rsample_idx;
-                                     }*/
+                                                  if (pick_left) {
+                                                      self.samples[parent] = lsample_idx;
+                                                  } else {
+                                                      self.samples[parent] = rsample_idx;
+                                                  }*/
                                      // -- New Sampling End --
                                      // look the next parent...
                                      parent = self.nodes[parent].parent_idx;
@@ -585,7 +654,7 @@ namespace Bcg::cuda {
             // Ensure that host queries are enabled
             if (!this->query_host_enabled_) {
                 throw std::runtime_error(
-                    "Host query is not enabled. Set query_host_enabled_ to true before construction.");
+                        "Host query is not enabled. Set query_host_enabled_ to true before construction.");
             }
 
             // Ensure that host copies of nodes and samples are available
@@ -639,7 +708,7 @@ namespace Bcg::cuda {
             // Adjust the level if the requested level exceeds the maximum level
             if (samples.empty()) {
                 std::cerr << "Requested level " << level << " exceeds maximum tree depth " << max_level <<
-                        ". Collecting samples at maximum level instead." << std::endl;
+                          ". Collecting samples at maximum level instead." << std::endl;
                 level = max_level;
                 return get_samples(level); // Recurse with maximum level
             }
