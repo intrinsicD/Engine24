@@ -23,8 +23,8 @@ namespace Bcg {
 
     QueryResult KDTreeCpu::knn_query(const Vector<float, 3> &query_point, unsigned int num_closest) const {
         QueryResult result;
-        result.indices.resize(num_closest);
-        result.distances.resize(num_closest);
+        result.indices.resize(1, num_closest);
+        result.distances.resize(1, num_closest);
         nanoflann::KNNResultSet<float> resultSet(num_closest);
         resultSet.init(result.indices.data(), result.distances.data());
         index->findNeighbors(resultSet, &query_point[0], nanoflann::SearchParameters(10));
@@ -41,11 +41,11 @@ namespace Bcg {
         index->findNeighbors(resultSet, &query_point[0], params);
 
         size_t nMatches = items.size();
-        result.indices.resize(nMatches);
-        result.distances.resize(nMatches);
+        result.indices.resize(1, nMatches);
+        result.distances.resize(1, nMatches);
         for (size_t i = 0; i < nMatches; ++i) {
-            result.indices[i] = items[i].first;
-            result.distances[i] = items[i].second;
+            result.indices(0, i) = items[i].first;
+            result.distances(0, i) = items[i].second;
         }
 
         return result;

@@ -443,7 +443,7 @@ namespace Bcg::cuda {
             }
         }
 
-        void fill_samples(std::vector<std::vector<size_t>> *knns, std::vector<std::vector<float>> *dists) {
+        void fill_samples(const Eigen::Matrix<size_t, -1, -1> &knns, const Eigen::Matrix<float, -1, -1> &dists) {
             const unsigned int num_objects = objects_h_.size();
             const unsigned int num_internal_nodes = num_objects - 1;
             const unsigned int num_nodes = num_objects * 2 - 1;
@@ -459,21 +459,24 @@ namespace Bcg::cuda {
             thrust::device_vector<int> flag_container(num_internal_nodes, 0);
             const auto flags = flag_container.data().get();
 
-            thrust::device_vector<int> used_knn_indices_container(num_objects, -1);
-            auto used_knn_indices = used_knn_indices_container.data().get();
+            thrust::device_vector<int> offset_ptr(num_objects, 0);
+            auto d_offset_ptr = offset_ptr.data().get();
+
+            thrust::device_vector<int> alive_ptr(num_objects, -1);
+            auto d_alive_ptr = alive_ptr.data().get();
 
             // Create a device vector to store the indices of the used distances as an Nx64 matrix
-            constexpr int max_knns = 64;
+            int max_knns = knns.cols();
+            int num_points = knns.rows();
 
-            thrust::device_vector<int> d_knns(num_objects * max_knns, -1);
-            thrust::device_vector<float> d_dists(num_objects * max_knns, -1);
+            Eigen::Matrix<size_t, -1, -1> knns_ = knns.transpose();
+            Eigen::Matrix<float, -1, -1> dists_ = dists.transpose();
+
+            thrust::device_vector<size_t> d_knns(knns.size(), -1);
+            thrust::device_vector<float> d_dists(knns.size(), -1);
             //copy the knns and dists to device
-            for (int i = 0; i < knns->size(); ++i) {
-                for (int j = 0; j < (*knns)[i].size(); ++j) {
-                    d_knns[i * max_knns + j] = (*knns)[i][j];
-                    d_dists[i * max_knns + j] = (*dists)[i][j];
-                }
-            }
+            thrust::copy(knns_.data(), knns_.data() + knns_.size(), d_knns.begin());
+            thrust::copy(dists_.data(), dists_.data() + dists_.size(), d_dists.begin());
 
 
             auto d_knns_ptr = d_knns.data().get();
@@ -483,7 +486,8 @@ namespace Bcg::cuda {
             thrust::for_each(thrust::device,
                              thrust::make_counting_iterator<index_type>(num_internal_nodes),
                              thrust::make_counting_iterator<index_type>(num_nodes),
-                             [self, flags, d_knns_ptr, d_dists_ptr, used_knn_indices] __device__(index_type idx) {
+                             [self, flags, d_knns_ptr, d_dists_ptr, d_offset_ptr, d_alive_ptr, num_points, max_knns] __device__(
+                                     index_type idx) {
                                  unsigned int parent = self.nodes[idx].parent_idx;
                                  while (parent != 0xFFFFFFFF) // means idx == 0
                                  {
@@ -523,50 +527,82 @@ namespace Bcg::cuda {
 
                                      {
                                          // Get the KNN data for each sample
+                                         //assume column major order for knns and dists where each row belongs to a sample
 
-                                         // Compute starting indices for KNN data
-                                         const int l_knn_start = lsample_idx * max_knns;
-                                         const int r_knn_start = rsample_idx * max_knns;
+                                         int l_offset = d_offset_ptr[lsample_idx];
+                                         int r_offset = d_offset_ptr[rsample_idx];
 
-                                         int l_current_knn_idx = -1;
-                                         int r_current_knn_idx = -1;
-
-                                         // Access KNN data for left sample
-                                         for (int i = 0; i < max_knns; ++i) {
-                                             int knn_idx = d_knns_ptr[l_knn_start + i];
-                                             if (knn_idx == -1) break; // End of valid KNN data
-                                             if(used_knn_indices[knn_idx] == -1){
-                                                 l_current_knn_idx = i;
-                                                 break;
-                                             }
-
+                                         if (d_alive_ptr[lsample_idx] != -1) {
+                                             printf("Error: lsample_idx=%d should be alive\n", lsample_idx);
+                                             return;
                                          }
 
-                                         // Access KNN data for right sample
-                                         for (int i = 0; i < max_knns; ++i) {
-                                             int knn_idx = d_knns_ptr[r_knn_start + i];
-                                             if (knn_idx == -1) break; // End of valid KNN data
+                                         if (d_alive_ptr[rsample_idx] != -1) {
+                                             printf("Error: rsample_idx=%d should be alive\n", rsample_idx);
+                                             return;
+                                         }
 
-                                             if (used_knn_indices[knn_idx] == -1) {
-                                                 r_current_knn_idx = i;
-                                                 break;
+                                         int l_knn_idx = lsample_idx * max_knns + l_offset;
+                                         int r_knn_idx = rsample_idx * max_knns + r_offset;
+
+                                         int l_knn = d_knns_ptr[l_knn_idx];
+                                         int r_knn = d_knns_ptr[r_knn_idx];
+
+                                         bool found = d_alive_ptr[l_knn] == -1;
+                                         if(!found){
+                                             for (int i = l_offset; i < max_knns; i++) {
+                                                 l_knn_idx = lsample_idx * max_knns + i;
+                                                 l_knn = d_knns_ptr[l_knn_idx];
+                                                 if (d_alive_ptr[l_knn] == -1) {
+                                                     l_offset = i;
+                                                     found = true;
+                                                     break;
+                                                 }
+                                             }
+                                             if (!found) {
+                                                 printf("Error: lsample_idx=%d has no unused radii\n", lsample_idx);
+                                                 l_offset = max_knns - 1; // Fallback to the last neighbor
                                              }
                                          }
 
-                                         // Fallback to last KNN if no unused indices were found
-                                         if (l_current_knn_idx == -1) l_current_knn_idx = max_knns - 1;
-                                         if (r_current_knn_idx == -1) r_current_knn_idx = max_knns - 1;
+                                         found = d_alive_ptr[r_knn] == -1;
+                                         if(!found){
+                                             for (int i = r_offset; i < max_knns; i++) {
+                                                 r_knn_idx = rsample_idx * max_knns + i;
+                                                 r_knn = d_knns_ptr[r_knn_idx];
+                                                 if (d_alive_ptr[r_knn] == -1) {
+                                                     r_offset = i;
+                                                     found = true;
+                                                     break;
+                                                 }
+                                             }
+                                             if (!found) {
+                                                 printf("Error: rsample_idx=%d has no unused radii\n", rsample_idx);
+                                                 r_offset = max_knns - 1; // Fallback to the last neighbor
+                                             }
+                                         }
 
-                                         const float l_dist = d_dists_ptr[l_knn_start + l_current_knn_idx];
-                                         const float r_dist = d_dists_ptr[r_knn_start + r_current_knn_idx];
+                                         //row * cols + col
+                                         const float l_dist = d_dists_ptr[lsample_idx * max_knns + l_offset];
+                                         const float r_dist = d_dists_ptr[rsample_idx * max_knns + r_offset];
 
                                          // Compare distances and choose sample with larger "empty sphere"
                                          if (l_dist > r_dist) {
                                              self.samples[parent] = lsample_idx;
-                                             atomicCAS(used_knn_indices + lsample_idx, -1, lsample_idx);
+
+                                             //increment the offset because we used the sample in the current level
+                                             atomicCAS(d_offset_ptr + lsample_idx, l_offset, l_offset + 1);
+
+                                             //kill the other sample
+                                             atomicExch(d_alive_ptr + rsample_idx, 1);
                                          } else {
                                              self.samples[parent] = rsample_idx;
-                                             atomicCAS(used_knn_indices + rsample_idx, -1, rsample_idx);
+
+                                             //increment the offset because we used the sample in the current level
+                                             atomicCAS(d_offset_ptr + rsample_idx, r_offset, r_offset + 1);
+
+                                             //kill the other sample
+                                             atomicExch(d_alive_ptr + lsample_idx, 1);
                                          }
                                      }
                                      //pick a random sample from the two children

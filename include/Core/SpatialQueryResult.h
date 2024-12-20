@@ -7,14 +7,19 @@
 
 #include <vector>
 #include <cstddef>
+#include "Eigen/Core"
 
 namespace Bcg {
     struct QueryResult {
-        std::vector<size_t> indices;
-        std::vector<float> distances;
+/*        std::vector<size_t> indices;
+        std::vector<float> distances;*/
+
+        Eigen::Matrix<size_t, -1, -1> indices;
+        Eigen::Matrix<float, -1, -1> distances;
+
 
         bool empty() const {
-            return indices.empty();
+            return indices.size() == 0;
         }
     };
 }

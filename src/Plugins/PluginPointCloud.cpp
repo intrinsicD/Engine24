@@ -227,8 +227,8 @@ namespace Bcg {
                 auto query_point = positions[i];
                 auto result = kdtree.knn_query(query_point, num_closest);
                 Matrix<float, 3, 3> cov = Matrix<float, 3, 3>(0.0f);
-                for (auto &knn_idx: result.indices) {
-                    Vector<float, 3> diff = positions[knn_idx] - query_point;
+                for (long i = 0; i < result.indices.row(0).size(); ++i) {
+                    Vector<float, 3> diff = positions[result.indices(0, i)] - query_point;
                     cov += glm::outerProduct(diff, diff);
                 }
 

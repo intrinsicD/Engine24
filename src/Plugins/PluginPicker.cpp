@@ -85,9 +85,10 @@ namespace Bcg {
             }
 
             auto result = kdtree.radius_query(picked.spaces.osp, picked.entity.pick_radius);
-            if (!result.indices.empty()) {
-                picked.entity.vertex_idx = result.indices[0];
-                Engine::Dispatcher().trigger(Events::PickedVertex{entity_id, &result.indices});
+            if (!result.empty()) {
+                picked.entity.vertex_idx = result.indices(0, 0);
+                auto  indices = std::vector<size_t>(result.indices.data(), result.indices.data() + result.indices.size());
+                Engine::Dispatcher().trigger(Events::PickedVertex{entity_id, &indices});
             }
             Engine::Dispatcher().trigger(Events::PickedEntity{entity_id});
         } else {
