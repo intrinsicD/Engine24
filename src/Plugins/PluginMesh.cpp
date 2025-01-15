@@ -265,7 +265,7 @@ namespace Bcg {
             message += " Done.";
 
             Log::Info(message);
-            float d = glm::compMax(aabb.diagonal());
+            float d = 1.5 * glm::compMax(aabb.diagonal());
             CenterCameraAtDistance(aabb.center(), d).execute();
             ComputeSurfaceMeshVertexNormals(entity_id);
         }

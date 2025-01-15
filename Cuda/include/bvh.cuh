@@ -443,7 +443,7 @@ namespace Bcg::cuda {
             }
         }
 
-        void fill_samples(const Eigen::Matrix<size_t, -1, -1> &knns, const Eigen::Matrix<float, -1, -1> &dists) {
+        void fill_samples_new(const Eigen::Matrix<size_t, -1, -1> &knns, const Eigen::Matrix<float, -1, -1> &dists) {
             const unsigned int num_objects = objects_h_.size();
             const unsigned int num_internal_nodes = num_objects - 1;
             const unsigned int num_nodes = num_objects * 2 - 1;
@@ -465,8 +465,8 @@ namespace Bcg::cuda {
             thrust::device_vector<int> alive_ptr(num_objects, -1);
             auto d_alive_ptr = alive_ptr.data().get();
 
-            // Create a device vector to store the indices of the used distances as an Nx64 matrix
-            int max_knns = knns.cols();
+            // Create a device vector to store the indices of the used distances as an num_nodes x num_closest matrix
+            int num_closest = knns.cols();
             int num_points = knns.rows();
 
             Eigen::Matrix<size_t, -1, -1> knns_ = knns.transpose();
@@ -482,11 +482,20 @@ namespace Bcg::cuda {
             auto d_knns_ptr = d_knns.data().get();
             auto d_dists_ptr = d_dists.data().get();
 
+            struct distance_calculator {
+                __device__ __host__
+                float operator()(const glm::vec3 &point, const glm::vec3 &object) const noexcept {
+                    return (point.x - object.x) * (point.x - object.x) +
+                           (point.y - object.y) * (point.y - object.y) +
+                           (point.z - object.z) * (point.z - object.z);
+                }
+            };
+
             const auto self = this->get_device_repr();
             thrust::for_each(thrust::device,
                              thrust::make_counting_iterator<index_type>(num_internal_nodes),
                              thrust::make_counting_iterator<index_type>(num_nodes),
-                             [self, flags, d_knns_ptr, d_dists_ptr, d_offset_ptr, d_alive_ptr, num_points, max_knns] __device__(
+                             [self, flags, d_knns_ptr, d_dists_ptr, d_offset_ptr, d_alive_ptr, num_points, num_closest] __device__(
                                      index_type idx) {
                                  unsigned int parent = self.nodes[idx].parent_idx;
                                  while (parent != 0xFFFFFFFF) // means idx == 0
@@ -516,14 +525,140 @@ namespace Bcg::cuda {
                                      assert(lsample_idx < self.num_objects);
                                      assert(rsample_idx < self.num_objects);
 
-                                     /*                  const glm::vec3 &lpoint = self.objects[lsample_idx];
-                                                       const glm::vec3 &rpoint = self.objects[rsample_idx];
-                                                       const glm::vec3 center = centroid(self.aabbs[parent]);
-                                                       if (distance(lpoint, center) < distance(rpoint, center)) {
-                                                           self.samples[parent] = lsample_idx;
-                                                       } else {
-                                                           self.samples[parent] = rsample_idx;
-                                                       }*/
+                                     {
+                                         // Get the KNN data for each sample
+                                         //assume column major order for knns and dists where each row belongs to a sample
+
+
+                                         float sq_dist = distance_calculator()(self.objects[lsample_idx],
+                                                                    self.objects[rsample_idx]);
+
+                                         //find fist distance larger than dist for lsample_idx (loffset)
+                                         int loffset = 0;
+                                         for (int i = 0; i < num_closest; i++) {
+                                             if (d_dists_ptr[lsample_idx * num_closest + i] > sq_dist) {
+                                                 loffset = i;
+                                                 break;
+                                             }
+                                         }
+                                         //find fist distance larger than dist for rsample_idx (roffset)
+                                         int roffset = 0;
+                                         for (int i = 0; i < num_closest; i++) {
+                                             if (d_dists_ptr[rsample_idx * num_closest + i] > sq_dist) {
+                                                 roffset = i;
+                                                 break;
+                                             }
+                                         }
+
+                                         if (loffset >= num_closest) {
+                                             //think about requerying the knns and dists
+                                             printf("Error: lsample_idx=%d dist is larger than max_knn_dists\n",
+                                                    lsample_idx);
+                                         } else {
+                                             printf("loffset=%d\n", loffset);
+                                         }
+                                         if (roffset >= num_closest) {
+                                             //think about requerying the knns and dists
+                                             printf("Error: rsample_idx=%d dist is larger than max_knn_dists\n",
+                                                    rsample_idx);
+                                         } else {
+                                             printf("roffset=%d\n", roffset);
+                                         }
+
+                                         //compare loffset and roffset and choose the smaller one (because this means that the smaller offset point has less neighbors closer to it than the other)
+
+                                         if (loffset < roffset) {
+                                             self.samples[parent] = lsample_idx;
+                                         } else {
+                                             self.samples[parent] = rsample_idx;
+                                         }
+                                     }
+                                     // -- New Sampling End --
+                                     // look the next parent...
+                                     parent = self.nodes[parent].parent_idx;
+                                     __threadfence(); //WTF, i did not expect this to be necessary
+                                 }
+                                 return;
+                             });
+            //copy from samples_ to samples_h_
+            if (this->query_host_enabled_) {
+                samples_h_ = samples_;
+            }
+        }
+
+        //does somewhat is should, but still not correct
+        void fill_samples(const Eigen::Matrix<size_t, -1, -1> &knns, const Eigen::Matrix<float, -1, -1> &dists) {
+            const unsigned int num_objects = objects_h_.size();
+            const unsigned int num_internal_nodes = num_objects - 1;
+            const unsigned int num_nodes = num_objects * 2 - 1;
+
+            this->samples_.resize(num_nodes, 0xFFFFFFFF);
+
+            thrust::transform(nodes_.begin(), nodes_.end(),
+                              this->samples_.begin(),
+                              [] __device__(const node_type &n) {
+                                  return n.object_idx;
+                              });
+
+            thrust::device_vector<int> flag_container(num_internal_nodes, 0);
+            const auto flags = flag_container.data().get();
+
+            thrust::device_vector<int> offset_ptr(num_objects, 0);
+            auto d_offset_ptr = offset_ptr.data().get();
+
+            thrust::device_vector<int> alive_ptr(num_objects, -1);
+            auto d_alive_ptr = alive_ptr.data().get();
+
+            // Create a device vector to store the indices of the used distances as an num_nodes x num_closest matrix
+            int num_closest = knns.cols();
+            int num_points = knns.rows();
+
+            Eigen::Matrix<size_t, -1, -1> knns_ = knns.transpose();
+            Eigen::Matrix<float, -1, -1> dists_ = dists.transpose();
+
+            thrust::device_vector<size_t> d_knns(knns.size(), -1);
+            thrust::device_vector<float> d_dists(knns.size(), -1);
+            //copy the knns and dists to device
+            thrust::copy(knns_.data(), knns_.data() + knns_.size(), d_knns.begin());
+            thrust::copy(dists_.data(), dists_.data() + dists_.size(), d_dists.begin());
+
+
+            auto d_knns_ptr = d_knns.data().get();
+            auto d_dists_ptr = d_dists.data().get();
+
+            const auto self = this->get_device_repr();
+            thrust::for_each(thrust::device,
+                             thrust::make_counting_iterator<index_type>(num_internal_nodes),
+                             thrust::make_counting_iterator<index_type>(num_nodes),
+                             [self, flags, d_knns_ptr, d_dists_ptr, d_offset_ptr, d_alive_ptr, num_points, num_closest] __device__(
+                                     index_type idx) {
+                                 unsigned int parent = self.nodes[idx].parent_idx;
+                                 while (parent != 0xFFFFFFFF) // means idx == 0
+                                 {
+                                     const int old = atomicCAS(flags + parent, 0, 1);
+                                     if (old == 0) {
+                                         // this is the first thread entered here.
+                                         // wait the other thread from the other child node.
+                                         return;
+                                     }
+                                     assert(old == 1);
+                                     // here, the flag has already been 1. it means that this
+                                     // thread is the 2nd thread. merge AABB of both children.
+
+                                     const auto lidx = self.nodes[parent].left_idx;
+                                     const auto ridx = self.nodes[parent].right_idx;
+
+                                     assert(lidx != 0xFFFFFFFF);
+                                     assert(lidx != 0xFFFFFFFF);
+
+                                     // -- New Sampling Begin --
+                                     const auto lsample_idx = self.samples[lidx];
+                                     const auto rsample_idx = self.samples[ridx];
+
+                                     assert(lsample_idx != 0xFFFFFFFF);
+                                     assert(rsample_idx != 0xFFFFFFFF);
+                                     assert(lsample_idx < self.num_objects);
+                                     assert(rsample_idx < self.num_objects);
 
                                      {
                                          // Get the KNN data for each sample
@@ -542,16 +677,16 @@ namespace Bcg::cuda {
                                              return;
                                          }
 
-                                         int l_knn_idx = lsample_idx * max_knns + l_offset;
-                                         int r_knn_idx = rsample_idx * max_knns + r_offset;
+                                         int l_knn_idx = lsample_idx * num_closest + l_offset;
+                                         int r_knn_idx = rsample_idx * num_closest + r_offset;
 
                                          int l_knn = d_knns_ptr[l_knn_idx];
                                          int r_knn = d_knns_ptr[r_knn_idx];
 
                                          bool found = d_alive_ptr[l_knn] == -1;
-                                         if(!found){
-                                             for (int i = l_offset; i < max_knns; i++) {
-                                                 l_knn_idx = lsample_idx * max_knns + i;
+                                         if (!found) {
+                                             for (int i = l_offset; i < num_closest; i++) {
+                                                 l_knn_idx = lsample_idx * num_closest + i;
                                                  l_knn = d_knns_ptr[l_knn_idx];
                                                  if (d_alive_ptr[l_knn] == -1) {
                                                      l_offset = i;
@@ -561,14 +696,14 @@ namespace Bcg::cuda {
                                              }
                                              if (!found) {
                                                  printf("Error: lsample_idx=%d has no unused radii\n", lsample_idx);
-                                                 l_offset = max_knns - 1; // Fallback to the last neighbor
+                                                 l_offset = num_closest - 1; // Fallback to the last neighbor
                                              }
                                          }
 
                                          found = d_alive_ptr[r_knn] == -1;
-                                         if(!found){
-                                             for (int i = r_offset; i < max_knns; i++) {
-                                                 r_knn_idx = rsample_idx * max_knns + i;
+                                         if (!found) {
+                                             for (int i = r_offset; i < num_closest; i++) {
+                                                 r_knn_idx = rsample_idx * num_closest + i;
                                                  r_knn = d_knns_ptr[r_knn_idx];
                                                  if (d_alive_ptr[r_knn] == -1) {
                                                      r_offset = i;
@@ -578,13 +713,13 @@ namespace Bcg::cuda {
                                              }
                                              if (!found) {
                                                  printf("Error: rsample_idx=%d has no unused radii\n", rsample_idx);
-                                                 r_offset = max_knns - 1; // Fallback to the last neighbor
+                                                 r_offset = num_closest - 1; // Fallback to the last neighbor
                                              }
                                          }
 
                                          //row * cols + col
-                                         const float l_dist = d_dists_ptr[lsample_idx * max_knns + l_offset];
-                                         const float r_dist = d_dists_ptr[rsample_idx * max_knns + r_offset];
+                                         const float l_dist = d_dists_ptr[lsample_idx * num_closest + l_offset];
+                                         const float r_dist = d_dists_ptr[rsample_idx * num_closest + r_offset];
 
                                          // Compare distances and choose sample with larger "empty sphere"
                                          if (l_dist > r_dist) {
@@ -605,19 +740,6 @@ namespace Bcg::cuda {
                                              atomicExch(d_alive_ptr + lsample_idx, 1);
                                          }
                                      }
-                                     //pick a random sample from the two children
-                                     /*             unsigned int hash = parent;
-                                                  hash ^= hash >> 17;
-                                                  hash ^= hash << 31;
-                                                  hash ^= hash >> 8;
-
-                                                  bool pick_left = (hash & 1) == 0; // Use least significant bit
-
-                                                  if (pick_left) {
-                                                      self.samples[parent] = lsample_idx;
-                                                  } else {
-                                                      self.samples[parent] = rsample_idx;
-                                                  }*/
                                      // -- New Sampling End --
                                      // look the next parent...
                                      parent = self.nodes[parent].parent_idx;

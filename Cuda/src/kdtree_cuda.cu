@@ -135,7 +135,7 @@ namespace Bcg::cuda { ;
                 dists(i, j) = distances[sorted_indices[j]];
             }
         }
-        bvh.fill_samples(knns, dists);
+        bvh.fill_samples(knns.block(0, 1, points.size(), num_closest -1), dists.block(0, 1, points.size(), num_closest -1));
     }
 
 }
