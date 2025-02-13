@@ -135,7 +135,12 @@ namespace Bcg::cuda { ;
                 dists(i, j) = distances[sorted_indices[j]];
             }
         }
-        bvh.fill_samples(knns.block(0, 1, points.size(), num_closest -1), dists.block(0, 1, points.size(), num_closest -1));
+        //TODO fill samples
+        //the sampling i get also depends on how deep i descend in the tree... I need to think about what i want here...
+
+        //bvh.fill_samples_new(knns.block(0, 1, points.size(), num_closest -1), dists.block(0, 1, points.size(), num_closest -1)); //somehow broken
+        //bvh.fill_samples(knns.block(0, 1, points.size(), num_closest -1), dists.block(0, 1, points.size(), num_closest -1)); //better than fill_samples_new but still not really blue noise
+        bvh.fill_samples_closest_to_center(knns.block(0, 1, points.size(), num_closest -1), dists.block(0, 1, points.size(), num_closest -1));
     }
 
 }

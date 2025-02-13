@@ -531,7 +531,7 @@ namespace Bcg::cuda {
 
 
                                          float sq_dist = distance_calculator()(self.objects[lsample_idx],
-                                                                    self.objects[rsample_idx]);
+                                                                               self.objects[rsample_idx]);
 
                                          //find fist distance larger than dist for lsample_idx (loffset)
                                          int loffset = 0;
@@ -753,6 +753,118 @@ namespace Bcg::cuda {
             }
         }
 
+        void fill_samples_closest_to_center(const Eigen::Matrix<size_t, -1, -1> &knns,
+                                            const Eigen::Matrix<float, -1, -1> &dists) {
+            const unsigned int num_objects = objects_h_.size();
+            const unsigned int num_internal_nodes = num_objects - 1;
+            const unsigned int num_nodes = num_objects * 2 - 1;
+
+            this->samples_.resize(num_nodes, 0xFFFFFFFF);
+
+            thrust::transform(nodes_.begin(), nodes_.end(),
+                              this->samples_.begin(),
+                              [] __device__(const node_type &n) {
+                                  return n.object_idx;
+                              });
+
+            thrust::device_vector<int> flag_container(num_internal_nodes, 0);
+            const auto flags = flag_container.data().get();
+
+            thrust::device_vector<int> offset_ptr(num_objects, 0);
+            auto d_offset_ptr = offset_ptr.data().get();
+
+            thrust::device_vector<int> alive_ptr(num_objects, -1);
+            auto d_alive_ptr = alive_ptr.data().get();
+
+            // Create a device vector to store the indices of the used distances as an num_nodes x num_closest matrix
+            int num_closest = knns.cols();
+            int num_points = knns.rows();
+
+            Eigen::Matrix<size_t, -1, -1> knns_ = knns.transpose();
+            Eigen::Matrix<float, -1, -1> dists_ = dists.transpose();
+
+            thrust::device_vector<size_t> d_knns(knns.size(), -1);
+            thrust::device_vector<float> d_dists(knns.size(), -1);
+            //copy the knns and dists to device
+            thrust::copy(knns_.data(), knns_.data() + knns_.size(), d_knns.begin());
+            thrust::copy(dists_.data(), dists_.data() + dists_.size(), d_dists.begin());
+
+
+            auto d_knns_ptr = d_knns.data().get();
+            auto d_dists_ptr = d_dists.data().get();
+
+            const auto self = this->get_device_repr();
+            thrust::for_each(thrust::device,
+                             thrust::make_counting_iterator<index_type>(num_internal_nodes),
+                             thrust::make_counting_iterator<index_type>(num_nodes),
+                             [self, flags, d_knns_ptr, d_dists_ptr, d_offset_ptr, d_alive_ptr, num_points, num_closest] __device__(
+                                     index_type idx) {
+                                 unsigned int parent = self.nodes[idx].parent_idx;
+                                 while (parent != 0xFFFFFFFF) // means idx == 0
+                                 {
+                                     const int old = atomicCAS(flags + parent, 0, 1);
+                                     if (old == 0) {
+                                         // this is the first thread entered here.
+                                         // wait the other thread from the other child node.
+                                         return;
+                                     }
+                                     assert(old == 1);
+                                     // here, the flag has already been 1. it means that this
+                                     // thread is the 2nd thread. merge AABB of both children.
+
+                                     const auto lidx = self.nodes[parent].left_idx;
+                                     const auto ridx = self.nodes[parent].right_idx;
+
+                                     assert(lidx != 0xFFFFFFFF);
+                                     assert(lidx != 0xFFFFFFFF);
+
+                                     // -- New Sampling Begin --
+                                     const auto lsample_idx = self.samples[lidx];
+                                     const auto rsample_idx = self.samples[ridx];
+
+                                     assert(lsample_idx != 0xFFFFFFFF);
+                                     assert(rsample_idx != 0xFFFFFFFF);
+                                     assert(lsample_idx < self.num_objects);
+                                     assert(rsample_idx < self.num_objects);
+
+                                     //get the center of the AABB of each child
+                                     glm::vec3 l_center = centroid(self.aabbs[lidx]);
+                                     glm::vec3 r_center = centroid(self.aabbs[ridx]);
+
+                                     //compute the distance of the center of the AABB of each child
+                                     float l_dist = glm::length(l_center - self.objects[lsample_idx]);
+                                     float r_dist = glm::length(r_center - self.objects[rsample_idx]);
+
+                                     //compare the distances and choose the sample with the smaller distance
+                                     //if the distances are equal, choose the sample with the smaller distance to the parents aabb center
+
+                                     if (l_dist < r_dist) {
+                                         self.samples[parent] = lsample_idx;
+                                     } else if (l_dist > r_dist) {
+                                         self.samples[parent] = rsample_idx;
+                                     } else {
+                                         glm::vec3 p_center = centroid(self.aabbs[parent]);
+                                         if (glm::length(self.objects[lsample_idx] - p_center) <
+                                                 glm::length(self.objects[rsample_idx] - p_center)) {
+                                             self.samples[parent] = lsample_idx;
+                                         } else {
+                                             self.samples[parent] = rsample_idx;
+                                         }
+                                     }
+                                     atomicExch(flags + parent, 2);
+                                     // -- New Sampling End --
+                                     // look the next parent...
+                                     parent = self.nodes[parent].parent_idx;
+                                     __threadfence(); //WTF, i did not expect this to be necessary
+                                 }
+                                 return;
+                             });
+            //copy from samples_ to samples_h_
+            if (this->query_host_enabled_) {
+                samples_h_ = samples_;
+            }
+        }
+
         unsigned int compute_num_levels(unsigned int num_objects) {
             // Ensure that host copies of nodes are available
             if (nodes_h_.empty()) {
@@ -832,6 +944,8 @@ namespace Bcg::cuda {
             node_queue.push({0, 0}); // Start from the root node at level 0
 
             unsigned int max_level = 0;
+            const aabb &r_aabb = aabbs_h_[0]; //root aabb
+            float query_diameter = glm::length(r_aabb.max - r_aabb.min) / (1 << level);
 
             while (!node_queue.empty()) {
                 NodeInfo current = node_queue.front();
@@ -839,7 +953,34 @@ namespace Bcg::cuda {
 
                 max_level = std::max(max_level, current.current_level);
                 const node_type &node = nodes_h_[current.node_idx];
-                if (current.current_level == level || node.object_idx != 0xFFFFFFFF) {
+                const aabb &aabb = aabbs_h_[current.node_idx];
+
+                float node_diameter = glm::length(aabb.max - aabb.min);
+
+                if (node_diameter < query_diameter || node.object_idx != 0xFFFFFFFF) {
+                    // Collect the sample at this node
+                    samples.push_back(samples_h_[current.node_idx]);
+                    // No need to explore further from this node
+                    continue;
+                }
+
+                // If the current level is less than the desired level, keep traversing
+                if (node_diameter >= query_diameter) {
+                    // Get the current node
+                    const node_type &node = nodes_h_[current.node_idx];
+
+                    // Enqueue left child if it exists
+                    if (node.left_idx != 0xFFFFFFFF) {
+                        node_queue.push({node.left_idx, current.current_level + 1});
+                    }
+
+                    // Enqueue right child if it exists
+                    if (node.right_idx != 0xFFFFFFFF) {
+                        node_queue.push({node.right_idx, current.current_level + 1});
+                    }
+                }
+
+                /*if (current.current_level == level || node.object_idx != 0xFFFFFFFF) {
                     // Collect the sample at this node
                     samples.push_back(samples_h_[current.node_idx]);
                     // No need to explore further from this node
@@ -860,7 +1001,9 @@ namespace Bcg::cuda {
                     if (node.right_idx != 0xFFFFFFFF) {
                         node_queue.push({node.right_idx, current.current_level + 1});
                     }
-                }
+                }*/
+
+
             }
 
             // Adjust the level if the requested level exceeds the maximum level
