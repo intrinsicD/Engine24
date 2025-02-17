@@ -49,6 +49,7 @@ namespace Bcg::cuda {
             aabb *aabbs;
             object_type *objects;
             std::uint32_t *samples;
+            float *void_radius;
         };
 
         template<typename Object>
@@ -64,6 +65,7 @@ namespace Bcg::cuda {
             aabb const *aabbs;
             object_type const *objects;
             std::uint32_t const *samples;
+            float const *void_radius;
         };
 
         template<typename UInt>
@@ -255,6 +257,8 @@ namespace Bcg::cuda {
             this->nodes_.clear();
             this->samples_h_.clear();
             this->samples_.clear();
+            this->void_radius_h_.clear();
+            this->void_radius_.clear();
         }
 
         template<typename InputIterator>
@@ -280,7 +284,7 @@ namespace Bcg::cuda {
             return bvh_device<object_type>{
                     static_cast<unsigned int>(nodes_.size()),
                     static_cast<unsigned int>(objects_d_.size()),
-                    nodes_.data().get(), aabbs_.data().get(), objects_d_.data().get(), samples_.data().get()
+                    nodes_.data().get(), aabbs_.data().get(), objects_d_.data().get(), samples_.data().get(), void_radius_.data().get()
             };
         }
 
@@ -288,7 +292,7 @@ namespace Bcg::cuda {
             return cbvh_device<object_type>{
                     static_cast<unsigned int>(nodes_.size()),
                     static_cast<unsigned int>(objects_d_.size()),
-                    nodes_.data().get(), aabbs_.data().get(), objects_d_.data().get(), samples_.data().get()
+                    nodes_.data().get(), aabbs_.data().get(), objects_d_.data().get(), samples_.data().get(), void_radius_.data().get()
             };
         }
 
@@ -760,6 +764,7 @@ namespace Bcg::cuda {
             const unsigned int num_nodes = num_objects * 2 - 1;
 
             this->samples_.resize(num_nodes, 0xFFFFFFFF);
+            this->void_radius_.resize(num_nodes, 0.0);
 
             thrust::transform(nodes_.begin(), nodes_.end(),
                               this->samples_.begin(),
@@ -834,24 +839,64 @@ namespace Bcg::cuda {
                                      //compute the distance of the center of the AABB of each child
                                      float l_dist = glm::length(l_center - self.objects[lsample_idx]);
                                      float r_dist = glm::length(r_center - self.objects[rsample_idx]);
+                                     float l_aabb_dist = glm::length(self.aabbs[lidx].max - self.aabbs[lidx].min) / 2;
+                                     float r_aabb_dist = glm::length(self.aabbs[ridx].max - self.aabbs[ridx].min) / 2;
+                                     float l_r_dist = glm::length(self.objects[lsample_idx] - self.objects[rsample_idx]);
+                                     l_dist = std::max(l_aabb_dist - l_dist, l_r_dist);
+                                     r_dist =  std::max(r_aabb_dist - r_dist, l_r_dist);
+
+                                     glm::vec3 p_center = centroid(self.aabbs[parent]);
+                                     l_dist = glm::length(p_center - self.objects[lsample_idx]);
+                                     r_dist = glm::length(p_center - self.objects[rsample_idx]);
+                                     float p_aabb_dist = glm::length(self.aabbs[parent].max - self.aabbs[parent].min) / 2;
+                                     l_dist = std::max(p_aabb_dist - l_dist, l_r_dist);
+                                     r_dist =  std::max(p_aabb_dist - r_dist, l_r_dist);
 
                                      //compare the distances and choose the sample with the smaller distance
                                      //if the distances are equal, choose the sample with the smaller distance to the parents aabb center
+                                     std::uint32_t choice = 0xFFFFFFFF;
+                                     if (l_dist > r_dist) {
+                                         choice = lsample_idx;
+                                         self.void_radius[parent] = l_dist;
+                                     } else if (l_dist <= r_dist) {
+                                         choice = rsample_idx;
+                                         self.void_radius[parent] = r_dist;
+                                     } else {
+                                         glm::vec3 p_center = centroid(self.aabbs[parent]);
+                                         l_dist = glm::length(p_center - self.objects[lsample_idx]);
+                                         r_dist = glm::length(p_center - self.objects[rsample_idx]);
+                                         float p_aabb_dist = glm::length(self.aabbs[parent].max - self.aabbs[parent].min) / 2;
+                                         l_dist = std::max(p_aabb_dist - l_dist, l_r_dist);
+                                         r_dist =  std::max(p_aabb_dist - r_dist, l_r_dist);
 
+                                         if (l_dist > r_dist) {
+                                             choice = lsample_idx;
+                                             self.void_radius[parent] = l_dist;
+                                         } else {
+                                             choice = rsample_idx;
+                                             self.void_radius[parent] = r_dist;
+                                         }
+                                     }
+                          /*           std::uint32_t choice = 0xFFFFFFFF;
                                      if (l_dist < r_dist) {
-                                         self.samples[parent] = lsample_idx;
+                                         choice = lsample_idx;
                                      } else if (l_dist > r_dist) {
-                                         self.samples[parent] = rsample_idx;
+                                         choice = rsample_idx;
                                      } else {
                                          glm::vec3 p_center = centroid(self.aabbs[parent]);
                                          if (glm::length(self.objects[lsample_idx] - p_center) <
                                                  glm::length(self.objects[rsample_idx] - p_center)) {
-                                             self.samples[parent] = lsample_idx;
+                                             choice = lsample_idx;
                                          } else {
-                                             self.samples[parent] = rsample_idx;
+                                             choice = rsample_idx;
                                          }
-                                     }
-                                     atomicExch(flags + parent, 2);
+                                     }*/
+
+                                     self.samples[parent] = choice;
+                                     /*float l_r_disc = glm::length(self.objects[lsample_idx] - self.objects[rsample_idx]);
+                                     float aabb_disc = glm::length(self.aabbs[parent].max - self.aabbs[parent].min) / 2;
+                                     self.void_radius[parent] = std::max(std::max(l_r_disc, aabb_disc), std::max(l_dist, r_dist));
+*/
                                      // -- New Sampling End --
                                      // look the next parent...
                                      parent = self.nodes[parent].parent_idx;
@@ -862,6 +907,7 @@ namespace Bcg::cuda {
             //copy from samples_ to samples_h_
             if (this->query_host_enabled_) {
                 samples_h_ = samples_;
+                void_radius_h_ = void_radius_;
             }
         }
 
@@ -945,7 +991,7 @@ namespace Bcg::cuda {
 
             unsigned int max_level = 0;
             const aabb &r_aabb = aabbs_h_[0]; //root aabb
-            float query_diameter = glm::length(r_aabb.max - r_aabb.min) / (1 << level);
+            float query_diameter = glm::length(r_aabb.max - r_aabb.min) / 2 / (1 << level);
 
             while (!node_queue.empty()) {
                 NodeInfo current = node_queue.front();
@@ -955,7 +1001,8 @@ namespace Bcg::cuda {
                 const node_type &node = nodes_h_[current.node_idx];
                 const aabb &aabb = aabbs_h_[current.node_idx];
 
-                float node_diameter = glm::length(aabb.max - aabb.min);
+                float node_diameter = glm::length(aabb.max - aabb.min) / 2;
+                node_diameter = void_radius_h_[current.node_idx];
 
                 if (node_diameter < query_diameter || node.object_idx != 0xFFFFFFFF) {
                     // Collect the sample at this node
@@ -1039,6 +1086,8 @@ namespace Bcg::cuda {
         thrust::device_vector<node_type> nodes_;
         thrust::host_vector<std::uint32_t> samples_h_;
         thrust::device_vector<std::uint32_t> samples_;
+        thrust::host_vector<float> void_radius_h_;
+        thrust::device_vector<float> void_radius_;
         bool query_host_enabled_;
     };
 } // lbvh
