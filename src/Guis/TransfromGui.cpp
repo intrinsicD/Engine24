@@ -10,54 +10,38 @@
 #include "Camera.h"
 
 namespace Bcg::Gui {
-    bool Show(Transform &transform) {
+    bool Show(Transform<float> &transform) {
         bool changed = false;
-        ImGui::Text("Local");
-        Show(transform.local());
-        ImGui::Separator();
-        TransformParameters t_params = decompose(transform.local());
-        if (Show(t_params)) {
-            transform.set_local(compose(t_params));
-            changed = true;
-        }
-        ImGui::Text("World");
-        Show(transform.world());
-        ImGui::Separator();
-        TransformParameters w_params = decompose(transform.world());
-        Show(w_params);
-        if (ImGui::CollapsingHeader("Cached Parent World")) {
-            Show(transform.get_cached_parent_world());
+        Show(transform.get_params());
+        if (ImGui::CollapsingHeader("Matrix")) {
+            Show(transform.matrix());
         }
         return changed;
     }
 
-    bool Show(TransformParameters &t_params) {
+    bool Show(Transform<float>::Parameters &t_params) {
         ImGui::PushID(&t_params);
         ImGui::Text("Scale");
-        bool changed = ImGui::InputFloat3("##Scale", glm::value_ptr(t_params.scale));
+        bool changed = ImGui::InputFloat3("##Scale", t_params.scale.data());
         ImGui::Text("Rotation");
-        changed |= ImGui::InputFloat3("##Rotation", glm::value_ptr(t_params.angle_axis));
+        changed |= ImGui::InputFloat("Angle", &t_params.angle);
+        changed |= ImGui::InputFloat3("Axis", t_params.axis.data());
         ImGui::Text("Translation");
-        changed |= ImGui::InputFloat3("##Translation", glm::value_ptr(t_params.position));
+        changed |= ImGui::InputFloat3("##Translation", t_params.position.data());
         ImGui::PopID();
         return changed;
     }
 
-    void Show(const glm::mat4 &m) {
-        ImGui::Text("%f %f %f %f\n"
-                    "%f %f %f %f\n"
-                    "%f %f %f %f\n"
-                    "%f %f %f %f",
-                    m[0][0], m[1][0], m[2][0], m[3][0],
-                    m[0][1], m[1][1], m[2][1], m[3][1],
-                    m[0][2], m[1][2], m[2][2], m[3][2],
-                    m[0][3], m[1][3], m[2][3], m[3][3]);
+    void Show(const Eigen::Matrix<float, 4, 4> &m) {
+        std::stringstream ss;
+        ss << m;
+        ImGui::Text("%s", ss.str().c_str());
     }
 
-    bool Equals(const glm::mat4 &m1, const glm::mat4 &m2) {
+    bool Equals(const Eigen::Matrix<float, 4, 4> &m1, const Eigen::Matrix<float, 4, 4> &m2) {
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 4; j++) {
-                if (m1[i][j] != m2[i][j]) {
+                if (m1(i, j) != m2(i, j)) {
                     return false;
                 }
             }
@@ -65,7 +49,7 @@ namespace Bcg::Gui {
         return true;
     }
 
-    bool ShowGuizmo(glm::mat4 &mat, glm::mat4 &delta, bool &is_scaling) {
+    bool ShowGuizmo(Eigen::Matrix<float, 4, 4> &mat, Eigen::Matrix<float, 4, 4> &delta, bool &is_scaling) {
         static ImGuizmo::MODE currentGizmoMode(ImGuizmo::LOCAL);
         static ImGuizmo::OPERATION currentGizmoOperation(ImGuizmo::ROTATE);
 
@@ -124,13 +108,14 @@ namespace Bcg::Gui {
         auto win_size = PluginGraphics::get_window_size();
         ImGuizmo::SetRect(win_pos.x, win_pos.y, io.DisplaySize.x, io.DisplaySize.y);
         auto &camera = Engine::Context().get<Camera>();
-        Matrix<float, 4, 4> m = mat;
-        ImGuizmo::Manipulate(glm::value_ptr(camera.view), glm::value_ptr(camera.proj), currentGizmoOperation, currentGizmoMode,
-                             glm::value_ptr(m), nullptr,
+        Eigen::Matrix<float, 4, 4> m = mat;
+        ImGuizmo::Manipulate(glm::value_ptr(camera.view), glm::value_ptr(camera.proj), currentGizmoOperation,
+                             currentGizmoMode,
+                             m.data(), nullptr,
                              use_snap ? &snap[0] : nullptr, use_bound_sizing ? bounds : nullptr,
                              use_bound_sizing_snap ? bounds_snap : nullptr);
-        delta = glm::inverse(mat) * m;
+        delta = mat.inverse() * m;
 
-        return Equals(delta, glm::mat4(1.0f));
+        return Equals(delta, Eigen::Matrix<float, 4, 4>::Identity());
     }
 }

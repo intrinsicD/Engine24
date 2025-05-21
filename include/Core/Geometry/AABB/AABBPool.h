@@ -9,8 +9,8 @@
 #include "AABB.h"
 
 namespace Bcg{
-    using AABBPool = Pool<AABB>;
-    using AABBHandle = PoolHandle<AABB>;
+    using AABBPool = Pool<AABB<float, 3>>;
+    using AABBHandle = PoolHandle<AABB<float, 3>>;
 }
 
 #endif //AABBPOOL_H

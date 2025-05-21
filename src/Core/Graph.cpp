@@ -213,8 +213,8 @@ namespace Bcg{
         has_garbage_ = false;
     }
 
-    Property<Vector<IndexType, 2>> Graph::get_edges(){
-        auto indices = edge_property<Vector<IndexType, 2>>("e:indices");
+    Property<Eigen::Vector<IndexType, 2>> Graph::get_edges(){
+        auto indices = edge_property<Eigen::Vector<IndexType, 2>>("e:indices");
         for (auto e: edges()) {
             indices[e] = {get_vertex(get_halfedge(e, 0)).idx(), get_vertex(get_halfedge(e, 1)).idx()};
         }

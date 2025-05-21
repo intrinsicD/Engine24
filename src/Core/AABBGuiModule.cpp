@@ -41,22 +41,22 @@ namespace Bcg {
         }
         if (show_pool_gui) {
             if (ImGui::Begin("AABB Pool", &show_pool_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
-                auto &pool = Engine::Context().get<Pool<AABB> >();
+                auto &pool = Engine::Context().get<Pool<AABB<float, 3>> >();
                 render(pool);
             }
             ImGui::End();
         }
     }
 
-    void AABBGuiModule::render(const PoolHandle<AABB> &h_aabb) {
+    void AABBGuiModule::render(const PoolHandle<AABB<float, 3>> &h_aabb) {
         Gui::Show(h_aabb);
     }
 
-    void AABBGuiModule::render(const AABB &aabb) {
+    void AABBGuiModule::render(const AABB<float, 3> &aabb) {
         Gui::Show(aabb);
     }
 
-    void AABBGuiModule::render(Pool<AABB> &pool) {
+    void AABBGuiModule::render(Pool<AABB<float, 3>> &pool) {
         Gui::Show(*pool.ref_count.base());
         Gui::Show(*pool.objects.base());
         if (ImGui::CollapsingHeader("Properties")) {

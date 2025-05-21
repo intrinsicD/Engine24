@@ -19,13 +19,13 @@ namespace Bcg::cuda {
 
         operator bool() const;
 
-        void build(const std::vector<Vector<float, 3>> &positions);
+        void build(const std::vector<Eigen::Vector<float, 3>> &positions);
 
-        [[nodiscard]] QueryResult knn_query(const Vector<float, 3> &query_point, unsigned int num_closest) const;
+        [[nodiscard]] QueryResult knn_query(const Eigen::Vector<float, 3> &query_point, unsigned int num_closest) const;
 
-        [[nodiscard]] QueryResult radius_query(const Vector<float, 3> &query_point, float radius) const;
+        [[nodiscard]] QueryResult radius_query(const Eigen::Vector<float, 3> &query_point, float radius) const;
 
-        [[nodiscard]] QueryResult closest_query(const Vector<float, 3> &query_point) const;
+        [[nodiscard]] QueryResult closest_query(const Eigen::Vector<float, 3> &query_point) const;
 
         std::vector<std::uint32_t> get_samples(unsigned int level) const;
 

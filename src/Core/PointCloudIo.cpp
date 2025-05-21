@@ -104,11 +104,11 @@ namespace Bcg {
         if (flags.use_colors) {
             auto colors = pc.get_vertex_property<ColorType>("v:color");
             for (const auto v: pc.vertices()) {
-                out << Map(positions[v]).transpose() << " " << intensities[v] << " " << Map(colors[v]).transpose() << std::endl;
+                out << positions[v].transpose() << " " << intensities[v] << " " << colors[v].transpose() << std::endl;
             }
         } else {
             for (const auto v: pc.vertices()) {
-                out << Map(positions[v]).transpose() << " " << intensities[v] << std::endl;
+                out << positions[v].transpose() << " " << intensities[v] << std::endl;
             }
         }
         return false;
@@ -124,11 +124,11 @@ namespace Bcg {
         if (flags.use_colors) {
             auto colors = pc.get_vertex_property<ColorType>("v:color");
             for (const auto v: pc.vertices()) {
-                out << Map(positions[v]).transpose() << " " << intensities[v] << " " << Map(colors[v]).transpose() << std::endl;
+                out << positions[v].transpose() << " " << intensities[v] << " " << colors[v].transpose() << std::endl;
             }
         } else {
             for (const auto v: pc.vertices()) {
-                out << Map(positions[v]).transpose() << " " << intensities[v] << std::endl;
+                out << positions[v].transpose() << " " << intensities[v] << std::endl;
             }
         }
         return false;
@@ -144,11 +144,11 @@ namespace Bcg {
         if (flags.use_colors) {
             auto colors = pc.get_vertex_property<ColorType>("v:color");
             for (const auto v: pc.vertices()) {
-                out << Map(positions[v]).transpose() << " " << intensities[v] << " " << Map(colors[v]).transpose() << std::endl;
+                out << positions[v].transpose() << " " << intensities[v] << " " << colors[v].transpose() << std::endl;
             }
         } else {
             for (const auto v: pc.vertices()) {
-                out << Map(positions[v]).transpose() << " " << intensities[v] << std::endl;
+                out << positions[v].transpose() << " " << intensities[v] << std::endl;
             }
         }
         return false;
@@ -257,11 +257,11 @@ namespace Bcg {
         if (flags.use_colors) {
             auto colors = pci.vertices.get_vertex_property<ColorType>("v:color");
             for (const auto v: pci.vertices) {
-                out << Map(positions[v]).transpose() << " " << intensities[v] << " " << Map(colors[v]).transpose() << std::endl;
+                out << positions[v].transpose() << " " << intensities[v] << " " << colors[v].transpose() << std::endl;
             }
         } else {
             for (const auto v: pci.vertices) {
-                out << Map(positions[v]).transpose() << " " << intensities[v] << std::endl;
+                out << positions[v].transpose() << " " << intensities[v] << std::endl;
             }
         }
         return false;
@@ -277,11 +277,11 @@ namespace Bcg {
         if (flags.use_colors) {
             auto colors = pci.vertices.get_vertex_property<ColorType>("v:color");
             for (const auto v: pci.vertices) {
-                out << Map(positions[v]).transpose() << " " << intensities[v] << " " << Map(colors[v]).transpose() << std::endl;
+                out << positions[v].transpose() << " " << intensities[v] << " " << colors[v].transpose() << std::endl;
             }
         } else {
             for (const auto v: pci.vertices) {
-                out << Map(positions[v]).transpose() << " " << intensities[v] << std::endl;
+                out << positions[v].transpose() << " " << intensities[v] << std::endl;
             }
         }
         return false;
@@ -297,11 +297,11 @@ namespace Bcg {
         if (flags.use_colors) {
             auto colors = pci.vertices.get_vertex_property<ColorType>("v:color");
             for (const auto v: pci.vertices) {
-                out << Map(positions[v]).transpose() << " " << intensities[v] << " " << Map(colors[v]).transpose() << std::endl;
+                out << positions[v].transpose() << " " << intensities[v] << " " << colors[v].transpose() << std::endl;
             }
         } else {
             for (const auto v: pci.vertices) {
-                out << Map(positions[v]).transpose() << " " << intensities[v] << std::endl;
+                out << positions[v].transpose() << " " << intensities[v] << std::endl;
             }
         }
         return false;

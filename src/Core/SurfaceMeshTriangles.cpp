@@ -5,10 +5,10 @@
 #include "SurfaceMesh.h"
 
 namespace Bcg {
-    FaceProperty<Vector<unsigned int, 3>> SurfaceMeshTriangles(SurfaceMesh &mesh) {
-        auto triangles = mesh.get_face_property<Vector<unsigned int, 3 >>("f:indices");
+    FaceProperty<Eigen::Vector<unsigned int, 3>> SurfaceMeshTriangles(SurfaceMesh &mesh) {
+        auto triangles = mesh.get_face_property<Eigen::Vector<unsigned int, 3 >>("f:indices");
         if (!triangles) {
-            triangles = mesh.add_face_property<Vector<unsigned int, 3 >>("f:indices");
+            triangles = mesh.add_face_property<Eigen::Vector<unsigned int, 3 >>("f:indices");
         }
         for (auto f: mesh.faces()) {
             std::vector<unsigned int> faceIndices;

@@ -33,8 +33,8 @@ namespace Bcg {
         fscalarfield.vector() = scalarfield;
     }
 
-    FaceProperty<Vector<IndexType, 3>> HalfedgeMeshInterface::get_triangles() const {
-        auto triangles = faces.face_property<Vector<IndexType, 3>>("f:triangles");
+    FaceProperty<Eigen::Vector<IndexType, 3>> HalfedgeMeshInterface::get_triangles() const {
+        auto triangles = faces.face_property<Eigen::Vector<IndexType, 3>>("f:triangles");
         for (auto f: faces) {
             auto h = get_halfedge(f);
             triangles[f] = {to_vertex(h).idx(), to_vertex(next_halfedge(h)).idx(), to_vertex(prev_halfedge(h)).idx()};

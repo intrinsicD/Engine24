@@ -132,7 +132,7 @@ namespace Bcg {
 
         void set_edge_scalarfield(const std::vector<ScalarType> &escalarfield);
 
-        Property<Vector<IndexType, 2>> get_edges() const;
+        Property<Eigen::Vector<IndexType, 2>> get_edges() const;
 
         inline bool is_isolated(Vertex v) const {
             return halfedges.is_valid(get_halfedge(v)) && halfedges.is_valid(get_opposite(get_halfedge(v)));

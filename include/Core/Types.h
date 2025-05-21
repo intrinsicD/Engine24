@@ -19,17 +19,17 @@ namespace Bcg {
     using WeightType = ScalarType;
 
 //! Point type
-    using PointType = Vector<ScalarType, 3>;
+    using PointType = Eigen::Vector<ScalarType, 3>;
 
 //! Normal type
-    using NormalType = Vector<ScalarType, 3>;
+    using NormalType = Eigen::Vector<ScalarType, 3>;
 
 //! Color type
 //! \details RGB values in the range of [0,1]
-    using ColorType = Vector<ScalarType, 3>;
+    using ColorType = Eigen::Vector<ScalarType, 3>;
 
 //! Texture coordinate type
-    using TexCoordType = Vector<ScalarType, 2>;
+    using TexCoordType = Eigen::Vector<ScalarType, 2>;
 
 // define index type to be used
 #ifdef BCG_INDEX_TYPE_64

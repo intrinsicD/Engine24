@@ -10,9 +10,9 @@
 #include "entt/fwd.hpp"
 
 namespace Bcg::Gui {
-    void Show(const PoolHandle<AABB> &h_aabb);
+    void Show(const PoolHandle<AABB<float, 3>> &h_aabb);
 
-    void Show(const AABB &aabb);
+    void Show(const AABB<float, 3> &aabb);
 
     void Show(entt::entity entity_id);
 }

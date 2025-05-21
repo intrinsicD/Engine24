@@ -9,7 +9,7 @@
 
 namespace Bcg {
     Engine::Engine() {
-        entt::locator<Bcg::Engine *>::emplace<Bcg::Engine *>(this);
+        entt::locator<Engine *>::emplace<Engine *>(this);
         state.ctx().emplace<DoubleCommandBuffer>();
         state.ctx().emplace<Commands::InitializationCommands>();
         state.ctx().emplace<Commands::StartupCommands>();
@@ -41,12 +41,12 @@ namespace Bcg {
     }
 
     void Engine::handle_command_double_buffer() {
-        auto &double_cmd_buffer = Engine::Context().get<DoubleCommandBuffer>();
+        auto &double_cmd_buffer = Context().get<DoubleCommandBuffer>();
         double_cmd_buffer.handle();
     }
 
     void Engine::handle_buffered_events() {
-        Engine::Dispatcher().update();
-        Engine::Dispatcher().clear();
+        Dispatcher().update();
+        Dispatcher().clear();
     }
 }

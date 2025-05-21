@@ -28,8 +28,8 @@ namespace Bcg::Gui {
                 auto samples = kdtree.get_samples(level);
 
                 auto vertices = GetPrimitives(entity_id).vertices();
-                auto v_color = vertices->get_or_add<Vector<float, 3>>("v_samples", Vector<float, 3>(0.0f));
-                std::fill(v_color.vector().begin(), v_color.vector().end(), Vector<float, 3>(0.0f));
+                auto v_color = vertices->get_or_add<Eigen::Vector<float, 3>>("v_samples", Eigen::Vector<float, 3>(0.0f));
+                std::fill(v_color.vector().begin(), v_color.vector().end(), Eigen::Vector<float, 3>(0.0f));
                 auto v_radius = vertices->get_or_add<float>("v_radius", 0.0f);
 
                 auto &view = Engine::State().get<SphereView>(entity_id);
@@ -38,7 +38,7 @@ namespace Bcg::Gui {
                 std::fill(v_radius.vector().begin(), v_radius.vector().end(), view.uniform_radius);
 
                 for (size_t i = 0; i < samples.size(); ++i) {
-                    v_color[samples[i]] = Vector<float, 3>(1.0f, 0.0f, 0.0f);
+                    v_color[samples[i]] = Eigen::Vector<float, 3>(1.0f, 0.0f, 0.0f);
                     v_radius[samples[i]] = view.uniform_radius + 5;
                 }
                 Commands::SetColorSphereView cmd(entity_id, "v_samples");

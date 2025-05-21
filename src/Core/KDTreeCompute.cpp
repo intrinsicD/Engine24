@@ -678,8 +678,8 @@ namespace Bcg {
         }
 
         struct Node {
-            Vector<float, 3> boundingBoxMin;
-            Vector<float, 3> boundingBoxMax;
+            Eigen::Vector<float, 3> boundingBoxMin;
+            Eigen::Vector<float, 3> boundingBoxMax;
             int leftChild;
             int rightChild;
             int parent;

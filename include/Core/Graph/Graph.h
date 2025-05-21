@@ -271,7 +271,7 @@ namespace Bcg {
         inline bool has_garbage() const { return has_garbage_; }
 
 
-        Property<Vector<IndexType, 2>> get_edges();
+        Property<Eigen::Vector<IndexType, 2>> get_edges();
 
         inline bool is_isolated(Vertex v) const {
             return is_valid(get_halfedge(v)) && is_valid(get_opposite(get_halfedge(v)));

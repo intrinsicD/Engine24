@@ -10,6 +10,10 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <memory>
+#include <unordered_map>
+
+#include "bgfx.cmake/bgfx/3rdparty/glslang/SPIRV/spvIR.h"
 
 namespace Bcg {
     // Ranges object to support Python-like iteration. Use with `range()`.
@@ -137,6 +141,56 @@ namespace Bcg {
     std::string ReadTextFile(const std::string &filename);
 
     std::vector<float> ParseNumbers(const std::string &s, unsigned int &num_lines, const char *skip_chars = nullptr);
+
+    // Custom key iterator
+    template<typename Key, typename Value>
+    class KeyIterator {
+    public:
+        using MapIterator = typename std::unordered_map<Key, Value>::const_iterator;
+
+        explicit KeyIterator(MapIterator it) : map_iterator(it) {}
+
+        const Key& operator*() const {
+            return map_iterator->first;
+        }
+
+        KeyIterator& operator++() {
+            ++map_iterator;
+            return *this;
+        }
+
+        bool operator!=(const KeyIterator& other) const {
+            return map_iterator != other.map_iterator;
+        }
+
+    private:
+        MapIterator map_iterator;
+    };
+
+    // Custom value iterator
+    template<typename Key, typename Value>
+    class ValueIterator {
+    public:
+        using MapIterator = std::unordered_map<Key, Value>::const_iterator;
+
+        explicit ValueIterator(MapIterator it) : map_iterator(it) {}
+
+        const Value& operator*() const {
+            return map_iterator->second;
+        }
+
+        ValueIterator& operator++() {
+            ++map_iterator;
+            return *this;
+        }
+
+        bool operator!=(const ValueIterator& other) const {
+            return map_iterator != other.map_iterator;
+        }
+
+    private:
+        MapIterator map_iterator;
+    };
 
 }
 

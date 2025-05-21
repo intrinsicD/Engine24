@@ -14,14 +14,14 @@ namespace Bcg {
 
     }
 
-    void KDTreeCpu::build(const std::vector<Vector<float, 3>> &positions) {
+    void KDTreeCpu::build(const std::vector<Eigen::Vector<float, 3>> &positions) {
         dataset = std::make_unique<VectorAdapter>(positions);
         index = std::make_unique<Type>(3, *dataset,
                                        nanoflann::KDTreeSingleIndexAdaptorParams(10 /* max leaf */));
         index->buildIndex();
     }
 
-    QueryResult KDTreeCpu::knn_query(const Vector<float, 3> &query_point, unsigned int num_closest) const {
+    QueryResult KDTreeCpu::knn_query(const Eigen::Vector<float, 3> &query_point, unsigned int num_closest) const {
         QueryResult result;
         result.indices.resize(1, num_closest);
         result.distances.resize(1, num_closest);
@@ -31,7 +31,7 @@ namespace Bcg {
         return result;
     }
 
-    QueryResult KDTreeCpu::radius_query(const Vector<float, 3> &query_point, float radius) const {
+    QueryResult KDTreeCpu::radius_query(const Eigen::Vector<float, 3> &query_point, float radius) const {
         QueryResult result;
         nanoflann::SearchParameters params;
         std::vector<nanoflann::ResultItem<size_t, float>> items;
@@ -51,7 +51,7 @@ namespace Bcg {
         return result;
     }
 
-    QueryResult KDTreeCpu::closest_query(const Vector<float, 3> &query_point) const {
+    QueryResult KDTreeCpu::closest_query(const Eigen::Vector<float, 3> &query_point) const {
         return knn_query(query_point, 1);
     }
 

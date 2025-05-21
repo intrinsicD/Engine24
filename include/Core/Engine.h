@@ -50,6 +50,7 @@ namespace Bcg {
             return Context().emplace<Plugin>(Dispatcher());
         }
 
+    private:
         entt::registry state;
         entt::dispatcher dispatcher;
     };

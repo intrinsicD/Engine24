@@ -18,26 +18,26 @@ namespace Bcg {
     }
 
     void Application::init(int width, int height, const char *title) {
-        Engine::Dispatcher().trigger<Bcg::Events::Initialize>();
-        Engine::Context().get<Bcg::Commands::InitializationCommands>().handle();
+        Engine::Dispatcher().trigger<Events::Initialize>();
+        Engine::Context().get<Commands::InitializationCommands>().handle();
 
-        if (Bcg::PluginGraphics::init(width, height, title)) {
-            Bcg::PluginGraphics::set_window_title(title);
+        if (PluginGraphics::init(width, height, title)) {
+            PluginGraphics::set_window_title(title);
             auto &modules = Engine::Context().emplace<Modules>();
             modules.add(std::make_unique<MeshModule>());
 
             auto &gui_modules = Engine::Context().emplace<GuiModules>();
             gui_modules.add(std::make_unique<MeshGuiModule>());
 
-            Bcg::Plugins::init();
-            Bcg::Plugins::activate_all();
-            Bcg::Engine::handle_command_double_buffer();
+            Plugins::init();
+            Plugins::activate_all();
+            Engine::handle_command_double_buffer();
         }
     }
 
     void Application::run() {
-        Engine::Dispatcher().trigger<Bcg::Events::Startup>();
-        Engine::Context().get<Bcg::Commands::StartupCommands>().handle();
+        Engine::Dispatcher().trigger<Events::Startup>();
+        Engine::Context().get<Commands::StartupCommands>().handle();
 
         auto &modules = Engine::Context().get<Modules>();
         modules.activate();
@@ -46,42 +46,42 @@ namespace Bcg {
         gui_modules.activate();
         // Game loop
 
-        auto &main_loop = Engine::Context().get<Bcg::Commands::MainLoop>();
-        while (!Bcg::PluginGraphics::should_close()) {
+        auto &main_loop = Engine::Context().get<Commands::MainLoop>();
+        while (!PluginGraphics::should_close()) {
             main_loop.handle(Engine::Dispatcher());
             {
-                Bcg::PluginGraphics::poll_events();
-                Bcg::Plugins::begin_frame_all();
-                Bcg::Plugins::update_all();
-                Bcg::Engine::handle_command_double_buffer();
-                Bcg::Engine::handle_buffered_events();
+                PluginGraphics::poll_events();
+                Plugins::begin_frame_all();
+                Plugins::update_all();
+                Engine::handle_command_double_buffer();
+                Engine::handle_buffered_events();
             }
             {
-                Bcg::PluginGraphics::clear_framebuffer();
-                Bcg::Plugins::render_all();
-                Bcg::Engine::handle_command_double_buffer();
-                Bcg::Engine::handle_buffered_events();
-                Bcg::PluginGraphics::start_gui();
-                Bcg::Plugins::render_menu();
-                Bcg::Plugins::render_gui();
+                PluginGraphics::clear_framebuffer();
+                Plugins::render_all();
+                Engine::handle_command_double_buffer();
+                Engine::handle_buffered_events();
+                PluginGraphics::start_gui();
+                Plugins::render_menu();
+                Plugins::render_gui();
                 gui_modules.render_menu();
                 gui_modules.render_gui();
-                Bcg::PluginGraphics::end_gui();
-                Bcg::Engine::handle_command_double_buffer();
-                Bcg::Engine::handle_buffered_events();
-                Bcg::Plugins::end_frame();
-                Bcg::PluginGraphics::swap_buffers();
+                PluginGraphics::end_gui();
+                Engine::handle_command_double_buffer();
+                Engine::handle_buffered_events();
+                Plugins::end_frame();
+                PluginGraphics::swap_buffers();
             }
         }
     }
 
     void Application::cleanup() {
-        Engine::Dispatcher().trigger<Bcg::Events::Shutdown>();
-        Engine::Context().get<Bcg::Commands::ShutdownCommands>().handle();
+        Engine::Dispatcher().trigger<Events::Shutdown>();
+        Engine::Context().get<Commands::ShutdownCommands>().handle();
         auto &modules = Engine::Context().get<Modules>();
         modules.deactivate();
         auto &gui_modules = Engine::Context().emplace<GuiModules>();
         gui_modules.deactivate();
-        Bcg::Plugins::deactivate_all();
+        Plugins::deactivate_all();
     }
 }

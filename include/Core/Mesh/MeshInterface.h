@@ -170,7 +170,7 @@ namespace Bcg {
 
         void set_face_scalarfield(const std::vector<ScalarType> &fscalarfield);
 
-        FaceProperty<Vector<IndexType, 3>> get_triangles() const;
+        FaceProperty<Eigen::Vector<IndexType, 3>> get_triangles() const;
 
         void reserve(size_t n_vertices, size_t n_edges, size_t n_faces);
 

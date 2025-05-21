@@ -13,8 +13,8 @@
 namespace Bcg{
     // Component container for handles to different bounding volumes
     struct BoundingVolumes{
-        PoolHandle<AABB> h_aabb;
-        PoolHandle<Sphere> h_sphere;
+        PoolHandle<AABB<float, 3>> h_aabb;
+        PoolHandle<Sphere<float, 3>> h_sphere;
     };
 }
 #endif //ENGINE24_BOUNDINGVOLUMES_H

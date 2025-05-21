@@ -31,7 +31,7 @@ namespace Bcg::Commands {
             property_name = std::string("v_colors");
         }
 
-        auto v_color = vertices->get<Vector<float, 3>>(property_name);
+        auto v_color = vertices->get<Eigen::Vector<float, 3>>(property_name);
         auto b_color = openGlState.get_buffer(property_name);
 
         if (v_color) {
@@ -46,8 +46,8 @@ namespace Bcg::Commands {
             b_color.buffer_data(v_color.data(),
                                 num_vertices * 3 * sizeof(float),
                                 Buffer::STATIC_DRAW);
-            view.min_color = Map(v_color.vector()).minCoeff();
-            view.max_color = Map(v_color.vector()).maxCoeff();
+            view.min_color = MapConst(v_color).vector().minCoeff();
+            view.max_color = MapConst(v_color).vector().maxCoeff();
             if(view.min_color == view.max_color){
                 view.min_color = 0;
             }
@@ -59,7 +59,7 @@ namespace Bcg::Commands {
         } else {
             view.use_uniform_color = true;
         }
-        view.color.bound_buffer_name = property_name.c_str();
+        view.color.bound_buffer_name = property_name;
 
 
         if (v_color) {

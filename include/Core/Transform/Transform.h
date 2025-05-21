@@ -1,4 +1,3 @@
-
 //
 // Created by alex on 26.07.24.
 //
@@ -6,206 +5,80 @@
 #ifndef ENGINE24_TRANSFORM_H
 #define ENGINE24_TRANSFORM_H
 
-#include "glm/gtc/type_ptr.hpp"
 #include "MatVec.h"
-
-#define GLM_ENABLE_EXPERIMENTAL
-
-#include "glm/gtx/matrix_decompose.hpp"
-#include "glm/gtx/quaternion.hpp"
-#include "StringTraits.h"
-#include "GlmToEigen.h"
-
-#include <numbers>
 
 namespace Bcg {
     template<typename T>
-    struct TransformBase {
-        const Eigen::Matrix<T, 4, 4> &local() const {
-            return m_local;
+    class Transform {
+    public:
+        struct Parameters {
+            Eigen::Vector<T, 3> scale{T(1), T(1), T(1)};
+            Eigen::Vector<T, 3> axis{T(0), T(0), T(1)};
+            T angle{T(0)};
+            Eigen::Vector<T, 3> position{T(0), T(0), T(0)};
+        };
+
+        Transform() = default;
+
+        explicit Transform(const Parameters &params_) : params(params_) {
+            params.axis.normalize();
+            cached_matrix = compute_matrix(params);
         }
 
-        void set_local(const Eigen::Matrix<T, 4, 4> &m) {
-            m_local = m;
+        const Eigen::Matrix<T, 4, 4> &matrix() const {
+            if (dirty) {
+                cached_matrix = compute_matrix(params);
+                dirty = false;
+            }
+            return cached_matrix;
+        }
+
+        void set_params(const Parameters &params_) {
+            params = params_;
+            params.axis.normalize();
             dirty = true;
         }
 
-        Eigen::Matrix<T, 4, 4> world() const {
-            return cached_parent_world * m_local;
+        const Parameters &get_params() const {
+            return params;
         }
 
-        void set_parent_world(const Eigen::Matrix<T, 4, 4> &parent_world) {
-            cached_parent_world = parent_world;
-            dirty = true;
+        Parameters &get_params() {
+            return params;
         }
 
-        const Eigen::Matrix<T, 4, 4> &get_cached_parent_world() const {
-            return cached_parent_world;
+        Eigen::Vector<T, 3> operator *(const Eigen::Vector<T, 3> &v) const {
+            return (matrix() * v.homogeneous()).template head<3>();
         }
 
-        bool dirty = false;
+        Eigen::Matrix<T, 4, 4> operator *(const Eigen::Matrix<T, 4, 4> &m) const {
+            return matrix() * m;
+        }
+
+        Transform operator *(const Transform &other) const {
+            Transform result;
+            result.params.scale = params.scale.cwiseProduct(other.params.scale);
+            Eigen::AngleAxis<T> rot = Eigen::AngleAxis<T>(params.angle, params.axis) * Eigen::AngleAxis<T>(other.params.angle, other.params.axis);
+            result.params.angle = rot.angle();
+            result.params.axis = rot.axis();
+            // Compose position: scale and rotate other's position, then add this position
+            result.params.position = params.scale.asDiagonal() * (Eigen::AngleAxis<T>(params.angle, params.axis) * other.params.position) + params.position;
+            result.dirty = true;
+            return result;
+        }
+
     private:
-        Eigen::Matrix<T, 4, 4> m_local = Matrix<T, 4, 4>(1.0f);
-        Eigen::Matrix<T, 4, 4> cached_parent_world = Matrix<T, 4, 4>(1.0f);
+        static Eigen::Matrix<T, 4, 4> compute_matrix(const Parameters &p) {
+            Eigen::Matrix<T, 4, 4> m = Eigen::Matrix<T, 4, 4>::Identity();
+            m.block<3, 3>(0, 0) = p.scale.asDiagonal() * Eigen::AngleAxis<T>(p.angle, p.axis).toRotationMatrix();
+            m.block<3, 1>(0, 3) = p.position;
+            return m;
+        }
+
+        Parameters params;
+        mutable Eigen::Matrix<T, 4, 4> cached_matrix = Eigen::Matrix<T, 4, 4>::Identity();
+        mutable bool dirty{true};
     };
-
-    using Transformf = TransformBase<float>;
-    using Transform = Transformf;
-
-    struct TransformParameters {
-        glm::vec3 scale;
-        glm::vec3 angle_axis;
-        glm::vec3 position;
-    };
-
-    void pre_transform(Transform &t, glm::mat4 &other);
-
-    void post_transform(Transform &t, glm::mat4 &other);
-
-    TransformParameters decompose(const glm::mat4 &matrix);
-
-    glm::mat4 compose(const TransformParameters &params);
-
-    void set_transform_params(Transform &t, const TransformParameters &params);
-
-//! OpenGL matrix for translation by vector t
-    template<typename T, glm::qualifier Q = glm::defaultp>
-    glm::mat<4, 4, T, Q> translation_matrix(const glm::vec<3, T, Q> &t) {
-        glm::mat<4, 4, T, Q> m(T(0.0));
-        m[0][0] = m[1][1] = m[2][2] = m[3][3] = T(1.0);
-        m[3][0] = t[0];
-        m[3][1] = t[1];
-        m[3][2] = t[2];
-        return m;
-    }
-
-//! OpenGL matrix for scaling x/y/z by s
-    template<typename T, glm::qualifier Q = glm::defaultp>
-    glm::mat<4, 4, T, Q> scaling_matrix(const T s) {
-        glm::mat<4, 4, T, Q> m(T(0.0));
-        m[0][0] = m[1][1] = m[2][2] = s;
-        m[3][3] = T(1.0);
-        return m;
-    }
-
-//! OpenGL matrix for scaling x/y/z by the components of s
-    template<typename T, glm::qualifier Q = glm::defaultp>
-    glm::mat<4, 4, T, Q> scaling_matrix(const glm::vec<3, T, Q> s) {
-        glm::mat<4, 4, T, Q> m(T(0.0));
-        m[0][0] = s[0];
-        m[1][1] = s[1];
-        m[2][2] = s[2];
-        m[3][3] = T(1.0);
-
-        return m;
-    }
-
-//! OpenGL matrix for rotation around x-axis by given angle (in degrees)
-    template<typename T, glm::qualifier Q = glm::defaultp>
-    glm::mat<4, 4, T, Q> rotation_matrix_x(T angle) {
-        T ca = cos(angle * T(std::numbers::pi / 180.0));
-        T sa = sin(angle * T(std::numbers::pi / 180.0));
-
-        glm::mat<4, 4, T, Q> m(T(0.0));
-        m[0][0] = T(1.0);
-        m[1][1] = ca;
-        m[2][1] = -sa;
-        m[2][2] = ca;
-        m[1][2] = sa;
-        m[3][3] = T(1.0);
-
-        return m;
-    }
-
-//! OpenGL matrix for rotation around y-axis by given angle (in degrees)
-    template<typename T, glm::qualifier Q = glm::defaultp>
-    glm::mat<4, 4, T, Q> rotation_matrix_y(T angle) {
-        T ca = cos(angle * T(std::numbers::pi / T(180.0)));
-        T sa = sin(angle * T(std::numbers::pi / T(180.0)));
-
-        glm::mat<4, 4, T, Q> m(T(0.0));
-        m[0][0] = ca;
-        m[2][0] = sa;
-        m[1][1] = T(1.0);
-        m[0][2] = -sa;
-        m[2][2] = ca;
-        m[3][3] = T(1.0);
-
-        return m;
-    }
-
-//! OpenGL matrix for rotation around z-axis by given angle (in degrees)
-    template<typename T, glm::qualifier Q = glm::defaultp>
-    glm::mat<4, 4, T, Q> rotation_matrix_z(T angle) {
-        T ca = cos(angle * T(std::numbers::pi / 180.0));
-        T sa = sin(angle * T(std::numbers::pi / 180.0));
-
-        glm::mat<4, 4, T, Q> m(T(0.0));
-        m[0][0] = ca;
-        m[1][0] = -sa;
-        m[0][1] = sa;
-        m[1][1] = ca;
-        m[2][2] = 1.0;
-        m[3][3] = 1.0;
-
-        return m;
-    }
-
-//! OpenGL matrix for rotation around given axis by given angle (in degrees)
-    template<typename T, glm::qualifier Q = glm::defaultp>
-    glm::mat<4, 4, T, Q> rotation_matrix(const glm::vec<3, T, Q> &axis, T angle) {
-        glm::mat<4, 4, T> m(T(0.0));
-        T a = angle * T(std::numbers::pi / 180.0);
-        T c = cosf(a);
-        T s = sinf(a);
-        T one_m_c = T(1) - c;
-        glm::vec<3, T, Q> ax = glm::normalize(axis);
-
-        m[0][0] = ax[0] * ax[0] * one_m_c + c;
-        m[1][0] = ax[0] * ax[1] * one_m_c - ax[2] * s;
-        m[2][0] = ax[0] * ax[2] * one_m_c + ax[1] * s;
-
-        m[0][1] = ax[1] * ax[0] * one_m_c + ax[2] * s;
-        m[1][1] = ax[1] * ax[1] * one_m_c + c;
-        m[2][1] = ax[1] * ax[2] * one_m_c - ax[0] * s;
-
-        m[0][2] = ax[2] * ax[0] * one_m_c - ax[1] * s;
-        m[1][2] = ax[2] * ax[1] * one_m_c + ax[0] * s;
-        m[2][2] = ax[2] * ax[2] * one_m_c + c;
-
-        m[3][3] = T(1.0);
-
-        return m;
-    }
-
-//! OpenGL matrix for rotation specified by unit quaternion
-    template<typename T, glm::qualifier Q = glm::defaultp>
-    glm::mat<4, 4, T, Q> rotation_matrix(const glm::vec<4, T, Q> &quat) {
-        glm::mat<4, 4, T, Q> m(T(0.0));
-        T s1(1);
-        T s2(2);
-
-        m[0][0] = s1 - s2 * quat[1] * quat[1] - s2 * quat[2] * quat[2];
-        m[0][1] = s2 * quat[0] * quat[1] + s2 * quat[3] * quat[2];
-        m[0][2] = s2 * quat[0] * quat[2] - s2 * quat[3] * quat[1];
-
-        m[1][0] = s2 * quat[0] * quat[1] - s2 * quat[3] * quat[2];
-        m[1][1] = s1 - s2 * quat[0] * quat[0] - s2 * quat[2] * quat[2];
-        m[1][2] = s2 * quat[1] * quat[2] + s2 * quat[3] * quat[0];
-
-        m[2][0] = s2 * quat[0] * quat[2] + s2 * quat[3] * quat[1];
-        m[2][1] = s2 * quat[1] * quat[2] - s2 * quat[3] * quat[0];
-        m[2][2] = s1 - s2 * quat[0] * quat[0] - s2 * quat[1] * quat[1];
-
-        m[3][3] = T(1.0);
-
-        return m;
-    }
-
-    template<typename T, glm::qualifier Q = glm::defaultp>
-    glm::mat<3, 3, T, Q> linear(const glm::mat<4, 4, T, Q> &m) {
-        return glm::mat<3, 3, T, Q>(m);
-    }
 }
 
 #endif //ENGINE24_TRANSFORM_H

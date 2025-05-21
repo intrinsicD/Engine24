@@ -19,7 +19,7 @@ namespace Bcg ::Gui {
     }
 
     void Show(const Hierarchy &hierarchy) {
-        ImGui::Text("Parent: %d", hierarchy.parent);
+        ImGui::Text("Parent: %zu", hierarchy.parent);
         if (ImGui::CollapsingHeader(("Children #" + std::to_string(hierarchy.children.size())).c_str())) {
             Show(hierarchy.children);
         }
