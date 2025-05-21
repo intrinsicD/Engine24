@@ -21,7 +21,7 @@ namespace Bcg {
         unsigned int num_spheres;
 
         bool use_uniform_color = true;
-        Vector<float, 3> uniform_color{1.0, 1.0, 1.0};
+        Eigen::Vector<float, 3> uniform_color{1.0, 1.0, 1.0};
         bool use_uniform_radius = true;
         float uniform_radius = 10.0;
 

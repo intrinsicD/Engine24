@@ -201,8 +201,8 @@ namespace Bcg {
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_PROGRAM_POINT_SIZE);
-        Vector<int, 2> fbs = PluginGraphics::get_framebuffer_size();
-        Engine::Dispatcher().enqueue(Events::Callback::FramebufferResize{global_window.handle, fbs.x, fbs.y});
+        Eigen::Vector<int, 2> fbs = PluginGraphics::get_framebuffer_size();
+        Engine::Dispatcher().enqueue(Events::Callback::FramebufferResize{global_window.handle, fbs.x(), fbs.y()});
         Engine::Context().emplace<FileWatcher>();
         return true;
     }
@@ -303,37 +303,37 @@ namespace Bcg {
         Plugin::deactivate();
     }
 
-    Vector<int, 2> PluginGraphics::get_window_pos() {
+    Eigen::Vector<int, 2> PluginGraphics::get_window_pos() {
         int windowPosX, windowPosY;
         glfwGetWindowPos(global_window.handle, &windowPosX, &windowPosY);
         return {windowPosX, windowPosY};
     }
 
-    Vector<int, 2> PluginGraphics::get_window_size() {
+    Eigen::Vector<int, 2> PluginGraphics::get_window_size() {
         int width, height;
         glfwGetWindowSize(global_window.handle, &width, &height);
         return {width, height};
     }
 
-    Vector<int, 2> PluginGraphics::get_framebuffer_size() {
+    Eigen::Vector<int, 2> PluginGraphics::get_framebuffer_size() {
         int width, height;
         glfwGetFramebufferSize(global_window.handle, &width, &height);
         return {width, height};
     }
 
-    Vector<int, 4> PluginGraphics::get_viewport() {
-        Vector<int, 4> viewport;
-        glGetIntegerv(GL_VIEWPORT, glm::value_ptr(viewport));
+    Eigen::Vector<int, 4> PluginGraphics::get_viewport() {
+        Eigen::Vector<int, 4> viewport;
+        glGetIntegerv(GL_VIEWPORT, viewport.data());
         return std::move(viewport);
     }
 
-    Vector<int, 4> PluginGraphics::get_viewport_dpi_adjusted() {
-        Vector<int, 4> vp = get_viewport();
+    Eigen::Vector<int, 4> PluginGraphics::get_viewport_dpi_adjusted() {
+        Eigen::Vector<int, 4> vp = get_viewport();
         return vp * int(dpi_scaling());
     }
 
     bool PluginGraphics::read_depth_buffer(int x, int y, float &zf) {
-        Vector<int, 4> viewport = get_viewport();
+        Eigen::Vector<int, 4> viewport = get_viewport();
 
         // in OpenGL y=0 is at the 'bottom'
         y = viewport[3] - y;

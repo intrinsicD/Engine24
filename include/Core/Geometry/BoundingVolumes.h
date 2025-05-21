@@ -11,6 +11,7 @@
 #include "Sphere.h"
 
 namespace Bcg{
+    // Component container for handles to different bounding volumes
     struct BoundingVolumes{
         PoolHandle<AABB> h_aabb;
         PoolHandle<Sphere> h_sphere;

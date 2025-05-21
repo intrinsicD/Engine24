@@ -14,15 +14,15 @@ namespace Bcg {
     };
 
     template<typename T, int D>
-    struct DimTraits<Vector<T, D> > {
-        static size_t GetDims(const Vector<T, D> &t) {
+    struct DimTraits<Eigen::Vector<T, D> > {
+        static size_t GetDims(const Eigen::Vector<T, D> &t) {
             return D;
         }
     };
 
     template<typename T>
-    struct DimTraits<Vector<T, -1> > {
-        static size_t GetDims(const Vector<T, -1> &t) {
+    struct DimTraits<Eigen::Vector<T, -1> > {
+        static size_t GetDims(const Eigen::Vector<T, -1> &t) {
             return t.size();
         }
     };

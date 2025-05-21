@@ -19,7 +19,7 @@ namespace Bcg{
         Program program;
         unsigned int num_indices;
 
-        Vector<float, 3> uniform_color{1.0, 1.0, 1.0};
+        Eigen::Vector<float, 3> uniform_color{1.0, 1.0, 1.0};
         bool use_uniform_color = true;
         float min_color = 0;
         float max_color = 1;

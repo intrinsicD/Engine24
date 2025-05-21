@@ -1,3 +1,4 @@
+
 //
 // Created by alex on 26.07.24.
 //
@@ -6,6 +7,7 @@
 #define ENGINE24_TRANSFORM_H
 
 #include "glm/gtc/type_ptr.hpp"
+#include "MatVec.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 
@@ -17,34 +19,38 @@
 #include <numbers>
 
 namespace Bcg {
-    struct Transform {
-        const glm::mat4 &local() const {
+    template<typename T>
+    struct TransformBase {
+        const Eigen::Matrix<T, 4, 4> &local() const {
             return m_local;
         }
 
-        void set_local(const glm::mat4 &m) {
+        void set_local(const Eigen::Matrix<T, 4, 4> &m) {
             m_local = m;
             dirty = true;
         }
 
-        glm::mat4 world() const {
+        Eigen::Matrix<T, 4, 4> world() const {
             return cached_parent_world * m_local;
         }
 
-        void set_parent_world(const glm::mat4 &parent_world) {
+        void set_parent_world(const Eigen::Matrix<T, 4, 4> &parent_world) {
             cached_parent_world = parent_world;
             dirty = true;
         }
 
-        const glm::mat4 &get_cached_parent_world() const {
+        const Eigen::Matrix<T, 4, 4> &get_cached_parent_world() const {
             return cached_parent_world;
         }
 
         bool dirty = false;
     private:
-        glm::mat4 m_local = glm::mat4(1.0f);
-        glm::mat4 cached_parent_world = glm::mat4(1.0f);
+        Eigen::Matrix<T, 4, 4> m_local = Matrix<T, 4, 4>(1.0f);
+        Eigen::Matrix<T, 4, 4> cached_parent_world = Matrix<T, 4, 4>(1.0f);
     };
+
+    using Transformf = TransformBase<float>;
+    using Transform = Transformf;
 
     struct TransformParameters {
         glm::vec3 scale;

@@ -9,32 +9,24 @@
 #include "StringTraits.h"
 
 namespace Bcg {
-    template<typename T>
-    struct SphereBase {
-        Vector<T, 3> center;
+    template<typename T, int N>
+    struct Sphere {
+        Eigen::Vector<T, N> center;
         T radius;
+
+        Sphere() : center(0), radius(0) {}
+
+        Sphere(const Eigen::Vector<T, N> &center, T radius) : center(center), radius(radius) {}
+
+        T volume() const {
+            // Calculate the volume of the nd sphere
+            return (1.0 / 2) * M_PI * std::pow(radius, N);
+        }
+
+        T surface_area() const {
+            // Calculate the surface area of the nd sphere
+            return N * M_PI * std::pow(radius, N - 1);
+        }
     };
-
-    using Spheref = SphereBase<float>;
-    using Sphere = Spheref;
-
-    Vector<float, 3> ClosestPoint(const Sphere &sphere, const Vector<float, 3> &point);
-
-    float Volume(const Sphere &sphere);
-
-    float SurfaceArea(const Sphere &sphere);
-
-    float Distance(const Sphere &sphere, const Vector<float, 3> &point);
-
-    float UnsignedDistance(const Sphere &sphere, const Vector<float, 3> &point);
-
-    template<typename T>
-    struct StringTraits<SphereBase<T>> {
-    static std::string ToString(const SphereBase<T> &sphere) {
-        std::stringstream ss;
-        ss << MapConst(sphere.center).transpose() << ", " << sphere.radius;
-        return ss.str();
-    }
-};
 }
 #endif //ENGINE24_SPHERE_H

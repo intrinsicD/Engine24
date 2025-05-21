@@ -54,15 +54,15 @@ namespace Bcg {
 
         static void swap_buffers();
 
-        static Vector<int, 2> get_window_pos();
+        static Eigen::Vector<int, 2> get_window_pos();
 
-        static Vector<int, 2> get_window_size();
+        static Eigen::Vector<int, 2> get_window_size();
 
-        static Vector<int, 2> get_framebuffer_size();
+        static Eigen::Vector<int, 2> get_framebuffer_size();
 
-        static Vector<int, 4> get_viewport();
+        static Eigen::Vector<int, 4> get_viewport();
 
-        static Vector<int, 4> get_viewport_dpi_adjusted();
+        static Eigen::Vector<int, 4> get_viewport_dpi_adjusted();
 
         static float dpi_scaling();
 

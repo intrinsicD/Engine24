@@ -1,11 +1,9 @@
 add_subdirectory(Geometry)
 add_subdirectory(Input)
 target_sources(Engine24 PRIVATE
-        AABB.cpp
         AABBGuiModule.cpp
         Camera.cpp
         Color.cpp
-        CoordinateSystems.cpp
         Engine.cpp
         Entity.cpp
         EntityCommands.cpp
@@ -18,28 +16,22 @@ target_sources(Engine24 PRIVATE
         KDTreeCompute.cpp
         KDTreeCpu.cpp
         Keyboard.cpp
-        Line.cpp
         Logger.cpp
         MeshInterface.cpp
         MeshView.cpp
         Mouse.cpp
-        Picker.cpp
-        Plane.cpp
         Plugin.cpp
         Plugins.cpp
         PointCloud.cpp
         PointCloudInterface.cpp
         PointCloudIo.cpp
         PointCloudCompute.cpp
-        Segment.cpp
-        Sphere.cpp
         SurfaceMesh.cpp
         SurfaceMeshCompute.cpp
         SurfaceMeshIo.cpp
         SurfaceMeshTriangles.cpp
         SphereView.cpp
         Timer.cpp
-        Triangle.cpp
         Transform.cpp
         Utils.cpp
         VectorfieldView.cpp

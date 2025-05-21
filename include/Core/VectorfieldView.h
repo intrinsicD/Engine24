@@ -21,7 +21,7 @@ namespace Bcg {
         Program program;
         unsigned int num_vectors;
 
-        Vector<float, 3> uniform_color{1.0, 1.0, 1.0};
+        Eigen::Vector<float, 3> uniform_color{1.0, 1.0, 1.0};
         bool use_uniform_color = true;
         float uniform_length = 1;
         bool use_uniform_length = true;

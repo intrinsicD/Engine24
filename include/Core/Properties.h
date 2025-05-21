@@ -50,8 +50,7 @@ namespace Bcg {
     };
 
     template<typename T, int N>
-    std::ostream &operator<<(std::ostream &os, const Vector<T, N> &vec) {
-        Eigen::Vector<T, N> v = MapConst(vec);
+    std::ostream &operator<<(std::ostream &os, const Eigen::Vector<T, N> &v) {
         os << v.transpose();
         return os;
     }
