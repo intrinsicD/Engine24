@@ -40,12 +40,12 @@ namespace Bcg {
     Mouse &PluginInput::set_mouse_cursor_position(GLFWwindow *window, double xpos, double ypos) {
         auto &mouse = Engine::Context().get<Mouse>();
         if (mouse.gui_captured) return mouse;
-        auto &camera = Engine::Context().get<Camera>();
+        auto &camera = Engine::Context().get<Camera<float>>();
         float zf;
         PluginGraphics::read_depth_buffer(xpos, ypos, zf);
         mouse.cursor.current = PointTransformer(PluginGraphics::dpi_scaling(), PluginGraphics::get_viewport_dpi_adjusted(),
-                                                camera.proj,
-                                                camera.view).apply(ScreenSpacePos(xpos, ypos), zf);
+                                                camera.get_proj(),
+                                                camera.get_view()).apply(ScreenSpacePos(xpos, ypos), zf);
         return mouse;
     }
 
@@ -114,7 +114,7 @@ namespace Bcg {
     void PluginInput::end_frame() {
         auto &mouse = Engine::Context().get<Mouse>();
         mouse.scrolling = false;
-        mouse.scroll_offset = glm::vec2(0.0f);
+        mouse.scroll_offset.setZero();
     }
 
     void PluginInput::deactivate() {

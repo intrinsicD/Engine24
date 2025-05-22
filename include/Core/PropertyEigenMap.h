@@ -33,29 +33,13 @@ namespace Bcg {
 
     template<typename T, int N>
     inline Eigen::Map<Eigen::Matrix<T, N, Eigen::Dynamic> > Map(std::vector<Eigen::Vector<T, N> > &data) {
-        return Eigen::Map<Eigen::Matrix<T, N, Eigen::Dynamic> >(data.data(), N, data.size());
+        return Eigen::Map<Eigen::Matrix<T, N, Eigen::Dynamic> >(data[0].data(), N, data.size());
     }
 
     template<typename T, int N>
     inline Eigen::Map<const Eigen::Matrix<T, N, Eigen::Dynamic>>
     MapConst(const std::vector<Eigen::Vector<T, N> > &data) {
-        return Eigen::Map<const Eigen::Matrix<T, N, Eigen::Dynamic>>(data.data(), N, data.size());
-    }
-
-    // Mapping a std::vector of glm::vec to an Eigen::Matrix
-    template<typename T, int N, glm::qualifier Q = glm::defaultp>
-    inline Eigen::Map<Eigen::Matrix<T, N, Eigen::Dynamic> > Map(std::vector<glm::vec<N, T, Q> > &data) {
-        static_assert(sizeof(glm::vec<N, T, Q>) == N * sizeof(T),
-                      "glm::vec<N, T, Q> has padding, cannot map directly.");
-        return Eigen::Map<Eigen::Matrix<T, N, Eigen::Dynamic> >(reinterpret_cast<T *>(data.data()), N, data.size());
-    }
-
-    template<typename T, int N, glm::qualifier Q = glm::defaultp>
-    inline Eigen::Map<const Eigen::Matrix<T, N, Eigen::Dynamic>> MapConst(const std::vector<glm::vec<N, T, Q> > &data) {
-        static_assert(sizeof(glm::vec<N, T, Q>) == N * sizeof(T),
-                      "glm::vec<N, T, Q> has padding, cannot map directly.");
-        return Eigen::Map<const Eigen::Matrix<T, N, Eigen::Dynamic>>(reinterpret_cast<const T *>(data.data()), N,
-                                                                     data.size());
+        return Eigen::Map<const Eigen::Matrix<T, N, Eigen::Dynamic>>(data[0].data(), N, data.size());
     }
 }
 

@@ -3,24 +3,25 @@
 //
 
 #include "SurfaceMeshVertexNormals.h"
+#include "Eigen/Geometry"
 
 namespace Bcg {
-    Vector<float, 3> compute_normal(const SurfaceMesh &mesh, Vertex v) {
-        Vector<float, 3> v_normal(0);
-        const Vector<float, 3> &v0 = mesh.position(v);
+    Eigen::Vector<float, 3> compute_normal(const SurfaceMesh &mesh, Vertex v) {
+        Eigen::Vector<float, 3> v_normal = Eigen::Vector<float, 3>::Zero();
+        const Eigen::Vector<float, 3> &v0 = mesh.position(v);
 
         for(auto h : mesh.halfedges(v)) {
             auto v1 = mesh.to_vertex(h);
             auto v2 = mesh.to_vertex(mesh.next_halfedge(h));
-            Vector<float, 3> f_normal = glm::cross(mesh.position(v1) - v0, mesh.position(v2) - v0);
-            float area = glm::length(f_normal) / 2.0f;
+            Eigen::Vector<float, 3> f_normal = (mesh.position(v1) - v0).cross(mesh.position(v2) - v0);
+            float area = f_normal.norm() / 2.0f;
             v_normal += f_normal * area;
         }
-        return glm::normalize(v_normal);
+        return v_normal.normalized();
     }
 
-    VertexProperty<Vector<float, 3> > compute_vertex_normals(SurfaceMesh &mesh) {
-        VertexProperty<Vector<float, 3> > normals = mesh.vertex_property<Vector<float, 3> >("normals");
+    VertexProperty<Eigen::Vector<float, 3> > compute_vertex_normals(SurfaceMesh &mesh) {
+        VertexProperty<Eigen::Vector<float, 3> > normals = mesh.vertex_property<Eigen::Vector<float, 3> >("normals");
         for (auto v: mesh.vertices()) {
             normals[v] = compute_normal(mesh, v);
         }

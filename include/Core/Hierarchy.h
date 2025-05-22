@@ -6,8 +6,11 @@
 #define ENGINE24_HIERARCHY_H
 
 #include "entt/entt.hpp"
+#include "Transform.h"
+
 
 namespace Bcg {
+    template<typename T>
     struct Hierarchy {
         entt::entity parent = entt::null;
         std::vector<entt::entity> children;
@@ -20,6 +23,14 @@ namespace Bcg {
         bool has_overlay(entt::entity overlay) {
             return std::find(overlays.begin(), overlays.end(), overlay) != overlays.end();
         }
+    };
+
+    struct CachedParentWorldTransform{
+        Transform<float> transform;
+    };
+
+    struct DirtyTransformHierarchy {
+
     };
 }
 

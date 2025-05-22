@@ -9,17 +9,6 @@
 #include "fmt/format.h"
 #include "entt/fwd.hpp"
 
-
-namespace fmt {
-    template<>
-    struct formatter<entt::entity> : formatter<uint32_t> {
-        template<typename FormatContext>
-        auto format(entt::entity entity_id, FormatContext &ctx) const {
-            return formatter<uint32_t>::format(static_cast<uint32_t>(entity_id), ctx);
-        }
-    };
-}
-
 namespace Bcg {
     class Entity {
     public:

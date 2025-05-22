@@ -6,6 +6,8 @@
 #define TRANSFORMUTILS_H
 
 #include "Transform.h"
+#include "Engine.h"
+#include "Logger.h"
 
 namespace Bcg {
     // Decomposes a 4x4 affine transform matrix into position, scale, and rotation (angle/axis).
@@ -33,6 +35,23 @@ namespace Bcg {
         params.angle = angle_axis.angle();
         params.axis = angle_axis.axis();
         return params;
+    }
+
+    template<typename T>
+    void SetParameters(entt::entity entity_id, const typename Transform<T>::Parameters &params) {
+        if (!Engine::valid(entity_id)) {
+            Log::Error("Invalid entity ID: {}", entity_id);
+            return;
+        }
+        if (!Engine::has<Transform<T>>(entity_id)) {
+            Log::Warn("Entity does not have a Transform component: {}", entity_id);
+            return;
+        }
+
+        auto &transform = Engine::State().get<Transform<T>>(entity_id);
+        transform.set_params(params);
+
+        MarkComponentDirty<Transform<float>>(entity_id);
     }
 }
 #endif //TRANSFORMUTILS_H

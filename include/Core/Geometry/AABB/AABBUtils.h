@@ -99,18 +99,22 @@ namespace Bcg::AABBUtils {
         // This handles potential promotion for integer types correctly.
         return (point - closestPt).norm();
     }
+}
 
+namespace Bcg {
     /**
      * @brief String representation of the AABB.
      * @param aabb The Axis-Aligned Bounding Box.
      * @return A string representation of the AABB.
      */
-    template<typename T, int N>
-    inline std::string ToString(const AABB<T, N> &aabb) {
-        std::stringstream ss;
-        ss << "AABB(" << aabb.min.transpose() << ", " << aabb.max.transpose() << ")";
-        return ss.str();
-    }
+    template<typename S, int N>
+    struct StringTraits<AABB<S, N>> {
+        static std::string ToString(const AABB<S, N> &aabb) {
+            std::stringstream ss;
+            ss << "AABB(min=" << aabb.min.transpose() << ", max=" << aabb.max.transpose() << ")";
+            return ss.str();
+        }
+    };
 }
 
 #endif //AABBUTILS_H

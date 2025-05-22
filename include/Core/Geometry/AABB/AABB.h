@@ -6,9 +6,7 @@
 #define ENGINE24_AABB_H
 
 #include "MatVec.h"
-#include "StringTraits.h"
 #include "Macros.h"
-#include "GeometricTraits.h"
 
 namespace Bcg {
     template<typename T, int N>
@@ -60,6 +58,8 @@ namespace Bcg {
             return diagonal().prod();
         }
     };
+
+
 }
 
 #endif //ENGINE24_AABB_H

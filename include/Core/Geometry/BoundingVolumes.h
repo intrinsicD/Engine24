@@ -7,8 +7,8 @@
 
 #include "Pool.h"
 #include "PoolHandle.h"
-#include "AABB.h"
-#include "Sphere.h"
+#include "AABBUtils.h"
+#include "SphereUtils.h"
 
 namespace Bcg{
     // Component container for handles to different bounding volumes

@@ -53,7 +53,7 @@ struct ScreenSpacePos : public Eigen::Vector<float, 2> {
         PointTransformer(float dpi, const Eigen::Vector<int, 4> &viewport_dpi_adjusted,
                          const Eigen::Matrix<float, 4, 4> &proj,
                          const Eigen::Matrix<float, 4, 4> &view,
-                         const Eigen::Matrix<float, 4, 4> &model = Eigen::Matrix<float, 4, 4>(1.0f));
+                         const Eigen::Matrix<float, 4, 4> &model = Eigen::Matrix<float, 4, 4>::Identity());
 
         [[nodiscard]] Points apply(const ScreenSpacePos &p, float z = 0) const;
 

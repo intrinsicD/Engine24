@@ -16,7 +16,7 @@ namespace Bcg::Gui {
     }
 
     void Show(const AABB<float, 3> &aabb) {
-        ImGui::Text("%s", AABBUtils::ToString(aabb).c_str());
+        ImGui::Text("%s", StringTraits<AABB<float, 3>>::ToString(aabb).c_str());
     }
 
     void Show(entt::entity entity_id) {

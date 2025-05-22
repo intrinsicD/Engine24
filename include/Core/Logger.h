@@ -8,6 +8,17 @@
 #include <fmt/core.h>
 #include <fmt/color.h>
 
+#include "entt/entity/entity.hpp"
+namespace fmt {
+    template<>
+    struct formatter<entt::entity> : formatter<uint32_t> {
+        template<typename FormatContext>
+        auto format(entt::entity entity_id, FormatContext &ctx) const {
+            return formatter<uint32_t>::format(static_cast<uint32_t>(entity_id), ctx);
+        }
+    };
+}
+
 namespace Bcg::Log {
     void Info(const std::string &message);
 

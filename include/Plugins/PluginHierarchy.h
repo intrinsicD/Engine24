@@ -57,7 +57,7 @@ namespace Bcg {
 
     namespace Commands{
         template<>
-        struct Setup<Hierarchy> : public AbstractCommand {
+        struct Setup<Hierarchy<float>> : public AbstractCommand {
             explicit Setup(entt::entity entity_id) : AbstractCommand("Setup<Hierarchy>"), entity_id(entity_id) {}
 
             void execute() const override;
@@ -66,7 +66,7 @@ namespace Bcg {
         };
 
         template<>
-        struct Cleanup<Hierarchy> : public AbstractCommand {
+        struct Cleanup<Hierarchy<float>> : public AbstractCommand {
             explicit Cleanup(entt::entity entity_id) : AbstractCommand("Cleanup<Hierarchy>"), entity_id(entity_id) {}
 
             void execute() const override;

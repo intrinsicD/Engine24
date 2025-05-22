@@ -105,7 +105,7 @@ namespace Bcg {
         };
 
         struct SetTrianglesMeshView : public AbstractCommand {
-            explicit SetTrianglesMeshView(entt::entity entity_id, std::vector<Vector<unsigned int, 3>> &tris)
+            explicit SetTrianglesMeshView(entt::entity entity_id, std::vector<Eigen::Vector<unsigned int, 3>> &tris)
             : AbstractCommand(
             "SetTrianglesMeshView"), entity_id(entity_id), tris(tris) {
 
@@ -114,7 +114,7 @@ namespace Bcg {
             void execute() const override;
 
             entt::entity entity_id;
-            std::vector<Vector<unsigned int, 3>> &tris;
+            std::vector<Eigen::Vector<unsigned int, 3>> &tris;
         };
     }
 }

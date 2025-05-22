@@ -11,9 +11,8 @@
 #include <vector>
 #include "Exceptions.h"
 #include "MatVec.h"
-#include "GlmToEigen.h"
-#include "GlmStringTraits.h"
 #include "DimTraits.h"
+#include "StringTraits.h"
 
 namespace Bcg {
     class BasePropertyArray {

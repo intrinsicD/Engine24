@@ -32,7 +32,7 @@ namespace Bcg {
         cols = numbers.size() / rows;
         assert(cols == 7);
         auto mapped = Map(numbers, rows, cols);
-        auto colors = pc.vertex_property<ColorType>("v:color", ColorType(0.0f));
+        auto colors = pc.vertex_property<ColorType>("v:color", ColorType::Zero());
         auto intensities = pc.vertex_property<ScalarType>("v:intensity", 1);
 
         pc.vprops_.resize(rows);

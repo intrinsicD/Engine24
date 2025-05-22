@@ -7,13 +7,12 @@
 
 #include <utility>
 
-#include "glm/vec3.hpp"
-
+#include "MatVec.h"
 #include "Command.h"
 
 namespace Bcg::Commands {
     struct SetPointCloudVertexColors3D : public AbstractCommand {
-        SetPointCloudVertexColors3D(entt::entity entity_id, const glm::vec3 *&colors, size_t count,
+        SetPointCloudVertexColors3D(entt::entity entity_id, const Eigen::Vector<float, 3> *&colors, size_t count,
                           std::string property_name = "") : AbstractCommand(
                                                           "SetPointCloudVertexColors3D"),
                                                       entity_id(entity_id), colors(colors), count(count),
@@ -23,7 +22,7 @@ namespace Bcg::Commands {
         void execute() const override;
 
         entt::entity entity_id;
-        const glm::vec3 *colors;
+        const Eigen::Vector<float, 3> *colors;
         size_t count;
         mutable std::string property_name;
     };
@@ -43,7 +42,7 @@ namespace Bcg::Commands {
 
     struct SetPointCloudVertexColorsSelection3D : public AbstractCommand {
         SetPointCloudVertexColorsSelection3D(entt::entity entity_id, const std::uint32_t *selected_indices,
-                                   const glm::vec3 *&selected_colors, size_t selected_count) : AbstractCommand(
+                                   const Eigen::Vector<float, 3> *&selected_colors, size_t selected_count) : AbstractCommand(
                 "SetPointCloudVertexColorsSelection3D"),
             entity_id(entity_id), selected_indices(selected_indices), selected_colors(selected_colors),
             selected_count(selected_count) {
@@ -53,7 +52,7 @@ namespace Bcg::Commands {
 
         entt::entity entity_id;
         const std::uint32_t *selected_indices;
-        const glm::vec3 *selected_colors;
+        const Eigen::Vector<float, 3> *selected_colors;
         size_t selected_count;
     };
 

@@ -17,7 +17,7 @@ namespace Bcg {
 
         ~PluginTransform() override = default;
 
-        static Transform *setup(entt::entity entity_id);
+        static Transform<float> *setup(entt::entity entity_id);
 
         static void cleanup(entt::entity entity_id);
 
@@ -40,7 +40,7 @@ namespace Bcg {
 
     namespace Commands {
         template<>
-        struct Setup<Transform> : public AbstractCommand {
+        struct Setup<Transform<float>> : public AbstractCommand {
             explicit Setup(entt::entity entity_id) : AbstractCommand("Setup<Transform>"), entity_id(entity_id) {
 
             }
@@ -51,7 +51,7 @@ namespace Bcg {
         };
 
         template<>
-        struct Cleanup<Transform> : public AbstractCommand {
+        struct Cleanup<Transform<float>> : public AbstractCommand {
             explicit Cleanup(entt::entity entity_id) : AbstractCommand("Cleanup<Transform>"), entity_id(entity_id) {
 
             }

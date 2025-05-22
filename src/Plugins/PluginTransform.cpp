@@ -17,19 +17,19 @@ namespace Bcg {
 
     PluginTransform::PluginTransform() : Plugin("Transform") {}
 
-    Transform *PluginTransform::setup(entt::entity entity_id) {
+    Transform<float> *PluginTransform::setup(entt::entity entity_id) {
         if (!Engine::valid(entity_id)) { return nullptr; }
-        if (Engine::has<Transform>(entity_id)) { return &Engine::State().get<Transform>(entity_id); }
+        if (Engine::has<Transform<float>>(entity_id)) { return &Engine::State().get<Transform<float>>(entity_id); }
 
         Log::Info("Transform setup for entity: {}", entity_id);
-        return &Engine::State().emplace<Transform>(entity_id, Transform());
+        return &Engine::State().emplace<Transform<float>>(entity_id, Transform<float>());
     }
 
     void PluginTransform::cleanup(entt::entity entity_id) {
         if (!Engine::valid(entity_id)) { return; }
-        if (!Engine::has<Transform>(entity_id)) { return; }
+        if (!Engine::has<Transform<float>>(entity_id)) { return; }
 
-        Engine::State().remove<Transform>(entity_id);
+        Engine::State().remove<Transform<float>>(entity_id);
         Log::Info("Transform cleanup for entity: {}", entity_id);
     }
 
@@ -64,8 +64,8 @@ namespace Bcg {
         auto &picked = Engine::Context().get<Picked>();
         auto entity_id = picked.entity.id;
         if (ImGui::Begin("Transform", &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
-            if (Engine::valid(entity_id) && Engine::State().all_of<Transform>(entity_id)) {
-                auto &transform = Engine::State().get<Transform>(entity_id);
+            if (Engine::valid(entity_id) && Engine::State().all_of<Transform<float>>(entity_id)) {
+                auto &transform = Engine::State().get<Transform<float>>(entity_id);
                 if (Gui::Show(transform)) {
                     PluginHierarchy::mark_transforms_dirty(entity_id);
                     auto &double_cmd_buffer = Engine::Context().get<DoubleCommandBuffer>();
@@ -95,18 +95,18 @@ namespace Bcg {
     }
 
     namespace Commands {
-        void Setup<Transform>::execute() const {
+        void Setup<Transform<float>>::execute() const {
             PluginTransform::setup(entity_id);
         }
 
-        void Cleanup<Transform>::execute() const {
+        void Cleanup<Transform<float>>::execute() const {
             PluginTransform::cleanup(entity_id);
         }
 
         void SetIdentityTransform::execute() const {
             if (!Engine::valid(entity_id)) { return; }
-            if (!Engine::has<Transform>(entity_id)) { return; }
-            Engine::State().get<Transform>(entity_id).set_local(glm::mat4(1.0f));
+            if (!Engine::has<Transform<float>>(entity_id)) { return; }
+            Engine::State().get<Transform<float>>(entity_id).set_local(glm::mat4(1.0f));
 
             PluginHierarchy::mark_transforms_dirty(entity_id);
         }

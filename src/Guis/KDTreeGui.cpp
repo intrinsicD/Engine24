@@ -28,8 +28,8 @@ namespace Bcg::Gui {
                 auto samples = kdtree.get_samples(level);
 
                 auto vertices = GetPrimitives(entity_id).vertices();
-                auto v_color = vertices->get_or_add<Eigen::Vector<float, 3>>("v_samples", Eigen::Vector<float, 3>(0.0f));
-                std::fill(v_color.vector().begin(), v_color.vector().end(), Eigen::Vector<float, 3>(0.0f));
+                auto v_color = vertices->get_or_add<Eigen::Vector<float, 3>>("v_samples", Eigen::Vector<float, 3>::Zero());
+                std::fill(v_color.vector().begin(), v_color.vector().end(), Eigen::Vector<float, 3>::Zero());
                 auto v_radius = vertices->get_or_add<float>("v_radius", 0.0f);
 
                 auto &view = Engine::State().get<SphereView>(entity_id);

@@ -9,9 +9,9 @@
 #include "entt/fwd.hpp"
 
 namespace Bcg::Gui {
-    void Show(const Hierarchy &hierarchy);
+    void Show(const Hierarchy<float> &hierarchy);
 
-    void Edit(entt::entity owner, Hierarchy &hierarchy);
+    void Edit(entt::entity owner, Hierarchy<float> &hierarchy);
 
     void ShowHierarchy(entt::entity entity);
 }

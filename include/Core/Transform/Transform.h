@@ -6,6 +6,7 @@
 #define ENGINE24_TRANSFORM_H
 
 #include "MatVec.h"
+#include "Eigen/Geometry"
 
 namespace Bcg {
     template<typename T>
@@ -26,9 +27,9 @@ namespace Bcg {
         }
 
         const Eigen::Matrix<T, 4, 4> &matrix() const {
-            if (dirty) {
+            if (dirty_params) {
                 cached_matrix = compute_matrix(params);
-                dirty = false;
+                dirty_params = false;
             }
             return cached_matrix;
         }
@@ -36,7 +37,7 @@ namespace Bcg {
         void set_params(const Parameters &params_) {
             params = params_;
             params.axis.normalize();
-            dirty = true;
+            dirty_params = true;
         }
 
         const Parameters &get_params() const {
@@ -58,26 +59,38 @@ namespace Bcg {
         Transform operator *(const Transform &other) const {
             Transform result;
             result.params.scale = params.scale.cwiseProduct(other.params.scale);
-            Eigen::AngleAxis<T> rot = Eigen::AngleAxis<T>(params.angle, params.axis) * Eigen::AngleAxis<T>(other.params.angle, other.params.axis);
+            Eigen::Matrix<T, 3, 3> rot_mat = Eigen::AngleAxis<T>(params.angle, params.axis).toRotationMatrix() * Eigen::AngleAxis<T>(other.params.angle, other.params.axis).toRotationMatrix();
+            Eigen::AngleAxis<T> rot(rot_mat);
             result.params.angle = rot.angle();
             result.params.axis = rot.axis();
             // Compose position: scale and rotate other's position, then add this position
             result.params.position = params.scale.asDiagonal() * (Eigen::AngleAxis<T>(params.angle, params.axis) * other.params.position) + params.position;
-            result.dirty = true;
+            result.dirty_params = true;
             return result;
         }
 
+        Transform inverse() const {
+            Transform result;
+            result.params.scale = T(1) / params.scale.array();
+            Eigen::AngleAxis<T> rot = Eigen::AngleAxis<T>(-params.angle, params.axis);
+            result.params.angle = rot.angle();
+            result.params.axis = rot.axis();
+            // Inverse position: scale and rotate this position, then negate
+            result.params.position = -result.params.scale.asDiagonal().toDenseMatrix() * (rot * params.position);
+            result.dirty_params = true;
+            return result;
+        }
     private:
         static Eigen::Matrix<T, 4, 4> compute_matrix(const Parameters &p) {
             Eigen::Matrix<T, 4, 4> m = Eigen::Matrix<T, 4, 4>::Identity();
-            m.block<3, 3>(0, 0) = p.scale.asDiagonal() * Eigen::AngleAxis<T>(p.angle, p.axis).toRotationMatrix();
-            m.block<3, 1>(0, 3) = p.position;
+            m.template block<3, 3>(0, 0) = p.scale.asDiagonal() * Eigen::AngleAxis<T>(p.angle, p.axis).toRotationMatrix();
+            m.template block<3, 1>(0, 3) = p.position;
             return m;
         }
 
         Parameters params;
         mutable Eigen::Matrix<T, 4, 4> cached_matrix = Eigen::Matrix<T, 4, 4>::Identity();
-        mutable bool dirty{true};
+        mutable bool dirty_params{true};
     };
 }
 

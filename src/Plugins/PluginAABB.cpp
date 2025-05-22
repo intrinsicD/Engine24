@@ -16,7 +16,7 @@
 
 namespace Bcg {
     static void on_cleanup_components(const Events::Entity::CleanupComponents &event) {
-        Commands::Cleanup<AABB>(event.entity_id).execute();
+        Commands::Cleanup<AABB<float, 3>>(event.entity_id).execute();
     }
 
     PluginAABB::PluginAABB() : Plugin("AABB") {
@@ -25,8 +25,8 @@ namespace Bcg {
     void PluginAABB::activate() {
         Engine::Dispatcher().sink<Events::Entity::CleanupComponents>().connect<&on_cleanup_components>();
         Plugin::activate();
-        if (!Engine::Context().find<Pool<AABB> >()) {
-            auto &pool = Engine::Context().emplace<Pool<AABB> >();
+        if (!Engine::Context().find<Pool<AABB<float, 3>> >()) {
+            auto &pool = Engine::Context().emplace<Pool<AABB<float, 3>> >();
             pool.create();
         }
     }
@@ -69,7 +69,7 @@ namespace Bcg {
         }
         if (show_pool_gui) {
             if (ImGui::Begin("Pool", &show_pool_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
-                auto &pool = Engine::Context().get<Pool<AABB> >();
+                auto &pool = Engine::Context().get<Pool<AABB<float, 3>> >();
                 Gui::Show("AABBPoolProperties",pool.properties);
             }
             ImGui::End();
@@ -80,7 +80,7 @@ namespace Bcg {
     }
 
 
-    void Commands::Setup<AABB>::execute() const {
+    void Commands::Setup<AABB<float, 3>>::execute() const {
         if (!Engine::valid(entity_id)) {
             return;
         }
@@ -98,14 +98,14 @@ namespace Bcg {
             return;
         }
 
-        auto &pool = Engine::Context().get<Pool<AABB> >();
+        auto &pool = Engine::Context().get<Pool<AABB<float, 3>> >();
         auto &bv = Engine::State().get_or_emplace<BoundingVolumes>(entity_id);
         bv.h_aabb = pool.create();
-        *bv.h_aabb = AABB::Build(positions.vector().begin(), positions.vector().end());
+        *bv.h_aabb = AABB<float, 3>::Build(positions.vector().begin(), positions.vector().end());
         Log::Info("{} for entity {}", name, entity_id);
     }
 
-    void Commands::Cleanup<AABB>::execute() const {
+    void Commands::Cleanup<AABB<float, 3>>::execute() const {
         if (!Engine::valid(entity_id)) {
             Log::Warn(name + "Entity is not valid. Abort Command");
             return;
@@ -120,7 +120,7 @@ namespace Bcg {
         auto &bv = Engine::State().get<BoundingVolumes>(entity_id);
 
         if (bv.h_aabb.is_valid()) {
-            auto &pool = Engine::Context().get<Pool<AABB> >();
+            auto &pool = Engine::Context().get<Pool<AABB<float, 3>> >();
             pool.destroy(bv.h_aabb);
             assert(!bv.h_aabb.is_valid());
         }
@@ -157,8 +157,8 @@ namespace Bcg {
             return;
         }
 
-        Vector<float, 3> c = aabb.center();
-        float s = glm::compMax(aabb.max - aabb.min);
+        Eigen::Vector<float, 3> c = aabb.center();
+        float s = (aabb.max - aabb.min).maxCoeff();
 
         for (auto &point: data.vector()) {
             point -= c;

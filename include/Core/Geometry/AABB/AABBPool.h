@@ -6,7 +6,7 @@
 #define AABBPOOL_H
 
 #include "Pool.h"
-#include "AABB.h"
+#include "AABBUtils.h"
 
 namespace Bcg{
     using AABBPool = Pool<AABB<float, 3>>;

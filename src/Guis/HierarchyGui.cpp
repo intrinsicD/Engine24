@@ -18,8 +18,8 @@ namespace Bcg ::Gui {
         }
     }
 
-    void Show(const Hierarchy &hierarchy) {
-        ImGui::Text("Parent: %zu", hierarchy.parent);
+    void Show(const Hierarchy<float> &hierarchy) {
+        ImGui::Text("Parent: %u", hierarchy.parent);
         if (ImGui::CollapsingHeader(("Children #" + std::to_string(hierarchy.children.size())).c_str())) {
             Show(hierarchy.children);
         }
@@ -28,7 +28,7 @@ namespace Bcg ::Gui {
         }
     }
 
-    void Edit(entt::entity child, Hierarchy &hierarchy) {
+    void Edit(entt::entity child, Hierarchy<float> &hierarchy) {
         //Combobox of all entities which parent can be chosen from
         if (ImGui::BeginCombo("Select Parent", std::to_string(static_cast<unsigned int>(hierarchy.parent)).c_str())) {
             for (auto parent: Engine::State().view<entt::entity>()) {
@@ -49,13 +49,14 @@ namespace Bcg ::Gui {
     }
 
     void ShowHierarchy(entt::entity entity) {
-        if (Engine::State().all_of<Hierarchy>(entity)) {
+        if (Engine::State().all_of<Hierarchy<float>>(entity)) {
             static bool edit = false;
             ImGui::Checkbox("Edit", &edit);
+            auto &hierarchy = Engine::State().get<Hierarchy<float>>(entity);
             if (edit) {
-                Edit(entity, Engine::State().get<Hierarchy>(entity));
+                Edit(entity, hierarchy);
             } else {
-                Show(Engine::State().get<Hierarchy>(entity));
+                Show(hierarchy);
             }
         }
     }
