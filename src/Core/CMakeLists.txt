@@ -2,7 +2,6 @@ add_subdirectory(Geometry)
 add_subdirectory(Input)
 target_sources(Engine24 PRIVATE
         AABBGuiModule.cpp
-        Camera.cpp
         Color.cpp
         Engine.cpp
         Entity.cpp

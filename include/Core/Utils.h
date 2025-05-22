@@ -171,7 +171,7 @@ namespace Bcg {
     template<typename Key, typename Value>
     class ValueIterator {
     public:
-        using MapIterator = std::unordered_map<Key, Value>::const_iterator;
+        using MapIterator = typename std::unordered_map<Key, Value>::const_iterator;
 
         explicit ValueIterator(MapIterator it) : map_iterator(it) {}
 

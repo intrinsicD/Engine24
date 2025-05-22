@@ -106,7 +106,7 @@ namespace Bcg::Gui {
         ImGuizmo::SetOrthographic(false);
         auto win_pos = PluginGraphics::get_window_pos();
         auto win_size = PluginGraphics::get_window_size();
-        ImGuizmo::SetRect(win_pos.x, win_pos.y, io.DisplaySize.x, io.DisplaySize.y);
+        ImGuizmo::SetRect(win_pos.x(), win_pos.y(), io.DisplaySize.x, io.DisplaySize.y);
         auto &camera = Engine::Context().get<Camera>();
         Eigen::Matrix<float, 4, 4> m = mat;
         ImGuizmo::Manipulate(glm::value_ptr(camera.view), glm::value_ptr(camera.proj), currentGizmoOperation,

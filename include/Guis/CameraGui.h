@@ -8,7 +8,7 @@
 #include "Camera.h"
 
 namespace Bcg::Gui {
-    void Show(Camera &camera);
+    void Show(Camera<float> &camera);
 }
 
 #endif //ENGINE24_CAMERAGUI_H
