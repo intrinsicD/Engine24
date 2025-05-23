@@ -46,8 +46,8 @@ namespace Bcg::Commands {
             b_color.buffer_data(v_color.data(),
                                 num_vertices * 3 * sizeof(float),
                                 Buffer::STATIC_DRAW);
-            view.min_color = MapConst(v_color).vector().minCoeff();
-            view.max_color = MapConst(v_color).vector().maxCoeff();
+            view.min_color = MapConst(v_color.vector()).minCoeff();
+            view.max_color = MapConst(v_color.vector()).maxCoeff();
             if(view.min_color == view.max_color){
                 view.min_color = 0;
             }

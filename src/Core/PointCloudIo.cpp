@@ -50,7 +50,7 @@ namespace Bcg {
         cols = numbers.size() / rows;
         assert(cols == 7);
         auto mapped = Map(numbers, rows, cols);
-        auto colors = pc.vertex_property<ColorType>("v:color", ColorType(0.0f));
+        auto colors = pc.vertex_property<ColorType>("v:color", ColorType::Zero());
         auto intensities = pc.vertex_property<ScalarType>("v:intensity", 1);
 
         pc.vprops_.resize(rows);
@@ -73,7 +73,7 @@ namespace Bcg {
         Map(pc.positions()) = mapped.block(0, 0, 3, cols);
 
         if (cols == 6) {
-            auto colors = pc.vertex_property<ColorType>("v:color", ColorType(0.0f));
+            auto colors = pc.vertex_property<ColorType>("v:color", ColorType::Zero());
             Map(colors.vector()) = mapped.block(3, 0, 3, cols);
         }
         return true;
@@ -181,8 +181,8 @@ namespace Bcg {
         assert(cols == 7);
         auto mapped = Map(numbers, rows, cols);
 
-        auto positions = pci.vertices.vertex_property<PointType>("v:point", PointType(0.0f));
-        auto colors = pci.vertices.vertex_property<ColorType>("v:color", ColorType(0.0f));
+        auto positions = pci.vertices.vertex_property<PointType>("v:point", PointType::Zero());
+        auto colors = pci.vertices.vertex_property<ColorType>("v:color", ColorType::Zero());
         auto intensities = pci.vertices.vertex_property<ScalarType>("v:intensity", 1);
 
         pci.vertices.resize(rows);
@@ -201,8 +201,8 @@ namespace Bcg {
         assert(cols == 7);
         auto mapped = Map(numbers, rows, cols);
 
-        auto positions = pci.vertices.vertex_property<PointType>("v:point", PointType(0.0f));
-        auto colors = pci.vertices.vertex_property<ColorType>("v:color", ColorType(0.0f));
+        auto positions = pci.vertices.vertex_property<PointType>("v:point", PointType::Zero());
+        auto colors = pci.vertices.vertex_property<ColorType>("v:color", ColorType::Zero());
         auto intensities = pci.vertices.vertex_property<ScalarType>("v:intensity", 1);
 
         pci.vertices.resize(rows);
@@ -221,12 +221,12 @@ namespace Bcg {
 
         auto mapped = Map(numbers, rows, cols);
 
-        auto positions = pci.vertices.vertex_property<PointType>("v:point", PointType(0.0f));
+        auto positions = pci.vertices.vertex_property<PointType>("v:point", PointType::Zero());
         pci.vertices.resize(cols);
         Map(positions.vector()) = mapped.block(0, 0, 3, cols);
 
         if (cols == 6) {
-            auto colors = pci.vertices.vertex_property<ColorType>("v:color", ColorType(0.0f));
+            auto colors = pci.vertices.vertex_property<ColorType>("v:color", ColorType::Zero());
             Map(colors.vector()) = mapped.block(3, 0, 3, cols);
         }
         return true;

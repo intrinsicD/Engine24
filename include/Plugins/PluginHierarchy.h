@@ -34,7 +34,7 @@ namespace Bcg {
 
         static bool detach_parent(entt::entity child);
 
-        static void mark_transforms_dirty(entt::entity entity);
+        static void mark_transforms_dirty(entt::entity entity, bool children_or_overlays);
 
         static void update_transforms(entt::entity entity);
 

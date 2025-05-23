@@ -91,15 +91,15 @@ namespace Bcg {
         return pool.create(mesh);
     }
 
-    VertexProperty<Vector<float, 3>> MeshModule::compute_vertex_normals(SurfaceMesh &mesh) {
+    VertexProperty<Eigen::Vector<float, 3>> MeshModule::compute_vertex_normals(SurfaceMesh &mesh) {
 
     }
 
-    FaceProperty<Vector<float, 3>> MeshModule::compute_face_normals(SurfaceMesh &mesh) {
+    FaceProperty<Eigen::Vector<float, 3>> MeshModule::compute_face_normals(SurfaceMesh &mesh) {
 
     }
 
-    FaceProperty<Vector<float, 3>> MeshModule::compute_face_centers(SurfaceMesh &mesh) {
+    FaceProperty<Eigen::Vector<float, 3>> MeshModule::compute_face_centers(SurfaceMesh &mesh) {
 
     }
 

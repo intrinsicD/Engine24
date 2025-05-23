@@ -25,8 +25,9 @@ namespace Bcg {
         }
     };
 
-    struct CachedParentWorldTransform{
-        Transform<float> transform;
+    template<typename T>
+    struct CachedWorldTransform{
+        Transform<T> transform;
     };
 
     struct DirtyTransformHierarchy {

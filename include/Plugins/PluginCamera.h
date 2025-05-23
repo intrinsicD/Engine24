@@ -17,9 +17,9 @@ namespace Bcg {
 
         ~PluginCamera() override = default;
 
-        static Camera *setup(entt::entity entity_id);
+        static Camera<float> *setup(entt::entity entity_id);
 
-        static void setup(Camera &camera);
+        static void setup(Camera<float> &camera);
 
         static void cleanup(entt::entity entity_id);
 
@@ -42,14 +42,14 @@ namespace Bcg {
 
     namespace Commands{
         struct CenterCameraAtDistance : public AbstractCommand {
-            explicit CenterCameraAtDistance(const Vector<float, 3> &center, float distance = 3) :
+            explicit CenterCameraAtDistance(const Eigen::Vector<float, 3> &center, float distance = 3) :
                     AbstractCommand("CenterCamera"),
                     center(center),
                     distance(distance) {}
 
             void execute() const override;
 
-            Vector<float, 3> center;
+            Eigen::Vector<float, 3> center;
             float distance;
         };
 

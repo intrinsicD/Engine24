@@ -33,11 +33,11 @@ namespace Bcg {
 
         PoolHandle<SurfaceMesh> load_mesh(const std::string &filepath);
 
-        VertexProperty<Vector<float, 3>> compute_vertex_normals(SurfaceMesh &mesh);
+        VertexProperty<Eigen::Vector<float, 3>> compute_vertex_normals(SurfaceMesh &mesh);
 
-        FaceProperty<Vector<float, 3>> compute_face_normals(SurfaceMesh &mesh);
+        FaceProperty<Eigen::Vector<float, 3>> compute_face_normals(SurfaceMesh &mesh);
 
-        FaceProperty<Vector<float, 3>> compute_face_centers(SurfaceMesh &mesh);
+        FaceProperty<Eigen::Vector<float, 3>> compute_face_centers(SurfaceMesh &mesh);
 
         EdgeProperty<float> compute_edge_lengths(SurfaceMesh &mesh);
 
