@@ -15,24 +15,6 @@ namespace Bcg {
         vpoint.vector() = points;
     }
 
-    void GraphInterface::set_edge_colors(const std::vector<ColorType> &colors) {
-        if (colors.size() != edges.size()) {
-            Log::Error("Number of edge colors does not match number of edges");
-            return;
-        }
-        ecolors = edges.edge_property<PointType>("e:color");
-        ecolors.vector() = colors;
-    }
-
-    void GraphInterface::set_edge_scalarfield(const std::vector<ScalarType> &scalarfield) {
-        if (scalarfield.size() != edges.size()) {
-            Log::Error("Number of edge scalarfield does not match number of edges");
-            return;
-        }
-        escalarfield = edges.edge_property<ScalarType>("e:scalarfield");
-        escalarfield.vector() = scalarfield;
-    }
-
     Property<Eigen::Vector<IndexType, 2>> GraphInterface::get_edges() const {
         auto indices = edges.edge_property<Eigen::Vector<IndexType, 2>>("e:indices");
         for (auto e: edges) {
@@ -118,7 +100,20 @@ namespace Bcg {
 
         set_halfedge(v0, h);
 
+        if (hdirection) {
+            hdirection[h] = true;  // h points from v0 to v1
+            hdirection[o] = true; // o points from v1 to v0
+        }
+
         return h;
+    }
+
+    Halfedge GraphInterface::add_halfedge(Vertex v0, Vertex v1) {
+        Halfedge h01 = add_edge(v0, v1);
+        if (hdirection) {
+            hdirection[h01] = true;  // h points from v0 to v1
+            hdirection[get_opposite(h01)] = false; // o points from v1 to v0
+        }
     }
 
     Halfedge GraphInterface::find_halfedge(Vertex v0, Vertex v1) const {

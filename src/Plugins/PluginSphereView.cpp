@@ -16,6 +16,8 @@
 #include "GetPrimitives.h"
 #include "glad/gl.h"
 #include <numeric>
+
+#include "Hierarchy.h"
 #include "PropertyEigenMap.h"
 
 namespace Bcg {
@@ -72,7 +74,7 @@ namespace Bcg {
 
     void PluginViewSphere::render() {
         auto rendergroup = Engine::State().view<SphereView>();
-        auto &camera = Engine::Context().get<Camera>();
+        auto &camera = Engine::Context().get<Camera<float>>();
         auto vp = PluginGraphics::get_viewport();
         for (auto entity_id: rendergroup) {
             auto &view = Engine::State().get<SphereView>(entity_id);
@@ -87,15 +89,23 @@ namespace Bcg {
             view.program.set_uniform1f("min_color", view.min_color);
             view.program.set_uniform1f("max_color", view.max_color);
             view.program.set_uniform1i("use_uniform_color", view.use_uniform_color);
-            view.program.set_uniform3fv("uniform_color", glm::value_ptr(view.uniform_color));
-            view.program.set_uniform3fv("light_position", glm::value_ptr(GetViewParams(camera).eye));
+            view.program.set_uniform3fv("uniform_color", view.uniform_color.data());
+            view.program.set_uniform3fv("light_position", camera.get_view_params().eye.data());
 
-            if (Engine::has<Transform>(entity_id)) {
-                auto &transform = Engine::State().get<Transform>(entity_id);
-                view.program.set_uniform4fm("model", glm::value_ptr(transform.world()), false);
+            if (Engine::has<CachedWorldTransform<float>>(entity_id)) {
+                auto &cached = Engine::State().get<CachedWorldTransform<float>>(entity_id);
+                view.program.set_uniform4fm("model", cached.transform.matrix().data(), false);
             } else {
-                view.program.set_uniform4fm("model", glm::value_ptr(glm::mat4(1.0f)), false);
+                if (Engine::has<Transform<float>>(entity_id)) {
+                    auto &transform = Engine::State().get<Transform<float>>(entity_id);
+                    view.program.set_uniform4fm("model", transform.matrix().data(), false);
+                } else {
+                    Eigen::Matrix<float, 4, 4> id = Eigen::Matrix<float, 4, 4>::Identity();
+                    view.program.set_uniform4fm("model", id.data(), false);
+                }
             }
+
+
 
             view.draw();
             view.vao.unbind();
@@ -156,7 +166,7 @@ namespace Bcg {
 
         OpenGLState openGlState(entity_id);
 
-        auto v_positions = vertices->get<Vector<float, 3>>(property_name);
+        auto v_positions = vertices->get<Eigen::Vector<float, 3>>(property_name);
         auto b_position = openGlState.get_buffer(property_name);
 
         if (v_positions) {
@@ -242,7 +252,7 @@ namespace Bcg {
 
         OpenGLState openGlState(entity_id);
 
-        auto v_color = vertices->get<Vector<float, 3>>(property_name);
+        auto v_color = vertices->get<Eigen::Vector<float, 3>>(property_name);
         auto b_color = openGlState.get_buffer(property_name);
 
         if (v_color) {
@@ -320,7 +330,7 @@ namespace Bcg {
         }
 
         if(any){
-            auto v_colorf3 = vertices->get_or_add<Vector<float, 3>>(property_name + "Color3d");
+            auto v_colorf3 = vertices->get_or_add<Eigen::Vector<float, 3>>(property_name + "Color3d");
             t = (t.array() - t.minCoeff()) / (t.maxCoeff() - t.minCoeff());
             Map(v_colorf3.vector()) = t * Eigen::Vector<float, 3>::Unit(0).transpose() + (1.0f - t.array()).matrix() * Eigen::Vector<float, 3>::Unit(1).transpose();
             SetColorSphereView(entity_id, property_name + "Color3d").execute();
@@ -341,7 +351,7 @@ namespace Bcg {
 
         OpenGLState openGlState(entity_id);
 
-        auto v_normals = vertices->get<Vector<float, 3>>(property_name);
+        auto v_normals = vertices->get<Eigen::Vector<float, 3>>(property_name);
         auto b_normals = openGlState.get_buffer(property_name);
 
         if (v_normals) {

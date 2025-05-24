@@ -65,7 +65,7 @@ namespace Bcg {
                 }
             }
 
-                // normal
+            // normal
             else if (strncmp(s.data(), "vn ", 3) == 0) {
                 if (sscanf(s.data(), "vn %f %f %f", &x, &y, &z)) {
                     // problematic as it can be either a vertex property when interpolated
@@ -73,14 +73,14 @@ namespace Bcg {
                 }
             }
 
-                // texture coordinate
+            // texture coordinate
             else if (strncmp(s.data(), "vt ", 3) == 0) {
                 if (sscanf(s.data(), "vt %f %f", &x, &y)) {
                     all_tex_coords.emplace_back(x, y);
                 }
             }
 
-                // face
+            // face
             else if (strncmp(s.data(), "f ", 2) == 0) {
                 int component(0);
                 bool end_of_vertex(false);
@@ -304,15 +304,14 @@ namespace Bcg {
             }
             try {
                 mesh.add_face(vertices);
-            }
-            catch (const TopologyException &e) {
+            } catch (const TopologyException &e) {
                 Log::Warn("Failed to add face: {}", e.what());
             }
         }
     }
 
     template<typename T>
-    requires(sizeof(T) == 4)
+        requires(sizeof(T) == 4)
     void ReadBinary(FILE *in, T &t, bool swap = false) {
         [[maybe_unused]] auto n_items = fread((char *) &t, 1, sizeof(t), in);
 
@@ -395,8 +394,7 @@ namespace Bcg {
             }
             try {
                 mesh.add_face(vertices);
-            }
-            catch (const TopologyException &e) {
+            } catch (const TopologyException &e) {
                 Log::Warn("Failed to add face: {}", e.what());
             }
         }
@@ -498,25 +496,25 @@ namespace Bcg {
             return false;
         }
 
-        std::vector<std::array<double, 3>> vPos = plyIn.getVertexPositions();
-        std::vector<std::array<unsigned char, 3>> vCol;
+        std::vector<std::array<double, 3> > vPos = plyIn.getVertexPositions();
+        std::vector<std::array<unsigned char, 3> > vCol;
         if (plyIn.getElement("vertex").hasProperty("red")) {
             vCol = plyIn.getVertexColors();
         }
-        std::vector<std::vector<size_t>> fInd = plyIn.getFaceIndices<size_t>();
+        std::vector<std::vector<size_t> > fInd = plyIn.getFaceIndices<size_t>();
 
-        auto colors = mesh.vertex_property<Vector<float, 3>>("v:color");
+        auto colors = mesh.vertex_property<Eigen::Vector<float, 3> >("v:color");
 
         mesh.vprops_.reserve(vPos.size());
         for (const auto &point: vPos) {
-            mesh.add_vertex(glm::vec3(point[0], point[1], point[2]));
+            mesh.add_vertex(Eigen::Vector<float, 3>(point[0], point[1], point[2]));
         }
 
         if (!vCol.empty()) {
             for (const auto &v: mesh.vertices()) {
                 const Eigen::Vector<double, 3> color(vCol[v.idx()][0] / 255.0, vCol[v.idx()][1] / 255.0,
                                                      vCol[v.idx()][2] / 255.0);
-                colors[v] = glm::vec3(color[0], color[1], color[2]);
+                colors[v] = Eigen::Vector<float, 3>(color[0], color[1], color[2]);
             }
         } else {
             mesh.vprops_.remove(colors);
@@ -530,10 +528,8 @@ namespace Bcg {
         return mesh.fprops_.size() > 0;
     }
 
-    using vec3 = Vector<float, 3>;
-
     struct CompareVec3 {
-        bool operator()(const vec3 &v0, const vec3 &v1) const {
+        bool operator()(const Eigen::Vector<float, 3> &v0, const Eigen::Vector<float, 3> &v1) const {
             if (fabs(v0[0] - v1[0]) <= eps_) {
                 if (fabs(v0[1] - v1[1]) <= eps_) {
                     return (v0[2] < v1[2] - eps_);
@@ -550,12 +546,12 @@ namespace Bcg {
     bool ReadStl(const std::string &filepath, SurfaceMesh &mesh) {
         std::array<char, 100> line;
         uint32_t i, nT(0);
-        vec3 p;
+        Eigen::Vector<float, 3> p;
         Vertex v;
         std::vector<Vertex> vertices(3);
 
         CompareVec3 comp;
-        std::map<vec3, Vertex, CompareVec3> vertex_map(comp);
+        std::map<Eigen::Vector<float, 3>, Vertex, CompareVec3> vertex_map(comp);
 
         // open file (in ASCII mode)
         FILE *in = fopen(filepath.c_str(), "r");
@@ -646,8 +642,7 @@ namespace Bcg {
                     (vertices[1] != vertices[2])) {
                     try {
                         mesh.add_face(vertices);
-                    }
-                    catch (const TopologyException &e) {
+                    } catch (const TopologyException &e) {
                         Log::Warn("Failed to add face: {}", e.what());
                     }
                 }
@@ -659,7 +654,7 @@ namespace Bcg {
             }
         }
 
-            // parse ASCII STL
+        // parse ASCII STL
         else {
             char *c{nullptr};
 
@@ -703,8 +698,7 @@ namespace Bcg {
                         (vertices[1] != vertices[2])) {
                         try {
                             mesh.add_face(vertices);
-                        }
-                        catch (const TopologyException &e) {
+                        } catch (const TopologyException &e) {
                             Log::Warn("Failed to add face: {}", e.what());
                         }
                     }
@@ -863,7 +857,7 @@ namespace Bcg {
     }
 
     template<class T>
-    requires(sizeof(T) == 4)
+        requires(sizeof(T) == 4)
     void WriteBinary(std::ofstream &ofs, const T &val) {
         if constexpr (std::endian::native == std::endian::little) {
             const auto u32v = std::bit_cast<uint32_t>(val);
@@ -926,7 +920,7 @@ namespace Bcg {
 
         // check if we can write the mesh using 32-bit indices
         if (const auto max_idx = std::numeric_limits<uint32_t>::max();
-                mesh.n_vertices() > max_idx) {
+            mesh.n_vertices() > max_idx) {
             Log::Error("Mesh too large to be written with 32-bit indices.");
             return false;
         }
@@ -1002,37 +996,39 @@ namespace Bcg {
     }
 
     bool WritePly(const std::string &filepath, const SurfaceMesh &mesh, const IOFlags &flags) {
-        std::vector<std::array<double, 3>> meshVertexPositions;
-        std::vector<std::array<unsigned char, 3>> meshVertexColors;
-        std::vector<std::vector<size_t>> meshFaceIndices;
+        std::vector<std::array<double, 3> > meshVertexPositions;
+        std::vector<std::array<unsigned char, 3> > meshVertexColors;
+        std::vector<std::vector<size_t> > meshFaceIndices;
 
         meshVertexPositions.reserve(mesh.n_vertices());
         meshFaceIndices.reserve(mesh.n_faces());
-        auto positions = mesh.get_vertex_property<Vector<float, 3 >>("v:position");
+        auto positions = mesh.get_vertex_property<Eigen::Vector<float, 3> >("v:position");
 
         for (const auto v: mesh.vertices()) {
             meshVertexPositions.push_back({positions[v][0], positions[v][1], positions[v][2]});
         }
 
-        auto colors = mesh.get_vertex_property<Vector<float, 3>>("v:color");
+        auto colors = mesh.get_vertex_property<Eigen::Vector<float, 3> >("v:color");
 
         if (colors) {
             for (const auto v: mesh.vertices()) {
-                meshVertexColors.push_back({(unsigned char) (colors[v][0] * 255),
-                                            (unsigned char) (colors[v][1] * 255),
-                                            (unsigned char) (colors[v][2] * 255)});
+                meshVertexColors.push_back({
+                    (unsigned char) (colors[v][0] * 255),
+                    (unsigned char) (colors[v][1] * 255),
+                    (unsigned char) (colors[v][2] * 255)
+                });
             }
         }
-        auto triangles = mesh.get_face_property<Vector<unsigned int, 3 >>("f:indices");
+        auto triangles = mesh.get_face_property<Eigen::Vector<unsigned int, 3> >("f:indices");
         if (!triangles) {
             Log::Error("Failed to get face property: f:indices");
             return false;
         }
 
-// Create an empty object
+        // Create an empty object
         happly::PLYData plyOut;
 
-// add mesh data (elements are created automatically)
+        // add mesh data (elements are created automatically)
         plyOut.addVertexPositions(meshVertexPositions);
         if (colors) {
             plyOut.addVertexColors(meshVertexColors);
@@ -1040,7 +1036,7 @@ namespace Bcg {
         plyOut.addFaceIndices(meshFaceIndices);
 
 
-// write the object to file
+        // write the object to file
         if (flags.use_binary) {
             plyOut.write(filepath, happly::DataFormat::Binary);
         } else {
@@ -1214,7 +1210,7 @@ namespace Bcg {
                 }
             }
 
-                // normal
+            // normal
             else if (strncmp(s.data(), "vn ", 3) == 0) {
                 if (sscanf(s.data(), "vn %f %f %f", &x, &y, &z)) {
                     // problematic as it can be either a vertex property when interpolated
@@ -1222,14 +1218,14 @@ namespace Bcg {
                 }
             }
 
-                // texture coordinate
+            // texture coordinate
             else if (strncmp(s.data(), "vt ", 3) == 0) {
                 if (sscanf(s.data(), "vt %f %f", &x, &y)) {
                     all_tex_coords.emplace_back(x, y);
                 }
             }
 
-                // face
+            // face
             else if (strncmp(s.data(), "f ", 2) == 0) {
                 int component(0);
                 bool end_of_vertex(false);
@@ -1454,8 +1450,7 @@ namespace Bcg {
             }
             try {
                 mesh.add_face(vertices);
-            }
-            catch (const TopologyException &e) {
+            } catch (const TopologyException &e) {
                 Log::Warn("Failed to add face: {}", e.what());
             }
         }
@@ -1535,8 +1530,7 @@ namespace Bcg {
             }
             try {
                 mesh.add_face(vertices);
-            }
-            catch (const TopologyException &e) {
+            } catch (const TopologyException &e) {
                 Log::Warn("Failed to add face: {}", e.what());
             }
         }
@@ -1638,26 +1632,26 @@ namespace Bcg {
             return false;
         }
 
-        std::vector<std::array<double, 3>> vPos = plyIn.getVertexPositions();
-        std::vector<std::array<unsigned char, 3>> vCol;
+        std::vector<std::array<double, 3> > vPos = plyIn.getVertexPositions();
+        std::vector<std::array<unsigned char, 3> > vCol;
         if (plyIn.getElement("vertex").hasProperty("red")) {
             vCol = plyIn.getVertexColors();
         }
-        std::vector<std::vector<size_t>> fInd = plyIn.getFaceIndices<size_t>();
+        std::vector<std::vector<size_t> > fInd = plyIn.getFaceIndices<size_t>();
 
-        auto colors = mesh.vertices.vertex_property<Vector<float, 3>>("v:color");
+        auto colors = mesh.vertices.vertex_property<Eigen::Vector<float, 3> >("v:color");
 
 
         mesh.vertices.reserve(vPos.size());
         for (const auto &point: vPos) {
-            mesh.add_vertex(glm::vec3(point[0], point[1], point[2]));
+            mesh.add_vertex(Eigen::Vector<float, 3>(point[0], point[1], point[2]));
         }
 
         if (!vCol.empty()) {
             for (const auto &v: mesh.vertices) {
                 const Eigen::Vector<double, 3> color(vCol[v.idx()][0] / 255.0, vCol[v.idx()][1] / 255.0,
                                                      vCol[v.idx()][2] / 255.0);
-                colors[v] = glm::vec3(color[0], color[1], color[2]);
+                colors[v] = Eigen::Vector<float, 3>(color[0], color[1], color[2]);
             }
         } else {
             mesh.vertices.remove(colors);
@@ -1674,12 +1668,12 @@ namespace Bcg {
     bool ReadStl(const std::string &filepath, HalfedgeMeshInterface &mesh) {
         std::array<char, 100> line;
         uint32_t i, nT(0);
-        vec3 p;
+        Eigen::Vector<float, 3> p;
         Vertex v;
         std::vector<Vertex> vertices(3);
 
         CompareVec3 comp;
-        std::map<vec3, Vertex, CompareVec3> vertex_map(comp);
+        std::map<Eigen::Vector<float, 3>, Vertex, CompareVec3> vertex_map(comp);
 
         // open file (in ASCII mode)
         FILE *in = fopen(filepath.c_str(), "r");
@@ -1724,7 +1718,6 @@ namespace Bcg {
 
             return size == predicted;
         };
-
 
 
         // parse binary STL
@@ -1772,8 +1765,7 @@ namespace Bcg {
                     (vertices[1] != vertices[2])) {
                     try {
                         mesh.add_face(vertices);
-                    }
-                    catch (const TopologyException &e) {
+                    } catch (const TopologyException &e) {
                         Log::Warn("Failed to add face: {}", e.what());
                     }
                 }
@@ -1785,7 +1777,7 @@ namespace Bcg {
             }
         }
 
-            // parse ASCII STL
+        // parse ASCII STL
         else {
             char *c{nullptr};
 
@@ -1829,8 +1821,7 @@ namespace Bcg {
                         (vertices[1] != vertices[2])) {
                         try {
                             mesh.add_face(vertices);
-                        }
-                        catch (const TopologyException &e) {
+                        } catch (const TopologyException &e) {
                             Log::Warn("Failed to add face: {}", e.what());
                         }
                     }
@@ -1868,7 +1859,6 @@ namespace Bcg {
         mesh.halfedges.resize(nh);
         mesh.edges.resize(ne);
         mesh.faces.resize(nf);
-
 
 
         // read properties from file
@@ -1968,7 +1958,6 @@ namespace Bcg {
         }
 
 
-
         // write faces
         for (auto f: mesh.faces) {
             fprintf(out, "f");
@@ -2045,7 +2034,7 @@ namespace Bcg {
 
         // check if we can write the mesh using 32-bit indices
         if (const auto max_idx = std::numeric_limits<uint32_t>::max();
-                mesh.vertices.n_vertices() > max_idx) {
+            mesh.vertices.n_vertices() > max_idx) {
             Log::Error("Mesh too large to be written with 32-bit indices.");
             return false;
         }
@@ -2121,37 +2110,39 @@ namespace Bcg {
     }
 
     bool WritePly(const std::string &filepath, const HalfedgeMeshInterface &mesh, const IOFlags &flags) {
-        std::vector<std::array<double, 3>> meshVertexPositions;
-        std::vector<std::array<unsigned char, 3>> meshVertexColors;
-        std::vector<std::vector<size_t>> meshFaceIndices;
+        std::vector<std::array<double, 3> > meshVertexPositions;
+        std::vector<std::array<unsigned char, 3> > meshVertexColors;
+        std::vector<std::vector<size_t> > meshFaceIndices;
 
         meshVertexPositions.reserve(mesh.vertices.n_vertices());
         meshFaceIndices.reserve(mesh.faces.n_faces());
-        auto positions = mesh.get_vertex_property<Vector<float, 3 >>("v:position");
+        auto positions = mesh.get_vertex_property<Eigen::Vector<float, 3> >("v:position");
 
         for (const auto v: mesh.vertices) {
             meshVertexPositions.push_back({positions[v][0], positions[v][1], positions[v][2]});
         }
 
-        auto colors = mesh.get_vertex_property<Vector<float, 3>>("v:color");
+        auto colors = mesh.get_vertex_property<Eigen::Vector<float, 3> >("v:color");
 
         if (colors) {
             for (const auto v: mesh.vertices) {
-                meshVertexColors.push_back({(unsigned char) (colors[v][0] * 255),
-                                            (unsigned char) (colors[v][1] * 255),
-                                            (unsigned char) (colors[v][2] * 255)});
+                meshVertexColors.push_back({
+                    (unsigned char) (colors[v][0] * 255),
+                    (unsigned char) (colors[v][1] * 255),
+                    (unsigned char) (colors[v][2] * 255)
+                });
             }
         }
-        auto triangles = mesh.get_face_property<Vector<unsigned int, 3 >>("f:indices");
+        auto triangles = mesh.get_face_property<Eigen::Vector<unsigned int, 3> >("f:indices");
         if (!triangles) {
             Log::Error("Failed to get face property: f:indices");
             return false;
         }
 
-// Create an empty object
+        // Create an empty object
         happly::PLYData plyOut;
 
-// add mesh data (elements are created automatically)
+        // add mesh data (elements are created automatically)
         plyOut.addVertexPositions(meshVertexPositions);
         if (colors) {
             plyOut.addVertexColors(meshVertexColors);
@@ -2159,7 +2150,7 @@ namespace Bcg {
         plyOut.addFaceIndices(meshFaceIndices);
 
 
-// write the object to file
+        // write the object to file
         if (flags.use_binary) {
             plyOut.write(filepath, happly::DataFormat::Binary);
         } else {

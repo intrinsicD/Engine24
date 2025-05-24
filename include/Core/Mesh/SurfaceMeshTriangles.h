@@ -8,7 +8,7 @@
 #include "SurfaceMesh.h"
 
 namespace Bcg{
-    FaceProperty<Vector<unsigned int, 3>> SurfaceMeshTriangles(SurfaceMesh &mesh);
+    FaceProperty<Eigen::Vector<unsigned int, 3>> SurfaceMeshTriangles(SurfaceMesh &mesh);
 }
 
 #endif //ENGINE24_UTILS_H

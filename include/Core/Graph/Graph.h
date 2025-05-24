@@ -267,6 +267,13 @@ namespace Bcg {
             return Vertex(static_cast<IndexType>(vertices_size()) - 1);
         }
 
+        Halfedge new_edge(Vertex v0, Vertex v1) {
+            Halfedge h = find_halfedge(v0, v1);
+            if (is_valid(h)) return h;
+
+
+        }
+
         // are there any deleted entities?
         inline bool has_garbage() const { return has_garbage_; }
 

@@ -20,21 +20,18 @@ namespace Bcg {
                 vertices(vertices),
                 halfedges(halfEdges),
                 edges(edges),
-                vpoint(vertices.get_vertex_property<PointType>("v:point")),
-                vconnectivity(vertices.get_vertex_property<Halfedge>("v:connectivity")),
-                ecolors(edges.get_edge_property<ColorType>("e:color")),
-                escalarfield(edges.get_edge_property<ScalarType>("e:scalarfield")),
-                hconnectivity(halfEdges.get_halfedge_property<HalfedgeConnectivity>("h:connectivity")) {}
+                vconnectivity(vertices.vertex_property<Halfedge>("v:connectivity")),
+                hconnectivity(halfEdges.halfedge_property<HalfedgeConnectivity>("h:connectivity")),
+                hdirection(halfEdges.halfedge_property<bool>("h:direction")) {
+
+        }
 
         Vertices &vertices;
         HalfEdges &halfedges;
         Edges &edges;
 
-        VertexProperty<PointType> vpoint;
+        VertexProperty<PointType> vpoint; //optional
         VertexProperty<Halfedge> vconnectivity;
-
-        EdgeProperty<ColorType> ecolors;
-        EdgeProperty<ScalarType> escalarfield;
 
         struct HalfedgeConnectivity {
             Vertex v;
@@ -50,6 +47,7 @@ namespace Bcg {
         };
 
         HalfedgeProperty<HalfedgeConnectivity> hconnectivity;
+        HalfedgeProperty<bool> hdirection;
 
         template<class T>
         inline VertexProperty<T> add_vertex_property(const std::string &name,
@@ -128,10 +126,6 @@ namespace Bcg {
 
         void set_points(const std::vector<PointType> &points);
 
-        void set_edge_colors(const std::vector<ColorType> &colors);
-
-        void set_edge_scalarfield(const std::vector<ScalarType> &escalarfield);
-
         Property<Eigen::Vector<IndexType, 2>> get_edges() const;
 
         inline bool is_isolated(Vertex v) const {
@@ -150,13 +144,22 @@ namespace Bcg {
             return is_boundary(get_halfedge(e, 0)) || is_boundary(get_halfedge(e, 1));
         }
 
+        // Create a new vertex and return its index
         Vertex new_vertex();
 
+        // Create a new vertex with a given point and return its index
         Vertex add_vertex(const PointType &p);
 
+        // Create a new edge between two vertices and return the halfedge pointing from v0 to v1
+        // next and prev pointers are not set, so the halfedge is isolated
         Halfedge new_edge(Vertex v0, Vertex v1);
 
+        // Add an edge between two vertices and return the halfedge pointing from v0 to v1
+        // Next and prev pointers are set to the existing halfedges of the vertices
         Halfedge add_edge(Vertex v0, Vertex v1);
+
+        // Exactly the same as add_edge, but sets the direction from v1 to v0 to false
+        Halfedge add_halfedge(Vertex v0, Vertex v1);
 
         Halfedge find_halfedge(Vertex v0, Vertex v1) const;
 

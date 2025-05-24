@@ -12,6 +12,7 @@
 #include "GetPrimitives.h"
 #include "PluginViewSphere.h"
 #include "PropertyEigenMap.h"
+#include "Types.h"
 
 namespace Bcg {
     static void on_picked_vertex(const Events::PickedVertex &event) {
@@ -91,7 +92,7 @@ namespace Bcg {
                 return;
             }
             auto *vertices = GetPrimitives(entity_id).vertices();
-            auto selected_vertices = vertices->get_or_add<Vector<float, 3>>(property_name, Vector<float, 3>(1.0f));
+            auto selected_vertices = vertices->get_or_add<ColorType>(property_name, ColorType::Ones());
 
             Map(selected_vertices.vector()).setOnes();
             auto &selection = Engine::State().get<Selection>(entity_id);

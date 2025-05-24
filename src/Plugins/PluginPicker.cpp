@@ -37,11 +37,11 @@ namespace Bcg {
         auto &picked = last_picked();
         picked.spaces = mouse.cursor.last_left.press;
         picked.entity.is_background = picked.spaces.ndc.z == 1.0;
-        auto view = Engine::State().view<AABB, Transform>();
+        auto view = Engine::State().view<AABB<float, 3>, Transform<float>>();
         for (const auto entity_id: view) {
             auto &bv = Engine::State().get<BoundingVolumes>(entity_id);
             auto &aabb = *bv.h_aabb;
-            auto &transform = Engine::State().get<Transform>(entity_id);
+            auto &transform = Engine::State().get<Transform<float>>(entity_id);
             if (Contains(aabb, (glm::inverse(transform.world()) * glm::vec4(picked.spaces.wsp, 1.0f)))) {
                 picked.entity.id = entity_id;
                 break;
