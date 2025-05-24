@@ -441,6 +441,7 @@ namespace Bcg {
     }
 
     void PluginHierarchy::update() {
+
     }
 
     void PluginHierarchy::end_frame() {

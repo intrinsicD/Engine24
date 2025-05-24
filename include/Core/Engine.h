@@ -55,18 +55,6 @@ namespace Bcg {
         entt::registry state;
         entt::dispatcher dispatcher;
     };
-
-    template<typename Component>
-    struct Dirty {
-
-    };
-
-    template<typename Component>
-    inline void MarkComponentDirty(entt::entity entity_id) {
-        if (!Engine::valid(entity_id)) { return; }
-        if (!Engine::has<Component>(entity_id)) { return; }
-        Engine::State().emplace_or_replace<Dirty<Component>>(entity_id);
-    }
 }
 
 #endif //ENGINE24_ENGINE_H

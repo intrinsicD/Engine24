@@ -8,7 +8,6 @@
 #include "Command.h"
 #include <queue>
 
-
 namespace Bcg {
     using CommandHandle = Vertex;
     using DependencyLink = Halfedge;

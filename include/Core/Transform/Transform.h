@@ -6,8 +6,29 @@
 #define ENGINE24_TRANSFORM_H
 
 #include "Eigen/Geometry"
+#include "DirtyTag.h"
 
-namespace Bcg {
+namespace Bcg::Transform {
+    template<typename T>
+    struct Parameters {
+        Eigen::Vector<T, 3> scale{T(1), T(1), T(1)};
+        Eigen::Vector<T, 3> axis{T(0), T(0), T(1)};
+        T angle{T(0)};
+        Eigen::Vector<T, 3> position{T(0), T(0), T(0)};
+    };
+
+    template<typename T>
+    struct CachedLocalTransformMatrix {
+        //is relative to parent. If parent does not exist, use Identity as parents world transformation
+        Eigen::Matrix<T, 4, 4> matrix;
+    };
+
+    template<typename T>
+    struct CachedWorldTransformMatrix {
+        //is the source of the world transformation of each entity
+        Eigen::Matrix<T, 4, 4> matrix;
+    };
+
     template<typename T>
     class Transform {
     public:

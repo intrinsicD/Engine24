@@ -12,6 +12,7 @@ target_sources(Engine24 PRIVATE
         GraphInterface.cpp
         GLFWUtils.cpp
         HandleGlfwKeyEvents.cpp
+        HierarchyUtils.cpp
         KDTreeCompute.cpp
         KDTreeCpu.cpp
         Keyboard.cpp
@@ -31,6 +32,7 @@ target_sources(Engine24 PRIVATE
         SurfaceMeshTriangles.cpp
         SphereView.cpp
         Timer.cpp
+        TransformUtils.cpp
         Utils.cpp
         VectorfieldView.cpp
 )
