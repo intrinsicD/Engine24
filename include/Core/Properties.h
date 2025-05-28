@@ -267,7 +267,12 @@ namespace Bcg {
 
         // do we have a property with a given name?
         [[nodiscard]] bool exists(const std::string &name) const {
-            return std::ranges::any_of(parrays_, [&name](auto *p) { return (*p).name() == name; });
+            for (auto parray: parrays_) {
+                if (parray->name() == name) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         // get a property by its name. returns invalid property if it does not exist.

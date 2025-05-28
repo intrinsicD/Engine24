@@ -329,9 +329,7 @@ namespace Bcg::cuda::bvh {
 
             aabb_whole = thrust::reduce(
                     kdtree.aabbs.begin() + num_internal_nodes, kdtree.aabbs.end(), default_aabb,
-                    [] __device__(const aabb &lhs, const aabb &rhs) {
-                        return merge(lhs, rhs);
-                    });
+                    merge);
         }
 
         thrust::device_vector<unsigned int> morton(num_objects);

@@ -323,9 +323,7 @@ namespace Bcg::cuda {
 
             const auto aabb_whole = thrust::reduce(
                     aabbs_.begin() + num_internal_nodes, aabbs_.end(), default_aabb,
-                    [] __device__ __host__(const aabb &lhs, const aabb &rhs) {
-                        return merge(lhs, rhs);
-                    });
+                    merge);
 
             thrust::device_vector<unsigned int> morton(num_objects);
             thrust::transform(this->objects_d_.begin(), this->objects_d_.end(),
@@ -430,6 +428,7 @@ namespace Bcg::cuda {
                                      const auto ridx = self.nodes[parent].right_idx;
                                      const auto lbox = self.aabbs[lidx];
                                      const auto rbox = self.aabbs[ridx];
+
                                      self.aabbs[parent] = merge(lbox, rbox);
 
                                      assert(self.aabbs[lidx].max.x != -inf);
