@@ -8,12 +8,11 @@
 #include "Pool.h"
 #include "Engine.h"
 #include "MeshComponent.h"
+#include "MeshResources.h"
 #include "SurfaceMeshIo.h"
-#include "Cache.h"
 #include "StringTraits.h"
 
 namespace Bcg {
-
     template<>
     struct StringTraits<SurfaceMesh> {
         static std::string ToString(const SurfaceMesh &t) {
@@ -21,44 +20,41 @@ namespace Bcg {
         }
     };
 
-    MeshModule::MeshModule() : ComponentModule("MeshModule") {}
+    MeshModule::MeshModule() : ComponentModule("MeshModule") {
+    }
 
     void MeshModule::activate() {
-        if(base_activate()){
-            if (!Engine::Context().find<Pool<SurfaceMesh> >()) {
-                Engine::Context().emplace<Pool<SurfaceMesh> >();
-            }
-            if(!Engine::Context().find<Cache<SurfaceMesh> >()) {
-                Engine::Context().emplace<Cache<SurfaceMesh> >();
+        if (base_activate()) {
+            if (!Engine::Context().find<MeshPool>()) {
+                Engine::Context().emplace<MeshPool>();
             }
         }
+        MeshResources::activate();
     }
 
     void MeshModule::deactivate() {
-        if(base_deactivate()){
-            if (Engine::Context().find<Pool<SurfaceMesh> >()) {
-                Engine::Context().erase<Pool<SurfaceMesh> >();
-            }
-            if(Engine::Context().find<Cache<SurfaceMesh> >()) {
-                Engine::Context().erase<Cache<SurfaceMesh> >();
+        if (base_deactivate()) {
+            if (Engine::Context().find<MeshPool>()) {
+                Engine::Context().erase<MeshPool>();
             }
         }
     }
 
     PoolHandle<SurfaceMesh> MeshModule::make_handle(const SurfaceMesh &mesh) {
-        auto &pool = Engine::Context().get<Pool<SurfaceMesh> >();
+        auto &pool = Engine::Context().get<MeshPool>();
         return pool.create(mesh);
     }
 
     PoolHandle<SurfaceMesh> MeshModule::create(entt::entity entity_id, const SurfaceMesh &mesh) {
-        auto &pool = Engine::Context().get<Pool<SurfaceMesh> >();
+        auto &pool = Engine::Context().get<MeshPool>();
         auto h_mesh = pool.create(mesh);
         add(entity_id, h_mesh);
+        //TODO setup everything else what should happen when a mesh is created... (seutp rendering, build kdtree, aabb, transform etc...)
         return h_mesh;
     }
 
     PoolHandle<SurfaceMesh> MeshModule::add(entt::entity entity_id, const PoolHandle<SurfaceMesh> h_mesh) {
-        auto &pool = Engine::Context().get<Pool<SurfaceMesh> >();
+        auto &pool = Engine::Context().get<MeshPool>();
         auto &meshes = Engine::State().get_or_emplace<MeshComponent>(entity_id);
         meshes.meshes.push_back(h_mesh);
         meshes.current_mesh = h_mesh;
@@ -79,44 +75,30 @@ namespace Bcg {
     }
 
     PoolHandle<SurfaceMesh> MeshModule::load_mesh(const std::string &filepath) {
-        auto &cache = Engine::Context().get<Cache<SurfaceMesh> >();
-        SurfaceMesh mesh;
-        if(cache.contains(filepath)) {
-            mesh =  cache[filepath];
-        }else{
-            Read(filepath, mesh);
-            cache[filepath] = mesh;
-        }
-        auto &pool = Engine::Context().get<Pool<SurfaceMesh> >();
-        return pool.create(mesh);
+        auto ret = MeshResources::load(filepath);
+
+        auto &pool = Engine::Context().get<MeshPool>();
+        return pool.create(ret);
     }
 
-    VertexProperty<Vector<float, 3>> MeshModule::compute_vertex_normals(SurfaceMesh &mesh) {
-
+    VertexProperty<Vector<float, 3> > MeshModule::compute_vertex_normals(SurfaceMesh &mesh) {
     }
 
-    FaceProperty<Vector<float, 3>> MeshModule::compute_face_normals(SurfaceMesh &mesh) {
-
+    FaceProperty<Vector<float, 3> > MeshModule::compute_face_normals(SurfaceMesh &mesh) {
     }
 
-    FaceProperty<Vector<float, 3>> MeshModule::compute_face_centers(SurfaceMesh &mesh) {
-
+    FaceProperty<Vector<float, 3> > MeshModule::compute_face_centers(SurfaceMesh &mesh) {
     }
 
     EdgeProperty<float> MeshModule::compute_edge_lengths(SurfaceMesh &mesh) {
-
     }
 
     size_t MeshModule::get_num_connected_components(SurfaceMesh &mesh) {
-
     }
 
     std::vector<SurfaceMesh> MeshModule::split_connected_components(SurfaceMesh &mesh) {
-
     }
 
     SurfaceMesh MeshModule::merge_meshes(const std::vector<SurfaceMesh> &meshes) {
-
     }
 }
-

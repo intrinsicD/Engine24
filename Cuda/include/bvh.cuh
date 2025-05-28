@@ -323,7 +323,9 @@ namespace Bcg::cuda {
 
             const auto aabb_whole = thrust::reduce(
                     aabbs_.begin() + num_internal_nodes, aabbs_.end(), default_aabb,
-                    merge);
+                    []__host__ __device__ (const aabb &lhs, const aabb &rhs) {
+                        return merge(lhs, rhs);
+                    });
 
             thrust::device_vector<unsigned int> morton(num_objects);
             thrust::transform(this->objects_d_.begin(), this->objects_d_.end(),

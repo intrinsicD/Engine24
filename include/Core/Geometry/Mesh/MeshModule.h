@@ -9,6 +9,9 @@
 #include "SurfaceMesh.h"
 
 namespace Bcg {
+    using MeshHandle = PoolHandle<SurfaceMesh>;
+    using MeshPool = Pool<SurfaceMesh>;
+
     class MeshModule : public ComponentModule<SurfaceMesh> {
     public:
         MeshModule();
@@ -19,19 +22,21 @@ namespace Bcg {
 
         void deactivate() override;
 
-        PoolHandle<SurfaceMesh> make_handle(const SurfaceMesh &mesh) override;
+        MeshHandle make_handle(const SurfaceMesh &mesh) override;
 
-        PoolHandle<SurfaceMesh> create(entt::entity entity_id, const SurfaceMesh &mesh) override;
+        MeshHandle create(entt::entity entity_id, const SurfaceMesh &mesh) override;
 
-        PoolHandle<SurfaceMesh> add(entt::entity entity_id, const PoolHandle<SurfaceMesh> h_mesh) override;
+        MeshHandle add(entt::entity entity_id, MeshHandle h_mesh) override;
 
         void remove(entt::entity entity_id) override;
 
         bool has(entt::entity entity_id) override;
 
-        PoolHandle<SurfaceMesh> get(entt::entity entity_id) override;
+        MeshHandle get(entt::entity entity_id) override;
 
-        PoolHandle<SurfaceMesh> load_mesh(const std::string &filepath);
+        MeshHandle load_mesh(const std::string &filepath);
+
+        //TODO move the following into a plugin or another module or a system or what ever i should call it?
 
         VertexProperty<Vector<float, 3>> compute_vertex_normals(SurfaceMesh &mesh);
 

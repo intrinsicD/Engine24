@@ -22,6 +22,7 @@ target_sources(Engine24 PRIVATE
         Logger.cpp
         MeshInterface.cpp
         MeshView.cpp
+        MeshResources.cpp
         Mouse.cpp
         Picker.cpp
         Plane.cpp
