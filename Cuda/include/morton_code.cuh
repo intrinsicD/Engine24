@@ -3,10 +3,8 @@
 
 #include "mat_vec.cuh"
 #include <cuda_runtime.h>
-#include <cstdint>
 
 namespace Bcg::cuda {
-
     __device__ __host__
     inline std::uint32_t expand_bits(std::uint32_t v) noexcept {
         v = (v * 0x00010001u) & 0xFF0000FFu;
@@ -16,8 +14,8 @@ namespace Bcg::cuda {
         return v;
     }
 
-// Calculates a 30-bit Morton code for the
-// given 3D point located within the unit cube [0,1].
+    // Calculates a 30-bit Morton code for the
+    // given 3D point located within the unit cube [0,1].
     __device__ __host__
     inline std::uint32_t morton_code(vec3 xyz, float resolution = 1024.0f) noexcept {
         xyz[0] = ::fminf(::fmaxf(xyz[0] * resolution, 0.0f), resolution - 1.0f);

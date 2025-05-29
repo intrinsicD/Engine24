@@ -6,9 +6,12 @@
 #include "lbvh.cuh"
 #include "bvh_device.cuh"
 #include "Engine.h"
+#include "Logger.h"
 
 #include <vector>
 #include <numeric>
+
+#include "kmeans.cuh"
 
 namespace Bcg::cuda { ;
 
@@ -23,13 +26,32 @@ namespace Bcg::cuda { ;
     }
 
     void KDTreeCuda::build(const std::vector<Vector<float, 3>> &positions) {
-        std::vector<vec3> ps(positions.size());
+        thrust::host_vector<vec3> ps(positions.size());
         for (size_t i = 0; i < positions.size(); ++i) {
             ps[i] = {positions[i][0], positions[i][1], positions[i][2]};
         }
 
         auto &h_bvh = Engine::require<lbvh<vec3, aabb_getter<vec3>>>(entity_id);
+
+        auto start_time = std::chrono::high_resolution_clock::now();
         h_bvh = lbvh<vec3, aabb_getter<vec3>>(ps.begin(), ps.end(), true);
+        auto end_time = std::chrono::high_resolution_clock::now();
+
+        std::chrono::duration<double> build_duration = end_time - start_time;
+        Log::Info("Build LBVH in " + std::to_string(build_duration.count()) + " seconds");
+
+        {
+            start_time = std::chrono::high_resolution_clock::now();
+            //TODO: build from host to see if there is a problem while loading
+            end_time = std::chrono::high_resolution_clock::now();
+
+            build_duration = end_time - start_time;
+            Log::Info("Build LBVH_DEVICE in " + std::to_string(build_duration.count()) + " seconds");
+
+        }
+
+
+
     }
 
     [[nodiscard]] QueryResult

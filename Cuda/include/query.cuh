@@ -77,57 +77,6 @@ namespace Bcg::cuda {
         } while (stack < stack_ptr);
 
         return num_found;
-        /*using bvh_type = detail::basic_device_bvh<Objects, IsConst>;
-        using index_type = typename bvh_type::index_type;
-
-        index_type stack[64]; // is it okay?
-        index_type *stack_ptr = stack;
-        *stack_ptr++ = 0; // root node is always 0
-
-        unsigned int num_found = 0;
-        do {
-            const index_type node = *--stack_ptr;
-            const index_type L_idx = bvh.nodes[node].left_idx;
-            const index_type R_idx = bvh.nodes[node].right_idx;
-
-            if (intersects(q.target, bvh.aabbs[L_idx])) {
-                const auto obj_idx = bvh.nodes[L_idx].object_idx;
-                if (obj_idx != 0xFFFFFFFF) {
-                    if (num_found < max_buffer_size) {
-                        *outiter++ = obj_idx;
-                    }
-                    ++num_found;
-                } else // the node is not a leaf.
-                {
-                    *stack_ptr++ = L_idx;
-                    if (stack_ptr - stack >= 64) {
-                        // Handle stack overflow, e.g., return early or log an error.
-                        return num_found;
-                    }
-                }
-            }
-            if (intersects(q.target, bvh.aabbs[R_idx])) {
-                const auto obj_idx = bvh.nodes[R_idx].object_idx;
-                if (obj_idx != 0xFFFFFFFF) {
-                    if (num_found < max_buffer_size) {
-                        *outiter++ = obj_idx;
-                    }
-                    ++num_found;
-                } else // the node is not a leaf.
-                {
-                    *stack_ptr++ = R_idx;
-                    if (stack_ptr - stack >= 64) {
-                        // Handle stack overflow, e.g., return early or log an error.
-                        return num_found;
-                    }
-                }
-            }
-
-            if (num_found >= max_buffer_size) {
-                break;
-            }
-        } while (stack < stack_ptr);
-        return num_found;*/
     }
 
     // query object index that is the nearst to the query point.

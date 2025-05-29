@@ -9,9 +9,9 @@
 #include <thrust/host_vector.h>
 #include <thrust/transform.h>
 #include <thrust/fill.h>
-#include "lbvh.cuh"
+#include "bvh_device.cuh"
 
-namespace Bcg::cuda {
+namespace Bcg::cuda::kmeans {
     inline void check_cuda() {
         cudaDeviceSynchronize();
         cudaError_t err = cudaGetLastError();
@@ -76,10 +76,10 @@ namespace Bcg::cuda {
                 distances(positions.size(), 0),
                 centroids(num_clusters, vec_type::constant(0)),
                 new_sums(num_clusters, vec_type::constant(0)),
-                new_cluster_sizes(num_clusters, 0), {
+                new_cluster_sizes(num_clusters, 0) {
             bvh = lbvh<vec_type, AABBGetter>(positions.begin(), positions.end());
         }
-    }
+    };
 
     KmeansDeviceData(const thrust::host_vector <vec_type> &positions,
                      const thrust::host_vector <vec_type> &init_clusters) :
@@ -88,7 +88,7 @@ namespace Bcg::cuda {
             distances(positions.size(), 0),
             centroids(init_clusters.size(), vec_type::constant(0)),
             new_sums(init_clusters.size(), vec_type::constant(0)),
-            new_cluster_sizes(init_clusters.size(), 0), {}
+            new_cluster_sizes(init_clusters.size(), 0) {}
 
 
     thrust::device_vector <vec_type> positions;
