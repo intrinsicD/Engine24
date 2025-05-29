@@ -279,7 +279,8 @@ namespace Bcg::cuda {
             return bvh_device<object_type>{
                     static_cast<unsigned int>(nodes_.size()),
                     static_cast<unsigned int>(objects_d_.size()),
-                    nodes_.data().get(), aabbs_.data().get(), objects_d_.data().get(), samples_.data().get(), void_radius_.data().get()
+                    nodes_.data().get(), aabbs_.data().get(), objects_d_.data().get(), samples_.data().get(),
+                    void_radius_.data().get()
             };
         }
 
@@ -287,7 +288,8 @@ namespace Bcg::cuda {
             return cbvh_device<object_type>{
                     static_cast<unsigned int>(nodes_.size()),
                     static_cast<unsigned int>(objects_d_.size()),
-                    nodes_.data().get(), aabbs_.data().get(), objects_d_.data().get(), samples_.data().get(), void_radius_.data().get()
+                    nodes_.data().get(), aabbs_.data().get(), objects_d_.data().get(), samples_.data().get(),
+                    void_radius_.data().get()
             };
         }
 
@@ -302,8 +304,8 @@ namespace Bcg::cuda {
             // --------------------------------------------------------------------
             // calculate morton code of each points
 
-            const auto inf = std::numeric_limits<float>::infinity();
             aabb default_aabb;
+            const auto inf = std::numeric_limits<float>::infinity();
             default_aabb.max[0] = -inf;
             default_aabb.min[0] = inf;
             default_aabb.max[1] = -inf;
@@ -315,7 +317,6 @@ namespace Bcg::cuda {
 
             thrust::transform(this->objects_d_.begin(), this->objects_d_.end(),
                               aabbs_.begin() + num_internal_nodes, aabb_getter_type());
-
 
 
             const auto aabb_whole = thrust::reduce(
@@ -839,14 +840,14 @@ namespace Bcg::cuda {
                                      float r_aabb_dist = length(self.aabbs[ridx].max - self.aabbs[ridx].min) / 2;
                                      float l_r_dist = length(self.objects[lsample_idx] - self.objects[rsample_idx]);
                                      l_dist = std::max(l_aabb_dist - l_dist, l_r_dist);
-                                     r_dist =  std::max(r_aabb_dist - r_dist, l_r_dist);
+                                     r_dist = std::max(r_aabb_dist - r_dist, l_r_dist);
 
                                      vec3 p_center = centroid(self.aabbs[parent]);
                                      l_dist = length(p_center - self.objects[lsample_idx]);
                                      r_dist = length(p_center - self.objects[rsample_idx]);
                                      float p_aabb_dist = length(self.aabbs[parent].max - self.aabbs[parent].min) / 2;
                                      l_dist = std::max(p_aabb_dist - l_dist, l_r_dist);
-                                     r_dist =  std::max(p_aabb_dist - r_dist, l_r_dist);
+                                     r_dist = std::max(p_aabb_dist - r_dist, l_r_dist);
 
                                      //compare the distances and choose the sample with the smaller distance
                                      //if the distances are equal, choose the sample with the smaller distance to the parents aabb center
@@ -861,9 +862,10 @@ namespace Bcg::cuda {
                                          vec3 p_center = centroid(self.aabbs[parent]);
                                          l_dist = length(p_center - self.objects[lsample_idx]);
                                          r_dist = length(p_center - self.objects[rsample_idx]);
-                                         float p_aabb_dist = length(self.aabbs[parent].max - self.aabbs[parent].min) / 2;
+                                         float p_aabb_dist =
+                                                 length(self.aabbs[parent].max - self.aabbs[parent].min) / 2;
                                          l_dist = std::max(p_aabb_dist - l_dist, l_r_dist);
-                                         r_dist =  std::max(p_aabb_dist - r_dist, l_r_dist);
+                                         r_dist = std::max(p_aabb_dist - r_dist, l_r_dist);
 
                                          if (l_dist > r_dist) {
                                              choice = lsample_idx;
@@ -873,20 +875,20 @@ namespace Bcg::cuda {
                                              self.void_radius[parent] = r_dist;
                                          }
                                      }
-                          /*           std::uint32_t choice = 0xFFFFFFFF;
-                                     if (l_dist < r_dist) {
-                                         choice = lsample_idx;
-                                     } else if (l_dist > r_dist) {
-                                         choice = rsample_idx;
-                                     } else {
-                                         vec3 p_center = centroid(self.aabbs[parent]);
-                                         if (length(self.objects[lsample_idx] - p_center) <
-                                                 length(self.objects[rsample_idx] - p_center)) {
-                                             choice = lsample_idx;
-                                         } else {
-                                             choice = rsample_idx;
-                                         }
-                                     }*/
+                                     /*           std::uint32_t choice = 0xFFFFFFFF;
+                                                if (l_dist < r_dist) {
+                                                    choice = lsample_idx;
+                                                } else if (l_dist > r_dist) {
+                                                    choice = rsample_idx;
+                                                } else {
+                                                    vec3 p_center = centroid(self.aabbs[parent]);
+                                                    if (length(self.objects[lsample_idx] - p_center) <
+                                                            length(self.objects[rsample_idx] - p_center)) {
+                                                        choice = lsample_idx;
+                                                    } else {
+                                                        choice = rsample_idx;
+                                                    }
+                                                }*/
 
                                      self.samples[parent] = choice;
                                      /*float l_r_disc = length(self.objects[lsample_idx] - self.objects[rsample_idx]);
@@ -1086,5 +1088,137 @@ namespace Bcg::cuda {
         thrust::device_vector<float> void_radius_;
         bool query_host_enabled_;
     };
+
+    template<typename ObjectType>
+    struct bvh_host_data {
+        using object_type = ObjectType; //can be vec3, sphere, aabb, etc.
+
+        thrust::host_vector<object_type> objects_h;
+        thrust::host_vector<aabb> aabbs_h;
+        thrust::host_vector<detail::node> nodes_h;
+        thrust::host_vector<std::uint32_t> samples_h;
+        thrust::host_vector<float> void_radius_h;
+    };
+
+    template<typename ObjectType>
+    struct bvh_device_data {
+        using object_type = ObjectType; //can be vec3, sphere, aabb, etc.
+
+        thrust::device_vector<object_type> objects_d;
+        thrust::device_vector<aabb> aabbs_d;
+        thrust::device_vector<detail::node> nodes_d;
+        thrust::device_vector<std::uint32_t> samples_d;
+        thrust::device_vector<float> void_radius_d;
+    };
+
+    template<typename ObjectType>
+    bvh_device_data<ObjectType> ToDevice(const bvh_host_data<ObjectType> &host_data) {
+        return {
+                host_data.objects_h,
+                host_data.aabbs_h,
+                host_data.nodes_h,
+                host_data.samples_h,
+                host_data.void_radius_h
+        };
+    }
+
+    template<typename ObjectType>
+    bvh_host_data<ObjectType> ToHost(const bvh_device_data<ObjectType> &device_data) {
+        return {
+                device_data.objects_d,
+                device_data.aabbs_d,
+                device_data.nodes_d,
+                device_data.samples_d,
+                device_data.void_radius_d
+        };
+    }
+
+    template<typename ObjectType>
+    struct bvh_device_data_ptr {
+        using object_type = ObjectType; //can be vec3, sphere, aabb, etc.
+
+        object_type *d_objects;
+        aabb *d_aabbs;
+        detail::node *d_nodes;
+        std::uint32_t *d_samples;
+        float *d_void_radius;
+        unsigned int num_objects;
+        unsigned int num_nodes;
+    };
+
+    template<typename ObjectType>
+    class Lbvh {
+    public:
+        using object_type = ObjectType; //can be vec3, sphere, aabb, etc.
+
+        bvh_host_data<object_type> host_data;
+        bvh_device_data<object_type> device_data;
+        bvh_device_data_ptr<object_type> device_data_ptr;
+        bool query_host_enabled;
+
+        void clear() {
+            host_data = bvh_host_data<object_type>();
+            device_data = bvh_device_data<object_type>();
+            device_data_ptr = bvh_device_data_ptr<object_type>();
+        }
+
+        template<typename AABBGetterType>
+        thrust::device_vector<aabb> prepare_device_aabbs(const thrust::device_vector<object_type> &objects) {
+            const unsigned int num_objects = objects.size();
+            const unsigned int num_internal_nodes = num_objects - 1;
+            const unsigned int num_nodes = num_objects * 2 - 1;
+
+            thrust::device_vector<aabb> aabbs(num_nodes);
+            thrust::transform(objects.begin(), objects.end(),
+                              aabbs.begin() + num_internal_nodes,
+                              AABBGetterType{});
+            return aabbs;
+        }
+
+        template<typename AABBMergerType>
+        aabb compute_aabb(const thrust::device_vector<aabb> &aabbs,
+                          const unsigned int num_internal_nodes) {
+            aabb whole_aabb;
+            constexpr auto inf = std::numeric_limits<float>::infinity();
+            whole_aabb.max[0] = -inf;
+            whole_aabb.min[0] = inf;
+            whole_aabb.max[1] = -inf;
+            whole_aabb.min[1] = inf;
+            whole_aabb.max[2] = -inf;
+            whole_aabb.min[2] = inf;
+            thrust::reduce(aabbs.begin() + num_internal_nodes,
+                           aabbs.end(), whole_aabb,
+                           AABBMergerType{});
+            return whole_aabb;
+        }
+
+        template<typename MortonCodeCalculatorType>
+        thrust::device_vector<std::uint32_t> compute_morton_codes(
+                const thrust::device_vector<object_type> &objects,
+                const thrust::device_vector<aabb> &aabbs,
+                const unsigned int num_internal_nodes,
+                const unsigned int num_objects,
+                const aabb &whole_aabb) {
+            thrust::device_vector<std::uint32_t> morton_codes(num_objects);
+            thrust::transform(objects.begin(), objects.end(),
+                              aabbs.begin() + num_internal_nodes,
+                              morton_codes.begin(),
+                              MortonCodeCalculatorType{whole_aabb});
+            return morton_codes;
+        }
+
+        void construct_from_host(const thrust::host_vector<object_type> &objects) {
+
+        }
+
+        void construct_from_device(const thrust::device_vector<object_type> &objects) {
+            construct_from_device(objects.data(), objects.size());
+        }
+
+        void construct_from_device(const object_type *d_objects, const size_t num_objects) {
+
+        }
+    };
+
 } // lbvh
 #endif// LBVH_BVH_CUH
