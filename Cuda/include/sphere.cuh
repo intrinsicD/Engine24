@@ -5,47 +5,54 @@
 #ifndef ENGINE24_SPHERE_CUH
 #define ENGINE24_SPHERE_CUH
 
-#include "glm/glm.hpp"
+#include "mat_vec.cuh"
 #include "aabb.cuh"
-#include <thrust/swap.h>
-#include <cmath>
 
 namespace Bcg::cuda {
     struct sphere {
-        glm::vec4 center_radius;
+        vec3 center;
+        float radius;
 
         sphere() noexcept = default;
 
         __device__ __host__
-        sphere(const glm::vec3 &center, float radius) noexcept: center_radius(center.x, center.y, center.z, radius) {}
+        sphere(const vec3 &center, float radius) noexcept
+            : center(center), radius(radius) {}
     };
 
     __device__ __host__
-    inline bool intersects(const sphere &sphere, const aabb &box) noexcept {
-        float sqDist = 0.0f;
+    inline bool intersects(const sphere &s, const aabb &b) noexcept {
+        // find squared distance from sphere center to AABB
+        float dist2 = 0.0f;
 
-        if (sphere.center_radius.x < box.min.x)
-            sqDist += (box.min.x - sphere.center_radius.x) *
-                      (box.min.x - sphere.center_radius.x);
-        if (sphere.center_radius.x > box.max.x)
-            sqDist += (sphere.center_radius.x - box.max.x) *
-                      (sphere.center_radius.x - box.max.x);
+        // X axis
+        if (s.center[0] < b.min[0]) {
+            float d = b.min[0] - s.center[0];
+            dist2 += d*d;
+        } else if (s.center[0] > b.max[0]) {
+            float d = s.center[0] - b.max[0];
+            dist2 += d*d;
+        }
 
-        if (sphere.center_radius.y < box.min.y)
-            sqDist += (box.min.y - sphere.center_radius.y) *
-                      (box.min.y - sphere.center_radius.y);
-        if (sphere.center_radius.y > box.max.y)
-            sqDist += (sphere.center_radius.y - box.max.y) *
-                      (sphere.center_radius.y - box.max.y);
+        // Y axis
+        if (s.center[1] < b.min[1]) {
+            float d = b.min[1] - s.center[1];
+            dist2 += d*d;
+        } else if (s.center[1] > b.max[1]) {
+            float d = s.center[1] - b.max[1];
+            dist2 += d*d;
+        }
 
-        if (sphere.center_radius.z < box.min.z)
-            sqDist += (box.min.z - sphere.center_radius.z) *
-                      (box.min.z - sphere.center_radius.z);
-        if (sphere.center_radius.z > box.max.z)
-            sqDist += (sphere.center_radius.z - box.max.z) *
-                      (sphere.center_radius.z - box.max.z);
+        // Z axis
+        if (s.center[2] < b.min[2]) {
+            float d = b.min[2] - s.center[2];
+            dist2 += d*d;
+        } else if (s.center[2] > b.max[2]) {
+            float d = s.center[2] - b.max[2];
+            dist2 += d*d;
+        }
 
-        return sqDist <= sphere.center_radius.w * sphere.center_radius.w;
+        return dist2 <= (s.radius * s.radius);
     }
 
     __device__ __host__
@@ -54,28 +61,23 @@ namespace Bcg::cuda {
     }
 
     __device__ __host__
-    inline float mindist(const sphere &sphere, const glm::vec3 &rhs) noexcept {
+    inline float mindist(const sphere &sphere, const vec3 &rhs) noexcept {
         const float sqDist =
-                (rhs.x - sphere.center_radius.x) * (rhs.x - sphere.center_radius.x) +
-                (rhs.y - sphere.center_radius.y) * (rhs.y - sphere.center_radius.y) +
-                (rhs.z - sphere.center_radius.z) * (rhs.z - sphere.center_radius.z);
-        return ::fabs(::sqrtf(sqDist) - sphere.center_radius.w);
+                (rhs[0] - sphere.center[0]) * (rhs[0] - sphere.center[0]) +
+                (rhs[1] - sphere.center[1]) * (rhs[1] - sphere.center[1]) +
+                (rhs[2] - sphere.center[2]) * (rhs[2] - sphere.center[2]);
+        return ::fabs(::sqrtf(sqDist) - sphere.radius);
     }
 
     __device__ __host__
-    inline float minmaxdist(const sphere &sphere, const glm::vec3 &point) noexcept {
-        return mindist(sphere, point) + sphere.center_radius.w;
+    inline float minmaxdist(const sphere &sphere, const vec3 &point) noexcept {
+        return mindist(sphere, point) + sphere.radius;
     }
 
     struct sphere_getter {
         __device__ __host__
-        sphere operator()(const glm::vec3 center, float radius) const noexcept {
-            sphere retval;
-            retval.center_radius.x = center.x;
-            retval.center_radius.y = center.y;
-            retval.center_radius.z = center.z;
-            retval.center_radius.w = radius;
-            return retval;
+        sphere operator()(const vec3 center, float radius) const noexcept {
+            return {center, radius};
         }
     };
 }

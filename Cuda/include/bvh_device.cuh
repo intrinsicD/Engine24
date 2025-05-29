@@ -255,29 +255,18 @@ namespace Bcg::cuda::bvh {
         return d_ptrs;
     }
 
-    template<typename Source, typename Target>
-    struct transform;
-
-    template<>
-    struct transform<glm::vec3, aabb> {
-        __host__ __device__
-        aabb operator()(const glm::vec3 &v) const {
-            return {v, v};
-        }
-    };
-
     struct default_morton_code_calculator {
         aabb whole;
 
-        __device__ __host__
-        inline unsigned int operator()(const aabb &box) noexcept {
+        __host__ __device__
+        inline unsigned int operator()(const aabb &box) const noexcept {  // ✅ Note: const here
             auto p = centroid(box);
-            p.x -= whole.min.x;
-            p.y -= whole.min.y;
-            p.z -= whole.min.z;
-            p.x /= (whole.max.x - whole.min.x);
-            p.y /= (whole.max.y - whole.min.y);
-            p.z /= (whole.max.z - whole.min.z);
+            p[0] -= whole.min[0];
+            p[1] -= whole.min[1];
+            p[2] -= whole.min[2];
+            p[0] /= (whole.max[0] - whole.min[0]);
+            p[1] /= (whole.max[1] - whole.min[1]);
+            p[2] /= (whole.max[2] - whole.min[2]);
             return morton_code(p);
         }
     };
@@ -310,31 +299,38 @@ namespace Bcg::cuda::bvh {
         // --------------------------------------------------------------------
         // calculate morton code of each points
 
-        if (aabb_whole.min.x == std::numeric_limits<float>::infinity() ||
-            aabb_whole.min.y == std::numeric_limits<float>::infinity() ||
-            aabb_whole.min.z == std::numeric_limits<float>::infinity() ||
-            aabb_whole.max.x == -std::numeric_limits<float>::infinity() ||
-            aabb_whole.max.y == -std::numeric_limits<float>::infinity() ||
-            aabb_whole.max.z == -std::numeric_limits<float>::infinity()) {
+        if (aabb_whole.min[0] == std::numeric_limits<float>::infinity() ||
+            aabb_whole.min[1] == std::numeric_limits<float>::infinity() ||
+            aabb_whole.min[2] == std::numeric_limits<float>::infinity() ||
+            aabb_whole.max[0] == -std::numeric_limits<float>::infinity() ||
+            aabb_whole.max[1] == -std::numeric_limits<float>::infinity() ||
+            aabb_whole.max[2] == -std::numeric_limits<float>::infinity()) {
             // calculate whole AABB if it is not given.
 
             const auto inf = std::numeric_limits<float>::infinity();
             aabb default_aabb;
-            default_aabb.max.x = -inf;
-            default_aabb.min.x = inf;
-            default_aabb.max.y = -inf;
-            default_aabb.min.y = inf;
-            default_aabb.max.z = -inf;
-            default_aabb.min.z = inf;
+            default_aabb.max[0] = -inf;
+            default_aabb.min[0] = inf;
+            default_aabb.max[1] = -inf;
+            default_aabb.min[1] = inf;
+            default_aabb.max[2] = -inf;
+            default_aabb.min[2] = inf;
+            struct aabb_merger{
+                __device__
+                aabb operator()(const aabb &a, const aabb &b) const noexcept {
+                    return merge(a, b);
+                }
+            };
 
             aabb_whole = thrust::reduce(
                     kdtree.aabbs.begin() + num_internal_nodes, kdtree.aabbs.end(), default_aabb,
-                    merge);
+                    // merge AABBs of all objects
+                    aabb_merger{});
         }
 
         thrust::device_vector<unsigned int> morton(num_objects);
         thrust::transform(thrust::device, kdtree.aabbs.begin() + num_internal_nodes, kdtree.aabbs.end(), morton.begin(),
-                          default_morton_code_calculator(aabb_whole));
+                          default_morton_code_calculator{aabb_whole});
 
         // --------------------------------------------------------------------
         // sort object-indices by morton code

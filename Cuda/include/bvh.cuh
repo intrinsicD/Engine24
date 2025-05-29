@@ -178,8 +178,7 @@ namespace Bcg::cuda {
 
     template<typename Object>
     struct default_morton_code_calculator {
-        default_morton_code_calculator(aabb w) : whole(w) {
-        }
+        default_morton_code_calculator(aabb w) : whole(w) {}
 
         default_morton_code_calculator() = default;
 
@@ -196,12 +195,8 @@ namespace Bcg::cuda {
         __device__ __host__
         inline unsigned int operator()(const Object &, const aabb &box) noexcept {
             auto p = centroid(box);
-            p.x -= whole.min.x;
-            p.y -= whole.min.y;
-            p.z -= whole.min.z;
-            p.x /= (whole.max.x - whole.min.x);
-            p.y /= (whole.max.y - whole.min.y);
-            p.z /= (whole.max.z - whole.min.z);
+            p = p - whole.min;
+            p = p / (whole.max - whole.min);
             return morton_code(p);
         }
 
@@ -309,23 +304,23 @@ namespace Bcg::cuda {
 
             const auto inf = std::numeric_limits<float>::infinity();
             aabb default_aabb;
-            default_aabb.max.x = -inf;
-            default_aabb.min.x = inf;
-            default_aabb.max.y = -inf;
-            default_aabb.min.y = inf;
-            default_aabb.max.z = -inf;
-            default_aabb.min.z = inf;
+            default_aabb.max[0] = -inf;
+            default_aabb.min[0] = inf;
+            default_aabb.max[1] = -inf;
+            default_aabb.min[1] = inf;
+            default_aabb.max[2] = -inf;
+            default_aabb.min[2] = inf;
 
             this->aabbs_.resize(num_nodes, default_aabb);
 
             thrust::transform(this->objects_d_.begin(), this->objects_d_.end(),
                               aabbs_.begin() + num_internal_nodes, aabb_getter_type());
 
+
+
             const auto aabb_whole = thrust::reduce(
                     aabbs_.begin() + num_internal_nodes, aabbs_.end(), default_aabb,
-                    []__host__ __device__ (const aabb &lhs, const aabb &rhs) {
-                        return merge(lhs, rhs);
-                    });
+                    aabb_merger{});
 
             thrust::device_vector<unsigned int> morton(num_objects);
             thrust::transform(this->objects_d_.begin(), this->objects_d_.end(),
@@ -433,8 +428,8 @@ namespace Bcg::cuda {
 
                                      self.aabbs[parent] = merge(lbox, rbox);
 
-                                     assert(self.aabbs[lidx].max.x != -inf);
-                                     assert(self.aabbs[ridx].max.x != -inf);
+                                     assert(self.aabbs[lidx].max[0] != -inf);
+                                     assert(self.aabbs[ridx].max[0] != -inf);
                                      // look the next parent...
                                      parent = self.nodes[parent].parent_idx;
                                      __threadfence(); //WTF, i did not expect this to be necessary
@@ -489,10 +484,10 @@ namespace Bcg::cuda {
 
             struct distance_calculator {
                 __device__ __host__
-                float operator()(const glm::vec3 &point, const glm::vec3 &object) const noexcept {
-                    return (point.x - object.x) * (point.x - object.x) +
-                           (point.y - object.y) * (point.y - object.y) +
-                           (point.z - object.z) * (point.z - object.z);
+                float operator()(const vec3 &point, const vec3 &object) const noexcept {
+                    return (point[0] - object[0]) * (point[0] - object[0]) +
+                           (point[1] - object[1]) * (point[1] - object[1]) +
+                           (point[2] - object[2]) * (point[2] - object[2]);
                 }
             };
 
@@ -834,22 +829,22 @@ namespace Bcg::cuda {
                                      assert(rsample_idx < self.num_objects);
 
                                      //get the center of the AABB of each child
-                                     glm::vec3 l_center = centroid(self.aabbs[lidx]);
-                                     glm::vec3 r_center = centroid(self.aabbs[ridx]);
+                                     vec3 l_center = centroid(self.aabbs[lidx]);
+                                     vec3 r_center = centroid(self.aabbs[ridx]);
 
                                      //compute the distance of the center of the AABB of each child
-                                     float l_dist = glm::length(l_center - self.objects[lsample_idx]);
-                                     float r_dist = glm::length(r_center - self.objects[rsample_idx]);
-                                     float l_aabb_dist = glm::length(self.aabbs[lidx].max - self.aabbs[lidx].min) / 2;
-                                     float r_aabb_dist = glm::length(self.aabbs[ridx].max - self.aabbs[ridx].min) / 2;
-                                     float l_r_dist = glm::length(self.objects[lsample_idx] - self.objects[rsample_idx]);
+                                     float l_dist = length(l_center - self.objects[lsample_idx]);
+                                     float r_dist = length(r_center - self.objects[rsample_idx]);
+                                     float l_aabb_dist = length(self.aabbs[lidx].max - self.aabbs[lidx].min) / 2;
+                                     float r_aabb_dist = length(self.aabbs[ridx].max - self.aabbs[ridx].min) / 2;
+                                     float l_r_dist = length(self.objects[lsample_idx] - self.objects[rsample_idx]);
                                      l_dist = std::max(l_aabb_dist - l_dist, l_r_dist);
                                      r_dist =  std::max(r_aabb_dist - r_dist, l_r_dist);
 
-                                     glm::vec3 p_center = centroid(self.aabbs[parent]);
-                                     l_dist = glm::length(p_center - self.objects[lsample_idx]);
-                                     r_dist = glm::length(p_center - self.objects[rsample_idx]);
-                                     float p_aabb_dist = glm::length(self.aabbs[parent].max - self.aabbs[parent].min) / 2;
+                                     vec3 p_center = centroid(self.aabbs[parent]);
+                                     l_dist = length(p_center - self.objects[lsample_idx]);
+                                     r_dist = length(p_center - self.objects[rsample_idx]);
+                                     float p_aabb_dist = length(self.aabbs[parent].max - self.aabbs[parent].min) / 2;
                                      l_dist = std::max(p_aabb_dist - l_dist, l_r_dist);
                                      r_dist =  std::max(p_aabb_dist - r_dist, l_r_dist);
 
@@ -863,10 +858,10 @@ namespace Bcg::cuda {
                                          choice = rsample_idx;
                                          self.void_radius[parent] = r_dist;
                                      } else {
-                                         glm::vec3 p_center = centroid(self.aabbs[parent]);
-                                         l_dist = glm::length(p_center - self.objects[lsample_idx]);
-                                         r_dist = glm::length(p_center - self.objects[rsample_idx]);
-                                         float p_aabb_dist = glm::length(self.aabbs[parent].max - self.aabbs[parent].min) / 2;
+                                         vec3 p_center = centroid(self.aabbs[parent]);
+                                         l_dist = length(p_center - self.objects[lsample_idx]);
+                                         r_dist = length(p_center - self.objects[rsample_idx]);
+                                         float p_aabb_dist = length(self.aabbs[parent].max - self.aabbs[parent].min) / 2;
                                          l_dist = std::max(p_aabb_dist - l_dist, l_r_dist);
                                          r_dist =  std::max(p_aabb_dist - r_dist, l_r_dist);
 
@@ -884,9 +879,9 @@ namespace Bcg::cuda {
                                      } else if (l_dist > r_dist) {
                                          choice = rsample_idx;
                                      } else {
-                                         glm::vec3 p_center = centroid(self.aabbs[parent]);
-                                         if (glm::length(self.objects[lsample_idx] - p_center) <
-                                                 glm::length(self.objects[rsample_idx] - p_center)) {
+                                         vec3 p_center = centroid(self.aabbs[parent]);
+                                         if (length(self.objects[lsample_idx] - p_center) <
+                                                 length(self.objects[rsample_idx] - p_center)) {
                                              choice = lsample_idx;
                                          } else {
                                              choice = rsample_idx;
@@ -894,8 +889,8 @@ namespace Bcg::cuda {
                                      }*/
 
                                      self.samples[parent] = choice;
-                                     /*float l_r_disc = glm::length(self.objects[lsample_idx] - self.objects[rsample_idx]);
-                                     float aabb_disc = glm::length(self.aabbs[parent].max - self.aabbs[parent].min) / 2;
+                                     /*float l_r_disc = length(self.objects[lsample_idx] - self.objects[rsample_idx]);
+                                     float aabb_disc = length(self.aabbs[parent].max - self.aabbs[parent].min) / 2;
                                      self.void_radius[parent] = std::max(std::max(l_r_disc, aabb_disc), std::max(l_dist, r_dist));
 */
                                      // -- New Sampling End --
@@ -992,7 +987,7 @@ namespace Bcg::cuda {
 
             unsigned int max_level = 0;
             const aabb &r_aabb = aabbs_h_[0]; //root aabb
-            float query_diameter = glm::length(r_aabb.max - r_aabb.min) / 2 / (1 << level);
+            float query_diameter = length(r_aabb.max - r_aabb.min) / 2 / (1 << level);
 
             while (!node_queue.empty()) {
                 NodeInfo current = node_queue.front();
@@ -1002,7 +997,7 @@ namespace Bcg::cuda {
                 const node_type &node = nodes_h_[current.node_idx];
                 const aabb &aabb = aabbs_h_[current.node_idx];
 
-                float node_diameter = glm::length(aabb.max - aabb.min) / 2;
+                float node_diameter = length(aabb.max - aabb.min) / 2;
                 node_diameter = void_radius_h_[current.node_idx];
 
                 if (node_diameter < query_diameter || node.object_idx != 0xFFFFFFFF) {

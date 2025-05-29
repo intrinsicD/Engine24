@@ -7,8 +7,10 @@
 
 #include "Eigen/Core"
 #include "Exceptions.h"
+
+#define GLM_ENABLE_EXPERIMENTAL
 #include "glm/glm.hpp"
-#define  GLM_ENABLE_EXPERIMENTAL
+
 #include "glm/gtx/component_wise.hpp"
 #include "glm/gtc/type_ptr.hpp"
 

@@ -11,13 +11,13 @@
 #include <thrust/fill.h>
 #include "lbvh.cuh"
 
-namespace Bcg::Cuda {
+namespace Bcg::cuda {
     inline void check_cuda() {
         cudaDeviceSynchronize();
         cudaError_t err = cudaGetLastError();
         if (err != cudaSuccess) {
             printf("CUDA error: %s\n", cudaGetErrorString(err));
-            assert(cudaSuccess == err)
+            assert(cudaSuccess == err);
         }
     }
 
@@ -34,7 +34,7 @@ namespace Bcg::Cuda {
         vec_type *d_centroids;
         vec_type *d_new_sums;
         index_type *d_new_cluster_sizes;
-        bvh_device<vec_type> d_bvh;
+        cuda::bvh_device<vec_type> d_bvh;
 
         unsigned int num_objects;
         unsigned int num_clusters;
@@ -42,6 +42,10 @@ namespace Bcg::Cuda {
 
     template<typename ScalarType, typename VecType, typename IndexType>
     struct KmeansHostData {
+        using scalar_type = ScalarType;
+        using vec_type = VecType;
+        using index_type = IndexType;
+
         thrust::host_vector <vec_type> positions;
         thrust::host_vector <index_type> labels;
         thrust::host_vector <scalar_type> distances;

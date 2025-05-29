@@ -5,7 +5,7 @@
 #ifndef ENGINE24_MATUTILS_H
 #define ENGINE24_MATUTILS_H
 
-#include "glm/glm.hpp"
+#include "mat_vec.cuh"
 
 namespace Bcg{
     template<typename T, glm::qualifier Q = glm::defaultp>

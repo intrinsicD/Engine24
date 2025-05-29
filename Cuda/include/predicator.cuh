@@ -41,13 +41,13 @@ namespace Bcg::cuda {
     }
 
     __device__ __host__
-    inline query_overlap<sphere> overlaps_sphere(const glm::vec3 &point, float radius) noexcept {
+    inline query_overlap<sphere> overlaps_sphere(const vec3 &point, float radius) noexcept {
         return query_overlap<sphere>({point, radius});
     }
 
     struct query_nearest {
         __device__ __host__
-        query_nearest(const glm::vec3 &tgt) : target(tgt) {}
+        query_nearest(const vec3 &tgt) : target(tgt) {}
 
         query_nearest() = default;
 
@@ -61,17 +61,17 @@ namespace Bcg::cuda {
 
         query_nearest &operator=(query_nearest &&) = default;
 
-        glm::vec3 target;
+        vec3 target;
     };
 
     __device__ __host__
-    inline query_nearest nearest(const glm::vec3 &point) noexcept {
+    inline query_nearest nearest(const vec3 &point) noexcept {
         return query_nearest(point);
     }
 
     struct query_knn {
         __device__ __host__
-        query_knn(const glm::vec3 &tgt, unsigned int k_closest) : target(tgt), k_closest(k_closest) {}
+        query_knn(const vec3 &tgt, unsigned int k_closest) : target(tgt), k_closest(k_closest) {}
 
         query_knn() = default;
 
@@ -85,12 +85,12 @@ namespace Bcg::cuda {
 
         query_knn &operator=(query_knn &&) = default;
 
-        glm::vec3 target;
+        vec3 target;
         unsigned int k_closest;
     };
 
     __device__ __host__
-    inline query_knn knn(const glm::vec3 &point, unsigned int k) noexcept {
+    inline query_knn knn(const vec3 &point, unsigned int k) noexcept {
         return query_knn(point, k);
     }
 } // lbvh

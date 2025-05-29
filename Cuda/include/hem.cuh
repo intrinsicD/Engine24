@@ -11,11 +11,10 @@
 #include <thrust/device_vector.h>
 #include <thrust/random.h>
 #include <thrust/gather.h>
-#include "vec3.cuh"
-#include "mat3.cuh"
+#include "mat_vec.cuh"
+#include "aabb.cuh"
 #include "lbvh.cuh"
 #include "math.cuh"
-#include "vec_operations.cuh"
 #include "gaussian.cuh"
 
 namespace Bcg::cuda {
@@ -29,9 +28,9 @@ namespace Bcg::cuda {
             float operator()(const vec3 &point, const vec3 &object) const
 
             noexcept {
-                return (point.x - object.x) * (point.x - object.x) +
-                       (point.y - object.y) * (point.y - object.y) +
-                       (point.z - object.z) * (point.z - object.z);
+                return (point[0] - object[0]) * (point[0] - object[0]) +
+                       (point[1] - object[1]) * (point[1] - object[1]) +
+                       (point[2] - object[2]) * (point[2] - object[2]);
             }
         };
 
@@ -302,7 +301,7 @@ namespace Bcg::cuda {
         }
 
         __device__ __host__ float max_eigenvalues_radius(const mat3 &cov) {
-            return real_symmetric_3x3_eigendecomposition(cov, nullptr).z;
+            return real_symmetric_3x3_eigendecomposition(cov, nullptr)[2];
         }
 
         __device__ __host__ float geroshin_radius(const mat3 &cov) {

@@ -9,35 +9,36 @@
 #include "CudaCommon.cuh"
 #include "Statistics.h"
 #include "PropertyEigenMap.h"
+#include "mat_vec_helper.cuh"
 
 namespace Bcg::cuda {
-    using hbvh = lbvh<glm::vec3, aabb_getter<glm::vec3>>;
-    using dbvh = bvh_device<glm::vec3>;
+    using hbvh = lbvh<vec3, aabb_getter<vec3>>;
+    using dbvh = bvh_device<vec3>;
 
     struct KmeansDeviceDataPtr {
-        thrust::device_ptr<glm::vec3> d_positions;
+        thrust::device_ptr<vec3> d_positions;
         thrust::device_ptr<unsigned int> d_labels;
         thrust::device_ptr<float> d_distances;
 
-        thrust::device_ptr<glm::vec3> d_centroids;
-        thrust::device_ptr<glm::vec3> d_new_sums;
+        thrust::device_ptr<vec3> d_centroids;
+        thrust::device_ptr<vec3> d_new_sums;
         thrust::device_ptr<unsigned int> d_new_cluster_sizes;
         dbvh d_bvh;
     };
 
     struct KmeansDeviceData {
-        thrust::device_vector<glm::vec3> positions;
+        thrust::device_vector<vec3> positions;
         thrust::device_vector<unsigned int> labels;
         thrust::device_vector<float> distances;
 
-        thrust::device_vector<glm::vec3> centroids;
-        thrust::device_vector<glm::vec3> new_sums;
+        thrust::device_vector<vec3> centroids;
+        thrust::device_vector<vec3> new_sums;
         thrust::device_vector<unsigned int> new_cluster_sizes;
         hbvh bvh;
 
-        void push_new_cluster(const glm::vec3 &new_centroid) {
+        void push_new_cluster(const vec3 &new_centroid) {
             centroids.push_back(new_centroid);
-            new_sums.push_back(glm::vec3(0));
+            new_sums.push_back(vec3(0));
             new_cluster_sizes.push_back(0);
         }
 
@@ -51,21 +52,6 @@ namespace Bcg::cuda {
                     bvh.get_device_repr()};
         }
     };
-
-    KmeansDeviceData SetupKMeansDeviceData(const thrust::host_vector<glm::vec3> &h_centroids,
-                                           const thrust::host_vector<glm::vec3> h_positions) {
-        auto num_objects = h_positions.size();
-        auto k = h_centroids.size();
-        return {h_positions,
-                thrust::device_vector<unsigned int>(num_objects),
-                thrust::device_vector<unsigned int>(num_objects),
-                h_centroids,
-                thrust::device_vector<glm::vec3>(k),
-                thrust::device_vector<unsigned int>(k),
-                hbvh(h_centroids.begin(), h_centroids.end(), true)
-        };
-    }
-
 
     struct DistanceSumMax {
         float sum;
@@ -100,7 +86,7 @@ namespace Bcg::cuda {
         }
     };
 
-    KMeansResult DeviceToHost(KmeansDeviceData &d_data, thrust::host_vector<glm::vec3> &h_centroids) {
+    KMeansResult DeviceToHost(KmeansDeviceData &d_data, thrust::host_vector<vec3> &h_centroids) {
         // Combine distance sum and max distance finding
         int num_objects = d_data.positions.size();
         int k = d_data.centroids.size();
@@ -124,7 +110,7 @@ namespace Bcg::cuda {
         thrust::copy(d_data.centroids.begin(), d_data.centroids.end(), h_centroids.begin());
         result.centroids.resize(k);
         for (size_t i = 0; i < k; ++i) {
-            result.centroids[i] = Vector<float, 3>(h_centroids[i].x, h_centroids[i].y, h_centroids[i].z);
+            result.centroids[i] = Vector<float, 3>(h_centroids[i][0], h_centroids[i][1], h_centroids[i][2]);
         }
 
         // Copy labels and distances to result
@@ -141,8 +127,8 @@ namespace Bcg::cuda {
     }
 
     void AssignClusters(dbvh &bvh,
-                        thrust::device_ptr<glm::vec3> d_positions,
-                        thrust::device_ptr<glm::vec3> d_new_sums,
+                        thrust::device_ptr<vec3> d_positions,
+                        thrust::device_ptr<vec3> d_new_sums,
                         thrust::device_ptr<unsigned int> d_new_cluster_sizes,
                         thrust::device_ptr<unsigned int> d_new_labels,
                         thrust::device_ptr<float> d_new_distances,
@@ -150,10 +136,10 @@ namespace Bcg::cuda {
 
         struct distance_calculator {
             __device__ __host__
-            float operator()(const glm::vec3 point, const glm::vec3 object) const noexcept {
-                return (point.x - object.x) * (point.x - object.x) +
-                       (point.y - object.y) * (point.y - object.y) +
-                       (point.z - object.z) * (point.z - object.z);
+            float operator()(const vec3 point, const vec3 object) const noexcept {
+                return (point[0] - object[0]) * (point[0] - object[0]) +
+                       (point[1] - object[1]) * (point[1] - object[1]) +
+                       (point[2] - object[2]) * (point[2] - object[2]);
             }
         };
 
@@ -162,7 +148,7 @@ namespace Bcg::cuda {
                          thrust::make_counting_iterator<std::uint32_t>(num_objects),
                          [bvh, d_positions, d_new_labels, d_new_distances, d_new_sums, d_new_cluster_sizes] __device__(
                                  std::uint32_t idx) {
-                             const glm::vec3 &query = d_positions[idx];
+                             const vec3 &query = d_positions[idx];
                              const auto best = query_device(bvh, nearest(query), distance_calculator());
 
                              const auto best_cluster = best.first;
@@ -171,11 +157,12 @@ namespace Bcg::cuda {
                              d_new_labels[idx] = best_cluster;
                              d_new_distances[idx] = best_distance;
 
-                             glm::vec3 *new_sum = thrust::raw_pointer_cast(d_new_sums + best_cluster);
+                             vec3 *new_sum = thrust::raw_pointer_cast(d_new_sums + best_cluster);
 
-                             atomicAdd(&new_sum->x, query.x);
-                             atomicAdd(&new_sum->y, query.y);
-                             atomicAdd(&new_sum->z, query.z);
+
+                             atomicAdd(&((*new_sum)[0]), query[0]);
+                             atomicAdd(&((*new_sum)[1]), query[1]);
+                             atomicAdd(&((*new_sum)[2]), query[2]);
                              atomicAdd(thrust::raw_pointer_cast(&d_new_cluster_sizes[best_cluster]), 1);
                          }
         );
@@ -186,20 +173,20 @@ namespace Bcg::cuda {
         }
     }
 
-    void UpdateCentroids(thrust::device_ptr<glm::vec3> new_centroids,
-                         const thrust::device_ptr<glm::vec3> new_sums,
+    void UpdateCentroids(thrust::device_ptr<vec3> new_centroids,
+                         const thrust::device_ptr<vec3> new_sums,
                          const thrust::device_ptr<unsigned int> &new_cluster_sizes, std::uint32_t k) {
         thrust::for_each(thrust::device,
                          thrust::make_counting_iterator<std::uint32_t>(0),
                          thrust::make_counting_iterator(k),
                          [new_cluster_sizes, new_sums, new_centroids] __device__(std::uint32_t idx) {
                              float count = ::fmaxf(float(new_cluster_sizes[idx]), 1.0f);
-                             const glm::vec3 &new_sum = new_sums[idx];
-                             glm::vec3 *new_centroid = thrust::raw_pointer_cast(new_centroids + idx);
+                             const vec3 &new_sum = new_sums[idx];
+                             vec3 *new_centroid = thrust::raw_pointer_cast(new_centroids + idx);
 
-                             new_centroid->x = new_sum.x / count;
-                             new_centroid->y = new_sum.y / count;
-                             new_centroid->z = new_sum.z / count;
+                             (*new_centroid)[0] = new_sum[0] / count;
+                             (*new_centroid)[1] = new_sum[1] / count;
+                             (*new_centroid)[2] = new_sum[2] / count;
                          });
         cudaDeviceSynchronize();
         cudaError_t err = cudaGetLastError();
@@ -230,19 +217,22 @@ namespace Bcg::cuda {
     KMeansResult KMeans(const std::vector<Vector<float, 3>> &points,
                         const std::vector<Vector<float, 3>> &init_means,
                         unsigned int iterations) {
+        auto d_points = cuda_helpers::to_device_blit(points);
+        auto d_means = cuda_helpers::to_device_blit(init_means);
+        auto h_means = thrust::host_vector<vec3>(d_means);
+
         int k = init_means.size();
         int num_objects = points.size();
 
-        thrust::host_vector<glm::vec3> h_centroids(k);
-        for (size_t i = 0; i < k; ++i) {
-            h_centroids[i] = {init_means[i].x, init_means[i].y, init_means[i].z};
-        }
-        thrust::host_vector<glm::vec3> h_positions(num_objects);
-        for (size_t i = 0; i < num_objects; ++i) {
-            h_positions[i] = {points[i].x, points[i].y, points[i].z};
-        }
+        KmeansDeviceData d_data = {d_points,
+                                   thrust::device_vector<unsigned int>(num_objects),
+                                   thrust::device_vector<unsigned int>(num_objects),
+                                   d_means,
+                                   thrust::device_vector<vec3>(k),
+                                   thrust::device_vector<unsigned int>(k),
+                                   hbvh(h_means.begin(), h_means.end(), true)
+        };
 
-        KmeansDeviceData d_data = SetupKMeansDeviceData(h_centroids, h_positions);
         KmeansDeviceDataPtr d_ptrs = d_data.get_ptrs();
 
         for (size_t i = 0; i < iterations; ++i) {
@@ -251,7 +241,7 @@ namespace Bcg::cuda {
 
             d_ptrs.d_bvh = d_data.bvh.get_device_repr();
 
-            thrust::fill(d_data.new_sums.begin(), d_data.new_sums.end(), glm::vec3(0));
+            thrust::fill(d_data.new_sums.begin(), d_data.new_sums.end(), vec3(0));
             thrust::fill(d_data.new_cluster_sizes.begin(), d_data.new_cluster_sizes.end(), 0);
 
             AssignClusters(d_ptrs.d_bvh, d_ptrs.d_positions, d_ptrs.d_new_sums, d_ptrs.d_new_cluster_sizes,
@@ -260,10 +250,10 @@ namespace Bcg::cuda {
             UpdateCentroids(d_ptrs.d_centroids, d_ptrs.d_new_sums, d_ptrs.d_new_cluster_sizes, k);
         }
 
-        return DeviceToHost(d_data, h_centroids);
+        return DeviceToHost(d_data, h_means);
     }
 
-    glm::vec3 GetMostDistantPoint(KmeansDeviceData &d_data) {
+    vec3 GetMostDistantPoint(KmeansDeviceData &d_data) {
         auto max_dist_iter = thrust::max_element(d_data.distances.begin(), d_data.distances.end());
         auto max_dist_index = max_dist_iter - d_data.distances.begin();
         return d_data.positions[max_dist_index];
@@ -275,18 +265,25 @@ namespace Bcg::cuda {
         int num_objects = points.size();
 
         const Vector<float, 3> mean = Mean(points);
-        thrust::host_vector<glm::vec3> h_centroids;
+        thrust::host_vector<vec3> h_centroids;
         thrust::host_vector<float> h_distances(num_objects);
-        h_centroids.push_back({mean.x, mean.y, mean.z});
+        h_centroids.push_back({mean[0], mean[1], mean[2]});
 
-        thrust::host_vector<glm::vec3> h_positions(num_objects);
+        thrust::host_vector<vec3> h_positions(num_objects);
         for (size_t i = 0; i < num_objects; ++i) {
-            h_positions[i] = {points[i].x, points[i].y, points[i].z};
-            glm::vec3 diff = points[i] - mean;
+            h_positions[i] = {points[i][0], points[i][1], points[i][2]};
+            Vector<float, 3> diff = points[i] - mean;
             h_distances[i] = glm::dot(diff, diff);
         }
 
-        KmeansDeviceData d_data = SetupKMeansDeviceData(h_centroids, h_positions);
+        KmeansDeviceData d_data = {thrust::device_vector<vec3>(h_positions),
+                                   thrust::device_vector<unsigned int>(num_objects),
+                                   thrust::device_vector<unsigned int>(num_objects),
+                                   h_centroids,
+                                   thrust::device_vector<vec3>(k),
+                                   thrust::device_vector<unsigned int>(k),
+                                   hbvh(h_centroids.begin(), h_centroids.end(), true)
+        };
         d_data.distances = h_distances;
 
         d_data.push_new_cluster(GetMostDistantPoint(d_data));
@@ -299,7 +296,7 @@ namespace Bcg::cuda {
 
                 KmeansDeviceDataPtr d_ptrs = d_data.get_ptrs();
 
-                thrust::fill(d_data.new_sums.begin(), d_data.new_sums.end(), glm::vec3(0));
+                thrust::fill(d_data.new_sums.begin(), d_data.new_sums.end(), vec3(0));
                 thrust::fill(d_data.new_cluster_sizes.begin(), d_data.new_cluster_sizes.end(), 0);
 
                 AssignClusters(d_ptrs.d_bvh, d_ptrs.d_positions, d_ptrs.d_new_sums, d_ptrs.d_new_cluster_sizes,

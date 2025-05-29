@@ -16,7 +16,7 @@ namespace Bcg {
         using result_type = std::shared_ptr<SurfaceMesh>;
 
         result_type operator()(const std::string &filepath) const {
-            result_type result;
+            result_type result = std::make_shared<SurfaceMesh>();
             Read(filepath, *result);
             return std::make_shared<SurfaceMesh>(*result);
         }

@@ -6,7 +6,7 @@
 #define ENGINE24_COLOR_H
 
 #include <cstdint>
-#include "glm/glm.hpp"
+#include "MatVec.h"
 
 namespace Bcg {
     uint32_t floatColorToUint32(const glm::vec4 &rgba);

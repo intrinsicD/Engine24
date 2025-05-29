@@ -1,87 +1,95 @@
 #ifndef LBVH_AABB_CUH
 #define LBVH_AABB_CUH
 
+#include "mat_vec.cuh"
 #include "utility.cuh"
 #include <thrust/swap.h>
 #include <thrust/reduce.h>
 #include <thrust/device_vector.h>
 #include <cmath>
-#include "glm/glm.hpp"
 
 namespace Bcg::cuda {
     struct aabb {
-        glm::vec3 max;
-        glm::vec3 min;
+        vec3 max;
+        vec3 min;
     };
 
     template<typename Object>
     struct aabb_getter;
 
     template<>
-    struct aabb_getter<glm::vec3> {
+    struct aabb_getter<vec3> {
         __device__ __host__
-        aabb operator()(const glm::vec3 v) const noexcept {
+        aabb operator()(const vec3 &v) const noexcept {
             return {v, v};
         }
     };
 
     __device__ __host__
     inline bool intersects(const aabb &lhs, const aabb &rhs) noexcept {
-        if (lhs.max.x < rhs.min.x || rhs.max.x < lhs.min.x) { return false; }
-        if (lhs.max.y < rhs.min.y || rhs.max.y < lhs.min.y) { return false; }
-        if (lhs.max.z < rhs.min.z || rhs.max.z < lhs.min.z) { return false; }
+        // Check if the two AABBs overlap
+        if (lhs.max[0] < rhs.min[0] || rhs.max[0] < lhs.min[0]) { return false; }
+        if (lhs.max[1] < rhs.min[1] || rhs.max[1] < lhs.min[1]) { return false; }
+        if (lhs.max[2] < rhs.min[2] || rhs.max[2] < lhs.min[2]) { return false; }
         return true;
     }
 
     __device__ __host__
     inline aabb merge(const aabb &lhs, const aabb &rhs) noexcept {
         aabb merged;
-        merged.max.x = ::fmaxf(lhs.max.x, rhs.max.x);
-        merged.max.y = ::fmaxf(lhs.max.y, rhs.max.y);
-        merged.max.z = ::fmaxf(lhs.max.z, rhs.max.z);
-        merged.min.x = ::fminf(lhs.min.x, rhs.min.x);
-        merged.min.y = ::fminf(lhs.min.y, rhs.min.y);
-        merged.min.z = ::fminf(lhs.min.z, rhs.min.z);
+        merged.max[0] = ::fmaxf(lhs.max[0], rhs.max[0]);
+        merged.max[1] = ::fmaxf(lhs.max[1], rhs.max[1]);
+        merged.max[2] = ::fmaxf(lhs.max[2], rhs.max[2]);
+        merged.min[0] = ::fminf(lhs.min[0], rhs.min[0]);
+        merged.min[1] = ::fminf(lhs.min[1], rhs.min[1]);
+        merged.min[2] = ::fminf(lhs.min[2], rhs.min[2]);
         return merged;
     }
+
+    struct aabb_merger{
+        __device__ __host__
+        aabb operator()(const aabb &lhs, const aabb &rhs) const noexcept {
+            return merge(lhs, rhs);
+        }
+    };
 
 // metrics defined in
 // Nearest Neighbor Queries (1995) ACS-SIGMOD
 // - Nick Roussopoulos, Stephen Kelley FredericVincent
 
     __device__ __host__
-    inline float mindist(const aabb &lhs, const glm::vec3 &rhs) noexcept {
-        const float dx = ::fminf(lhs.max.x, ::fmaxf(lhs.min.x, rhs.x)) - rhs.x;
-        const float dy = ::fminf(lhs.max.y, ::fmaxf(lhs.min.y, rhs.y)) - rhs.y;
-        const float dz = ::fminf(lhs.max.z, ::fmaxf(lhs.min.z, rhs.z)) - rhs.z;
+    inline float mindist(const aabb &lhs, const vec3 &rhs) noexcept {
+        const float dx = ::fminf(lhs.max[0], ::fmaxf(lhs.min[0], rhs[0])) - rhs[0];
+        const float dy = ::fminf(lhs.max[1], ::fmaxf(lhs.min[1], rhs[1])) - rhs[1];
+        const float dz = ::fminf(lhs.max[2], ::fmaxf(lhs.min[2], rhs[2])) - rhs[2];
         return dx * dx + dy * dy + dz * dz;
     }
 
     __device__ __host__
-    inline float minmaxdist(const aabb &lhs, const glm::vec3 &rhs) noexcept {
-        glm::vec3 lower_diff = lhs.min - rhs;
-        glm::vec3 upper_diff = lhs.max - rhs;
-        glm::vec3 rm_sq = glm::vec3(lower_diff.x * lower_diff.x, lower_diff.y * lower_diff.y, lower_diff.z * lower_diff.z);
-        glm::vec3 rM_sq = glm::vec3(upper_diff.x * upper_diff.x, upper_diff.y * upper_diff.y, upper_diff.z * upper_diff.z);
+    inline float minmaxdist(const aabb &lhs, const vec3 &rhs) noexcept {
+        vec3 lower_diff = lhs.min - rhs;
+        vec3 upper_diff = lhs.max - rhs;
+        vec3 rm_sq = vec3(lower_diff[0] * lower_diff[0], lower_diff[1] * lower_diff[1], lower_diff[2] * lower_diff[2]);
+        vec3 rM_sq = vec3(upper_diff[0] * upper_diff[0], upper_diff[1] * upper_diff[1], upper_diff[2] * upper_diff[2]);
 
-        if ((lhs.max.x + lhs.min.x) * 0.5f < rhs.x) {
-            thrust::swap(rm_sq.x, rM_sq.x);
+        if ((lhs.max[0] + lhs.min[0]) * 0.5f < rhs[0]) {
+            thrust::swap(rm_sq[0], rM_sq[0]);
         }
-        if ((lhs.max.y + lhs.min.y) * 0.5f < rhs.y) {
-            thrust::swap(rm_sq.y, rM_sq.y);
+        if ((lhs.max[1] + lhs.min[1]) * 0.5f < rhs[1]) {
+            thrust::swap(rm_sq[1], rM_sq[1]);
         }
-        if ((lhs.max.z + lhs.min.z) * 0.5f < rhs.z) {
-            thrust::swap(rm_sq.z, rM_sq.z);
+        if ((lhs.max[2] + lhs.min[2]) * 0.5f < rhs[2]) {
+            thrust::swap(rm_sq[2], rM_sq[2]);
         }
 
-        const float dx = rm_sq.x + rM_sq.y + rM_sq.z;
-        const float dy = rM_sq.x + rm_sq.y + rM_sq.z;
-        const float dz = rM_sq.x + rM_sq.y + rm_sq.z;
+        const float dx = rm_sq[0] + rM_sq[1] + rM_sq[2];
+        const float dy = rM_sq[0] + rm_sq[1] + rM_sq[2];
+        const float dz = rM_sq[0] + rM_sq[1] + rm_sq[2];
         return ::fminf(dx, ::fminf(dy, dz));
     }
 
     __device__ __host__
-    inline glm::vec3 centroid(const aabb &box) noexcept {
+    inline vec3 centroid(const aabb &box) noexcept {
         return (box.max + box.min) * 0.5f;
     }
 } // lbvh

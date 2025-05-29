@@ -5,7 +5,7 @@
 #ifndef ENGINE24_MATH_CUH
 #define ENGINE24_MATH_CUH
 
-#include "glm/glm.hpp"
+#include "mat_vec.cuh"
 #include <math_constants.h>
 
 namespace Bcg::cuda {
@@ -18,25 +18,25 @@ namespace Bcg::cuda {
     inline float clamp(float f, float min, float max) { return fmaxf(min, fminf(f, max)); }
 
     __device__ __host__
-    inline void sort_ascending(glm::vec3 &evals, glm::mat3 &evecs) {
-        if (evals.x > evals.y) {
-            thrust::swap(evals.x, evals.y);
+    inline void sort_ascending(vec3 &evals, mat3 &evecs) {
+        if (evals[0] > evals[1]) {
+            thrust::swap(evals[0], evals[1]);
             thrust::swap(evecs[0], evecs[1]);
         }
-        if (evals.x > evals.z) {
-            thrust::swap(evals.x, evals.z);
+        if (evals[0] > evals[2]) {
+            thrust::swap(evals[0], evals[2]);
             thrust::swap(evecs[0], evecs[2]);
         }
-        if (evals.y > evals.z) {
-            thrust::swap(evals.y, evals.z);
+        if (evals[1] > evals[2]) {
+            thrust::swap(evals[1], evals[2]);
             thrust::swap(evecs[1], evecs[2]);
         }
-        assert(evals.x <= evals.y);
-        assert(evals.y <= evals.z);
+        assert(evals[0] <= evals[1]);
+        assert(evals[1] <= evals[2]);
     }
 
     __host__ __device__
-    void rotate(glm::mat3 &m, glm::mat3 &evecs, int p, int q) {
+    void rotate(mat3 &m, mat3 &evecs, int p, int q) {
         if (fabs(m[p][q]) > 1e-9f) {  // Only rotate if the off-diagonal element is significant
             float tau = (m[q][q] - m[p][p]) / (2.0f * m[p][q]);
             float t = (tau >= 0.0f ? 1.0f : -1.0f) / (fabs(tau) + sqrt(1.0f + tau * tau));
@@ -73,19 +73,19 @@ namespace Bcg::cuda {
 
 
     // Simple Gram-Schmidt orthogonalization
-    __host__ __device__ void orthogonalize(glm::mat3 &evecs) {
-        evecs[1] = evecs[1] - evecs[0] * (glm::dot(evecs[1], evecs[0]));
-        evecs[1] = glm::normalize(evecs[1]);
-        evecs[2] = evecs[2] - evecs[0] * (glm::dot(evecs[2], evecs[0]));
-        evecs[2] = evecs[2] - evecs[1] * (glm::dot(evecs[2], evecs[1]));
-        evecs[2] = glm::normalize(evecs[2]);
+    __host__ __device__ void orthogonalize(mat3 &evecs) {
+        evecs[1] = evecs[1] - evecs[0] * (dot(evecs[1], evecs[0]));
+        evecs[1] = normalize(evecs[1]);
+        evecs[2] = evecs[2] - evecs[0] * (dot(evecs[2], evecs[0]));
+        evecs[2] = evecs[2] - evecs[1] * (dot(evecs[2], evecs[1]));
+        evecs[2] = normalize(evecs[2]);
     }
 
     __host__ __device__
-    glm::vec3 jacobi_eigen(const glm::mat3& m_, glm::mat3& evecs) {
-        evecs = glm::mat3(1.0f); // Identity matrix for initial eigenvectors
+    vec3 jacobi_eigen(const mat3 &m_, mat3 &evecs) {
+        evecs = mat3(1.0f); // Identity matrix for initial eigenvectors
         float scale = fmax(fmax(fabs(m_[0][0]), fabs(m_[1][1])), fabs(m_[2][2]));
-        glm::mat3 m = m_ * (1.0f / scale);
+        mat3 m = m_ * (1.0f / scale);
 
         for (int iter = 0; iter < 50; ++iter) {
             // Find the largest off-diagonal element in the upper triangle
@@ -116,17 +116,17 @@ namespace Bcg::cuda {
         }
 
         // Normalize eigenvectors
-        evecs[0] = glm::normalize(evecs[0]);
-        evecs[1] = glm::normalize(evecs[1]);
-        evecs[2] = glm::normalize(evecs[2]);
+        evecs[0] = normalize(evecs[0]);
+        evecs[1] = normalize(evecs[1]);
+        evecs[2] = normalize(evecs[2]);
 
         // Orthogonalize (if necessary)
         orthogonalize(evecs);
 
 #ifdef DEBUG_CUDA_BCG
-        float ortho_test_01 = fabsf(glm::dot(evecs[0], evecs[1]));
-    float ortho_test_12 = fabsf(glm::dot(evecs[1], evecs[2]));
-    float ortho_test_20 = fabsf(glm::dot(evecs[2], evecs[0]));
+        float ortho_test_01 = fabsf(dot(evecs[0], evecs[1]));
+    float ortho_test_12 = fabsf(dot(evecs[1], evecs[2]));
+    float ortho_test_20 = fabsf(dot(evecs[2], evecs[0]));
 
     if (ortho_test_01 > 1e-6f) {
         printf("ortho_test_01: %f\n", ortho_test_01);
@@ -140,19 +140,19 @@ namespace Bcg::cuda {
 #endif
 
         // Sort eigenvalues and eigenvectors
-        glm::vec3 evals = glm::vec3(m[0][0], m[1][1], m[2][2]);
+        vec3 evals(m[0][0], m[1][1], m[2][2]);
         sort_ascending(evals, evecs);
 
         return evals * scale;
     }
 
-    __device__ __host__ inline glm::vec3 real_symmetric_3x3_eigendecomposition(const glm::mat3 &m, glm::mat3 &evecs) {
-        float a = m[0].x;
-        float b = m[1].y;
-        float c = m[2].z;
-        float d = m[1].x;
-        float e = m[2].y;
-        float f = m[2].x;
+    __device__ __host__ inline vec3 real_symmetric_3x3_eigendecomposition(const mat3 &m, mat3 &evecs) {
+        float a = m[0][0];
+        float b = m[1][1];
+        float c = m[2][2];
+        float d = m[1][0];
+        float e = m[2][1];
+        float f = m[2][0];
         float dd = d * d;
         float ff = f * f;
         float ee = e * e;
@@ -183,9 +183,9 @@ namespace Bcg::cuda {
         float m2 = (d * (c - evals_y) - ef) / (f * (b - evals_y) - de);
         float m3 = (d * (c - evals_z) - ef) / (f * (b - evals_z) - de);
 
-        evecs[0] = glm::normalize(glm::vec3((evals_x - c - e * m1) / f, m1, 1));
-        evecs[1] = glm::normalize(glm::vec3((evals_y - c - e * m2) / f, m2, 1));
-        evecs[2] = glm::normalize(glm::vec3((evals_z - c - e * m3) / f, m3, 1));
+        evecs[0] = normalize(vec3((evals_x - c - e * m1) / f, m1, 1));
+        evecs[1] = normalize(vec3((evals_y - c - e * m2) / f, m2, 1));
+        evecs[2] = normalize(vec3((evals_z - c - e * m3) / f, m3, 1));
 
         orthogonalize(evecs);
 
@@ -207,40 +207,37 @@ namespace Bcg::cuda {
 #endif
 
         //sort eigenvalues and eigenvectors
-        glm::vec3 evals = glm::vec3(evals_x, evals_y, evals_z);
+        vec3 evals = vec3(evals_x, evals_y, evals_z);
         sort_ascending(evals, evecs);
         return evals;
     }
 
-    __device__ __host__ inline bool is_psd(const glm::mat3 &matrix) {
-        glm::mat3 L; // Lower triangular matrix
-
-        // Cholesky decomposition
+    __device__ __host__ inline mat3 cholesky_decomposition(const mat3 &matrix) {
+        mat3 L = mat3(0.0f); // Initialize L to zero
         for (int i = 0; i < 3; ++i) {
-            // Compute the diagonal element
-            float sum = 0.0f;
-            for (int k = 0; k < i; ++k) {
-                sum += L[k][i] * L[k][i];  // Adjusted for column-major format
-            }
-            float diag = matrix[i][i] - sum;
-
-            if (diag <= 0.0f) {
-                return false; // Matrix is not positive semi-definite
-            }
-
-            L[i][i] = sqrtf(diag);
-
-            // Compute the off-diagonal elements
-            for (int j = i + 1; j < 3; ++j) {
-                sum = 0.0f;
-                for (int k = 0; k < i; ++k) {
-                    sum += L[k][i] * L[k][j];  // Adjusted for column-major format
+            for (int j = 0; j <= i; ++j) {
+                float sum = 0.0f;
+                for (int k = 0; k < j; ++k) {
+                    sum += L[i][k] * L[j][k];
                 }
-                L[i][j] = (matrix[i][j] - sum) / L[i][i];  // Adjusted for column-major format
+                if (i == j) {
+                    L[i][j] = sqrtf(matrix[i][i] - sum);
+                } else {
+                    L[i][j] = (matrix[i][j] - sum) / L[j][j];
+                }
             }
         }
+        return L;
+    }
 
-        return true; // Matrix is positive semi-definite
+    __device__ __host__ inline bool is_psd(const mat3 &matrix) {
+        mat3 L = cholesky_decomposition(matrix);
+
+        if (L[0][0] <= 0.0f || L[1][1] <= 0.0f || L[2][2] <= 0.0f) {
+            return false; // Matrix is not positive semi-definite
+        }
+        // If we reach here, the matrix is positive semi-definite
+        return true;
     }
 }
 

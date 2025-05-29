@@ -1,10 +1,9 @@
 #ifndef GLM_TO_EIGEN_H
 #define GLM_TO_EIGEN_H
 
-#include "glm/glm.hpp"
-#include "glm/gtc/type_ptr.hpp" // For glm::value_ptr
 #include "Eigen/Core"
 #include "MatVec.h"
+#include "glm/gtc/type_ptr.hpp" // For glm::value_ptr
 
 namespace Bcg {
     // Mapping a glm::vec to an Eigen::Vector

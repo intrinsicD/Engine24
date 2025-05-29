@@ -5,7 +5,7 @@
 #ifndef ENGINE24_VEC_OPERATIONS_CUH
 #define ENGINE24_VEC_OPERATIONS_CUH
 
-#include "glm/glm.hpp"
+#include "mat_vec.cuh"
 
 namespace Bcg::cuda {
     __host__ __device__ inline glm::mat2 outer(const glm::vec2 &a, const glm::vec2 &b) {

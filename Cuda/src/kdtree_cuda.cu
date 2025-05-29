@@ -19,31 +19,31 @@ namespace Bcg::cuda { ;
     KDTreeCuda::~KDTreeCuda() = default;
 
     KDTreeCuda::operator bool() const {
-        return Engine::has<lbvh<glm::vec3, aabb_getter<glm::vec3>>>(entity_id);
+        return Engine::has<lbvh<vec3, aabb_getter<vec3>>>(entity_id);
     }
 
     void KDTreeCuda::build(const std::vector<Vector<float, 3>> &positions) {
-        std::vector<glm::vec3> ps(positions.size());
+        std::vector<vec3> ps(positions.size());
         for (size_t i = 0; i < positions.size(); ++i) {
-            ps[i] = {positions[i].x, positions[i].y, positions[i].z};
+            ps[i] = {positions[i][0], positions[i][1], positions[i][2]};
         }
 
-        auto &h_bvh = Engine::require<lbvh<glm::vec3, aabb_getter<glm::vec3>>>(entity_id);
-        h_bvh = lbvh<glm::vec3, aabb_getter<glm::vec3>>(ps.begin(), ps.end(), true);
+        auto &h_bvh = Engine::require<lbvh<vec3, aabb_getter<vec3>>>(entity_id);
+        h_bvh = lbvh<vec3, aabb_getter<vec3>>(ps.begin(), ps.end(), true);
     }
 
     [[nodiscard]] QueryResult
     KDTreeCuda::knn_query(const Vector<float, 3> &query_point, unsigned int num_closest) const {
-        auto &bvh = Engine::require<lbvh<glm::vec3, aabb_getter<glm::vec3>>>(entity_id);
+        auto &bvh = Engine::require<lbvh<vec3, aabb_getter<vec3>>>(entity_id);
         struct distance_calculator {
             __device__ __host__
-            float operator()(const glm::vec3 &point, const glm::vec3 &object) const noexcept {
-                return (point.x - object.x) * (point.x - object.x) +
-                       (point.y - object.y) * (point.y - object.y) +
-                       (point.z - object.z) * (point.z - object.z);
+            float operator()(const vec3 &point, const vec3 &object) const noexcept {
+                return (point[0] - object[0]) * (point[0] - object[0]) +
+                       (point[1] - object[1]) * (point[1] - object[1]) +
+                       (point[2] - object[2]) * (point[2] - object[2]);
             }
         };
-        glm::vec3 d_query = {query_point[0], query_point[1], query_point[2]};
+        vec3 d_query = {query_point[0], query_point[1], query_point[2]};
         QueryResult result;
         result.indices.resize(1, num_closest);
         result.distances.resize(1, num_closest);
@@ -51,14 +51,14 @@ namespace Bcg::cuda { ;
         for (long i = 0; i < num_closest; ++i) {
             auto idx = indices[i];
             result.indices(0, i) = idx;
-            result.distances(0, i) = glm::length(d_query - bvh.objects_host()[idx]);
+            result.distances(0, i) = length(d_query - bvh.objects_host()[idx]);
         }
         return result;
     }
 
     [[nodiscard]] QueryResult KDTreeCuda::radius_query(const Vector<float, 3> &query_point, float radius) const {
-        auto &bvh = Engine::require<lbvh<glm::vec3, aabb_getter<glm::vec3>>>(entity_id);
-        glm::vec3 d_query = {query_point[0], query_point[1], query_point[2]};
+        auto &bvh = Engine::require<lbvh<vec3, aabb_getter<vec3>>>(entity_id);
+        vec3 d_query = {query_point[0], query_point[1], query_point[2]};
         QueryResult result;
         std::vector<size_t> indices;
         const auto num_found = query_host(bvh, overlaps_sphere(d_query, radius), indices);
@@ -67,22 +67,22 @@ namespace Bcg::cuda { ;
         for (long i = 0; i < num_found; ++i) {
             auto idx = indices[i];
             result.indices(0, i) = idx;
-            result.distances(0, i) = glm::length(d_query - bvh.objects_host()[idx]);
+            result.distances(0, i) = length(d_query - bvh.objects_host()[idx]);
         }
         return result;
     }
 
     [[nodiscard]] QueryResult KDTreeCuda::closest_query(const Vector<float, 3> &query_point) const {
-        auto &bvh = Engine::require<lbvh<glm::vec3, aabb_getter<glm::vec3>>>(entity_id);
+        auto &bvh = Engine::require<lbvh<vec3, aabb_getter<vec3>>>(entity_id);
         struct distance_calculator {
             __device__ __host__
-            float operator()(const glm::vec3 &point, const glm::vec3 &object) const noexcept {
-                return (point.x - object.x) * (point.x - object.x) +
-                       (point.y - object.y) * (point.y - object.y) +
-                       (point.z - object.z) * (point.z - object.z);
+            float operator()(const vec3 &point, const vec3 &object) const noexcept {
+                return (point[0] - object[0]) * (point[0] - object[0]) +
+                       (point[1] - object[1]) * (point[1] - object[1]) +
+                       (point[2] - object[2]) * (point[2] - object[2]);
             }
         };
-        glm::vec3 d_query = {query_point[0], query_point[1], query_point[2]};
+        vec3 d_query = {query_point[0], query_point[1], query_point[2]};
         const auto next = query_host(bvh, nearest(d_query), distance_calculator());
         QueryResult result;
         result.indices.resize(1, 1);
@@ -94,7 +94,7 @@ namespace Bcg::cuda { ;
     }
 
     std::vector<std::uint32_t> KDTreeCuda::get_samples(unsigned int level) const {
-        auto &bvh = Engine::require<lbvh<glm::vec3, aabb_getter<glm::vec3>>>(entity_id);
+        auto &bvh = Engine::require<lbvh<vec3, aabb_getter<vec3>>>(entity_id);
         auto samples_h = bvh.get_samples(level);
         // Copy to host
         std::vector<std::uint32_t> samples(samples_h.size());
@@ -105,18 +105,18 @@ namespace Bcg::cuda { ;
     }
 
     unsigned int KDTreeCuda::compute_num_levels() const{
-        auto &bvh = Engine::require<lbvh<glm::vec3, aabb_getter<glm::vec3>>>(entity_id);
+        auto &bvh = Engine::require<lbvh<vec3, aabb_getter<vec3>>>(entity_id);
         return bvh.compute_num_levels(bvh.objects_host().size());
     }
 
     void KDTreeCuda::fill_samples() const {
-        auto &bvh = Engine::require<lbvh<glm::vec3, aabb_getter<glm::vec3>>>(entity_id);
+        auto &bvh = Engine::require<lbvh<vec3, aabb_getter<vec3>>>(entity_id);
         size_t num_closest = 128;
         auto &points = bvh.objects_host();
         Eigen::Matrix<size_t, -1, -1> knns(points.size(), num_closest);
         Eigen::Matrix<float, -1, -1> dists(points.size(), num_closest);
         for (size_t i = 0; i < points.size(); ++i) {
-            auto result = knn_query({points[i].x, points[i].y, points[i].z}, num_closest);
+            auto result = knn_query({points[i][0], points[i][1], points[i][2]}, num_closest);
 
             auto indices = std::vector<size_t>(result.indices.data(), result.indices.data() + result.indices.size());
             auto distances = std::vector<float>(result.distances.data(), result.distances.data() + result.distances.size());
