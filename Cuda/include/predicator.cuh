@@ -93,5 +93,18 @@ namespace Bcg::cuda {
     inline query_knn knn(const vec3 &point, unsigned int k) noexcept {
         return query_knn(point, k);
     }
+
+    template<typename ObjectType, typename QueryObjectType>
+    struct distance_calculator;
+
+    template<>
+    struct distance_calculator<vec3, vec3> {
+        __device__ __host__
+        float operator()(const vec3 &point, const vec3 &object) const noexcept {
+            return (point[0] - object[0]) * (point[0] - object[0]) +
+                   (point[1] - object[1]) * (point[1] - object[1]) +
+                   (point[2] - object[2]) * (point[2] - object[2]);
+        }
+    };
 } // lbvh
 #endif// LBVH_PREDICATOR_CUH

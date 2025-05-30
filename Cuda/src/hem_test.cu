@@ -45,15 +45,6 @@ namespace Bcg::cuda {
         }
     };
 
-    struct distance_calculator {
-        __device__ __host__
-        float operator()(const vec3 &point, const vec3 &object) const noexcept {
-            return (point[0] - object[0]) * (point[0] - object[0]) +
-                   (point[1] - object[1]) * (point[1] - object[1]) +
-                   (point[2] - object[2]) * (point[2] - object[2]);
-        }
-    };
-
     __device__ float atomicMaxFloat(float *address, float val) {
         int *address_as_int = (int *) address;
         int old = *address_as_int, assumed;
@@ -193,14 +184,16 @@ namespace Bcg::cuda {
             cudaMalloc(&d_alpha0, sizeof(float));
             cudaMemcpy(d_alpha0, &params.alpha0, sizeof(float), cudaMemcpyHostToDevice);
 
+            auto dist = distance_calculator<vec3, vec3>();
+
             thrust::for_each(thrust::make_counting_iterator<std::uint32_t>(0),
                              thrust::make_counting_iterator<std::uint32_t>(components.parents_indices.size()),
-                             [d_components, d_radii, d_alpha0, params] __device__(unsigned int idx) {
+                             [d_components, d_radii, d_alpha0, params, dist] __device__(unsigned int idx) {
                                  unsigned int parent_idx = d_components.parents_indices[idx];
                                  unsigned int indices[32];
                                  const vec3 &query_point = d_components.means[parent_idx];
                                  auto nn = query_device(d_components.d_bvh_means, knn(query_point, params.knn),
-                                                        distance_calculator(),
+                                                        dist,
                                                         indices, 32);
                                  float radius;
                                  float alpha0 = *d_alpha0;
@@ -356,10 +349,12 @@ namespace Bcg::cuda {
         cudaMemcpy(&max_radius, d_max_radius, sizeof(float), cudaMemcpyDeviceToHost);
         printf("Max radius: %f\n", max_radius);
         //TODO this fails... out of bounds access...
+
+        auto dist = distance_calculator<vec3, vec3>();
         thrust::for_each(thrust::make_counting_iterator<std::uint32_t>(0),
                          thrust::make_counting_iterator<std::uint32_t>(num_parents),
                          [d_components, d_comp_likelihood_sums, d_parents_likelihoods,
-                                 d_parents_children_indices, d_parents_children_valid, d_parents_radii, d_alpha, d_nn_found] __device__(
+                                 d_parents_children_indices, d_parents_children_valid, d_parents_radii, d_alpha, d_nn_found, dist] __device__(
                                  unsigned int s_) {
                              unsigned int parent_idx = d_components.parents_indices[s_];
 
@@ -379,7 +374,7 @@ namespace Bcg::cuda {
                              auto nn = query_device(d_components.d_bvh_means, overlaps_sphere(mean_parent, radius),
                                                     radius_query_indices.data, 64);
                              if (nn < 6) {
-                                 nn = query_device(d_components.d_bvh_means, knn(mean_parent, 6), distance_calculator(),
+                                 nn = query_device(d_components.d_bvh_means, knn(mean_parent, 6), dist,
                                                    radius_query_indices.data, 32);
                              }
 

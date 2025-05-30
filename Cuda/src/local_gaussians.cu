@@ -83,16 +83,6 @@ namespace Bcg::cuda {
         return {};
     }
 
-    struct distance_calculator {
-        __device__ __host__
-        float operator()(const vec3 point, const vec3 object) const noexcept {
-            // Calculate squared Euclidean distance
-            return (point[0] - object[0]) * (point[0] - object[0]) +
-                   (point[1] - object[1]) * (point[1] - object[1]) +
-                   (point[2] - object[2]) * (point[2] - object[2]);
-        }
-    };
-
     __global__ void compute_means_and_covs_kernel(
             const dbvh d_bvh,
             const thrust::device_ptr<vec3> d_positions,
@@ -101,11 +91,12 @@ namespace Bcg::cuda {
             size_t num_objects, int k) {
         unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
+        auto dist = distance_calculator<vec3, vec3>();
         if (idx < num_objects) {
             const vec3 query = d_positions[idx];
             unsigned int indices[32];
             const float num_found = query_device(d_bvh, knn(query, k),
-                                                distance_calculator(), indices);
+                                                 dist, indices);
 
             vec3 mean(0);
             mat3 cov(0);

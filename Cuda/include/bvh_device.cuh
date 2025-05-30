@@ -38,6 +38,7 @@ namespace Bcg::cuda::bvh {
             using aabb_type = aabb;
             using object_type = Object;
 
+            size_t num_internal_nodes;
             size_t num_nodes;
             size_t num_objects;
 
@@ -53,6 +54,7 @@ namespace Bcg::cuda::bvh {
             using aabb_type = aabb;
             using object_type = Object;
 
+            size_t num_internal_nodes;
             size_t num_nodes;
             size_t num_objects;
 
@@ -174,18 +176,17 @@ namespace Bcg::cuda::bvh {
         using aabb_type = aabb;
         using object_type = Object;
 
-        size_t num_objects;
         thrust::host_vector<node_type> nodes;
         thrust::host_vector<aabb_type> aabbs;
-        thrust::host_vector<object_type> *objects;
+        thrust::host_vector<object_type> objects;
         aabb_type aabb_whole;
 
         size_t num_internal_nodes() const {
-            return num_objects - 1;
+            return objects.size() - 1;
         }
 
         size_t num_nodes() const {
-            return num_objects * 2 - 1;
+            return objects.size() * 2 - 1;
         }
     };
 
@@ -195,60 +196,63 @@ namespace Bcg::cuda::bvh {
         using aabb_type = aabb;
         using object_type = Object;
 
-        size_t num_objects;
         thrust::device_vector<node_type> nodes;
         thrust::device_vector<aabb_type> aabbs;
         thrust::device_vector<object_type> objects;
         aabb_type aabb_whole;
 
         size_t num_internal_nodes() const {
-            return num_objects - 1;
+            return objects.size() - 1;
         }
 
         size_t num_nodes() const {
-            return num_objects * 2 - 1;
+            return objects.size() * 2 - 1;
         }
     };
 
     template<typename Object>
     device_data<Object> get_device_data(const host_data<Object> &h_lbvh) {
         device_data<Object> d_lbvh;
-        d_lbvh.num_objects = h_lbvh.num_objects;
         d_lbvh.nodes = h_lbvh.nodes;
         d_lbvh.aabbs = h_lbvh.aabbs;
-        *d_lbvh.objects = *h_lbvh.objects;
+        d_lbvh.objects = h_lbvh.objects;
+        d_lbvh.aabb_whole = h_lbvh.aabb_whole;
         return d_lbvh;
     }
 
     template<typename Object>
     host_data<Object> get_host_data(const device_data<Object> &d_lbvh) {
         host_data<Object> h_lbvh;
-        h_lbvh.num_objects = d_lbvh.num_objects;
         h_lbvh.nodes = d_lbvh.nodes;
         h_lbvh.aabbs = d_lbvh.aabbs;
-        *h_lbvh.objects = *d_lbvh.objects;
+        h_lbvh.objects = d_lbvh.objects;
+        h_lbvh.aabb_whole = d_lbvh.aabb_whole;
         return h_lbvh;
     }
 
     template<typename Object>
     detail::basic_device_bvh<Object, false> get_device_ptrs(device_data<Object> &d_lbvh) {
         detail::basic_device_bvh<Object, false> d_ptrs;
-        d_ptrs.num_nodes = d_lbvh.nodes.size();
-        d_ptrs.num_objects = d_lbvh.num_objects;
+        d_ptrs.num_internal_nodes = d_lbvh.num_internal_nodes();
+        d_ptrs.num_nodes = d_lbvh.num_nodes();
+        d_ptrs.num_objects = d_lbvh.objects.size();
         d_ptrs.nodes = d_lbvh.nodes.data().get();
         d_ptrs.aabbs = d_lbvh.aabbs.data().get();
-        d_ptrs.objects = d_lbvh.objects->data().get();
+        d_ptrs.objects = d_lbvh.objects.data().get();
+        d_ptrs.aabb_whole = &d_lbvh.aabb_whole;
         return d_ptrs;
     }
 
     template<typename Object>
     detail::basic_device_bvh<Object, true> get_device_ptrs(const device_data<Object> &d_lbvh) {
         detail::basic_device_bvh<Object, true> d_ptrs;
-        d_ptrs.num_nodes = d_lbvh.nodes.size();
-        d_ptrs.num_objects = d_lbvh.num_objects;
+        d_ptrs.num_internal_nodes = d_lbvh.num_internal_nodes();
+        d_ptrs.num_nodes = d_lbvh.num_nodes();
+        d_ptrs.num_objects = d_lbvh.objects.size();
         d_ptrs.nodes = d_lbvh.nodes.data().get();
         d_ptrs.aabbs = d_lbvh.aabbs.data().get();
-        d_ptrs.objects = d_lbvh.objects->data().get();
+        d_ptrs.objects = d_lbvh.objects.data().get();
+        d_ptrs.aabb_whole = &d_lbvh.aabb_whole;
         return d_ptrs;
     }
 
@@ -278,60 +282,60 @@ namespace Bcg::cuda::bvh {
 
     template<typename Object>
     void construct_aabbs_per_object(device_data<Object> &lbvh) {
-        if (lbvh.num_objects != lbvh.objects->size()) {
-            lbvh.num_objects = lbvh.objects->size();
-        }
         const auto num_nodes = lbvh.num_nodes();
-        if (lbvh.nodes.size() != num_nodes) {
-            lbvh.nodes.resize(num_nodes);
-        }
         if (lbvh.aabbs.size() != num_nodes) {
             lbvh.aabbs.resize(num_nodes);
         }
-
-        thrust::transform(lbvh.objects->begin(), lbvh.objects->end(),
+        thrust::transform(thrust::device,
+                          lbvh.objects.begin(),
+                          lbvh.objects.end(),
                           lbvh.aabbs.begin() + lbvh.num_internal_nodes(), aabb_getter<Object>());
+    }
+
+    template<typename Object>
+    aabb compute_whole_aabb(const device_data<Object> &lbvh) {
+        constexpr auto inf = std::numeric_limits<float>::infinity();
+        aabb whole{vec3(-inf), vec3(inf)};
+        return thrust::reduce(thrust::device,
+                              lbvh.aabbs.begin() + lbvh.num_internal_nodes(),
+                              lbvh.aabbs.end(),
+                              whole,
+                              aabb_merger{});
+    }
+
+    template<typename Object>
+    void compute_morton_codes(const device_data<Object> &lbvh,
+                              thrust::device_vector<unsigned int> &morton_codes) {
+        thrust::transform(thrust::device,
+                          lbvh.aabbs.begin() + lbvh.num_internal_nodes(),
+                          lbvh.aabbs.end(),
+                          morton_codes.begin(),
+                          default_morton_code_calculator{lbvh.aabb_whole});
     }
 
     //Assumes that the aabbs are already calculated per object and stored in aabbs.begin() + num_internal_nodes to aabbs.end()
     template<typename Object>
-    void construct_device(device_data<Object> &lbvh, aabb &aabb_whole) {
+    void construct_device(device_data<Object> &lbvh) {
         using index_type = std::uint32_t;
 
-        const unsigned int num_objects = lbvh.num_objects;
-        const unsigned int num_internal_nodes = num_objects - 1;
-        const unsigned int num_nodes = num_objects * 2 - 1;
+        const unsigned int num_objects = lbvh.objects.size();
+        const unsigned int num_internal_nodes = lbvh.num_internal_nodes();
+        const unsigned int num_nodes = lbvh.num_nodes();
 
         // --------------------------------------------------------------------
         // calculate morton code of each points
-        const auto inf = std::numeric_limits<float>::infinity();
 
-        if (aabb_whole.min[0] == inf ||
-            aabb_whole.min[1] == inf ||
-            aabb_whole.min[2] == inf ||
-            aabb_whole.max[0] == -inf ||
-            aabb_whole.max[1] == -inf ||
-            aabb_whole.max[2] == -inf) {
+        if (lbvh.aabbs.empty()) {
+            construct_aabbs_per_object(lbvh);
+        }
+
+        if (lbvh.aabb_whole.empty()) {
             // calculate whole AABB if it is not given.
-
-            aabb default_aabb;
-            default_aabb.max[0] = -inf;
-            default_aabb.min[0] = inf;
-            default_aabb.max[1] = -inf;
-            default_aabb.min[1] = inf;
-            default_aabb.max[2] = -inf;
-            default_aabb.min[2] = inf;
-
-
-            aabb_whole = thrust::reduce(thrust::device, lbvh.aabbs.begin() + num_internal_nodes,
-                                        lbvh.aabbs.end(), default_aabb,
-                                        aabb_merger{});
+            lbvh.aabb_whole = compute_whole_aabb(lbvh);
         }
 
         thrust::device_vector<unsigned int> morton(num_objects);
-        thrust::transform(thrust::device, lbvh.aabbs.begin() + num_internal_nodes,
-                          lbvh.aabbs.end(), morton.begin(),
-                          default_morton_code_calculator{aabb_whole});
+        compute_morton_codes<Object>(lbvh, morton);
 
         // --------------------------------------------------------------------
         // sort object-indices by morton code
@@ -343,8 +347,8 @@ namespace Bcg::cuda::bvh {
         // keep indices ascending order
         thrust::stable_sort_by_key(thrust::device, morton.begin(), morton.end(),
                                    thrust::make_zip_iterator(
-                                       thrust::make_tuple(lbvh.aabbs.begin() + num_internal_nodes,
-                                                          indices.begin())));
+                                           thrust::make_tuple(lbvh.aabbs.begin() + num_internal_nodes,
+                                                              indices.begin())));
 
         // --------------------------------------------------------------------
         // check morton codes are unique
@@ -365,7 +369,6 @@ namespace Bcg::cuda::bvh {
                                   m64 |= idx;
                                   return m64;
                               });
-            thrust::stable_sort(thrust::device, morton64.begin(), morton64.end());
         }
 
         // --------------------------------------------------------------------
@@ -376,7 +379,9 @@ namespace Bcg::cuda::bvh {
         default_node.left_idx = 0xFFFFFFFF;
         default_node.right_idx = 0xFFFFFFFF;
         default_node.object_idx = 0xFFFFFFFF;
-        lbvh.nodes.resize(num_nodes, default_node); //TODO maybe remove default_node here?
+        if(lbvh.nodes.size() != num_nodes) {
+            lbvh.nodes.resize(num_nodes, default_node);
+        }
 
         thrust::transform(thrust::device, indices.begin(), indices.end(),
                           lbvh.nodes.begin() + num_internal_nodes,
@@ -394,14 +399,13 @@ namespace Bcg::cuda::bvh {
 
         const auto self = get_device_ptrs(lbvh);
 
-        detail::node *nodes = self.nodes;
         if (morton_code_is_unique) {
             const unsigned int *node_code = morton.data().get();
-            detail::construct_internal_nodes(nodes, node_code, num_objects);
+            detail::construct_internal_nodes(self.nodes, node_code, num_objects);
         } else // 64bit version
         {
             const unsigned long long int *node_code = morton64.data().get();
-            detail::construct_internal_nodes(nodes, node_code, num_objects);
+            detail::construct_internal_nodes(self.nodes, node_code, num_objects);
         }
 
         // --------------------------------------------------------------------
@@ -446,9 +450,9 @@ namespace Bcg::cuda::bvh {
 
     //Assumes that the aabbs are already calculated per object and stored in aabbs.begin() + num_internal_nodes to aabbs.end()
     template<typename Object>
-    void construct_host(host_data<Object> &lbvh, aabb &aabb_whole) {
+    void construct_host(host_data<Object> &lbvh) {
         device_data d_lbvh = get_device_data(lbvh);
-        construct_device(d_lbvh, aabb_whole);
+        construct_device(d_lbvh);
         lbvh = get_host_data(d_lbvh);
     }
 }
