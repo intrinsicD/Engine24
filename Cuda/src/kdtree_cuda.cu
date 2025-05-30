@@ -4,7 +4,6 @@
 
 #include "Cuda/KDTreeCuda.h"
 #include "lbvh.cuh"
-#include "bvh_device.cuh"
 #include "query_device.cuh"
 #include "Engine.h"
 #include "Logger.h"

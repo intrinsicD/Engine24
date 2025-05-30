@@ -11,6 +11,7 @@
 #include "entt/fwd.hpp"
 
 namespace Bcg::cuda {
+    //TODO test new bvh more and then transition to it!!!
     class KDTreeCuda {
     public:
         explicit KDTreeCuda(entt::entity entity_id);

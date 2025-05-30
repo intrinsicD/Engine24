@@ -9,6 +9,7 @@
 #include <thrust/host_vector.h>
 #include <thrust/transform.h>
 #include <thrust/fill.h>
+#include <thrust/shuffle.h>
 #include "bvh_device.cuh"
 
 namespace Bcg::cuda::kmeans {
@@ -118,10 +119,9 @@ namespace Bcg::cuda::kmeans {
         thrust::for_each(thrust::device,
                          thrust::make_counting_iterator<index_type>(0),
                          thrust::make_counting_iterator<index_type>(data.num_objects),
-        [data] __device__(index_type
-        idx) {
+        [data] __device__ (index_type idx) {
             const auto &query = data.d_positions[idx];
-            const auto best = query_device(data.bvh, nearest(query), distance_calculator());
+            const auto best = bvh::query_device(data.bvh, nearest(query), distance_calculator());
 
             const auto best_cluster = best.first;
             const auto best_distance = best.second;
@@ -148,8 +148,7 @@ namespace Bcg::cuda::kmeans {
         thrust::for_each(thrust::device,
                          thrust::make_counting_iterator<index_type>(0),
                          thrust::make_counting_iterator<index_type>(data.num_clusters),
-        [data] __device__(index_type
-        idx) {
+        [data] __device__(index_type idx) {
             const auto cluster_size = data.d_new_cluster_sizes[idx];
             if (cluster_size == 0) {
                 return;
@@ -163,7 +162,23 @@ namespace Bcg::cuda::kmeans {
     }
 
     template<typename ScalarType, typename VecType, typename IndexType>
+    void initialize_random_centroids(KmeansDeviceData < ScalarType, VecType, IndexType > &data, unsigned int num_clusters) {
+        using vec_type = VecType;
+        using index_type = IndexType;
+
+        thrust::device_vector<index_type> indices(data.num_objects);
+        thrust::sequence(indices.begin(), indices.end());
+
+        thrust::shuffle(indices.begin(), indices.end(), thrust::default_random_engine());
+
+        for (unsigned int i = 0; i < num_clusters; ++i) {
+            data.centroids[i] = data.positions[indices[i]];
+        }
+    }
+
+    template<typename ScalarType, typename VecType, typename IndexType>
     void kmeans_device(KmeansDeviceData < ScalarType, VecType, IndexType > &data, unsigned int max_iterations) {
+        initialize_random_centroids(data, data.num_clusters);
         cuda::aabb aabb;
         for (unsigned int i = 0;i < max_iterations;++i) {
             data.bvh = {};
