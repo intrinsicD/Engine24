@@ -11,11 +11,15 @@
 
 namespace Bcg {
     void GuiModuleAABB::activate()  {
+        if (base_activate()) {
 
+        }
     }
 
     void GuiModuleAABB::deactivate()  {
+        if (base_deactivate()) {
 
+        }
     }
 
     static bool show_gui = false;
@@ -25,9 +29,12 @@ namespace Bcg {
         if (ImGui::BeginMenu("Entity")) {
             if (ImGui::BeginMenu("AABB")) {
                 ImGui::MenuItem("Instance", nullptr, &show_gui);
-                ImGui::MenuItem("Pool", nullptr, &show_pool_gui);
                 ImGui::EndMenu();
             }
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Pools")) {
+            ImGui::MenuItem("AABBs", nullptr, &show_pool_gui);
             ImGui::EndMenu();
         }
     }
@@ -36,28 +43,28 @@ namespace Bcg {
         if (show_gui) {
             if (ImGui::Begin("AABB", &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
                 auto &picked = Engine::Context().get<Picked>();
-                render(picked.entity.id);
+                show(picked.entity.id);
             }
             ImGui::End();
         }
         if (show_pool_gui) {
-            if (ImGui::Begin("AABB Pool", &show_pool_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
+            if (ImGui::Begin("AABBs", &show_pool_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
                 auto &pool = Engine::Context().get<Pool<AABB> >();
-                render(pool);
+                show(pool);
             }
             ImGui::End();
         }
     }
 
-    void GuiModuleAABB::render(const PoolHandle<AABB> &h_aabb) {
+    void GuiModuleAABB::show(const PoolHandle<AABB> &h_aabb) {
         Gui::Show(h_aabb);
     }
 
-    void GuiModuleAABB::render(const AABB &aabb) {
+    void GuiModuleAABB::show(const AABB &aabb) {
         Gui::Show(aabb);
     }
 
-    void GuiModuleAABB::render(Pool<AABB> &pool) {
+    void GuiModuleAABB::show(Pool<AABB> &pool) {
         Gui::Show(*pool.ref_count.base());
         Gui::Show(*pool.objects.base());
         if (ImGui::CollapsingHeader("Properties")) {
@@ -65,7 +72,7 @@ namespace Bcg {
         }
     }
 
-    void GuiModuleAABB::render(entt::entity entity_id) {
+    void GuiModuleAABB::show(entt::entity entity_id) {
         Gui::Show(entity_id);
     }
 }

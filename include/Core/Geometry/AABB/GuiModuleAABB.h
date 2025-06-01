@@ -24,13 +24,13 @@ namespace Bcg {
 
         void render_gui() override;
 
-        static void render(const PoolHandle<AABB> &h_aabb);
+        static void show(const PoolHandle<AABB> &h_aabb);
 
-        static void render(const AABB &aabb);
+        static void show(const AABB &aabb);
 
-        static void render(Pool<AABB> &pool);
+        static void show(Pool<AABB> &pool);
 
-        static void render(entt::entity entity_id);
+        static void show(entt::entity entity_id);
     };
 }
 
