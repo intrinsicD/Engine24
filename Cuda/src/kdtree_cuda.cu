@@ -1,6 +1,7 @@
 //
 // Created by alex on 08.08.24.
 //
+#define FMT_USE_NONTYPE_TEMPLATE_ARGS 0
 
 #include "Cuda/KDTreeCuda.h"
 #include "lbvh.cuh"
@@ -13,19 +14,19 @@
 
 #include "kmeans.cuh"
 
-namespace Bcg::cuda { ;
+namespace Bcg::cuda {
+    ;
 
     KDTreeCuda::KDTreeCuda(entt::entity entity_id) : entity_id(entity_id) {
-
     }
 
     KDTreeCuda::~KDTreeCuda() = default;
 
     KDTreeCuda::operator bool() const {
-        return Engine::has<lbvh<vec3, aabb_getter<vec3>>>(entity_id);
+        return Engine::has<lbvh<vec3, aabb_getter<vec3> > >(entity_id);
     }
 
-    void KDTreeCuda::build(const std::vector<Vector<float, 3>> &positions) {
+    void KDTreeCuda::build(const std::vector<Vector<float, 3> > &positions) {
         thrust::host_vector<vec3> ps(positions.size());
         cuda::aabb aabb;
         aabb.min = vec3(std::numeric_limits<float>::max());
@@ -35,41 +36,37 @@ namespace Bcg::cuda { ;
             aabb = merge(aabb, aabb_getter<vec3>()(ps[i]));
         }
 
-        auto &h_bvh = Engine::require<lbvh<vec3, aabb_getter<vec3>>>(entity_id);
+        auto &h_bvh = Engine::require<lbvh<vec3, aabb_getter<vec3> > >(entity_id);
 
         auto start_time = std::chrono::high_resolution_clock::now();
-        h_bvh = lbvh<vec3, aabb_getter<vec3>>(ps.begin(), ps.end(), true);
+        h_bvh = lbvh<vec3, aabb_getter<vec3> >(ps.begin(), ps.end(), true);
         auto end_time = std::chrono::high_resolution_clock::now();
 
         std::chrono::duration<double> build_duration = end_time - start_time;
-        Log::Info("Build LBVH in " + std::to_string(build_duration.count()) + " seconds");
+        Log::Info("Build LBVH in {} seconds", build_duration.count());
 
         auto result = query_host(h_bvh, nearest(ps[0]), distance_calculator<vec3, vec3>());
-        Log::Info("Nearest to first point: " + std::to_string(result.first) + " with distance: " + std::to_string(result.second));
+        Log::Info("Nearest to first point: {} with distance: {}", result.first, result.second);
         {
             start_time = std::chrono::high_resolution_clock::now();
             //TODO: build from host to see if there is a problem while loading
-            auto &bvh = Engine::require<cuda::bvh::device_data<vec3>>(entity_id);
+            auto &bvh = Engine::require<cuda::bvh::device_data<vec3> >(entity_id);
             bvh.objects = ps;
             bvh::construct_device(bvh);
             end_time = std::chrono::high_resolution_clock::now();
 
             build_duration = end_time - start_time;
-            Log::Info("Build LBVH_DEVICE in " + std::to_string(build_duration.count()) + " seconds");
-
+            Log::Info("Build LBVH_DEVICE in {} seconds", build_duration.count());
             const cuda::bvh::host_data<vec3> h_bvh_device = cuda::bvh::get_host_data(bvh);
             distance_calculator<vec3, vec3> dist;
             auto result = cuda::bvh::query_host<vec3>(h_bvh_device, nearest(ps[0]), dist);
-            Log::Info("Nearest to first point: " + std::to_string(result.first) + " with distance: " + std::to_string(result.second));
+            Log::Info("Nearest to first point: {} with distance: {}", result.first, result.second);
         }
-
-
-
     }
 
     [[nodiscard]] QueryResult
     KDTreeCuda::knn_query(const Vector<float, 3> &query_point, unsigned int num_closest) const {
-        auto &bvh = Engine::require<lbvh<vec3, aabb_getter<vec3>>>(entity_id);
+        auto &bvh = Engine::require<lbvh<vec3, aabb_getter<vec3> > >(entity_id);
         struct distance_calculator {
             __device__ __host__
             float operator()(const vec3 &point, const vec3 &object) const noexcept {
@@ -92,24 +89,23 @@ namespace Bcg::cuda { ;
     }
 
     [[nodiscard]] QueryResult KDTreeCuda::radius_query(const Vector<float, 3> &query_point, float radius) const {
-       /* auto &bvh = Engine::require<lbvh<vec3, aabb_getter<vec3>>>(entity_id);
-        vec3 d_query = {query_point[0], query_point[1], query_point[2]};
-        QueryResult result;
-        std::vector<size_t> indices;
-        const auto num_found = query_host(bvh, overlaps_sphere(d_query, radius), indices);
-        result.indices.resize(1, num_found);
-        result.distances.resize(1, num_found);
-        for (long i = 0; i < num_found; ++i) {
-            auto idx = indices[i];
-            result.indices(0, i) = idx;
-            result.distances(0, i) = length(d_query - bvh.objects_host()[idx]);
-        }*/
+        /* auto &bvh = Engine::require<lbvh<vec3, aabb_getter<vec3>>>(entity_id);
+         vec3 d_query = {query_point[0], query_point[1], query_point[2]};
+         QueryResult result;
+         std::vector<size_t> indices;
+         const auto num_found = query_host(bvh, overlaps_sphere(d_query, radius), indices);
+         result.indices.resize(1, num_found);
+         result.distances.resize(1, num_found);
+         for (long i = 0; i < num_found; ++i) {
+             auto idx = indices[i];
+             result.indices(0, i) = idx;
+             result.distances(0, i) = length(d_query - bvh.objects_host()[idx]);
+         }*/
 
-        QueryResult result;
-        {
+        QueryResult result; {
             vec3 d_query = {query_point[0], query_point[1], query_point[2]};
 
-            auto &bvh = Engine::require<cuda::bvh::device_data<vec3>>(entity_id);
+            auto &bvh = Engine::require<cuda::bvh::device_data<vec3> >(entity_id);
 
             const cuda::bvh::host_data<vec3> h_bvh_device = cuda::bvh::get_host_data(bvh);
 
@@ -129,7 +125,7 @@ namespace Bcg::cuda { ;
     }
 
     [[nodiscard]] QueryResult KDTreeCuda::closest_query(const Vector<float, 3> &query_point) const {
-        auto &bvh = Engine::require<lbvh<vec3, aabb_getter<vec3>>>(entity_id);
+        auto &bvh = Engine::require<lbvh<vec3, aabb_getter<vec3> > >(entity_id);
         struct distance_calculator {
             __device__ __host__
             float operator()(const vec3 &point, const vec3 &object) const noexcept {
@@ -150,7 +146,7 @@ namespace Bcg::cuda { ;
     }
 
     std::vector<std::uint32_t> KDTreeCuda::get_samples(unsigned int level) const {
-        auto &bvh = Engine::require<lbvh<vec3, aabb_getter<vec3>>>(entity_id);
+        auto &bvh = Engine::require<lbvh<vec3, aabb_getter<vec3> > >(entity_id);
         auto samples_h = bvh.get_samples(level);
         // Copy to host
         std::vector<std::uint32_t> samples(samples_h.size());
@@ -160,13 +156,13 @@ namespace Bcg::cuda { ;
         return samples;
     }
 
-    unsigned int KDTreeCuda::compute_num_levels() const{
-        auto &bvh = Engine::require<lbvh<vec3, aabb_getter<vec3>>>(entity_id);
+    unsigned int KDTreeCuda::compute_num_levels() const {
+        auto &bvh = Engine::require<lbvh<vec3, aabb_getter<vec3> > >(entity_id);
         return bvh.compute_num_levels(bvh.objects_host().size());
     }
 
     void KDTreeCuda::fill_samples() const {
-        auto &bvh = Engine::require<lbvh<vec3, aabb_getter<vec3>>>(entity_id);
+        auto &bvh = Engine::require<lbvh<vec3, aabb_getter<vec3> > >(entity_id);
         size_t num_closest = 128;
         auto &points = bvh.objects_host();
         Eigen::Matrix<size_t, -1, -1> knns(points.size(), num_closest);
@@ -175,7 +171,8 @@ namespace Bcg::cuda { ;
             auto result = knn_query({points[i][0], points[i][1], points[i][2]}, num_closest);
 
             auto indices = std::vector<size_t>(result.indices.data(), result.indices.data() + result.indices.size());
-            auto distances = std::vector<float>(result.distances.data(), result.distances.data() + result.distances.size());
+            auto distances = std::vector<float>(result.distances.data(),
+                                                result.distances.data() + result.distances.size());
             //sort by distance in ascending order
             std::vector<size_t> sorted_indices(num_closest);
             std::iota(sorted_indices.begin(), sorted_indices.end(), 0); // Create index mapping.
@@ -196,7 +193,7 @@ namespace Bcg::cuda { ;
 
         //bvh.fill_samples_new(knns.block(0, 1, points.size(), num_closest -1), dists.block(0, 1, points.size(), num_closest -1)); //somehow broken
         //bvh.fill_samples(knns.block(0, 1, points.size(), num_closest -1), dists.block(0, 1, points.size(), num_closest -1)); //better than fill_samples_new but still not really blue noise
-        bvh.fill_samples_closest_to_center(knns.block(0, 1, points.size(), num_closest -1), dists.block(0, 1, points.size(), num_closest -1));
+        bvh.fill_samples_closest_to_center(knns.block(0, 1, points.size(), num_closest - 1),
+                                           dists.block(0, 1, points.size(), num_closest - 1));
     }
-
 }

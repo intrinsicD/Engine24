@@ -472,7 +472,7 @@ namespace Bcg::cuda {
             Eigen::Matrix<size_t, -1, -1> knns_ = knns.transpose();
             Eigen::Matrix<float, -1, -1> dists_ = dists.transpose();
 
-            thrust::device_vector<size_t> d_knns(knns.size(), -1);
+            thrust::device_vector<size_t> d_knns(knns.size(), size_t(-1));
             thrust::device_vector<float> d_dists(knns.size(), -1);
             //copy the knns and dists to device
             thrust::copy(knns_.data(), knns_.data() + knns_.size(), d_knns.begin());
@@ -616,7 +616,7 @@ namespace Bcg::cuda {
             Eigen::Matrix<size_t, -1, -1> knns_ = knns.transpose();
             Eigen::Matrix<float, -1, -1> dists_ = dists.transpose();
 
-            thrust::device_vector<size_t> d_knns(knns.size(), -1);
+            thrust::device_vector<size_t> d_knns(knns.size(), size_t(-1));
             thrust::device_vector<float> d_dists(knns.size(), -1);
             //copy the knns and dists to device
             thrust::copy(knns_.data(), knns_.data() + knns_.size(), d_knns.begin());
@@ -784,7 +784,7 @@ namespace Bcg::cuda {
             Eigen::Matrix<size_t, -1, -1> knns_ = knns.transpose();
             Eigen::Matrix<float, -1, -1> dists_ = dists.transpose();
 
-            thrust::device_vector<size_t> d_knns(knns.size(), -1);
+            thrust::device_vector<size_t> d_knns(knns.size(), size_t(-1));
             thrust::device_vector<float> d_dists(knns.size(), -1);
             //copy the knns and dists to device
             thrust::copy(knns_.data(), knns_.data() + knns_.size(), d_knns.begin());
