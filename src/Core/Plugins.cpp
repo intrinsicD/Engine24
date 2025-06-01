@@ -6,7 +6,6 @@
 #include "Plugins.h"
 #include "PluginInput.h"
 #include "PluginEntity.h"
-#include "PluginAABB.h"
 #include "PluginSurfaceMesh.h"
 #include "PluginPointCloud.h"
 #include "PluginPicker.h"
@@ -31,7 +30,6 @@ namespace Bcg {
         add_plugin(std::make_unique<PluginGraphics>());
         add_plugin(std::make_unique<PluginInput>());
         add_plugin(std::make_unique<PluginEntity>());
-        add_plugin(std::make_unique<PluginAABB>());
         add_plugin(std::make_unique<PluginSurfaceMesh>());
         add_plugin(std::make_unique<PluginPointCloud>());
         add_plugin(std::make_unique<PluginPicker>());
@@ -53,7 +51,7 @@ namespace Bcg {
     }
 
     void Plugins::add_plugin(std::unique_ptr<Plugin> uptr) {
-        plugins[uptr->name] = std::forward<std::unique_ptr<Plugin>>(uptr);
+        plugins[uptr->get_name()] = std::forward<std::unique_ptr<Plugin>>(uptr);
     }
 
     void Plugins::activate_all() {

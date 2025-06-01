@@ -12,7 +12,9 @@ namespace Bcg {
     }
 
     void PluginIcp::activate() {
-        Plugin::activate();
+        if (base_activate()) {
+
+        }
     }
 
     void PluginIcp::begin_frame() {
@@ -28,7 +30,9 @@ namespace Bcg {
     }
 
     void PluginIcp::deactivate() {
-        Plugin::deactivate();
+        if (base_deactivate()) {
+
+        }
     }
 
     static bool show_gui = false;

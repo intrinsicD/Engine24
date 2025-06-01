@@ -18,7 +18,9 @@
 
 namespace Bcg {
     void PluginViewVectorfields::activate() {
-        Plugin::activate();
+        if (base_activate()) {
+
+        }
     }
 
     void PluginViewVectorfields::begin_frame() {}
@@ -28,7 +30,9 @@ namespace Bcg {
     void PluginViewVectorfields::end_frame() {}
 
     void PluginViewVectorfields::deactivate() {
-        Plugin::deactivate();
+        if (base_deactivate()) {
+
+        }
     }
 
     static bool show_gui = false;

@@ -35,9 +35,10 @@ namespace Bcg {
     }
 
     void PluginKDTree::activate() {
-        Engine::State().on_construct<entt::entity>().connect<&on_construct_entity>();
+        if (base_activate()) {
+            Engine::State().on_construct<entt::entity>().connect<&on_construct_entity>();
+        }
 
-        Plugin::activate();
     }
 
     void PluginKDTree::begin_frame() {}
@@ -47,23 +48,23 @@ namespace Bcg {
     void PluginKDTree::end_frame() {}
 
     void PluginKDTree::deactivate() {
-        Engine::State().on_construct<entt::entity>().disconnect<&on_construct_entity>();
-
-        Plugin::deactivate();
+        if (base_deactivate()) {
+            Engine::State().on_construct<entt::entity>().disconnect<&on_construct_entity>();
+        }
     }
 
     static bool show_gui = false;
 
     void PluginKDTree::render_menu() {
         if (ImGui::BeginMenu("Menu")) {
-            ImGui::MenuItem(name, nullptr, &show_gui);
+            ImGui::MenuItem(name.c_str(), nullptr, &show_gui);
             ImGui::EndMenu();
         }
     }
 
     void PluginKDTree::render_gui() {
         if (show_gui) {
-            if (ImGui::Begin(name, &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
+            if (ImGui::Begin(name.c_str(), &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
                 auto &picker = Engine::Context().get<Picked>();
                 if(Engine::valid(picker.entity.id)){
                     Gui::ShowKDTree(picker.entity.id);

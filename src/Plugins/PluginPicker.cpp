@@ -19,7 +19,6 @@
 #include "EventsPicker.h"
 
 namespace Bcg {
-
     static void on_construct_entity(entt::registry &registry, entt::entity entity_id) {
         Engine::Context().get<Picked>().entity.id = entity_id;
     }
@@ -28,8 +27,6 @@ namespace Bcg {
         if (!Engine::Context().find<Picked>()) {
             Engine::Context().emplace<Picked>();
         }
-
-
     }
 
     Picked &PluginPicker::pick(const ScreenSpacePos &pos) {
@@ -54,15 +51,15 @@ namespace Bcg {
                 auto &transform = Engine::State().get<Transform>(entity_id);
                 picked.spaces.osp = glm::inverse(transform.world()) * glm::vec4(picked.spaces.wsp, 1.0f);
             }
-/*            if (!Engine::has<KDTreeCpu>(entity_id)) {
-                auto &kdtree = Engine::State().emplace<KDTreeCpu>(entity_id);
-                if (Engine::has<SurfaceMesh>(entity_id)) {
-                    auto &mesh = Engine::State().get<SurfaceMesh>(entity_id);
-                    kdtree.build(mesh.positions());
-                }else *//*if(Engine::has<Graph>(entity_id)){
+            /*            if (!Engine::has<KDTreeCpu>(entity_id)) {
+                            auto &kdtree = Engine::State().emplace<KDTreeCpu>(entity_id);
+                            if (Engine::has<SurfaceMesh>(entity_id)) {
+                                auto &mesh = Engine::State().get<SurfaceMesh>(entity_id);
+                                kdtree.build(mesh.positions());
+                            }else *//*if(Engine::has<Graph>(entity_id)){
                     auto &graph = Engine::State().get<Graph>(entity_id);
                     kdtree.build(graph.positions());
-                }else *//*if (Engine::has<PointCloud>(entity_id)) {
+                }else */ /*if (Engine::has<PointCloud>(entity_id)) {
                     auto &pc = Engine::State().get<PointCloud>(entity_id);
                     kdtree.build(pc.positions());
                 }
@@ -71,23 +68,25 @@ namespace Bcg {
             auto &kdtree = Engine::State().get<KDTreeCpu>(entity_id);*/
 
             auto kdtree = cuda::KDTreeCuda(entity_id);
-            if(!kdtree){
+            if (!kdtree) {
                 if (Engine::has<SurfaceMesh>(entity_id)) {
                     auto &mesh = Engine::State().get<SurfaceMesh>(entity_id);
                     kdtree.build(mesh.positions());
-                }else /*if(Engine::has<Graph>(entity_id)){
+                } else /*if(Engine::has<Graph>(entity_id)){
                     auto &graph = Engine::State().get<Graph>(entity_id);
                     kdtree.build(graph.positions());
-                }else */if (Engine::has<PointCloud>(entity_id)) {
-                    auto &pc = Engine::State().get<PointCloud>(entity_id);
-                    kdtree.build(pc.positions());
-                }
+                }else */
+                    if (Engine::has<PointCloud>(entity_id)) {
+                        auto &pc = Engine::State().get<PointCloud>(entity_id);
+                        kdtree.build(pc.positions());
+                    }
             }
 
             auto result = kdtree.radius_query(picked.spaces.osp, picked.entity.pick_radius);
             if (!result.empty()) {
                 picked.entity.vertex_idx = result.indices(0, 0);
-                auto  indices = std::vector<size_t>(result.indices.data(), result.indices.data() + result.indices.size());
+                auto indices = std::vector<size_t>(result.indices.data(),
+                                                   result.indices.data() + result.indices.size());
                 Engine::Dispatcher().trigger(Events::PickedVertex{entity_id, &indices});
             }
             Engine::Dispatcher().trigger(Events::PickedEntity{entity_id});
@@ -111,38 +110,43 @@ namespace Bcg {
 
 
     void PluginPicker::activate() {
-        if (!Engine::Context().find<Picked>()) {
-            Engine::Context().emplace<Picked>();
+        if (base_activate()) {
+            if (!Engine::Context().find<Picked>()) {
+                Engine::Context().emplace<Picked>();
+            }
+            Engine::Dispatcher().sink<Events::Callback::MouseButton>().connect<&on_mouse_button>();
+            Engine::State().on_construct<entt::entity>().connect<&on_construct_entity>();
         }
-        Engine::Dispatcher().sink<Events::Callback::MouseButton>().connect<&on_mouse_button>();
-        Engine::State().on_construct<entt::entity>().connect<&on_construct_entity>();
-        Plugin::activate();
     }
 
-    void PluginPicker::begin_frame() {}
+    void PluginPicker::begin_frame() {
+    }
 
-    void PluginPicker::update() {}
+    void PluginPicker::update() {
+    }
 
-    void PluginPicker::end_frame() {}
+    void PluginPicker::end_frame() {
+    }
 
     void PluginPicker::deactivate() {
-        Engine::Dispatcher().sink<Events::Callback::MouseButton>().disconnect<&on_mouse_button>();
-        Engine::State().on_construct<entt::entity>().disconnect<&on_construct_entity>();
-        Plugin::deactivate();
+        if (base_deactivate()) {
+            Engine::Dispatcher().sink<Events::Callback::MouseButton>().disconnect<&on_mouse_button>();
+            Engine::State().on_construct<entt::entity>().disconnect<&on_construct_entity>();
+        }
     }
 
     static bool show_gui = false;
 
     void PluginPicker::render_menu() {
         if (ImGui::BeginMenu("Menu")) {
-            ImGui::MenuItem(name, nullptr, &show_gui);
+            ImGui::MenuItem(name.c_str(), nullptr, &show_gui);
             ImGui::EndMenu();
         }
     }
 
     void PluginPicker::render_gui() {
         if (show_gui) {
-            if (ImGui::Begin(name, &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
+            if (ImGui::Begin(name.c_str(), &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
                 auto &picked = last_picked();
                 Gui::Show(picked);
                 ImGui::End();
@@ -151,6 +155,5 @@ namespace Bcg {
     }
 
     void PluginPicker::render() {
-
     }
 }

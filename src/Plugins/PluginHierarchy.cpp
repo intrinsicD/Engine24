@@ -261,7 +261,9 @@ namespace Bcg {
     }
 
     void PluginHierarchy::activate() {
-        Plugin::activate();
+        if (base_activate()) {
+
+        }
     }
 
     void PluginHierarchy::begin_frame() {
@@ -277,14 +279,16 @@ namespace Bcg {
     }
 
     void PluginHierarchy::deactivate() {
-        Plugin::deactivate();
+        if (base_deactivate()) {
+
+        }
     }
 
     static bool show_gui = false;
 
     void PluginHierarchy::render_menu() {
         if (ImGui::BeginMenu("Entity")) {
-            ImGui::MenuItem(name, nullptr, &show_gui);
+            ImGui::MenuItem(name.c_str(), nullptr, &show_gui);
             ImGui::EndMenu();
         }
     }

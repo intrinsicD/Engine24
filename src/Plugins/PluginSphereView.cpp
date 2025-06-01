@@ -7,7 +7,7 @@
 #include "imgui.h"
 #include "SphereViewGui.h"
 #include "Picker.h"
-#include "Camera.h"
+#include "CameraUtils.h"
 #include "PluginGraphics.h"
 #include "Transform.h"
 #include "EventsCallbacks.h"
@@ -36,8 +36,9 @@ namespace Bcg {
     }
 
     void PluginViewSphere::activate() {
-        Plugin::activate();
-        Engine::Dispatcher().sink<Events::Callback::MouseScroll>().connect<&on_mouse_scroll>();
+        if (base_activate()) {
+            Engine::Dispatcher().sink<Events::Callback::MouseScroll>().connect<&on_mouse_scroll>();
+        }
     }
 
     void PluginViewSphere::begin_frame() {}
@@ -47,8 +48,9 @@ namespace Bcg {
     void PluginViewSphere::end_frame() {}
 
     void PluginViewSphere::deactivate() {
-        Plugin::deactivate();
-        Engine::Dispatcher().sink<Events::Callback::MouseScroll>().disconnect<&on_mouse_scroll>();
+        if (base_deactivate()) {
+            Engine::Dispatcher().sink<Events::Callback::MouseScroll>().disconnect<&on_mouse_scroll>();
+        }
     }
 
     static bool show_gui = false;

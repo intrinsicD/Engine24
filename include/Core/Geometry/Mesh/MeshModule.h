@@ -35,22 +35,6 @@ namespace Bcg {
         MeshHandle get(entt::entity entity_id) override;
 
         MeshHandle load_mesh(const std::string &filepath);
-
-        //TODO move the following into a plugin or another module or a system or what ever i should call it?
-
-        VertexProperty<Vector<float, 3>> compute_vertex_normals(SurfaceMesh &mesh);
-
-        FaceProperty<Vector<float, 3>> compute_face_normals(SurfaceMesh &mesh);
-
-        FaceProperty<Vector<float, 3>> compute_face_centers(SurfaceMesh &mesh);
-
-        EdgeProperty<float> compute_edge_lengths(SurfaceMesh &mesh);
-
-        size_t get_num_connected_components(SurfaceMesh &mesh);
-
-        std::vector<SurfaceMesh> split_connected_components(SurfaceMesh &mesh);
-
-        SurfaceMesh merge_meshes(const std::vector<SurfaceMesh> &meshes);
     };
 }
 

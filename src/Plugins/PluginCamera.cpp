@@ -3,6 +3,7 @@
 //
 
 #include "PluginCamera.h"
+#include "CameraUtils.h"
 #include "imgui.h"
 #include "Engine.h"
 #include "Entity.h"
@@ -24,7 +25,8 @@
 namespace Bcg {
     //TODO fix camera, and setup aspect on camera creation etc...
 
-    PluginCamera::PluginCamera() : Plugin("Camera") {}
+    PluginCamera::PluginCamera() : Plugin("Camera") {
+    }
 
     Camera *PluginCamera::setup(entt::entity entity_id) {
         if (!Engine::valid(entity_id)) { return nullptr; }
@@ -192,8 +194,8 @@ namespace Bcg {
         if (keyboard.strg()) return;
 
         auto &camera = Engine::Context().get<Camera>();
-        const float min_fovy = 1.0f;   // Minimum field of view in degrees
-        const float max_fovy = 45.0f;  // Maximum field of view in degrees
+        const float min_fovy = 1.0f; // Minimum field of view in degrees
+        const float max_fovy = 45.0f; // Maximum field of view in degrees
 
         // Adjust the field of view based on scroll input
         PerspectiveParams p_params = GetPerspectiveParams(camera);
@@ -257,23 +259,24 @@ namespace Bcg {
     }
 
     void PluginCamera::activate() {
-        auto &camera = Engine::Context().emplace<Camera>();
-        setup(camera);
+        if (base_activate()) {
+            auto &camera = Engine::Context().emplace<Camera>();
+            setup(camera);
 
-        if (!Engine::Context().find<CameraUniformBuffer>()) {
-            auto &ubo = Engine::Context().emplace<CameraUniformBuffer>();
-            ubo.create();
-            ubo.bind();
-            ubo.buffer_data(nullptr, 2 * sizeof(glm::mat4), Bcg::Buffer::Usage::STATIC_DRAW);
-            ubo.unbind();
-            ubo.bind_base(0);
+            if (!Engine::Context().find<CameraUniformBuffer>()) {
+                auto &ubo = Engine::Context().emplace<CameraUniformBuffer>();
+                ubo.create();
+                ubo.bind();
+                ubo.buffer_data(nullptr, 2 * sizeof(glm::mat4), Bcg::Buffer::Usage::STATIC_DRAW);
+                ubo.unbind();
+                ubo.bind_base(0);
+            }
+            Engine::Dispatcher().sink<Events::Callback::MouseCursor>().connect<&on_mouse_cursor>();
+            Engine::Dispatcher().sink<Events::Callback::MouseScroll>().connect<&on_mouse_scroll>();
+            Engine::Dispatcher().sink<Events::Callback::FramebufferResize>().connect<&on_framebuffer_resize>();
+            Engine::Dispatcher().sink<Events::Key::F>().connect<&on_key_focus>();
+            Engine::Dispatcher().sink<Events::Key::C>().connect<&on_key_center>();
         }
-        Engine::Dispatcher().sink<Events::Callback::MouseCursor>().connect<&on_mouse_cursor>();
-        Engine::Dispatcher().sink<Events::Callback::MouseScroll>().connect<&on_mouse_scroll>();
-        Engine::Dispatcher().sink<Events::Callback::FramebufferResize>().connect<&on_framebuffer_resize>();
-        Engine::Dispatcher().sink<Events::Key::F>().connect<&on_key_focus>();
-        Engine::Dispatcher().sink<Events::Key::C>().connect<&on_key_center>();
-        Plugin::activate();
     }
 
     void PluginCamera::begin_frame() {
@@ -316,35 +319,36 @@ namespace Bcg {
     }
 
     void PluginCamera::end_frame() {
-
     }
 
     void PluginCamera::deactivate() {
-        if (Engine::Context().find<CameraUniformBuffer>()) {
-            auto &ubo = Engine::Context().get<CameraUniformBuffer>();
-            ubo.destroy();
+        if (base_deactivate()) {
+            if (Engine::Context().find<CameraUniformBuffer>()) {
+                auto &ubo = Engine::Context().get<CameraUniformBuffer>();
+                ubo.destroy();
+            }
+            Engine::Context().erase<CameraUniformBuffer>();
+            Engine::Dispatcher().sink<Events::Callback::MouseCursor>().disconnect<&on_mouse_cursor>();
+            Engine::Dispatcher().sink<Events::Callback::MouseScroll>().disconnect<&on_mouse_scroll>();
+            Engine::Dispatcher().sink<Events::Callback::FramebufferResize>().disconnect<&on_framebuffer_resize>();
+            Engine::Dispatcher().sink<Events::Key::F>().disconnect<&on_key_focus>();
+            Engine::Dispatcher().sink<Events::Key::C>().disconnect<&on_key_center>();
+
         }
-        Engine::Context().erase<CameraUniformBuffer>();
-        Engine::Dispatcher().sink<Events::Callback::MouseCursor>().disconnect<&on_mouse_cursor>();
-        Engine::Dispatcher().sink<Events::Callback::MouseScroll>().disconnect<&on_mouse_scroll>();
-        Engine::Dispatcher().sink<Events::Callback::FramebufferResize>().disconnect<&on_framebuffer_resize>();
-        Engine::Dispatcher().sink<Events::Key::F>().disconnect<&on_key_focus>();
-        Engine::Dispatcher().sink<Events::Key::C>().disconnect<&on_key_center>();
-        Plugin::deactivate();
     }
 
     static bool show_gui = false;
 
     void PluginCamera::render_menu() {
         if (ImGui::BeginMenu("Graphics")) {
-            ImGui::MenuItem(name, nullptr, &show_gui);
+            ImGui::MenuItem(name.c_str(), nullptr, &show_gui);
             ImGui::EndMenu();
         }
     }
 
     void PluginCamera::render_gui() {
         if (show_gui) {
-            if (ImGui::Begin(name, &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
+            if (ImGui::Begin(name.c_str(), &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
                 Gui::Show(Engine::Context().get<Camera>());
                 ImGui::End();
             }
@@ -352,7 +356,6 @@ namespace Bcg {
     }
 
     void PluginCamera::render() {
-
     }
 
     namespace Commands {

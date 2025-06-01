@@ -80,25 +80,4 @@ namespace Bcg {
         auto &pool = Engine::Context().get<MeshPool>();
         return pool.create(ret);
     }
-
-    VertexProperty<Vector<float, 3> > MeshModule::compute_vertex_normals(SurfaceMesh &mesh) {
-    }
-
-    FaceProperty<Vector<float, 3> > MeshModule::compute_face_normals(SurfaceMesh &mesh) {
-    }
-
-    FaceProperty<Vector<float, 3> > MeshModule::compute_face_centers(SurfaceMesh &mesh) {
-    }
-
-    EdgeProperty<float> MeshModule::compute_edge_lengths(SurfaceMesh &mesh) {
-    }
-
-    size_t MeshModule::get_num_connected_components(SurfaceMesh &mesh) {
-    }
-
-    std::vector<SurfaceMesh> MeshModule::split_connected_components(SurfaceMesh &mesh) {
-    }
-
-    SurfaceMesh MeshModule::merge_meshes(const std::vector<SurfaceMesh> &meshes) {
-    }
 }

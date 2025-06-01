@@ -9,21 +9,25 @@
 #include "imgui.h"
 
 namespace Bcg {
-    PluginFrameTimer::PluginFrameTimer() : Plugin("FrameTimer") {}
+    PluginFrameTimer::PluginFrameTimer() : Plugin("FrameTimer") {
+    }
 
     float PluginFrameTimer::delta() {
         return Engine::Context().get<FrameTimer>().timer.delta;
     }
 
     void PluginFrameTimer::activate() {
-        Engine::Context().emplace<Timer>();
-        Engine::Context().emplace<FrameTimer>();
-        Plugin::activate();
+        if (base_activate()) {
+            Engine::Context().emplace<Timer>();
+            Engine::Context().emplace<FrameTimer>();
+        }
     }
 
-    void PluginFrameTimer::begin_frame() {}
+    void PluginFrameTimer::begin_frame() {
+    }
 
-    void PluginFrameTimer::update() {}
+    void PluginFrameTimer::update() {
+    }
 
     void PluginFrameTimer::end_frame() {
         auto &frame = Engine::Context().get<FrameTimer>();
@@ -34,28 +38,29 @@ namespace Bcg {
     }
 
     void PluginFrameTimer::deactivate() {
-        auto &timer = Engine::Context().get<Timer>();
-        auto &frame = Engine::Context().get<FrameTimer>();
+        if (base_deactivate()) {
+            auto &timer = Engine::Context().get<Timer>();
+            auto &frame = Engine::Context().get<FrameTimer>();
 
-        Log::Info("Average Frame Time: " + std::to_string(frame.avg_frame_time) + " s");
-        Log::Info("Average Frames Per Seconds: " + std::to_string(frame.fps));
-        Log::Info("Number of Total Frames: " + std::to_string(frame.frame_counter));
-        Log::Info("Total Runtime:  " + std::to_string(timer.delta) + " s");
-        Plugin::deactivate();
+            Log::Info("Average Frame Time: " + std::to_string(frame.avg_frame_time) + " s");
+            Log::Info("Average Frames Per Seconds: " + std::to_string(frame.fps));
+            Log::Info("Number of Total Frames: " + std::to_string(frame.frame_counter));
+            Log::Info("Total Runtime:  " + std::to_string(timer.delta) + " s");
+        }
     }
 
     static bool show_gui = false;
 
     void PluginFrameTimer::render_menu() {
         if (ImGui::BeginMenu("Graphics")) {
-            ImGui::MenuItem(name, nullptr, &show_gui);
+            ImGui::MenuItem(name.c_str(), nullptr, &show_gui);
             ImGui::EndMenu();
         }
     }
 
     void PluginFrameTimer::render_gui() {
         if (show_gui) {
-            if (ImGui::Begin(name, &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
+            if (ImGui::Begin(name.c_str(), &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
                 auto &timer = Engine::Context().get<Timer>();
                 auto &frame = Engine::Context().get<FrameTimer>();
                 Gui::Show(frame);
@@ -65,5 +70,6 @@ namespace Bcg {
         }
     }
 
-    void PluginFrameTimer::render() {}
+    void PluginFrameTimer::render() {
+    }
 }

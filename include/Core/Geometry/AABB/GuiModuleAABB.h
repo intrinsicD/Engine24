@@ -10,11 +10,11 @@
 #include "entt/fwd.hpp"
 
 namespace Bcg {
-    class AABBGuiModule : public GuiModule {
+    class GuiModuleAABB : public GuiModule {
     public:
-        AABBGuiModule() : GuiModule("AABBGuiModule") {};
+        GuiModuleAABB() : GuiModule("AABBGuiModule") {};
 
-        ~AABBGuiModule() override = default;
+        ~GuiModuleAABB() override = default;
 
         void activate() override;
 

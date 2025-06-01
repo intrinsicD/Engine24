@@ -8,25 +8,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-add_library(Engine24
-        include/Guis/MouseGui.h
-        src/Guis/MouseGui.cpp
-        src/Core/Timer.cpp
-        include/Plugins/PluginPointCloudSampling.h
-        src/Plugins/PluginPointCloudSampling.cpp
-        include/Core/Traits/StringTraits.h
-        include/Core/Traits/DimTraits.h
-        include/Commands/PointCloudVertexColors.h
-        src/Commands/PointCloudVertexColors.cpp
-        include/Core/Pool/PoolHandle.h
-        include/Core/Geometry/AABB/AABBUtils.h
-        include/Core/Traits/VecTraits.h
-        include/Core/Module/Module.h
-        include/Core/Module/OpenGLRenderModule.h
-        include/Core/Geometry/Mesh/SurfaceMeshVertexNormals.h
-        src/Core/Geometry/Mesh/SurfaceMeshVertexNormals.cpp
-        include/Core/Geometry/Mesh/SurfaceMeshFaceNormals.h
-)
+add_library(Engine24)
 
 include(${CMAKE_SOURCE_DIR}/CopyShaders.cmake)
 

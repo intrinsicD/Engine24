@@ -7,11 +7,13 @@
 
 #include <string>
 #include "Logger.h"
+#include "entt/fwd.hpp"
 
 namespace Bcg {
     class Module {
     public:
-        explicit Module(const std::string &name) : name(name), activated(false) {}
+        explicit Module(const std::string &name) : name(name), activated(false) {
+        }
 
         virtual ~Module() = default;
 
@@ -23,9 +25,22 @@ namespace Bcg {
 
         virtual void deactivate() = 0; //unregisters callbacks to events
 
+        // Optional lifecycle hooks
+        virtual void begin_frame() {
+        }
+
+        virtual void update() {
+        }
+
+        virtual void end_frame() {
+        }
+
+        virtual void render() {
+        }
+
     protected:
         bool base_activate() {
-            if (!is_activated()) {
+            if (!activated) {
                 activated = true;
                 Log::Info("Activate {}", name);
                 return true;
@@ -36,7 +51,7 @@ namespace Bcg {
         }
 
         bool base_deactivate() {
-            if (is_activated()) {
+            if (activated) {
                 activated = false;
                 Log::Info("Deactivate {}", name);
                 return true;

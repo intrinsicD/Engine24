@@ -12,7 +12,9 @@ namespace Bcg {
     }
 
     void PluginPointCloudSampling::activate() {
-        Plugin::activate();
+        if (base_activate()) {
+
+        }
     }
 
     void PluginPointCloudSampling::begin_frame() {
@@ -25,7 +27,9 @@ namespace Bcg {
     }
 
     void PluginPointCloudSampling::deactivate() {
-        Plugin::deactivate();
+        if (base_deactivate()) {
+
+        }
     }
 
     static bool show_gui = false;
@@ -42,7 +46,7 @@ namespace Bcg {
 
     void PluginPointCloudSampling::render_gui() {
         if (show_gui) {
-            if (ImGui::Begin(name, &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
+            if (ImGui::Begin(name.c_str(), &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
                 auto &picked = Engine::Context().get<Picked>();
                 ImGui::Text("ToDo Implement");
             }

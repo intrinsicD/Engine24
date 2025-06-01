@@ -5,32 +5,14 @@
 #ifndef ENGINE24_PLUGIN_H
 #define ENGINE24_PLUGIN_H
 
-#include "entt/fwd.hpp"
+#include "GuiModule.h"
 
 namespace Bcg {
-    class Plugin {
+    class Plugin : public GuiModule{
     public:
-        explicit Plugin(const char *name);
+        explicit Plugin(const std::string &name) : GuiModule(name) {}
 
         virtual ~Plugin() = default;
-
-        virtual void activate();
-
-        virtual void begin_frame() = 0;
-
-        virtual void update() = 0;
-
-        virtual void end_frame() = 0;
-
-        virtual void deactivate();
-
-        virtual void render_menu() = 0;
-
-        virtual void render_gui() = 0;
-
-        virtual void render() = 0;
-
-        const char *name;
     };
 }
 

@@ -3,6 +3,7 @@
 //
 
 #include "CameraGui.h"
+#include "CameraUtils.h"
 #include "imgui.h"
 #include "PluginGraphics.h"
 

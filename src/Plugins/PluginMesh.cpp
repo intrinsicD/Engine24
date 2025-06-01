@@ -21,12 +21,11 @@
 #include "SurfaceMeshCompute.h"
 #include "PluginTransform.h"
 #include "PluginHierarchy.h"
-#include "PluginAABB.h"
+#include "AABBCommands.h"
 #include "PluginCamera.h"
 #include "PluginViewMesh.h"
 
 namespace Bcg {
-
     static void on_drop_file(const Events::Callback::Drop &event) {
         PluginSurfaceMesh plugin;
         for (int i = 0; i < event.count; ++i) {
@@ -53,7 +52,6 @@ namespace Bcg {
             return {};
         }
         if (mesh.has_face_property("f:indices")) {
-
         }
         auto entity_id = Engine::State().create();
         Engine::State().emplace<SurfaceMesh>(entity_id, mesh);
@@ -90,11 +88,12 @@ namespace Bcg {
 
             float tol;
 
-            explicit VertexEqual(float t) : tol(t) {}
+            explicit VertexEqual(float t) : tol(t) {
+            }
         };
 
         std::unordered_map<PointType, Vertex, VertexHash, VertexEqual> vertexMap(10, VertexHash(),
-                                                                                 VertexEqual(tol));
+            VertexEqual(tol));
 
         // Map to store the new vertex positions
         auto vertexReplacementMap = mesh.vertex_property<Vertex>("v:replacement");
@@ -117,7 +116,7 @@ namespace Bcg {
         // Update the halfedges to use the new vertex indices
         for (auto v: mesh.vertices()) {
             if (vertexReplacementMap[v] != v) {
-                continue;  // Skip already updated vertices
+                continue; // Skip already updated vertices
             }
 
             for (auto h: mesh.halfedges(v)) {
@@ -156,30 +155,30 @@ namespace Bcg {
         mesh.garbage_collection();
     }
 
-    PluginSurfaceMesh::PluginSurfaceMesh() : Plugin("PluginMesh") {}
+    PluginSurfaceMesh::PluginSurfaceMesh() : Plugin("PluginMesh") {
+    }
 
     void PluginSurfaceMesh::activate() {
-        Engine::Dispatcher().sink<Events::Callback::Drop>().connect<&on_drop_file>();
-        Engine::Dispatcher().sink<Events::Entity::CleanupComponents>().connect<&on_cleanup_components>();
-        Plugin::activate();
+        if (base_activate()) {
+            Engine::Dispatcher().sink<Events::Callback::Drop>().connect<&on_drop_file>();
+            Engine::Dispatcher().sink<Events::Entity::CleanupComponents>().connect<&on_cleanup_components>();
+        }
     }
 
     void PluginSurfaceMesh::begin_frame() {
-
     }
 
     void PluginSurfaceMesh::update() {
-
     }
 
     void PluginSurfaceMesh::end_frame() {
-
     }
 
     void PluginSurfaceMesh::deactivate() {
-        Engine::Dispatcher().sink<Events::Callback::Drop>().disconnect<&on_drop_file>();
-        Engine::Dispatcher().sink<Events::Entity::CleanupComponents>().disconnect<&on_cleanup_components>();
-        Plugin::deactivate();
+        if (base_deactivate()) {
+            Engine::Dispatcher().sink<Events::Callback::Drop>().disconnect<&on_drop_file>();
+            Engine::Dispatcher().sink<Events::Entity::CleanupComponents>().disconnect<&on_cleanup_components>();
+        }
     }
 
     static bool show_mesh_gui = false;
@@ -195,7 +194,6 @@ namespace Bcg {
                                                             config);
                 }
                 if (ImGui::MenuItem("Instance", nullptr, &show_mesh_gui)) {
-
                 }
                 ImGui::EndMenu();
             }
@@ -215,7 +213,6 @@ namespace Bcg {
     }
 
     void PluginSurfaceMesh::render() {
-
     }
 
     namespace Commands {
@@ -301,7 +298,7 @@ namespace Bcg {
 
             auto &mesh = Engine::State().get<SurfaceMesh>(entity_id);
 
-/*        auto v_normals = ComputeFaceNormals(entity_id, mesh);*/
+            /*        auto v_normals = ComputeFaceNormals(entity_id, mesh);*/
         }
     }
 }

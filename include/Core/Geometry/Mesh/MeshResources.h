@@ -5,6 +5,7 @@
 #ifndef MESHRESOURCES_H
 #define MESHRESOURCES_H
 
+#include "GuiModule.h"
 #include "SurfaceMesh.h"
 #include "Events/EventsCallbacks.h"
 

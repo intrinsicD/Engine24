@@ -2,7 +2,8 @@ add_subdirectory(Geometry)
 add_subdirectory(Input)
 target_sources(Engine24 PRIVATE
         AABB.cpp
-        AABBGuiModule.cpp
+        GuiModuleAABB.cpp
+        ModuleAABB.cpp
         Camera.cpp
         Color.cpp
         CoordinateSystems.cpp
@@ -26,7 +27,6 @@ target_sources(Engine24 PRIVATE
         Mouse.cpp
         Picker.cpp
         Plane.cpp
-        Plugin.cpp
         Plugins.cpp
         PointCloud.cpp
         PointCloudInterface.cpp

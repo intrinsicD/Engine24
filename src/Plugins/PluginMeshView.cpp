@@ -8,7 +8,7 @@
 #include "imgui.h"
 #include "MeshViewGui.h"
 #include "Picker.h"
-#include "Camera.h"
+#include "CameraUtils.h"
 #include "EventsEntity.h"
 #include "Transform.h"
 #include "GetPrimitives.h"
@@ -35,8 +35,9 @@ namespace Bcg {
     }
 
     void PluginViewMesh::activate() {
-        Engine::Dispatcher().sink<Events::Entity::Destroy>().connect<&on_destroy>();
-        Plugin::activate();
+        if (base_activate()) {
+            Engine::Dispatcher().sink<Events::Entity::Destroy>().connect<&on_destroy>();
+        }
     }
 
     void PluginViewMesh::begin_frame() {}
@@ -46,8 +47,9 @@ namespace Bcg {
     void PluginViewMesh::end_frame() {}
 
     void PluginViewMesh::deactivate() {
-        Engine::Dispatcher().sink<Events::Entity::Destroy>().disconnect<&on_destroy>();
-        Plugin::deactivate();
+        if (base_deactivate()) {
+            Engine::Dispatcher().sink<Events::Entity::Destroy>().disconnect<&on_destroy>();
+        }
     }
 
     static bool show_gui = false;

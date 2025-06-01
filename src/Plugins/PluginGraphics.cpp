@@ -94,7 +94,7 @@ namespace Bcg {
 
     static void drop_callback(GLFWwindow *window, int count, const char **paths) {
         for (int i = 0; i < count; ++i) {
-            Log::Info("Dropped: " + std::string(paths[i]));
+            Log::Info("Dropped: {}" , paths[i]);
         }
 
         Engine::Dispatcher().trigger<Events::Callback::Drop>({window, count, paths});
@@ -283,7 +283,9 @@ namespace Bcg {
     }
 
     void PluginGraphics::activate() {
-        Plugin::activate();
+        if (base_activate()) {
+
+        }
     }
 
     void PluginGraphics::begin_frame() {
@@ -300,7 +302,9 @@ namespace Bcg {
     }
 
     void PluginGraphics::deactivate() {
-        Plugin::deactivate();
+        if (base_deactivate()) {
+
+        }
     }
 
     Vector<int, 2> PluginGraphics::get_window_pos() {

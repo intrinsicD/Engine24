@@ -34,7 +34,9 @@ namespace Bcg {
     }
 
     void PluginTransform::activate() {
-        Plugin::activate();
+        if (base_activate()) {
+
+        }
     }
 
     void PluginTransform::begin_frame() {
@@ -50,7 +52,9 @@ namespace Bcg {
     }
 
     void PluginTransform::deactivate() {
-        Plugin::deactivate();
+        if (base_deactivate()) {
+
+        }
     }
 
     static bool show_gui = false;
@@ -78,7 +82,7 @@ namespace Bcg {
 
     void PluginTransform::render_menu() {
         if (ImGui::BeginMenu("Entity")) {
-            if (ImGui::MenuItem(name, nullptr, &show_gui)) {
+            if (ImGui::MenuItem(name.c_str(), nullptr, &show_gui)) {
                 Engine::Dispatcher().sink<Events::Gui::Render>().connect<on_gui_render>();
             }
             ImGui::EndMenu();

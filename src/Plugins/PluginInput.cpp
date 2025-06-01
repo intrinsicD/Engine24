@@ -96,7 +96,9 @@ namespace Bcg {
     }
 
     void PluginInput::activate() {
-        Plugin::activate();
+        if (base_activate()) {
+
+        }
     }
 
     void PluginInput::begin_frame() {
@@ -118,7 +120,9 @@ namespace Bcg {
     }
 
     void PluginInput::deactivate() {
-        Plugin::deactivate();
+        if (base_deactivate()) {
+
+        }
     }
 
     static bool show_input_gui;

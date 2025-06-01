@@ -26,9 +26,10 @@ namespace Bcg {
     PluginEntity::PluginEntity() : Plugin("Entity") {}
 
     void PluginEntity::activate() {
-        Engine::State().on_construct<entt::entity>().connect<&on_entity_construct>();
-        Engine::Dispatcher().sink<Events::Key::Delete>().connect<&on_key_delete>();
-        Plugin::activate();
+        if (base_activate()) {
+            Engine::State().on_construct<entt::entity>().connect<&on_entity_construct>();
+            Engine::Dispatcher().sink<Events::Key::Delete>().connect<&on_key_delete>();
+        }
     }
 
     void PluginEntity::begin_frame() {
@@ -44,9 +45,10 @@ namespace Bcg {
     }
 
     void PluginEntity::deactivate() {
-        Engine::State().on_construct<entt::entity>().disconnect<&on_entity_construct>();
-        Engine::Dispatcher().sink<Events::Key::Delete>().disconnect<&on_key_delete>();
-        Plugin::deactivate();
+        if (base_deactivate()) {
+            Engine::State().on_construct<entt::entity>().disconnect<&on_entity_construct>();
+            Engine::Dispatcher().sink<Events::Key::Delete>().disconnect<&on_key_delete>();
+        }
     }
 
     void PluginEntity::render_menu() {

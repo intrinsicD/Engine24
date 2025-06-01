@@ -44,9 +44,10 @@ namespace Bcg {
     PluginSelection::PluginSelection() : Plugin("Selection") {}
 
     void PluginSelection::activate() {
-        Plugin::activate();
-        Engine::Dispatcher().sink<Events::PickedVertex>().connect<&on_picked_vertex>();
-        Engine::Dispatcher().sink<Events::PickedBackgound>().connect<&on_picked_background>();
+        if (base_activate()) {
+            Engine::Dispatcher().sink<Events::PickedVertex>().connect<&on_picked_vertex>();
+            Engine::Dispatcher().sink<Events::PickedBackgound>().connect<&on_picked_background>();
+        }
     }
 
     void PluginSelection::begin_frame() {}
@@ -56,9 +57,10 @@ namespace Bcg {
     void PluginSelection::end_frame() {}
 
     void PluginSelection::deactivate() {
-        Plugin::deactivate();
-        Engine::Dispatcher().sink<Events::PickedVertex>().disconnect<&on_picked_vertex>();
-        Engine::Dispatcher().sink<Events::PickedBackgound>().disconnect<&on_picked_background>();
+        if (base_deactivate()) {
+            Engine::Dispatcher().sink<Events::PickedVertex>().disconnect<&on_picked_vertex>();
+            Engine::Dispatcher().sink<Events::PickedBackgound>().disconnect<&on_picked_background>();
+        }
     }
 
     bool show_selection_gui = false;

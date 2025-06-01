@@ -10,6 +10,8 @@
 #include "Modules.h"
 #include "MeshModule.h"
 #include "MeshGuiModule.h"
+#include "ModuleAABB.h"
+#include "GuiModuleAABB.h"
 #include "MainLoop.h"
 
 namespace Bcg {
@@ -25,9 +27,11 @@ namespace Bcg {
             Bcg::PluginGraphics::set_window_title(title);
             auto &modules = Engine::Context().emplace<Modules>();
             modules.add(std::make_unique<MeshModule>());
+            modules.add(std::make_unique<ModuleAABB>());
 
             auto &gui_modules = Engine::Context().emplace<GuiModules>();
             gui_modules.add(std::make_unique<MeshGuiModule>());
+            gui_modules.add(std::make_unique<GuiModuleAABB>());
 
             Bcg::Plugins::init();
             Bcg::Plugins::activate_all();

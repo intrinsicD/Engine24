@@ -18,7 +18,7 @@
 #include "PointCloudIo.h"
 #include "Picker.h"
 #include "BoundingVolumes.h"
-#include "PluginAABB.h"
+#include "AABBCommands.h"
 #include "PluginCamera.h"
 #include "PluginTransform.h"
 #include "PluginHierarchy.h"
@@ -66,8 +66,9 @@ namespace Bcg {
     PluginPointCloud::PluginPointCloud() : Plugin("PluginPointCloud") {}
 
     void PluginPointCloud::activate() {
-        Engine::Dispatcher().sink<Events::Callback::Drop>().connect<&PluginPointCloudInternal::on_drop_file>();
-        Plugin::activate();
+        if (base_activate()) {
+            Engine::Dispatcher().sink<Events::Callback::Drop>().connect<&PluginPointCloudInternal::on_drop_file>();
+        }
     }
 
     void PluginPointCloud::begin_frame() {
@@ -83,8 +84,9 @@ namespace Bcg {
     }
 
     void PluginPointCloud::deactivate() {
-        Engine::Dispatcher().sink<Events::Callback::Drop>().disconnect<&PluginPointCloudInternal::on_drop_file>();
-        Plugin::deactivate();
+        if (base_deactivate()) {
+            Engine::Dispatcher().sink<Events::Callback::Drop>().disconnect<&PluginPointCloudInternal::on_drop_file>();
+        }
     }
 
     static bool show_pc_gui = false;
