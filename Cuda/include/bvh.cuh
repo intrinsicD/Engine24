@@ -1,17 +1,13 @@
 #ifndef LBVH_BVH_CUH
 #define LBVH_BVH_CUH
 
-#include "aabb.cuh"
+#include "aabb_utils.cuh"
 #include "morton_code.cuh"
 #include <thrust/swap.h>
-#include <thrust/pair.h>
 #include <thrust/tuple.h>
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
-#include <thrust/functional.h>
-#include <thrust/scan.h>
 #include <thrust/sort.h>
-#include <thrust/fill.h>
 #include <thrust/for_each.h>
 #include <thrust/transform.h>
 #include <thrust/reduce.h>
@@ -20,8 +16,6 @@
 #include <thrust/execution_policy.h>
 #include <thrust/unique.h>
 #include <queue>
-
-#include <thrust/extrema.h>
 
 namespace Bcg::cuda {
     namespace detail {

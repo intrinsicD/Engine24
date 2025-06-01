@@ -2,7 +2,7 @@
 #define LBVH_PREDICATOR_CUH
 
 #include "aabb.cuh"
-#include "sphere.cuh"
+#include "sphere_utils.cuh"
 
 namespace Bcg::cuda {
     template<typename Object>
