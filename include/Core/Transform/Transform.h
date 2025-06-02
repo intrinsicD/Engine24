@@ -18,6 +18,13 @@
 
 namespace Bcg {
     struct Transform {
+        static Transform Identity() {
+            Transform t;
+            t.m_local = glm::mat4(1.0f);
+            t.cached_parent_world = glm::mat4(1.0f);
+            return t;
+        }
+
         const glm::mat4 &local() const {
             return m_local;
         }
@@ -52,15 +59,7 @@ namespace Bcg {
         glm::vec3 position;
     };
 
-    void pre_transform(Transform &t, glm::mat4 &other);
 
-    void post_transform(Transform &t, glm::mat4 &other);
-
-    TransformParameters decompose(const glm::mat4 &matrix);
-
-    glm::mat4 compose(const TransformParameters &params);
-
-    void set_transform_params(Transform &t, const TransformParameters &params);
 
 //! OpenGL matrix for translation by vector t
     template<typename T, glm::qualifier Q = glm::defaultp>

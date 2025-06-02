@@ -2,33 +2,27 @@
 // Created by alex on 08.07.24.
 //
 
-#include "PluginCamera.h"
+#include "ModuleCamera.h"
 #include "CameraUtils.h"
-#include "imgui.h"
 #include "Engine.h"
 #include "Entity.h"
 #include "Keyboard.h"
 #include "EventsCallbacks.h"
 #include "EventsKeys.h"
 #include "Mouse.h"
-#include "Keyboard.h"
 #include "Picker.h"
 #include "PluginGraphics.h"
 #include "PluginFrameTimer.h"
-#include "Logger.h"
-#include "AABB.h"
-#include "BoundingVolumes.h"
-#include "Eigen/Geometry"
-#include "CameraGui.h"
+#include "ModuleAABB.h"
 #include "Transform.h"
 
 namespace Bcg {
     //TODO fix camera, and setup aspect on camera creation etc...
 
-    PluginCamera::PluginCamera() : Plugin("Camera") {
+    ModuleCamera::ModuleCamera() : Module("Camera") {
     }
 
-    Camera *PluginCamera::setup(entt::entity entity_id) {
+    Camera *ModuleCamera::setup(entt::entity entity_id) {
         if (!Engine::valid(entity_id)) { return nullptr; }
         if (Engine::has<Camera>(entity_id)) { return &Engine::State().get<Camera>(entity_id); }
 
@@ -39,7 +33,7 @@ namespace Bcg {
         return &camera;
     }
 
-    void PluginCamera::setup(Camera &camera) {
+    void ModuleCamera::setup(Camera &camera) {
         ViewParams view_params = GetViewParams(camera);
         view_params.eye = glm::vec3(0, 0, 1);
         view_params.center = glm::vec3(0, 0, 0);
@@ -60,7 +54,7 @@ namespace Bcg {
         SetPerspectiveParams(camera, p_params);
     }
 
-    void PluginCamera::cleanup(entt::entity entity_id) {
+    void ModuleCamera::cleanup(entt::entity entity_id) {
         if (!Engine::valid(entity_id)) { return; }
         if (!Engine::has<Camera>(entity_id)) { return; }
 
@@ -226,13 +220,12 @@ namespace Bcg {
             auto &picked = Engine::Context().get<Picked>();
             auto &camera = Engine::Context().get<Camera>();
             if (Engine::valid(picked.entity.id)) {
-                auto &bv = Engine::State().get<BoundingVolumes>(picked.entity.id);
-                auto &aabb = *bv.h_aabb;
+                auto h_aabb = ModuleAABB::get(picked.entity.id);
                 PerspectiveParams p_params = GetPerspectiveParams(camera);
                 ViewParams v_params = GetViewParams(camera);
-                float d = glm::compMax(aabb.diagonal()) /*/ tan(p_params.fovy / 2.0)*/;
+                float d = glm::compMax(h_aabb->diagonal()) /*/ tan(p_params.fovy / 2.0)*/;
                 glm::vec3 front = v_params.center - v_params.eye;
-                v_params.center = aabb.center();
+                v_params.center = h_aabb->center();
                 v_params.eye = v_params.center - front * d;
                 SetViewParams(camera, v_params);
                 Log::Info("Center onto: {} {} {}", v_params.center[0], v_params.center[1], v_params.center[2]);
@@ -258,7 +251,7 @@ namespace Bcg {
         }
     }
 
-    void PluginCamera::activate() {
+    void ModuleCamera::activate() {
         if (base_activate()) {
             auto &camera = Engine::Context().emplace<Camera>();
             setup(camera);
@@ -279,7 +272,7 @@ namespace Bcg {
         }
     }
 
-    void PluginCamera::begin_frame() {
+    void ModuleCamera::begin_frame() {
         auto &camera = Engine::Context().get<Camera>();
         auto &keyboard = Engine::Context().get<Keyboard>();
         auto dt = PluginFrameTimer::delta();
@@ -300,7 +293,7 @@ namespace Bcg {
         }
     }
 
-    void PluginCamera::update() {
+    void ModuleCamera::update() {
         auto &camera = Engine::Context().get<Camera>();
         auto &ubo = Engine::Context().get<CameraUniformBuffer>();
         ViewParams v_params = GetViewParams(camera);
@@ -318,10 +311,10 @@ namespace Bcg {
         ubo.unbind();
     }
 
-    void PluginCamera::end_frame() {
+    void ModuleCamera::end_frame() {
     }
 
-    void PluginCamera::deactivate() {
+    void ModuleCamera::deactivate() {
         if (base_deactivate()) {
             if (Engine::Context().find<CameraUniformBuffer>()) {
                 auto &ubo = Engine::Context().get<CameraUniformBuffer>();
@@ -337,54 +330,34 @@ namespace Bcg {
         }
     }
 
-    static bool show_gui = false;
-
-    void PluginCamera::render_menu() {
-        if (ImGui::BeginMenu("Graphics")) {
-            ImGui::MenuItem(name.c_str(), nullptr, &show_gui);
-            ImGui::EndMenu();
-        }
+    void ModuleCamera::render() {
     }
 
-    void PluginCamera::render_gui() {
-        if (show_gui) {
-            if (ImGui::Begin(name.c_str(), &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
-                Gui::Show(Engine::Context().get<Camera>());
-                ImGui::End();
-            }
-        }
+    void ModuleCamera::center_camera_at_distance(const Vector<float, 3> &center, float distance) {
+        auto &camera = Engine::Context().get<Camera>();
+        ViewParams v_params = GetViewParams(camera);
+        PerspectiveParams p_params = GetPerspectiveParams(camera);
+
+        glm::vec3 front = v_params.center - v_params.eye;
+        v_params.center = center;
+        v_params.eye = center - front * distance / tanf(p_params.fovy_degrees / 2.0f);
+        SetViewParams(camera, v_params);
+        fit_near_and_far_to_distance(distance);
     }
 
-    void PluginCamera::render() {
-    }
+    void ModuleCamera::fit_near_and_far_to_distance(float distance) {
+        auto &camera = Engine::Context().get<Camera>();
 
-    namespace Commands {
-        void CenterCameraAtDistance::execute() const {
-            auto &camera = Engine::Context().get<Camera>();
-            ViewParams v_params = GetViewParams(camera);
+        if (camera.proj_type == Camera::ProjectionType::PERSPECTIVE) {
             PerspectiveParams p_params = GetPerspectiveParams(camera);
-
-            glm::vec3 front = v_params.center - v_params.eye;
-            v_params.center = center;
-            v_params.eye = center - front * distance / tanf(p_params.fovy_degrees / 2.0f);
-            SetViewParams(camera, v_params);
-            FitNearAndFarToDistance(distance).execute();
-        }
-
-        void FitNearAndFarToDistance::execute() const {
-            auto &camera = Engine::Context().get<Camera>();
-
-            if (camera.proj_type == Camera::ProjectionType::PERSPECTIVE) {
-                PerspectiveParams p_params = GetPerspectiveParams(camera);
-                p_params.zNear = distance / 100.0f;
-                p_params.zFar = distance * 3.0f;
-                SetPerspectiveParams(camera, p_params);
-            } else if (camera.proj_type == Camera::ProjectionType::ORTHOGRAPHIC) {
-                OrthoParams o_params = GetOrthoParams(camera);
-                o_params.zNear = distance / 100.0f;
-                o_params.zFar = distance * 3.0f;
-                SetOrthoParams(camera, o_params);
-            }
+            p_params.zNear = distance / 100.0f;
+            p_params.zFar = distance * 3.0f;
+            SetPerspectiveParams(camera, p_params);
+        } else if (camera.proj_type == Camera::ProjectionType::ORTHOGRAPHIC) {
+            OrthoParams o_params = GetOrthoParams(camera);
+            o_params.zNear = distance / 100.0f;
+            o_params.zFar = distance * 3.0f;
+            SetOrthoParams(camera, o_params);
         }
     }
 }

@@ -726,6 +726,9 @@ namespace Bcg {
         //! \return vector of point positions
         inline std::vector<PointType> &positions() { return vpoint_.vector(); }
 
+        //! \return vector of point positions
+        inline const std::vector<PointType> &positions() const { return vpoint_.vector(); }
+
         //!@}
 
         //! \name Allocate new elements

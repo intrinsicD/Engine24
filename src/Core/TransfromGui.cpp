@@ -3,6 +3,7 @@
 //
 
 #include "TransformGui.h"
+#include "TransformUtils.h"
 #include "imgui.h"
 #include "ImGuizmo.h"
 #include "PluginGraphics.h"
@@ -109,6 +110,9 @@ namespace Bcg::Gui {
             case ImGuizmo::SCALE:
                 ImGui::InputFloat("Scale Snap", &snap[0]);
                 break;
+            default:
+                ImGui::Text("Snap not supported for this operation");
+                break;
         }
 
         static bool use_bound_sizing = false;
@@ -125,12 +129,26 @@ namespace Bcg::Gui {
         ImGuizmo::SetRect(win_pos.x, win_pos.y, io.DisplaySize.x, io.DisplaySize.y);
         auto &camera = Engine::Context().get<Camera>();
         Matrix<float, 4, 4> m = mat;
-        ImGuizmo::Manipulate(glm::value_ptr(camera.view), glm::value_ptr(camera.proj), currentGizmoOperation, currentGizmoMode,
+        ImGuizmo::Manipulate(glm::value_ptr(camera.view), glm::value_ptr(camera.proj), currentGizmoOperation,
+                             currentGizmoMode,
                              glm::value_ptr(m), nullptr,
                              use_snap ? &snap[0] : nullptr, use_bound_sizing ? bounds : nullptr,
                              use_bound_sizing_snap ? bounds_snap : nullptr);
         delta = glm::inverse(mat) * m;
 
         return Equals(delta, glm::mat4(1.0f));
+    }
+
+    bool ShowTransform(entt::entity entity_id) {
+        if (!Engine::valid(entity_id)) {
+            ImGui::Text("Invalid entity");
+            return false;
+        }
+        if (!Engine::has<Transform>(entity_id)) {
+            ImGui::Text("Entity has no Transform component");
+            return false;
+        }
+        auto &transform = Engine::State().get<Transform>(entity_id);
+        return Show(transform);
     }
 }

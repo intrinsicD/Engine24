@@ -6,7 +6,6 @@
 #include <chrono>
 
 #include "PluginPointCloud.h"
-#include "Logger.h"
 #include "imgui.h"
 #include "ImGuiFileDialog.h"
 #include "Engine.h"
@@ -14,15 +13,14 @@
 #include "EventsCallbacks.h"
 #include "EventsEntity.h"
 #include "PointCloudGui.h"
-#include "PointCloud.h"
 #include "PointCloudIo.h"
 #include "Picker.h"
-#include "BoundingVolumes.h"
-#include "AABBCommands.h"
-#include "PluginCamera.h"
-#include "PluginTransform.h"
+#include "ModuleAABB.h"
+#include "ModuleCamera.h"
+#include "ModuleTransform.h"
 #include "PluginHierarchy.h"
 #include "GetPrimitives.h"
+#include "CommandsAABB.h"
 #include "Cuda/KDTreeCuda.h"
 #include "KDTreeCpu.h"
 #include "Cuda/Kmeans.h"
@@ -157,12 +155,11 @@ namespace Bcg {
 
             Setup<AABB>(entity_id).execute();
             CenterAndScaleByAABB(entity_id, pc.vpoint_.name()).execute();
-            auto &bv = Engine::State().get<BoundingVolumes>(entity_id);
-            auto &aabb = *bv.h_aabb;
-            Vector<float, 3> c = aabb.center();
+            auto h_aabb = ModuleAABB::get(entity_id);
+            Vector<float, 3> c = h_aabb->center();
 
-            aabb.min -= c;
-            aabb.max -= c;
+            h_aabb->min -= c;
+            h_aabb->max -= c;
 
 
             auto &transform = Engine::require<Transform>(entity_id);
@@ -176,7 +173,7 @@ namespace Bcg {
             message += " Done.";
 
             Log::Info(message);
-            CenterCameraAtDistance(c, glm::compMax(aabb.diagonal())).execute();
+            ModuleCamera::center_camera_at_distance(c, glm::compMax(h_aabb->diagonal()));
         }
 
         void Cleanup<PointCloud>::execute() const {

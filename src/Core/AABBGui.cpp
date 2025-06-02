@@ -3,9 +3,8 @@
 //
 
 #include "AABBGui.h"
-#include "Engine.h"
+#include "ModuleAABB.h"
 #include "imgui.h"
-#include "BoundingVolumes.h"
 
 namespace Bcg::Gui {
     void Show(const PoolHandle<AABB> &h_aabb) {
@@ -20,9 +19,8 @@ namespace Bcg::Gui {
     }
 
     void Show(entt::entity entity_id) {
-        if (Engine::State().all_of<BoundingVolumes>(entity_id)) {
-            auto &bv = Engine::State().get<BoundingVolumes>(entity_id);
-            Show(bv.h_aabb);
+        if (ModuleAABB::has(entity_id)) {
+            Show(ModuleAABB::get(entity_id));
         }
     }
 }

@@ -1,11 +1,10 @@
 //
-// Created by alex on 30.10.24.
+// Created by alex on 02.06.25.
 //
 
-#include "Transform.h"
+#include "TransformUtils.h"
 
 namespace Bcg{
-
     void pre_transform(Transform &t, glm::mat4 &other) {
         t.set_local(t.local() * other);
     }

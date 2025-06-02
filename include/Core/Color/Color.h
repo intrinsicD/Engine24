@@ -9,9 +9,9 @@
 #include "MatVec.h"
 
 namespace Bcg {
-    uint32_t floatColorToUint32(const glm::vec4 &rgba);
+    uint32_t floatColorToUint32(const Vector<float, 4> &rgba);
 
-    void uint32ToFloatColor(uint32_t uicolor, glm::vec4 &rgba);
+    void uint32ToFloatColor(uint32_t uicolor, Vector<float, 4> &rgba);
 }
 
 #endif //ENGINE24_COLOR_H

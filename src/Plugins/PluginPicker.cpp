@@ -10,8 +10,7 @@
 #include "Mouse.h"
 #include "imgui.h"
 #include "Transform.h"
-#include "AABB.h"
-#include "BoundingVolumes.h"
+#include "ModuleAABB.h"
 //#include "KDTreeCpu.h"
 #include "Cuda/KDTreeCuda.h"
 #include "PointCloud.h"
@@ -34,12 +33,11 @@ namespace Bcg {
         auto &picked = last_picked();
         picked.spaces = mouse.cursor.last_left.press;
         picked.entity.is_background = picked.spaces.ndc.z == 1.0;
-        auto view = Engine::State().view<AABB, Transform>();
+        auto view = Engine::State().view<AABBHandle, Transform>();
         for (const auto entity_id: view) {
-            auto &bv = Engine::State().get<BoundingVolumes>(entity_id);
-            auto &aabb = *bv.h_aabb;
+            auto h_aabb = ModuleAABB::get(entity_id);
             auto &transform = Engine::State().get<Transform>(entity_id);
-            if (Contains(aabb, (glm::inverse(transform.world()) * glm::vec4(picked.spaces.wsp, 1.0f)))) {
+            if (Contains(h_aabb, (glm::inverse(transform.world()) * glm::vec4(picked.spaces.wsp, 1.0f)))) {
                 picked.entity.id = entity_id;
                 break;
             }

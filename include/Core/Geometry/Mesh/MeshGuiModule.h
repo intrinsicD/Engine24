@@ -38,14 +38,6 @@ namespace Bcg{
         void render_menu() override;
 
         void render_gui() override;
-
-        void register_events(entt::dispatcher &dispatcher);
-
-        void unregister_events(entt::dispatcher &dispatcher);
-
-        void on_render_menu(const Events::Gui::Menu::Render &event);
-
-        void on_render(const Events::Gui::Render &event);
     };
 }
 

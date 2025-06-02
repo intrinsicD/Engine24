@@ -9,20 +9,14 @@
 #include "imgui.h"
 #include "ImGuiFileDialog.h"
 #include "Engine.h"
-#include "Entity.h"
+
 #include "EventsCallbacks.h"
 #include "EventsEntity.h"
 #include "MeshGui.h"
 #include "SurfaceMeshIo.h"
 #include "VertexArrayObject.h"
 #include "Picker.h"
-#include "BoundingVolumes.h"
 #include "PluginViewSphere.h"
-#include "SurfaceMeshCompute.h"
-#include "PluginTransform.h"
-#include "PluginHierarchy.h"
-#include "AABBCommands.h"
-#include "PluginCamera.h"
 #include "PluginViewMesh.h"
 
 namespace Bcg {
@@ -93,7 +87,7 @@ namespace Bcg {
         };
 
         std::unordered_map<PointType, Vertex, VertexHash, VertexEqual> vertexMap(10, VertexHash(),
-            VertexEqual(tol));
+                                                                                 VertexEqual(tol));
 
         // Map to store the new vertex positions
         auto vertexReplacementMap = mesh.vertex_property<Vertex>("v:replacement");
@@ -165,15 +159,6 @@ namespace Bcg {
         }
     }
 
-    void PluginSurfaceMesh::begin_frame() {
-    }
-
-    void PluginSurfaceMesh::update() {
-    }
-
-    void PluginSurfaceMesh::end_frame() {
-    }
-
     void PluginSurfaceMesh::deactivate() {
         if (base_deactivate()) {
             Engine::Dispatcher().sink<Events::Callback::Drop>().disconnect<&on_drop_file>();
@@ -209,96 +194,6 @@ namespace Bcg {
                 Gui::ShowSurfaceMesh(picked.entity.id);
             }
             ImGui::End();
-        }
-    }
-
-    void PluginSurfaceMesh::render() {
-    }
-
-    namespace Commands {
-        void Load<SurfaceMesh>::execute() const {
-            if (!Engine::valid(entity_id)) {
-                Log::Warn(name + "Entity is not valid. Abort Command");
-                return;
-            }
-
-            auto &mesh = Engine::require<SurfaceMesh>(entity_id);
-
-            if (!Read(filepath, mesh)) {
-                Log::Warn("Abort {} command", name);
-                return;
-            }
-
-            if (!mesh.has_face_property("f:indices")) {
-                Log::TODO("Implement: Mesh does not have faces, its a Point Cloud. Forward to Point Cloud stuff...");
-            }
-        }
-
-        void Setup<SurfaceMesh>::execute() const {
-            if (!Engine::valid(entity_id)) {
-                Log::Warn(name + "Entity is not valid. Abort Command");
-                return;
-            }
-
-            if (!Engine::has<SurfaceMesh>(entity_id)) {
-                Log::Warn(name + "Entity does not have a SurfaceMesh. Abort Command");
-            }
-
-            auto &mesh = Engine::require<SurfaceMesh>(entity_id);
-
-            Setup<AABB>(entity_id).execute();
-            CenterAndScaleByAABB(entity_id, mesh.vpoint_.name()).execute();
-
-            auto &bv = Engine::State().get<BoundingVolumes>(entity_id);
-            auto &aabb = *bv.h_aabb;
-            auto &transform = *PluginTransform::setup(entity_id);
-            auto &hierarchy = Engine::require<Hierarchy>(entity_id);
-
-            std::string message = name + ": ";
-            message += " #v: " + std::to_string(mesh.n_vertices());
-            message += " #e: " + std::to_string(mesh.n_edges());
-            message += " #h: " + std::to_string(mesh.n_halfedges());
-            message += " #f: " + std::to_string(mesh.n_faces());
-            message += " Done.";
-
-            Log::Info(message);
-            float d = 1.5 * glm::compMax(aabb.diagonal());
-            CenterCameraAtDistance(aabb.center(), d).execute();
-            ComputeSurfaceMeshVertexNormals(entity_id);
-        }
-
-        void Cleanup<SurfaceMesh>::execute() const {
-            if (!Engine::valid(entity_id)) {
-                Log::Warn(name + "Entity is not valid. Abort Command");
-                return;
-            }
-
-            if (!Engine::has<SurfaceMesh>(entity_id)) {
-                Log::Warn(name + "Entity does not have a SurfaceMesh. Abort Command");
-                return;
-            }
-
-            Engine::Dispatcher().trigger(Events::Entity::PreRemove<SurfaceMesh>{entity_id});
-            Engine::State().remove<SurfaceMesh>(entity_id);
-            Engine::Dispatcher().trigger(Events::Entity::PostRemove<SurfaceMesh>{entity_id});
-            Log::Info("{} for entity {}", name, entity_id);
-        }
-
-
-        void ComputeFaceNormals::execute() const {
-            if (!Engine::valid(entity_id)) {
-                Log::Warn(name + "Entity is not valid. Abort Command");
-                return;
-            }
-
-            if (!Engine::has<SurfaceMesh>(entity_id)) {
-                Log::Warn(name + "Entity does not have a SurfaceMesh. Abort Command");
-                return;
-            }
-
-            auto &mesh = Engine::State().get<SurfaceMesh>(entity_id);
-
-            /*        auto v_normals = ComputeFaceNormals(entity_id, mesh);*/
         }
     }
 }

@@ -11,7 +11,11 @@
 #include "MeshModule.h"
 #include "MeshGuiModule.h"
 #include "ModuleAABB.h"
+#include "ModuleCamera.h"
+#include "ModuleTransform.h"
 #include "GuiModuleAABB.h"
+#include "GuiModuleCamera.h"
+#include "GuiModuleTransform.h"
 #include "MainLoop.h"
 
 namespace Bcg {
@@ -28,10 +32,14 @@ namespace Bcg {
             auto &modules = Engine::Context().emplace<Modules>();
             modules.add(std::make_unique<MeshModule>());
             modules.add(std::make_unique<ModuleAABB>());
+            modules.add(std::make_unique<ModuleCamera>());
+            modules.add(std::make_unique<ModuleTransform>());
 
             auto &gui_modules = Engine::Context().emplace<GuiModules>();
             gui_modules.add(std::make_unique<MeshGuiModule>());
             gui_modules.add(std::make_unique<GuiModuleAABB>());
+            gui_modules.add(std::make_unique<GuiModuleCamera>());
+            gui_modules.add(std::make_unique<GuiModuleTransform>());
 
             Bcg::Plugins::init();
             Bcg::Plugins::activate_all();
@@ -57,6 +65,7 @@ namespace Bcg {
                 Bcg::PluginGraphics::poll_events();
                 Bcg::Plugins::begin_frame_all();
                 Bcg::Plugins::update_all();
+                modules.update();
                 Bcg::Engine::handle_command_double_buffer();
                 Bcg::Engine::handle_buffered_events();
             }

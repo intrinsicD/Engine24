@@ -31,4 +31,10 @@ namespace Bcg{
     void Modules::remove(std::unique_ptr<Module> uptr){
         modules.erase(uptr->get_name());
     }
+
+    void Modules::update(){
+        for(auto &module : modules){
+            module.second->update();
+        }
+    }
 }

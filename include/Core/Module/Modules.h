@@ -24,6 +24,8 @@ namespace Bcg {
         void remove(const std::string &name);
 
         void remove(std::unique_ptr<Module> uptr);
+
+        void update();
     };
 }
 #endif //ENGINE24_MODULES_H

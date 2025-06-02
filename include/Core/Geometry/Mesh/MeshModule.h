@@ -12,7 +12,7 @@ namespace Bcg {
     using MeshHandle = PoolHandle<SurfaceMesh>;
     using MeshPool = Pool<SurfaceMesh>;
 
-    class MeshModule : public ComponentModule<SurfaceMesh> {
+    class MeshModule : public Module {
     public:
         MeshModule();
 
@@ -22,19 +22,21 @@ namespace Bcg {
 
         void deactivate() override;
 
-        MeshHandle make_handle(const SurfaceMesh &mesh) override;
+        static MeshHandle make_handle(const SurfaceMesh &mesh);
 
-        MeshHandle create(entt::entity entity_id, const SurfaceMesh &mesh) override;
+        static MeshHandle create(entt::entity entity_id, const SurfaceMesh &mesh);
 
-        MeshHandle add(entt::entity entity_id, MeshHandle h_mesh) override;
+        static MeshHandle add(entt::entity entity_id, MeshHandle h_mesh);
 
-        void remove(entt::entity entity_id) override;
+        static void remove(entt::entity entity_id);
 
-        bool has(entt::entity entity_id) override;
+        static bool has(entt::entity entity_id);
 
-        MeshHandle get(entt::entity entity_id) override;
+        static MeshHandle get(entt::entity entity_id);
 
-        MeshHandle load_mesh(const std::string &filepath);
+        static SurfaceMesh load_mesh(const std::string &filepath);
+
+        static bool save_mesh(const std::string &filepath, const SurfaceMesh &mesh);
     };
 }
 

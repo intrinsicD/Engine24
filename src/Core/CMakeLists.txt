@@ -2,9 +2,13 @@ add_subdirectory(Geometry)
 add_subdirectory(Input)
 target_sources(Engine24 PRIVATE
         AABB.cpp
-        GuiModuleAABB.cpp
-        ModuleAABB.cpp
         Camera.cpp
+        GuiModuleAABB.cpp
+        GuiModuleCamera.cpp
+        GuiModuleTransform.cpp
+        CommandsCamera.cpp
+        CommandsTransform.cpp
+        CommandsMesh.cpp
         Color.cpp
         CoordinateSystems.cpp
         Engine.cpp
@@ -25,6 +29,9 @@ target_sources(Engine24 PRIVATE
         MeshView.cpp
         MeshResources.cpp
         Mouse.cpp
+        ModuleAABB.cpp
+        ModuleCamera.cpp
+        ModuleTransform.cpp
         Picker.cpp
         Plane.cpp
         Plugins.cpp
@@ -41,7 +48,24 @@ target_sources(Engine24 PRIVATE
         SphereView.cpp
         Timer.cpp
         Triangle.cpp
-        Transform.cpp
+        TransformUtils.cpp
         Utils.cpp
         VectorfieldView.cpp
+        AABBGui.cpp
+        CameraGui.cpp
+        CoordinateSystemsGui.cpp
+        FrameTimerGui.cpp
+        GuiUtils.cpp
+        HierarchyGui.cpp
+        KDTreeGui.cpp
+        MeshGui.cpp
+        MeshViewGui.cpp
+        MouseGui.cpp
+        PickerGui.cpp
+        PointCloudGui.cpp
+        PropertiesGui.cpp
+        SelectionGui.cpp
+        SphereViewGui.cpp
+        TransfromGui.cpp
+        VectorfieldViewGui.cpp
 )

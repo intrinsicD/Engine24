@@ -7,6 +7,7 @@
 
 #include "Module.h"
 #include "PoolHandle.h"
+#include "Pool.h"
 #include "entt/fwd.hpp"
 
 namespace Bcg {

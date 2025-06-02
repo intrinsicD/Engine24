@@ -3,6 +3,7 @@
 //
 
 #include "PluginViewVectorfields.h"
+#include "ModuleAABB.h"
 #include "Engine.h"
 #include "imgui.h"
 #include "VectorfieldViewGui.h"
@@ -11,7 +12,6 @@
 #include "PluginGraphics.h"
 #include "Transform.h"
 #include "GetPrimitives.h"
-#include "BoundingVolumes.h"
 #include "PropertyEigenMap.h"
 #include "OpenGLState.h"
 #include <numeric>
@@ -121,10 +121,9 @@ namespace Bcg {
         SetVectorVectorfieldView(entity_id, vectorfield_name, vectorfield_name).execute();
         SetColorVectorfieldView(entity_id, vectorfield_name, "uniform_color").execute();
 
-        if (Engine::has<BoundingVolumes>(entity_id)) {
-            auto &bv = Engine::State().get<BoundingVolumes>(entity_id);
-            auto &aabb = *bv.h_aabb;
-            view.uniform_length = glm::length(aabb.diagonal()) / 100.0f;
+        if (Engine::has<AABBHandle>(entity_id)) {
+            auto h_aabb = ModuleAABB::get(entity_id);
+            view.uniform_length = glm::length(h_aabb->diagonal()) / 100.0f;
         } else {
             view.uniform_length = 1.0f;
         }

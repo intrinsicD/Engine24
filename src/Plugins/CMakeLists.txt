@@ -1,5 +1,4 @@
 target_sources(Engine24 PRIVATE
-        PluginCamera.cpp
         PluginFrameTimer.cpp
         PluginGraphics.cpp
         PluginHierarchy.cpp
@@ -10,7 +9,6 @@ target_sources(Engine24 PRIVATE
         PluginMeshView.cpp
         PluginPicker.cpp
         PluginPointCloud.cpp
-        PluginTransform.cpp
         PluginSelection.cpp
         PluginSphereView.cpp
         PluginEntity.cpp

@@ -9,7 +9,7 @@ namespace Bcg {
         return (value < minVal ? minVal : (value > maxVal ? maxVal : value));
     }
 
-    uint32_t floatColorToUint32(const glm::vec4 &rgba) {
+    uint32_t floatColorToUint32(const Vector<float, 4> &rgba) {
         // Clamp the values to ensure they are within the 0.0 to 1.0 range
 
         float r = clamp(rgba.r, 0.0f, 1.0f);
@@ -27,7 +27,7 @@ namespace Bcg {
         return color;
     }
 
-    void uint32ToFloatColor(uint32_t uicolor, glm::vec4 &rgba) {
+    void uint32ToFloatColor(uint32_t uicolor, Vector<float, 4> &rgba) {
         // Extract each component by masking and shifting
         uint8_t alpha = (uicolor >> 0) & 0xFF;
         uint8_t blue = (uicolor >> 8) & 0xFF;

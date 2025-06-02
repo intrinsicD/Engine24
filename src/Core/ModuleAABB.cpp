@@ -9,7 +9,6 @@
 #include "GetPrimitives.h"
 #include "EventsEntity.h"
 #include "Types.h"
-#include "BoundingVolumes.h"
 
 namespace Bcg {
     static void on_cleanup_components(const Events::Entity::CleanupComponents &event) {
@@ -22,10 +21,8 @@ namespace Bcg {
 
     void ModuleAABB::activate() {
         if (base_activate()) {
-            Engine::Dispatcher().sink<Events::Entity::CleanupComponents>().connect<&on_cleanup_components>();
-            if (!Engine::Context().find<Pool<AABB> >()) {
-                auto &pool = Engine::Context().emplace<Pool<AABB> >();
-                pool.create();
+            if (!Engine::Context().find<AABBPool>()) {
+                Engine::Context().emplace<AABBPool>();
             }
         }
     }
@@ -41,11 +38,40 @@ namespace Bcg {
 
     void ModuleAABB::deactivate() {
         if (base_deactivate()) {
-            Engine::Dispatcher().sink<Events::Entity::CleanupComponents>().disconnect<&on_cleanup_components>();
+            if (Engine::Context().find<AABBPool>()) {
+                Engine::Context().erase<AABBPool>();
+            }
         }
     }
 
+    AABBHandle ModuleAABB::make_handle(const AABB &object) {
+        auto &pool = Engine::Context().get<AABBPool>();
+        return pool.create(object);
+    }
+
+    AABBHandle ModuleAABB::create(entt::entity entity_id, const AABB &object) {
+        auto handle = make_handle(object);
+        return add(entity_id, handle);
+    }
+
+    AABBHandle ModuleAABB::add(entt::entity entity_id, AABBHandle h_object) {
+        return Engine::State().get_or_emplace<AABBHandle>(entity_id, h_object);
+    }
+
+    void ModuleAABB::remove(entt::entity entity_id) {
+        Engine::State().remove<AABBHandle>(entity_id);
+    }
+
+    bool ModuleAABB::has(entt::entity entity_id) {
+        return Engine::State().all_of<AABBHandle>(entity_id);
+    }
+
+    AABBHandle ModuleAABB::get(entt::entity entity_id) {
+        return Engine::State().get<AABBHandle>(entity_id);
+    }
+
     void ModuleAABB::render() {
+
     }
 
     static std::string s_name = "AABB";
@@ -69,10 +95,7 @@ namespace Bcg {
             return;
         }
 
-        auto &pool = Engine::Context().get<Pool<AABB> >();
-        auto &bv = Engine::State().get_or_emplace<BoundingVolumes>(entity_id);
-        bv.h_aabb = pool.create();
-        *bv.h_aabb = AABB::Build(positions.vector().begin(), positions.vector().end());
+        ModuleAABB::create(entity_id, AABB::Build(positions.vector().begin(), positions.vector().end()));
         Log::Info("Setup {} for entity {}", s_name, entity_id);
     }
 
@@ -82,19 +105,12 @@ namespace Bcg {
             return;
         }
 
-        if (!Engine::has<BoundingVolumes>(entity_id) ||
-            Engine::State().get<BoundingVolumes>(entity_id).h_aabb.is_valid()) {
-            Log::Warn( "Cleanup {} failed, Entity {} does not have an {}. Abort Command", s_name, entity_id, s_name);
+        if (!Engine::has<AABBHandle>(entity_id)) {
+            Log::Warn("Cleanup {} failed, Entity {} does not have an {}. Abort Command", s_name, entity_id, s_name);
             return;
         }
 
-        auto &bv = Engine::State().get<BoundingVolumes>(entity_id);
-
-        if (bv.h_aabb.is_valid()) {
-            auto &pool = Engine::Context().get<Pool<AABB> >();
-            pool.destroy(bv.h_aabb);
-            assert(!bv.h_aabb.is_valid());
-        }
+        ModuleAABB::remove(entity_id);
 
         Log::Info("Cleanup {} for entity {}", s_name, entity_id);
     }
@@ -104,16 +120,14 @@ namespace Bcg {
             return;
         }
 
-        if (!Engine::has<BoundingVolumes>(entity_id)) {
+        if (!Engine::has<AABBHandle>(entity_id)) {
             return;
         }
 
-        auto &bv = Engine::State().get<BoundingVolumes>(entity_id);
-        if (!bv.h_aabb.is_valid()) {
+        auto h_aabb = Engine::State().get<AABBHandle>(entity_id);
+        if (!h_aabb.is_valid()) {
             return;
         }
-
-        auto &aabb = *bv.h_aabb;
 
         auto *vertices = GetPrimitives(entity_id).vertices();
 
@@ -128,16 +142,16 @@ namespace Bcg {
             return;
         }
 
-        Vector<float, 3> c = aabb.center();
-        float s = glm::compMax(aabb.max - aabb.min);
+        Vector<float, 3> c = h_aabb->center();
+        float s = glm::compMax(h_aabb->max - h_aabb->min);
 
         for (auto &point: data.vector()) {
             point -= c;
             point /= s;
         }
 
-        aabb.min = (aabb.min - c) / s;
-        aabb.max = (aabb.max - c) / s;
+        h_aabb->min = (h_aabb->min - c) / s;
+        h_aabb->max = (h_aabb->max - c) / s;
         Log::Info("Center and scale by {} for entity {}", s_name, entity_id);
     }
 

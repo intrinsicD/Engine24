@@ -94,6 +94,8 @@ namespace Bcg {
         //! Get reference to the underlying vector
         std::vector<T> &vector() { return data_; }
 
+        const std::vector<T> &vector() const { return data_; }
+
         //! Access the i'th element. No range check is performed!
         reference operator[](size_t idx) {
             assert(idx < data_.size());
@@ -173,6 +175,11 @@ namespace Bcg {
         }
 
         std::vector<T> &vector() {
+            assert(parray_ != nullptr);
+            return parray_->vector();
+        }
+
+        const std::vector<T> &vector() const {
             assert(parray_ != nullptr);
             return parray_->vector();
         }
