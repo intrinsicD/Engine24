@@ -1,7 +1,6 @@
 add_subdirectory(Geometry)
 add_subdirectory(Input)
 target_sources(Engine24 PRIVATE
-        AABB.cpp
         Camera.cpp
         GuiModuleCamera.cpp
         GuiModuleTransform.cpp
@@ -42,7 +41,6 @@ target_sources(Engine24 PRIVATE
         PointCloudIo.cpp
         PointCloudCompute.cpp
         Segment.cpp
-        Sphere.cpp
         SurfaceMesh.cpp
         SurfaceMeshCompute.cpp
         SurfaceMeshIo.cpp
@@ -59,7 +57,6 @@ target_sources(Engine24 PRIVATE
         GuiUtils.cpp
         HierarchyGui.cpp
         KDTreeGui.cpp
-        MeshGui.cpp
         MouseGui.cpp
         PickerGui.cpp
         PointCloudGui.cpp

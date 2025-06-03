@@ -47,8 +47,7 @@ namespace Bcg::Commands {
         auto &mesh = Engine::require<SurfaceMesh>(entity_id);
 
 
-
-        Setup<AABB>(entity_id).execute();
+        ModuleAABB::setup(entity_id);
         CenterAndScaleByAABB(entity_id, mesh.vpoint_.name()).execute();
 
         auto h_aabb = Engine::State().get<AABBHandle>(entity_id);

@@ -31,11 +31,11 @@ namespace Bcg {
     };
 
     struct AABBHostData{
-        thrust::host_vector<AABB> aabbs;
+        thrust::host_vector<AABB<float>> aabbs;
     };
 
     struct AABBDeviceData{
-        thrust::device_vector<AABB> aabbs;
+        thrust::device_vector<AABB<float>> aabbs;
     };
 
     struct PointsHostData{

@@ -6,12 +6,12 @@
 #define ENGINE24_PLUGINAABB_H
 
 #include "ComponentModule.h"
-#include "AABB.h"
+#include "AABBUtils.h"
 
 
 namespace Bcg {
-    using AABBHandle = PoolHandle<AABB>;
-    using AABBPool = Pool<AABB>;
+    using AABBHandle = PoolHandle<AABB<float>>;
+    using AABBPool = Pool<AABB<float>>;
 
     class ModuleAABB : public Module {
     public:
@@ -25,9 +25,9 @@ namespace Bcg {
 
         // Creation and management --------------------------------------------------------------------------------------
 
-        static AABBHandle make_handle(const AABB &object);
+        static AABBHandle make_handle(const AABB<float> &object);
 
-        static AABBHandle create(entt::entity entity_id, const AABB &object);
+        static AABBHandle create(entt::entity entity_id, const AABB<float> &object);
 
         static AABBHandle add(entt::entity entity_id, AABBHandle h_object);
 
@@ -51,9 +51,9 @@ namespace Bcg {
 
         void render_gui() override;
 
-        static void show_gui(const PoolHandle<AABB> &h_aabb);
+        static void show_gui(const PoolHandle<AABB<float>> &h_aabb);
 
-        static void show_gui(const AABB &aabb);
+        static void show_gui(const AABB<float> &aabb);
 
         static void show_gui(entt::entity entity_id);
 

@@ -11,7 +11,7 @@
 
 namespace Bcg::Commands {
     template<>
-    struct Setup<AABB> : public AbstractCommand {
+    struct Setup<AABB<float>> : public AbstractCommand {
         explicit Setup(entt::entity entity_id) : AbstractCommand("Setup<AABB>"), entity_id(entity_id) {
 
         }
@@ -22,7 +22,7 @@ namespace Bcg::Commands {
     };
 
     template<>
-    struct Cleanup<AABB> : public AbstractCommand {
+    struct Cleanup<AABB<float>> : public AbstractCommand {
         explicit Cleanup(entt::entity entity_id) : AbstractCommand("Cleanup<AABB>"), entity_id(entity_id) {
 
         }

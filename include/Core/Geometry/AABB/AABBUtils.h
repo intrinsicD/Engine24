@@ -5,37 +5,37 @@
 #ifndef AABBUTILS_H
 #define AABBUTILS_H
 
-#include "MatVec.h"
+#include "AABB.h"
 
 namespace Bcg::AABBUtils {
     template<typename T>
-    Vector<T, 3> diagonal(const Vector<T, 3> &min, const Vector<T, 3> &max) {
-        return max - min;
+    Vector<float, 3> ClosestPoint(const AABB<T> &aabb, const Vector<float, 3> &point) {
+        return ClosestPointTraits<AABB<T>, Vector<T, 3>>::closest_point(aabb, point);
     }
 
     template<typename T>
-    Vector<T, 3> half_extent(const Vector<T, 3> &min, const Vector<T, 3> &max) {
-        return diagonal(min, max) * 0.5f;
+    bool Contains(const AABB<T> &aabb, const Vector<float, 3> &point) {
+        return ContainsTraits<AABB<T>, Vector<T, 3>>::contains(aabb, point);
     }
 
     template<typename T>
-    Vector<T, 3> center(const Vector<T, 3> &min, const Vector<T, 3> &max) {
-        return (min + max) * 0.5f;
+    bool Contains(const AABB<T> &aabb, const AABB<T> &other) {
+        return ContainsTraits<AABB<T>, AABB<T>>::contains(aabb, other);
     }
 
     template<typename T>
-    Vector<T, 3> closest_point(const Vector<T, 3> &min, const Vector<T, 3> &max, const Vector<T, 3> &point) {
-        return glm::clamp(point, min, max);
+    bool Intersects(const AABB<T> &a, const AABB<T> &b) {
+        return IntersectsTraits<AABB<T>, AABB<T>>::intersects(a, b);
     }
 
     template<typename T>
-    T distance(const Vector<T, 3> &min, const Vector<T, 3> &max, const Vector<T, 3> &point) {
-        return glm::length(closest_point(min, max, point));
+    AABB<T> Intersection(const AABB<T> &a, const AABB<T> &b) {
+       return IntersectionTraits<AABB<T>, AABB<T>>::intersects(a, b);
     }
 
     template<typename T>
-    T volume(const Vector<T, 3> &min, const Vector<T, 3> &max) {
-        return glm::compMul(diagonal(min, max));
+    float Distance(const AABB<T> &aabb, const Vector<float, 3> &point) {
+        return DistanceTraits<AABB<T>, AABB<T>>::distance(aabb, point);
     }
 }
 

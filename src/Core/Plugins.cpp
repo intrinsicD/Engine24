@@ -6,7 +6,6 @@
 #include "Plugins.h"
 #include "PluginInput.h"
 #include "PluginEntity.h"
-#include "PluginSurfaceMesh.h"
 #include "PluginPointCloud.h"
 #include "PluginPicker.h"
 #include "PluginFrameTimer.h"
@@ -27,7 +26,6 @@ namespace Bcg {
         add_plugin(std::make_unique<PluginGraphics>());
         add_plugin(std::make_unique<PluginInput>());
         add_plugin(std::make_unique<PluginEntity>());
-        add_plugin(std::make_unique<PluginSurfaceMesh>());
         add_plugin(std::make_unique<PluginPointCloud>());
         add_plugin(std::make_unique<PluginPicker>());
         add_plugin(std::make_unique<PluginFrameTimer>());

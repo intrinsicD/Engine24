@@ -13,17 +13,25 @@
 
 namespace Bcg {
     template<typename T>
-    struct AABBBase {
+    struct AABB {
         Vector<T, 3> min = Vector<T, 3>(std::numeric_limits<T>::max());
         Vector<T, 3> max = Vector<T, 3>(std::numeric_limits<T>::lowest());
 
-        CUDA_HOST_DEVICE static AABBBase FromPoint(const Vector<T, 3> &point) {
-            return {point, point};
+        CUDA_HOST_DEVICE AABB() = default;
+
+        CUDA_HOST_DEVICE explicit AABB(const Vector<T, 3> &min, const Vector<T, 3> &max): min(min), max(max) {
+        }
+
+        CUDA_HOST_DEVICE explicit AABB(const Vector<T, 3> &point): min(point), max(point) {
+        }
+
+        CUDA_HOST_DEVICE bool is_valid() const {
+            return min.x <= max.x && min.y <= max.y && min.z <= max.z;
         }
 
         template<typename Iterator>
-        CUDA_HOST static AABBBase Build(const Iterator &begin, const Iterator &end) {
-            AABBBase result;
+        CUDA_HOST static AABB Build(const Iterator &begin, const Iterator &end) {
+            AABB result;
             for (auto it = begin; it != end; ++it) {
                 result.grow(*it);
             }
@@ -35,7 +43,7 @@ namespace Bcg {
             max = Vector<T, 3>(std::numeric_limits<T>::lowest());
         }
 
-        CUDA_HOST_DEVICE void merge(const AABBBase &other) {
+        CUDA_HOST_DEVICE void merge(const AABB &other) {
             min = VecTraits<Vector<T, 3> >::cwiseMin(min, other.min);
             max = VecTraits<Vector<T, 3> >::cwiseMax(max, other.max);
         }
@@ -60,93 +68,77 @@ namespace Bcg {
         CUDA_HOST_DEVICE T volume() const {
             return VecTraits<Vector<T, 3> >::prod(diagonal());
         }
+
+        CUDA_HOST_DEVICE T surface_area() const {
+            Vector<T, 3> d = diagonal();
+            return T(2) * (d.x * d.y + d.y * d.z + d.z * d.x);
+        }
     };
 
-    using AABBf = AABBBase<float>;
-    using AABB = AABBf;
-
-    //TODO define free functions to make use of AABBBase<T> with GeometricTraits.h easier for a concise APIgit
-
-    Vector<float, 3> ClosestPoint(const AABB &aabb, const Vector<float, 3> &point);
-
-    bool Contains(const AABB &aabb, const Vector<float, 3> &point);
-
-    bool Contains(const AABB &aabb, const AABB &other);
-
-    bool Intersects(const AABB &a, const AABB &b);
-
-    AABB Intersection(const AABB &a, const AABB &b);
-
-    float Distance(const AABB &aabb, const Vector<float, 3> &point);
-
-    template<>
-    struct StringTraits<AABB> {
-        static std::string ToString(const AABB &aabb);
+    template<typename T>
+    struct StringTraits<AABB<T> > {
+        static std::string ToString(const AABB<T> &aabb) {
+            std::stringstream ss;
+            ss << MapConst(aabb.min).transpose() << " " << MapConst(aabb.max).transpose();
+            return ss.str();
+        }
     };
 
     //------------------------------------------------------------------------------------------------------------------
 
     template<typename T>
-    struct ClosestPointTraits<AABBBase<T>, Vector<T, 3>> {
-        CUDA_HOST_DEVICE
-        static Vector<T, 3> closest_point(const AABBBase<T> &aabb, const Vector<T, 3> &point) noexcept {
+    struct ClosestPointTraits<AABB<T>, Vector<T, 3> > {
+        CUDA_HOST_DEVICE static Vector<T, 3> closest_point(const AABB<T> &aabb, const Vector<T, 3> &point) noexcept {
             return VecTraits<Vector<T, 3> >::clamp(point, aabb.min, aabb.max);
         }
     };
 
     template<typename T>
-    struct SquaredDistanceTraits<AABBBase<T>, Vector<T, 3>> {
-        CUDA_HOST_DEVICE
-        static T squared_distance(const AABBBase<T> &aabb, const Vector<T, 3> &point) noexcept {
+    struct SquaredDistanceTraits<AABB<T>, Vector<T, 3> > {
+        CUDA_HOST_DEVICE static T squared_distance(const AABB<T> &aabb, const Vector<T, 3> &point) noexcept {
             return VecTraits<Vector<T, 3> >::squared_distance(
-                    ClosestPointTraits<AABBBase<T>, Vector<T, 3>>::closest_point(aabb, point), point);
+                ClosestPointTraits<AABB<T>, Vector<T, 3> >::closest_point(aabb, point), point);
         }
     };
 
     template<typename T>
-    struct DistanceTraits<AABBBase<T>, Vector<T, 3>> {
-        CUDA_HOST_DEVICE
-        static T distance(const AABBBase<T> &aabb, const Vector<T, 3> &point) noexcept {
-            return sqrt(SquaredDistanceTraits<AABBBase<T>, Vector<T, 3>>::squared_distance(aabb, point));
+    struct DistanceTraits<AABB<T>, Vector<T, 3> > {
+        CUDA_HOST_DEVICE static T distance(const AABB<T> &aabb, const Vector<T, 3> &point) noexcept {
+            return sqrt(SquaredDistanceTraits<AABB<T>, Vector<T, 3> >::squared_distance(aabb, point));
         }
     };
 
     template<typename T>
-    struct GetterTraits<AABBBase<T>, Vector<T, 3>> {
-        CUDA_HOST_DEVICE
-        static AABBBase<T> getter(const Vector<T, 3> &v) noexcept {
+    struct GetterTraits<AABB<T>, Vector<T, 3> > {
+        CUDA_HOST_DEVICE static AABB<T> getter(const Vector<T, 3> &v) noexcept {
             return {v, v};
         }
     };
 
     template<typename T>
-    CUDA_HOST_DEVICE
-    static bool isWithinBounds(const AABBBase<T> &a, const Vector<T, 3> &b) noexcept {
+    CUDA_HOST_DEVICE static bool isWithinBounds(const AABB<T> &a, const Vector<T, 3> &b) noexcept {
         return a.min.x <= b.x && b.x <= a.max.x &&
                a.min.y <= b.y && b.y <= a.max.y &&
                a.min.z <= b.z && b.z <= a.max.z;
     }
 
     template<typename T>
-    struct ContainsTraits<AABBBase<T>, Vector<T, 3>> {
-        CUDA_HOST_DEVICE
-        static bool contains(const AABBBase<T> &a, const Vector<T, 3> &b) noexcept {
+    struct ContainsTraits<AABB<T>, Vector<T, 3> > {
+        CUDA_HOST_DEVICE static bool contains(const AABB<T> &a, const Vector<T, 3> &b) noexcept {
             return isWithinBounds(a, b);
         }
     };
 
     template<typename T>
-    struct IntersectsTraits<AABBBase<T>, Vector<T, 3>> {
-        CUDA_HOST_DEVICE
-        static bool intersects(const AABBBase<T> &a, const Vector<T, 3> &b) noexcept {
+    struct IntersectsTraits<AABB<T>, Vector<T, 3> > {
+        CUDA_HOST_DEVICE static bool intersects(const AABB<T> &a, const Vector<T, 3> &b) noexcept {
             return isWithinBounds(a, b);
         }
     };
 
     template<typename T>
-    struct ContainsTraits<AABBBase<T>, AABBBase<T>> {
-        CUDA_HOST_DEVICE
-        static bool contains(const AABBBase<T> &a, const AABBBase<T> &b) noexcept {
+    struct ContainsTraits<AABB<T>, AABB<T> > {
+        CUDA_HOST_DEVICE static bool contains(const AABB<T> &a, const AABB<T> &b) noexcept {
             return a.min.x <= b.min.x && b.max.x <= a.max.x &&
                    a.min.y <= b.min.y && b.max.y <= a.max.y &&
                    a.min.z <= b.min.z && b.max.z <= a.max.z;
@@ -154,9 +146,8 @@ namespace Bcg {
     };
 
     template<typename T>
-    struct IntersectsTraits<AABBBase<T>, AABBBase<T>> {
-        CUDA_HOST_DEVICE
-        static bool intersects(const AABBBase<T> &a, const AABBBase<T> &b) noexcept {
+    struct IntersectsTraits<AABB<T>, AABB<T> > {
+        CUDA_HOST_DEVICE static bool intersects(const AABB<T> &a, const AABB<T> &b) noexcept {
             return !(a.max.x < b.min.x || b.max.x < a.min.x ||
                      a.max.y < b.min.y || b.max.y < a.min.y ||
                      a.max.z < b.min.z || b.max.z < a.min.z);
@@ -164,17 +155,14 @@ namespace Bcg {
     };
 
     template<typename T>
-    struct IntersectionTraits<AABBBase<T>, AABBBase<T>> {
-        CUDA_HOST_DEVICE
-        static AABBBase<T> intersection(const AABBBase<T> &a, const AABBBase<T> &b) noexcept {
-            AABBBase<T> result{};
+    struct IntersectionTraits<AABB<T>, AABB<T> > {
+        CUDA_HOST_DEVICE static AABB<T> intersection(const AABB<T> &a, const AABB<T> &b) noexcept {
+            AABB<T> result{};
             result.min = VecTraits<Vector<T, 3> >::cwiseMax(a.min, b.min);
             result.max = VecTraits<Vector<T, 3> >::cwiseMin(a.max, b.max);
             return result;
         }
     };
-
-
 }
 
 #endif //ENGINE24_AABB_H

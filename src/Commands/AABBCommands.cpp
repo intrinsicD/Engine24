@@ -6,11 +6,11 @@
 #include "ModuleAABB.h"
 
 namespace Bcg::Commands {
-    void Commands::Setup<AABB>::execute() const {
+    void Commands::Setup<AABB<float>>::execute() const {
         ModuleAABB::setup(entity_id);
     }
 
-    void Commands::Cleanup<AABB>::execute() const {
+    void Commands::Cleanup<AABB<float>>::execute() const {
         ModuleAABB::cleanup(entity_id);
     }
 

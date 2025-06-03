@@ -153,7 +153,7 @@ namespace Bcg {
 
             auto &pc = Engine::require<PointCloud>(entity_id);
 
-            Setup<AABB>(entity_id).execute();
+            ModuleAABB::setup(entity_id);
             CenterAndScaleByAABB(entity_id, pc.vpoint_.name()).execute();
             auto h_aabb = ModuleAABB::get(entity_id);
             Vector<float, 3> c = h_aabb->center();

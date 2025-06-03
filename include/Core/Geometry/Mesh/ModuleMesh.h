@@ -7,6 +7,7 @@
 
 #include "ComponentModule.h"
 #include "SurfaceMesh.h"
+#include "StringTraitsMesh.h"
 #include "Events/EventsCallbacks.h"
 
 namespace Bcg {

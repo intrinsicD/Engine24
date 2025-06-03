@@ -51,13 +51,13 @@ namespace Bcg {
         }
     }
 
-    void ModuleAABB::show_gui(const PoolHandle<AABB> &h_aabb) {
+    void ModuleAABB::show_gui(const PoolHandle<AABB<float>> &h_aabb) {
         if (h_aabb.is_valid()) {
             show_gui(*h_aabb);
         }
     }
 
-    void ModuleAABB::show_gui(const AABB &aabb) {
+    void ModuleAABB::show_gui(const AABB<float> &aabb) {
         ImGui::Text("Min: (%f, %f, %f)", aabb.min.x, aabb.min.y, aabb.min.z);
         ImGui::Text("Max: (%f, %f, %f)", aabb.max.x, aabb.max.y, aabb.max.z);
     }
@@ -68,12 +68,12 @@ namespace Bcg {
         }
     }
 
-    AABBHandle ModuleAABB::make_handle(const AABB &object) {
+    AABBHandle ModuleAABB::make_handle(const AABB<float> &object) {
         auto &pool = Engine::Context().get<AABBPool>();
         return pool.create(object);
     }
 
-    AABBHandle ModuleAABB::create(entt::entity entity_id, const AABB &object) {
+    AABBHandle ModuleAABB::create(entt::entity entity_id, const AABB<float> &object) {
         auto handle = make_handle(object);
         return add(entity_id, handle);
     }
@@ -115,7 +115,7 @@ namespace Bcg {
             return;
         }
 
-        ModuleAABB::create(entity_id, AABB::Build(positions.vector().begin(), positions.vector().end()));
+        ModuleAABB::create(entity_id, AABB<float>::Build(positions.vector().begin(), positions.vector().end()));
         Log::Info("Setup {} for entity {}", s_name, entity_id);
     }
 
