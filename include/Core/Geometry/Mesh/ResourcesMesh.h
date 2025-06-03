@@ -10,7 +10,7 @@
 #include "Events/EventsCallbacks.h"
 
 namespace Bcg {
-    struct MeshResources {
+    struct ResourcesMesh {
         static void activate();
 
         static SurfaceMesh load(const std::string &filepath);

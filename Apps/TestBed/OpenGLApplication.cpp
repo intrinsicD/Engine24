@@ -8,12 +8,11 @@
 #include "Plugins.h"
 #include "GuiModules.h"
 #include "Modules.h"
-#include "MeshModule.h"
-#include "MeshGuiModule.h"
+#include "ModuleMesh.h"
 #include "ModuleAABB.h"
 #include "ModuleCamera.h"
 #include "ModuleTransform.h"
-#include "GuiModuleAABB.h"
+#include "ModuleMeshView.h"
 #include "GuiModuleCamera.h"
 #include "GuiModuleTransform.h"
 #include "MainLoop.h"
@@ -30,14 +29,13 @@ namespace Bcg {
         if (Bcg::PluginGraphics::init(width, height, title)) {
             Bcg::PluginGraphics::set_window_title(title);
             auto &modules = Engine::Context().emplace<Modules>();
-            modules.add(std::make_unique<MeshModule>());
+            modules.add(std::make_unique<ModuleMesh>());
+            modules.add(std::make_unique<ModuleMeshView>());
             modules.add(std::make_unique<ModuleAABB>());
             modules.add(std::make_unique<ModuleCamera>());
             modules.add(std::make_unique<ModuleTransform>());
 
             auto &gui_modules = Engine::Context().emplace<GuiModules>();
-            gui_modules.add(std::make_unique<MeshGuiModule>());
-            gui_modules.add(std::make_unique<GuiModuleAABB>());
             gui_modules.add(std::make_unique<GuiModuleCamera>());
             gui_modules.add(std::make_unique<GuiModuleTransform>());
 
@@ -64,6 +62,7 @@ namespace Bcg {
             {
                 Bcg::PluginGraphics::poll_events();
                 Bcg::Plugins::begin_frame_all();
+                modules.begin_frame();
                 Bcg::Plugins::update_all();
                 modules.update();
                 Bcg::Engine::handle_command_double_buffer();
@@ -72,17 +71,21 @@ namespace Bcg {
             {
                 Bcg::PluginGraphics::clear_framebuffer();
                 Bcg::Plugins::render_all();
+                modules.render();
                 Bcg::Engine::handle_command_double_buffer();
                 Bcg::Engine::handle_buffered_events();
                 Bcg::PluginGraphics::start_gui();
                 Bcg::Plugins::render_menu();
-                Bcg::Plugins::render_gui();
+                modules.render_menu();
                 gui_modules.render_menu();
+                Bcg::Plugins::render_gui();
+                modules.render_gui();
                 gui_modules.render_gui();
                 Bcg::PluginGraphics::end_gui();
                 Bcg::Engine::handle_command_double_buffer();
                 Bcg::Engine::handle_buffered_events();
                 Bcg::Plugins::end_frame();
+                modules.end_frame();
                 Bcg::PluginGraphics::swap_buffers();
             }
         }

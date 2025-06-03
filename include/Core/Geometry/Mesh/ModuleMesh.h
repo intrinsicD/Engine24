@@ -1,23 +1,23 @@
 //
-// Created by alex on 15.07.24.
+// Created by alex on 26.11.24.
 //
 
-#ifndef ENGINE24_PLUGINAABB_H
-#define ENGINE24_PLUGINAABB_H
+#ifndef ENGINE24_MODULEMESH_H
+#define ENGINE24_MODULEMESH_H
 
 #include "ComponentModule.h"
-#include "AABB.h"
-
+#include "SurfaceMesh.h"
+#include "Events/EventsCallbacks.h"
 
 namespace Bcg {
-    using AABBHandle = PoolHandle<AABB>;
-    using AABBPool = Pool<AABB>;
+    using MeshHandle = PoolHandle<SurfaceMesh>;
+    using MeshPool = Pool<SurfaceMesh>;
 
-    class ModuleAABB : public Module {
+    class ModuleMesh : public Module {
     public:
-        explicit ModuleAABB();
+        ModuleMesh();
 
-        ~ModuleAABB() override = default;
+        ~ModuleMesh() override = default;
 
         void activate() override;
 
@@ -25,25 +25,27 @@ namespace Bcg {
 
         // Creation and management --------------------------------------------------------------------------------------
 
-        static AABBHandle make_handle(const AABB &object);
+        static MeshHandle make_handle(const SurfaceMesh &mesh);
 
-        static AABBHandle create(entt::entity entity_id, const AABB &object);
+        static MeshHandle create(entt::entity entity_id, const SurfaceMesh &mesh);
 
-        static AABBHandle add(entt::entity entity_id, AABBHandle h_object);
+        static MeshHandle add(entt::entity entity_id, MeshHandle h_mesh);
 
         static void remove(entt::entity entity_id);
 
         static bool has(entt::entity entity_id);
 
-        static AABBHandle get(entt::entity entity_id);
+        static MeshHandle get(entt::entity entity_id);
 
         // Processing ---------------------------------------------------------------------------------------------------
+
+        static SurfaceMesh load_mesh(const std::string &filepath);
+
+        static bool save_mesh(const std::string &filepath, const SurfaceMesh &mesh);
 
         static void setup(entt::entity entity_id);
 
         static void cleanup(entt::entity entity_id);
-
-        static void center_and_scale_by_aabb(entt::entity entity_id, const std::string &property_name);
 
         // Gui stuff ---------------------------------------------------------------------------------------------------
 
@@ -51,14 +53,16 @@ namespace Bcg {
 
         void render_gui() override;
 
-        static void show_gui(const PoolHandle<AABB> &h_aabb);
+        static void show_gui(const MeshHandle &h_mesh);
 
-        static void show_gui(const AABB &aabb);
+        static void show_gui(const SurfaceMesh &mesh);
 
         static void show_gui(entt::entity entity_id);
 
         // Events ---------------------------------------------------------------------------------------------------
+
+        void on_drop_file(const Events::Callback::Drop &event);
     };
 }
 
-#endif //ENGINE24_PLUGINAABB_H
+#endif //ENGINE24_MODULEMESH_H

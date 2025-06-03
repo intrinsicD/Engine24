@@ -10,11 +10,8 @@
 #include "PluginPointCloud.h"
 #include "PluginPicker.h"
 #include "PluginFrameTimer.h"
-#include "ModuleCamera.h"
-#include "ModuleTransform.h"
 #include "PluginHierarchy.h"
 #include "PluginViewSphere.h"
-#include "PluginViewMesh.h"
 #include "PluginViewVectorfields.h"
 #include "PluginSelection.h"
 #include "PluginGraphics.h"
@@ -36,7 +33,6 @@ namespace Bcg {
         add_plugin(std::make_unique<PluginFrameTimer>());
         add_plugin(std::make_unique<PluginHierarchy>());
         add_plugin(std::make_unique<PluginViewSphere>());
-        add_plugin(std::make_unique<PluginViewMesh>());
         add_plugin(std::make_unique<PluginViewVectorfields>());
         add_plugin(std::make_unique<PluginSelection>());
         add_plugin(std::make_unique<PluginIcp>());

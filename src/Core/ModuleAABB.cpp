@@ -9,12 +9,9 @@
 #include "GetPrimitives.h"
 #include "EventsEntity.h"
 #include "Types.h"
+#include "Picker.h"
 
 namespace Bcg {
-    static void on_cleanup_components(const Events::Entity::CleanupComponents &event) {
-        ModuleAABB::cleanup(event.entity_id);
-    }
-
     ModuleAABB::ModuleAABB() : Module("AABB") {
 
     }
@@ -27,20 +24,47 @@ namespace Bcg {
         }
     }
 
-    void ModuleAABB::begin_frame() {
-    }
-
-    void ModuleAABB::update() {
-    }
-
-    void ModuleAABB::end_frame() {
-    }
-
     void ModuleAABB::deactivate() {
         if (base_deactivate()) {
             if (Engine::Context().find<AABBPool>()) {
                 Engine::Context().erase<AABBPool>();
             }
+        }
+    }
+
+    static bool gui_enabled = false;
+
+    void ModuleAABB::render_menu() {
+        if (ImGui::BeginMenu("Module")) {
+            ImGui::MenuItem("AABB", nullptr, &gui_enabled);
+            ImGui::EndMenu();
+        }
+    }
+
+    void ModuleAABB::render_gui() {
+        if (gui_enabled) {
+            if (ImGui::Begin("AABB", &gui_enabled, ImGuiWindowFlags_AlwaysAutoResize)) {
+                auto &picked = Engine::Context().get<Picked>();
+                show_gui(picked.entity.id);
+            }
+            ImGui::End();
+        }
+    }
+
+    void ModuleAABB::show_gui(const PoolHandle<AABB> &h_aabb) {
+        if (h_aabb.is_valid()) {
+            show_gui(*h_aabb);
+        }
+    }
+
+    void ModuleAABB::show_gui(const AABB &aabb) {
+        ImGui::Text("Min: (%f, %f, %f)", aabb.min.x, aabb.min.y, aabb.min.z);
+        ImGui::Text("Max: (%f, %f, %f)", aabb.max.x, aabb.max.y, aabb.max.z);
+    }
+
+    void ModuleAABB::show_gui(entt::entity entity_id) {
+        if (has(entity_id)) {
+            show_gui(get(entity_id));
         }
     }
 
@@ -68,10 +92,6 @@ namespace Bcg {
 
     AABBHandle ModuleAABB::get(entt::entity entity_id) {
         return Engine::State().get<AABBHandle>(entity_id);
-    }
-
-    void ModuleAABB::render() {
-
     }
 
     static std::string s_name = "AABB";

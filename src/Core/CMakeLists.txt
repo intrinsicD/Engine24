@@ -3,12 +3,12 @@ add_subdirectory(Input)
 target_sources(Engine24 PRIVATE
         AABB.cpp
         Camera.cpp
-        GuiModuleAABB.cpp
         GuiModuleCamera.cpp
         GuiModuleTransform.cpp
         CommandsCamera.cpp
         CommandsTransform.cpp
         CommandsMesh.cpp
+        CommandsMeshView.cpp
         Color.cpp
         CoordinateSystems.cpp
         Engine.cpp
@@ -32,6 +32,8 @@ target_sources(Engine24 PRIVATE
         ModuleAABB.cpp
         ModuleCamera.cpp
         ModuleTransform.cpp
+        ModuleMesh.cpp
+        ModuleMeshView.cpp
         Picker.cpp
         Plane.cpp
         Plugins.cpp
@@ -51,7 +53,6 @@ target_sources(Engine24 PRIVATE
         TransformUtils.cpp
         Utils.cpp
         VectorfieldView.cpp
-        AABBGui.cpp
         CameraGui.cpp
         CoordinateSystemsGui.cpp
         FrameTimerGui.cpp
@@ -59,7 +60,6 @@ target_sources(Engine24 PRIVATE
         HierarchyGui.cpp
         KDTreeGui.cpp
         MeshGui.cpp
-        MeshViewGui.cpp
         MouseGui.cpp
         PickerGui.cpp
         PointCloudGui.cpp

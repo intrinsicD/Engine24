@@ -55,7 +55,7 @@ namespace Bcg {
     PointCloud PluginPointCloud::load(const std::string &filepath) {
         PointCloud pc;
         if (!Read(filepath, pc)) {
-            Log::Error("Unsupported file format: " + filepath);
+            Log::Error("PointCloud::Unsupported file format: " + filepath);
         }
         return pc;
     }

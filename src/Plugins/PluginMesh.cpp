@@ -17,7 +17,8 @@
 #include "VertexArrayObject.h"
 #include "Picker.h"
 #include "PluginViewSphere.h"
-#include "PluginViewMesh.h"
+#include "CommandsMeshView.h"
+#include "ModuleMeshView.h"
 
 namespace Bcg {
     static void on_drop_file(const Events::Callback::Drop &event) {
@@ -42,7 +43,7 @@ namespace Bcg {
         ext = ext.substr(ext.find_last_of('.') + 1);
         SurfaceMesh mesh;
         if (!Read(filepath, mesh)) {
-            Log::Error("Unsupported file format: " + ext);
+            Log::Error("PluginMesh: Unsupported file format: " + ext);
             return {};
         }
         if (mesh.has_face_property("f:indices")) {
@@ -59,7 +60,7 @@ namespace Bcg {
         std::string ext = filepath;
         ext = ext.substr(ext.find_last_of('.') + 1);
         if (!Write(filepath, mesh)) {
-            Log::Error("Unsupported file format: " + ext);
+            Log::Error("PluginMesh: Unsupported file format: " + ext);
             return false;
         }
         return true;
@@ -154,15 +155,15 @@ namespace Bcg {
 
     void PluginSurfaceMesh::activate() {
         if (base_activate()) {
-            Engine::Dispatcher().sink<Events::Callback::Drop>().connect<&on_drop_file>();
-            Engine::Dispatcher().sink<Events::Entity::CleanupComponents>().connect<&on_cleanup_components>();
+            //Engine::Dispatcher().sink<Events::Callback::Drop>().connect<&on_drop_file>();
+            //Engine::Dispatcher().sink<Events::Entity::CleanupComponents>().connect<&on_cleanup_components>();
         }
     }
 
     void PluginSurfaceMesh::deactivate() {
         if (base_deactivate()) {
-            Engine::Dispatcher().sink<Events::Callback::Drop>().disconnect<&on_drop_file>();
-            Engine::Dispatcher().sink<Events::Entity::CleanupComponents>().disconnect<&on_cleanup_components>();
+            //Engine::Dispatcher().sink<Events::Callback::Drop>().disconnect<&on_drop_file>();
+            //Engine::Dispatcher().sink<Events::Entity::CleanupComponents>().disconnect<&on_cleanup_components>();
         }
     }
 

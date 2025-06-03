@@ -5,6 +5,7 @@
 #include "SurfaceMeshCompute.h"
 #include "Buffer.h"
 #include "Program.h"
+#include "ModuleMesh.h"
 #include "SurfaceMeshTriangles.h"
 #include "Logger.h"
 #include "PropertyEigenMap.h"
@@ -14,58 +15,59 @@
 namespace Bcg {
     VertexProperty<Vector<float, 3>> ComputeSurfaceMeshVertexNormals(entt::entity entity_id) {
         if (!Engine::valid(entity_id)) return VertexProperty<Vector<float, 3>>();
-        if (!Engine::has<SurfaceMesh>(entity_id)) return VertexProperty<Vector<float, 3>>();
+        if (!Engine::has<MeshHandle>(entity_id)) return VertexProperty<Vector<float, 3>>();
 
-        auto &mesh = Engine::State().get<SurfaceMesh>(entity_id);
-        auto &vpoint = mesh.vpoint_.vector();
-        auto &vconn = mesh.vconn_.vector();
-        auto &hconn = mesh.hconn_.vector();
-        auto &fconn = mesh.fconn_.vector();
-        auto normals = mesh.vertex_property<Vector<float, 3>>("v:normal");
+        auto h_mesh = Engine::State().get<MeshHandle>(entity_id);
+
+        auto &vpoint = h_mesh->vpoint_.vector();
+        auto &vconn = h_mesh->vconn_.vector();
+        auto &hconn = h_mesh->hconn_.vector();
+        auto &fconn = h_mesh->fconn_.vector();
+        auto normals = h_mesh->vertex_property<Vector<float, 3>>("v:normal");
 
         OpenGLState openGlState(entity_id);
-        auto b_positions = openGlState.get_buffer(mesh.vpoint_.name());
+        auto b_positions = openGlState.get_buffer(h_mesh->vpoint_.name());
         if (!b_positions) {
             b_positions = ArrayBuffer();
             b_positions.create();
             b_positions.bind();
-            b_positions.buffer_data(mesh.positions().data(),
-                                    mesh.positions().size() * 3 * sizeof(float),
+            b_positions.buffer_data(h_mesh->positions().data(),
+                                    h_mesh->positions().size() * 3 * sizeof(float),
                                     Buffer::Usage::STATIC_DRAW);
-            openGlState.register_buffer(mesh.vpoint_.name(), b_positions);
+            openGlState.register_buffer(h_mesh->vpoint_.name(), b_positions);
         }
 
-        auto b_vconns = openGlState.get_buffer(mesh.vconn_.name());
+        auto b_vconns = openGlState.get_buffer(h_mesh->vconn_.name());
         if (!b_vconns) {
             b_vconns = ShaderStorageBuffer();
             b_vconns.create();
             b_vconns.bind();
-            b_vconns.buffer_data(mesh.vconn_.data(),
-                                 mesh.vconn_.vector().size() * sizeof(unsigned int),
+            b_vconns.buffer_data(h_mesh->vconn_.data(),
+                                 h_mesh->vconn_.vector().size() * sizeof(unsigned int),
                                  Buffer::Usage::STATIC_DRAW);
-            openGlState.register_buffer(mesh.vconn_.name(), b_vconns);
+            openGlState.register_buffer(h_mesh->vconn_.name(), b_vconns);
         }
 
-        auto b_hconns = openGlState.get_buffer(mesh.hconn_.name());
+        auto b_hconns = openGlState.get_buffer(h_mesh->hconn_.name());
         if (!b_hconns) {
             b_hconns = ShaderStorageBuffer();
             b_hconns.create();
             b_hconns.bind();
-            b_hconns.buffer_data(mesh.hconn_.data(),
-                                 mesh.hconn_.vector().size() * 4 * sizeof(unsigned int),
+            b_hconns.buffer_data(h_mesh->hconn_.data(),
+                                 h_mesh->hconn_.vector().size() * 4 * sizeof(unsigned int),
                                  Buffer::Usage::STATIC_DRAW);
-            openGlState.register_buffer(mesh.hconn_.name(), b_hconns);
+            openGlState.register_buffer(h_mesh->hconn_.name(), b_hconns);
         }
 
-        auto b_fconns = openGlState.get_buffer(mesh.fconn_.name());
+        auto b_fconns = openGlState.get_buffer(h_mesh->fconn_.name());
         if (!b_fconns) {
             b_fconns = ShaderStorageBuffer();
             b_fconns.create();
             b_fconns.bind();
-            b_fconns.buffer_data(mesh.fconn_.data(),
-                                 mesh.fconn_.vector().size() * sizeof(unsigned int),
+            b_fconns.buffer_data(h_mesh->fconn_.data(),
+                                 h_mesh->fconn_.vector().size() * sizeof(unsigned int),
                                  Buffer::Usage::STATIC_DRAW);
-            openGlState.register_buffer(mesh.fconn_.name(), b_fconns);
+            openGlState.register_buffer(h_mesh->fconn_.name(), b_fconns);
         }
 
         auto b_normals = openGlState.get_buffer(normals.name());
@@ -100,7 +102,7 @@ namespace Bcg {
         b_fconns.bind_base(3);
         b_normals.bind_base(4);
 
-        program.dispatch(mesh.vertices_size(), 1, 1);
+        program.dispatch(h_mesh->vertices_size(), 1, 1);
 
         // Ensure all computations are done
         program.memory_barrier(ComputeShaderProgram::Barrier::SHADER_STORAGE_BARRIER_BIT);

@@ -15,17 +15,27 @@ namespace Bcg {
 
         ~Modules() = default;
 
-        void activate();
-
-        void deactivate();
-
         void add(std::unique_ptr<Module> uptr);
 
         void remove(const std::string &name);
 
         void remove(std::unique_ptr<Module> uptr);
 
+        void activate();
+
+        void deactivate();
+
+        void begin_frame();
+
         void update();
+
+        void render();
+
+        void render_menu();
+
+        void render_gui();
+
+        void end_frame();
     };
 }
 #endif //ENGINE24_MODULES_H

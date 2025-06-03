@@ -6,20 +6,21 @@
 #define MODULE_H
 
 #include <string>
+#include <utility>
 #include "Logger.h"
 #include "entt/fwd.hpp"
 
 namespace Bcg {
     class Module {
     public:
-        explicit Module(const std::string &name) : name(name), activated(false) {
+        explicit Module(std::string name) : name(std::move(name)), activated(false) {
         }
 
         virtual ~Module() = default;
 
-        const std::string &get_name() const { return name; }
+        [[nodiscard]] const std::string &get_name() const { return name; }
 
-        bool is_activated() const { return activated; }
+        [[nodiscard]] bool is_activated() const { return activated; }
 
         virtual void activate() = 0; //registers callbacks to events
 
@@ -32,10 +33,16 @@ namespace Bcg {
         virtual void update() {
         }
 
-        virtual void end_frame() {
+        virtual void render() {
         }
 
-        virtual void render() {
+        virtual void render_menu() {
+        }
+
+        virtual void render_gui() {
+        }
+
+        virtual void end_frame() {
         }
 
     protected:

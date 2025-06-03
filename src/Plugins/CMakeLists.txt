@@ -6,7 +6,6 @@ target_sources(Engine24 PRIVATE
         PluginInput.cpp
         PluginKDTree.cpp
         PluginMesh.cpp
-        PluginMeshView.cpp
         PluginPicker.cpp
         PluginPointCloud.cpp
         PluginSelection.cpp

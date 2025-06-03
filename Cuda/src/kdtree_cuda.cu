@@ -57,7 +57,8 @@ namespace Bcg::cuda {
 
             build_duration = end_time - start_time;
             Log::Info("Build LBVH_DEVICE in {} seconds", build_duration.count());
-            const cuda::bvh::host_data<vec3> h_bvh_device = cuda::bvh::get_host_data(bvh);
+            const auto &h_bvh_device = Engine::State().emplace_or_replace<cuda::bvh::host_data<vec3>>(entity_id, bvh::get_host_data(bvh));
+
             distance_calculator<vec3, vec3> dist;
             auto result = cuda::bvh::query_host<vec3>(h_bvh_device, nearest(ps[0]), dist);
             Log::Info("Nearest to first point: {} with distance: {}", result.first, result.second);

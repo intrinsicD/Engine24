@@ -2,7 +2,7 @@
 // Created by alex on 5/28/25.
 //
 
-#include "MeshResources.h"
+#include "ResourcesMesh.h"
 #include "SurfaceMeshIo.h"
 #include "Logger.h"
 #include "Engine.h"
@@ -24,12 +24,12 @@ namespace Bcg {
 
     using MeshAssetCache = entt::resource_cache<SurfaceMesh, SurfaceMeshLoader>;
 
-    void MeshResources::activate() {
+    void ResourcesMesh::activate() {
         Engine::Context().emplace<entt::resource_cache<SurfaceMesh, SurfaceMeshLoader>>();
-        Engine::Dispatcher().sink<Events::Callback::Drop>().connect<&MeshResources::on_drop_file>();
+        Engine::Dispatcher().sink<Events::Callback::Drop>().connect<&ResourcesMesh::on_drop_file>();
     }
 
-    SurfaceMesh MeshResources::load(const std::string &filepath) {
+    SurfaceMesh ResourcesMesh::load(const std::string &filepath) {
         auto &cache = Engine::Context().get<MeshAssetCache>();
         auto ret = cache.load(entt::hashed_string(filepath.c_str()), filepath);
         const bool loaded = ret.second;
@@ -41,7 +41,7 @@ namespace Bcg {
         return ret.first->second;
     }
 
-    void MeshResources::on_drop_file(const Events::Callback::Drop &event) {
+    void ResourcesMesh::on_drop_file(const Events::Callback::Drop &event) {
         for (int i = 0; i < event.count; ++i) {
             auto start_time = std::chrono::high_resolution_clock::now();
 

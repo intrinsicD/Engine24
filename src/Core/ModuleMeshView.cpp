@@ -2,19 +2,19 @@
 // Created by alex on 04.08.24.
 //
 
-
-#include "PluginViewMesh.h"
+#include "ModuleMeshView.h"
+#include "ModuleMesh.h"
 #include "Engine.h"
 #include "imgui.h"
-#include "MeshViewGui.h"
 #include "Picker.h"
 #include "CameraUtils.h"
 #include "EventsEntity.h"
-#include "Transform.h"
+#include "ModuleTransform.h"
 #include "GetPrimitives.h"
 #include "OpenGLState.h"
 #include "SurfaceMeshTriangles.h"
 #include "PropertyEigenMap.h"
+#include "GuiUtils.h"
 
 namespace Bcg {
 
@@ -34,44 +34,118 @@ namespace Bcg {
         openGlState.clear();
     }
 
-    void PluginViewMesh::activate() {
+    void ModuleMeshView::activate() {
         if (base_activate()) {
             Engine::Dispatcher().sink<Events::Entity::Destroy>().connect<&on_destroy>();
         }
     }
 
-    void PluginViewMesh::begin_frame() {}
+    void ModuleMeshView::begin_frame() {}
 
-    void PluginViewMesh::update() {}
+    void ModuleMeshView::update() {}
 
-    void PluginViewMesh::end_frame() {}
+    void ModuleMeshView::end_frame() {}
 
-    void PluginViewMesh::deactivate() {
+    void ModuleMeshView::deactivate() {
         if (base_deactivate()) {
             Engine::Dispatcher().sink<Events::Entity::Destroy>().disconnect<&on_destroy>();
         }
     }
 
-    static bool show_gui = false;
+    static bool gui_enabled = false;
 
-    void PluginViewMesh::render_menu() {
+    void ModuleMeshView::render_menu() {
         if (ImGui::BeginMenu("Entity")) {
-            ImGui::MenuItem("MeshView", nullptr, &show_gui);
+            ImGui::MenuItem("MeshView", nullptr, &gui_enabled);
             ImGui::EndMenu();
         }
     }
 
-    void PluginViewMesh::render_gui() {
-        if (show_gui) {
+    void ModuleMeshView::render_gui() {
+        if (gui_enabled) {
             auto &picked = Engine::Context().get<Picked>();
-            if (ImGui::Begin("MeshView", &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
-                Gui::ShowMeshView(picked.entity.id);
+            if (ImGui::Begin("MeshView", &gui_enabled, ImGuiWindowFlags_AlwaysAutoResize)) {
+                show_gui(picked.entity.id);
             }
             ImGui::End();
         }
     }
 
-    void PluginViewMesh::render() {
+    void ModuleMeshView::show_gui(entt::entity entity_id, MeshView &view){
+        if(!Engine::valid(entity_id)) {
+            return;
+        }
+
+        ImGui::PushID("mesh_view");
+        auto *vertices = GetPrimitives(entity_id).vertices();
+        ImGui::Checkbox("hide", &view.hide);
+        if (vertices) {
+            auto properties_3d = vertices->properties({3});
+
+            static std::pair<int, std::string> curr_pos = {-1, view.position.bound_buffer_name};
+            if(curr_pos.first == -1){
+                curr_pos.first = Gui::FindIndex(properties_3d, view.position.bound_buffer_name);
+                if(curr_pos.first == -1){
+                    curr_pos.first = 0;
+                }
+            }
+            if (Gui::Combo(view.position.shader_name.c_str(), curr_pos, properties_3d)) {
+                set_positions(entity_id, properties_3d[curr_pos.first]);
+            }
+
+            static std::pair<int, std::string> curr_normal = {-1, view.normal.bound_buffer_name};
+            if(curr_normal.first == -1){
+                curr_normal.first = Gui::FindIndex(properties_3d, view.normal.bound_buffer_name);
+                if(curr_normal.first == -1){
+                    curr_normal.first = 0;
+                }
+            }
+            if (Gui::Combo(view.normal.shader_name.c_str(), curr_normal, properties_3d)) {
+                set_normals(entity_id, properties_3d[curr_normal.first]);
+            }
+
+            {
+                auto properties_colors = vertices->properties({1, 3});
+                properties_colors.emplace_back("uniform_color");
+                static std::pair<int, std::string> curr_color = {-1, view.color.bound_buffer_name};
+
+                if(curr_color.first == -1){
+                    curr_color.first = Gui::FindIndex(properties_colors, view.color.bound_buffer_name);
+                    if(curr_color.first == -1){
+                        curr_color.first = 0;
+                    }
+                }
+
+                if (Gui::Combo(view.color.shader_name.c_str(), curr_color, properties_colors)) {
+                    auto *p_array = vertices->get_base(properties_colors[curr_color.first]);
+                    if(p_array && p_array->dims() == 1){
+                        set_scalarfield(entity_id, properties_colors[curr_color.first]);
+                    }else{
+                        set_colors(entity_id, properties_colors[curr_color.first]);
+                    }
+                }
+
+                if (view.use_uniform_color) {
+                    if (ImGui::ColorEdit3("##uniform_color_mesh_view", glm::value_ptr(view.uniform_color))) {
+                        set_uniform_color(entity_id, view.uniform_color);
+                    }
+                } else {
+                    ImGui::InputFloat("min_color", &view.min_color);
+                    ImGui::InputFloat("max_color", &view.max_color);
+                }
+            }
+        }
+        ImGui::PopID();
+    }
+
+    void ModuleMeshView::show_gui(entt::entity entity_id){
+        if(!Engine::valid(entity_id) || !Engine::has<MeshView>(entity_id)) {
+            return;
+        }
+        show_gui(entity_id, Engine::State().get<MeshView>(entity_id));
+    }
+
+    void ModuleMeshView::render() {
         auto rendergroup = Engine::State().view<MeshView>();
         auto &camera = Engine::Context().get<Camera>();
         for (auto entity_id: rendergroup) {
@@ -86,9 +160,9 @@ namespace Bcg {
             view.program.set_uniform1i("use_uniform_color", view.use_uniform_color);
             view.program.set_uniform3fv("uniform_color", glm::value_ptr(view.uniform_color));
 
-            if (Engine::has<Transform>(entity_id)) {
-                auto &transform = Engine::State().get<Transform>(entity_id);
-                view.program.set_uniform4fm("model", glm::value_ptr(transform.world()), false);
+            if (Engine::has<TransformHandle>(entity_id)) {
+                auto h_transform = Engine::State().get<TransformHandle>(entity_id);
+                view.program.set_uniform4fm("model", glm::value_ptr(h_transform->world()), false);
             } else {
                 view.program.set_uniform4fm("model", glm::value_ptr(glm::mat4(1.0f)), false);
             }
@@ -98,7 +172,7 @@ namespace Bcg {
         }
     }
 
-    void Commands::Setup<MeshView>::execute() const {
+    void ModuleMeshView::setup(entt::entity entity_id) {
         auto *vertices = GetPrimitives(entity_id).vertices();
         auto *faces = GetPrimitives(entity_id).faces();
         if (!vertices) return;
@@ -123,29 +197,43 @@ namespace Bcg {
         view.program = program;
 
         view.vao.create();
+        auto positions = vertices->get<Vector<float, 3>>("v:position");
+        set_positions(entity_id, positions.name());
+        auto normals = vertices->get<Vector<float, 3>>("v:normal");
+        set_normals(entity_id, normals.name());
+        auto colors = vertices->get<Vector<float, 3>>("v:color");
+        if (colors) {
+            set_colors(entity_id, colors.name());
+        } else {
+            set_uniform_color(entity_id, view.uniform_color);
+        }
 
-        SetPositionMeshView(entity_id, "v:position").execute();
-        SetNormalMeshView(entity_id, "v:normal").execute();
-        SetColorMeshView(entity_id, "uniform_color").execute();
-
-        auto &mesh = Engine::State().get<SurfaceMesh>(entity_id);
-        auto f_triangles = SurfaceMeshTriangles(mesh);
-        SetTrianglesMeshView(entity_id, f_triangles.vector()).execute();
+        auto h_mesh = Engine::State().get<MeshHandle>(entity_id);
+        auto f_triangles = SurfaceMeshTriangles(h_mesh);
+        set_triangles(entity_id, f_triangles.vector());
 
         view.vao.unbind();
     }
 
-    void Commands::Cleanup<MeshView>::execute() const {
+    void ModuleMeshView::cleanup(entt::entity entity_id) {
         auto &view = Engine::State().get<MeshView>(entity_id);
-        Log::TODO("Cleanup<MeshView> not implemented!");
+
+        OpenGLState openGlState(entity_id);
+        openGlState.clear();
+
+        view.vao.destroy();
+        view.program.destroy();
+
+        Engine::State().remove<MeshView>(entity_id);
     }
 
-    void Commands::SetPositionMeshView::execute() const {
+    void ModuleMeshView::set_positions(entt::entity entity_id, const std::string &property_name) {
         auto *vertices = GetPrimitives(entity_id).vertices();
         if (!vertices) return;
 
         if (!Engine::has<MeshView>(entity_id)) {
-            Setup<MeshView>(entity_id).execute();
+            Log::Error("MeshView::set_positions: failed, because entity does not have MeshView component.");
+            return;
         }
 
         auto &view = Engine::require<MeshView>(entity_id);
@@ -175,16 +263,17 @@ namespace Bcg {
             view.vao.unbind();
             b_position.unbind();
         } else {
-            Log::Warn(name + ": failed, because entity does not have " + property_name + " property.");
+            Log::Warn("MeshView::set_postitions: failed, because entity does not have {} property.", property_name);
         }
     }
 
-    void Commands::SetNormalMeshView::execute() const {
+    void ModuleMeshView::set_normals(entt::entity entity_id, const std::string &property_name) {
         auto *vertices = GetPrimitives(entity_id).vertices();
         if (!vertices) return;
 
         if (!Engine::has<MeshView>(entity_id)) {
-            Setup<MeshView>(entity_id).execute();
+            Log::Error("MeshView::set_normals: failed, because entity does not have MeshView component.");
+            return;
         }
 
         auto &view = Engine::require<MeshView>(entity_id);
@@ -214,16 +303,17 @@ namespace Bcg {
             view.vao.unbind();
             b_normals.unbind();
         } else {
-            Log::Warn(name + ": failed, because entity does not have " + property_name + " property.");
+            Log::Warn("MeshView::set_normals: failed, because entity does not have {} property.", property_name);
         }
     }
 
-    void Commands::SetColorMeshView::execute() const {
+    void ModuleMeshView::set_colors(entt::entity entity_id, const std::string &property_name) {
         auto *vertices = GetPrimitives(entity_id).vertices();
         if (!vertices) return;
 
         if (!Engine::has<MeshView>(entity_id)) {
-            Setup<MeshView>(entity_id).execute();
+            Log::Error("MeshView::set_colors: failed, because entity does not have MeshView component.");
+            return;
         }
 
         auto &view = Engine::require<MeshView>(entity_id);
@@ -253,32 +343,47 @@ namespace Bcg {
             view.color.set(nullptr);
             view.color.enable();
             view.use_uniform_color = false;
-        } else {
-            view.vao.bind();
-            view.color.bound_buffer_name = "uniform_color";
-            view.color.disable();
-            view.color.set_default(glm::value_ptr(view.uniform_color));
-            view.use_uniform_color = true;
-        }
-        view.vao.unbind();
-
-        if (v_color) {
+            view.vao.unbind();
             b_color.unbind();
+        } else {
+            set_uniform_color(entity_id, view.uniform_color);
         }
     }
 
-    void Commands::SetScalarfieldMeshView::execute() const {
+    void ModuleMeshView::set_uniform_color(entt::entity entity_id, const Vector<float, 3> &data) {
+         if (!Engine::has<MeshView>(entity_id)) {
+            Log::Error("MeshView::set_uniform_color: failed, because entity does not have MeshView component.");
+            return;
+        }
+
+        auto &view = Engine::require<MeshView>(entity_id);
+
+        view.vao.bind();
+        view.color.bound_buffer_name = "uniform_color";
+        view.color.disable();
+        view.color.set_default(glm::value_ptr(view.uniform_color));
+        view.use_uniform_color = true;
+
+        view.vao.unbind();
+    }
+
+    void ModuleMeshView::set_scalarfield(entt::entity entity_id, const std::string &property_name) {
         auto *vertices = GetPrimitives(entity_id).vertices();
         if (!vertices) return;
 
         if (!Engine::has<MeshView>(entity_id)) {
-            Setup<MeshView>(entity_id).execute();
+            Log::Error("MeshView::set_scalarfield: failed, because entity does not have MeshView component.");
+            return;
         }
 
         auto v_colorf = vertices->get<float>(property_name);
         Eigen::Vector<float, -1> t(vertices->size());
         if (v_colorf) {
             t = Map(v_colorf.vector());
+        }
+        auto v_colord = vertices->get<double>(property_name);
+        if (v_colord) {
+            t = Map(v_colord.vector()).cast<float>();
         }
         auto v_colori = vertices->get<int>(property_name);
         if (v_colori) {
@@ -295,39 +400,43 @@ namespace Bcg {
             }
         }
 
-        auto v_colorf3 = vertices->get_or_add<Vector<float, 3>>(property_name + "Color3d");
+        auto color_property_name = property_name + "Color3d";
+        auto v_colorf3 = vertices->get_or_add<Vector<float, 3>>(color_property_name);
         t = (t.array() - t.minCoeff()) / (t.maxCoeff() - t.minCoeff());
+        //Todo : use colormap here or directly in the shader
         Map(v_colorf3.vector()).transpose() = t * Eigen::Vector<float, 3>::Unit(0).transpose() +
-                                              (1.0f - t.array()).matrix() * Eigen::Vector<float, 3>::Unit(1).transpose();
-        SetColorMeshView(entity_id, property_name + "Color3d").execute();
+                                              (1.0f - t.array()).matrix() *
+                                              Eigen::Vector<float, 3>::Unit(1).transpose();
+        set_colors(entity_id, color_property_name);
     }
 
-    void Commands::SetTrianglesMeshView::execute() const {
+    void ModuleMeshView::set_triangles(entt::entity entity_id, std::vector<Vector<unsigned int, 3>> &tris) {
         if (tris.empty()) {
-            Log::Error(name + ": failed, tris vector is empty!");
+            Log::Error("MeshView::set_triangles: failed, tris vector is empty!");
             return;
+        }
+        if (!Engine::has<MeshView>(entity_id)) {
+            Log::Error("MeshView::set_triangles: failed, because entity does not have MeshView component.");
         }
 
         auto *faces = GetPrimitives(entity_id).faces();
         if (!faces) return;
 
-        if (!Engine::has<MeshView>(entity_id)) {
-            Setup<MeshView>(entity_id).execute();
-        }
 
         auto &view = Engine::require<MeshView>(entity_id);
         size_t num_faces = faces->size();
 
         OpenGLState openGlState(entity_id);
+        std::string buffer_name = "f:indices";
 
-        auto b_indices = openGlState.get_buffer("f:indices");
+        auto b_indices = openGlState.get_buffer(buffer_name);
         if (!b_indices) {
             b_indices = ElementArrayBuffer();
             b_indices.create();
-            openGlState.register_buffer("f:indices", b_indices);
+            openGlState.register_buffer(buffer_name, b_indices);
         }
 
-        b_indices = openGlState.get_buffer("f:indices");
+        b_indices = openGlState.get_buffer(buffer_name);
 
         view.vao.bind();
         b_indices.bind();

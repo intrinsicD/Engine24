@@ -11,6 +11,8 @@
 #include "imgui.h"
 #include "Transform.h"
 #include "ModuleAABB.h"
+#include "ModuleMesh.h"
+#include "ModuleTransform.h"
 //#include "KDTreeCpu.h"
 #include "Cuda/KDTreeCuda.h"
 #include "PointCloud.h"
@@ -45,8 +47,8 @@ namespace Bcg {
 
         auto entity_id = picked.entity.id;
         if (Engine::valid(entity_id) && !picked.entity.is_background) {
-            if (Engine::has<Transform>(entity_id)) {
-                auto &transform = Engine::State().get<Transform>(entity_id);
+            if (Engine::has<TransformHandle>(entity_id)) {
+                auto &transform = *Engine::State().get<TransformHandle>(entity_id);
                 picked.spaces.osp = glm::inverse(transform.world()) * glm::vec4(picked.spaces.wsp, 1.0f);
             }
             /*            if (!Engine::has<KDTreeCpu>(entity_id)) {
@@ -67,9 +69,9 @@ namespace Bcg {
 
             auto kdtree = cuda::KDTreeCuda(entity_id);
             if (!kdtree) {
-                if (Engine::has<SurfaceMesh>(entity_id)) {
-                    auto &mesh = Engine::State().get<SurfaceMesh>(entity_id);
-                    kdtree.build(mesh.positions());
+                if (Engine::has<MeshHandle>(entity_id)) {
+                    auto &mesh = Engine::State().get<MeshHandle>(entity_id);
+                    kdtree.build(mesh->positions());
                 } else /*if(Engine::has<Graph>(entity_id)){
                     auto &graph = Engine::State().get<Graph>(entity_id);
                     kdtree.build(graph.positions());

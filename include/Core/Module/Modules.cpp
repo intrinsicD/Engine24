@@ -32,9 +32,42 @@ namespace Bcg{
         modules.erase(uptr->get_name());
     }
 
+    void Modules::begin_frame(){
+        for(auto &module : modules){
+            module.second->begin_frame();
+        }
+    }
+
     void Modules::update(){
         for(auto &module : modules){
             module.second->update();
         }
     }
+
+    void Modules::render(){
+        for(auto &module : modules){
+            module.second->render();
+        }
+    }
+
+    void Modules::render_menu() {
+        for(auto &module : modules){
+            module.second->render_menu();
+        }
+    }
+
+    void Modules::render_gui() {
+        for(auto &module : modules){
+            module.second->render_gui();
+        }
+    }
+
+
+    void Modules::end_frame(){
+        for(auto &module : modules){
+            module.second->end_frame();
+        }
+    }
+
+
 }

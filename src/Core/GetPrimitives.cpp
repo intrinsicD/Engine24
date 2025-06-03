@@ -4,11 +4,14 @@
 
 #include "GetPrimitives.h"
 #include "Engine.h"
-#include "SurfaceMesh.h"
+#include "ModuleMesh.h"
 #include "PointCloud.h"
 
 namespace Bcg {
     PropertyContainer *GetPrimitives::vertices() const {
+        if(Engine::has<MeshHandle>(entity_id)){
+            return &Engine::State().get<MeshHandle>(entity_id)->vprops_;
+        }
         if (Engine::has<SurfaceMesh>(entity_id)) {
             return &Engine::State().get<SurfaceMesh>(entity_id).vprops_;
         } /*else if(Engine::has<Graph>(entity_id)){
@@ -20,6 +23,9 @@ namespace Bcg {
     }
 
     PropertyContainer *GetPrimitives::halfedges() const {
+        if(Engine::has<MeshHandle>(entity_id)){
+            return &Engine::State().get<MeshHandle>(entity_id)->hprops_;
+        }
         if (Engine::has<SurfaceMesh>(entity_id)) {
             return &Engine::State().get<SurfaceMesh>(entity_id).hprops_;
         } /* else if(Engine::has<Graph>(entity_id)){
@@ -29,6 +35,9 @@ namespace Bcg {
     }
 
     PropertyContainer *GetPrimitives::edges() const {
+        if(Engine::has<MeshHandle>(entity_id)){
+            return &Engine::State().get<MeshHandle>(entity_id)->eprops_;
+        }
         if (Engine::has<SurfaceMesh>(entity_id)) {
             return &Engine::State().get<SurfaceMesh>(entity_id).eprops_;
         }/* else if(Engine::has<Graph>(entity_id)){
@@ -38,6 +47,9 @@ namespace Bcg {
     }
 
     PropertyContainer *GetPrimitives::faces() const {
+        if(Engine::has<MeshHandle>(entity_id)){
+            return &Engine::State().get<MeshHandle>(entity_id)->fprops_;
+        }
         if (Engine::has<SurfaceMesh>(entity_id)) {
             return &Engine::State().get<SurfaceMesh>(entity_id).fprops_;
         }
