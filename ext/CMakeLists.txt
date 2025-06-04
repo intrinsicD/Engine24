@@ -10,8 +10,6 @@ set(GLFW_BUILD_WAYLAND OFF)
 add_subdirectory(glfw)
 target_link_libraries(Engine24 PRIVATE glfw)
 
-add_subdirectory(bgfx.cmake)
-
 add_subdirectory(fast_float)
 target_link_libraries(Engine24 PUBLIC fast_float)
 
@@ -27,6 +25,9 @@ target_link_libraries(Engine24 PRIVATE tinyobjloader)
 add_subdirectory(fmt)
 target_link_libraries(Engine24 PUBLIC fmt::fmt)
 
+add_subdirectory(slang)
+target_link_libraries(Engine24 PUBLIC slang)
+
 target_sources(Engine24 PRIVATE glad/src/gl.c)
 
 target_include_directories(Engine24 PUBLIC
@@ -39,8 +40,7 @@ target_include_directories(Engine24 PUBLIC
         .
 )
 
-# Link imgui to Engine24
-add_library(imgui STATIC
+add_library(bcg_imgui STATIC
         imgui/imgui.cpp
         imgui/imgui_demo.cpp
         imgui/imgui_draw.cpp
@@ -51,7 +51,7 @@ add_library(imgui STATIC
         imgui/backends/imgui_impl_opengl3.cpp
 )
 
-target_include_directories(imgui PUBLIC
+target_include_directories(bcg_imgui PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/imgui
         ${CMAKE_CURRENT_SOURCE_DIR}/glfw/include)
 
@@ -80,6 +80,8 @@ add_library(implot STATIC
 
 target_include_directories(implot PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/imgui)
+
+target_link_libraries(Engine24 PUBLIC bcg_imgui ImGuiFileDialog imguizmo implot)
 
 
 
