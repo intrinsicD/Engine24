@@ -5,7 +5,7 @@
 #include "KDTreeGui.h"
 #include "imgui.h"
 #include "GetPrimitives.h"
-#include "PluginViewSphere.h"
+#include "ModuleSphereView.h"
 #include "Engine.h"
 
 namespace Bcg::Gui {
@@ -41,10 +41,8 @@ namespace Bcg::Gui {
                     v_color[samples[i]] = Vector<float, 3>(1.0f, 0.0f, 0.0f);
                     v_radius[samples[i]] = view.uniform_radius + 5;
                 }
-                Commands::SetColorSphereView cmd(entity_id, "v_samples");
-                Commands::SetRadiusSphereView cmd2(entity_id, "v_radius");
-                cmd.execute();
-                cmd2.execute();
+                ModuleSphereView::set_color(entity_id, "v_samples");
+                ModuleSphereView::set_radius(entity_id, "v_radius");
             }
         }
     }

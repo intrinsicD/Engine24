@@ -10,7 +10,6 @@
 #include "PluginPicker.h"
 #include "PluginFrameTimer.h"
 #include "PluginHierarchy.h"
-#include "PluginViewSphere.h"
 #include "PluginViewVectorfields.h"
 #include "PluginSelection.h"
 #include "PluginGraphics.h"
@@ -30,7 +29,6 @@ namespace Bcg {
         add_plugin(std::make_unique<PluginPicker>());
         add_plugin(std::make_unique<PluginFrameTimer>());
         add_plugin(std::make_unique<PluginHierarchy>());
-        add_plugin(std::make_unique<PluginViewSphere>());
         add_plugin(std::make_unique<PluginViewVectorfields>());
         add_plugin(std::make_unique<PluginSelection>());
         add_plugin(std::make_unique<PluginIcp>());

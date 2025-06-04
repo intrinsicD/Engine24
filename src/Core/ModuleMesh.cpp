@@ -7,6 +7,7 @@
 #include "ModuleTransform.h"
 #include "ModuleAABB.h"
 #include "ModuleMeshView.h"
+#include "ModuleSphereView.h"
 
 #include "imgui.h"
 #include "ImGuiFileDialog.h"
@@ -112,6 +113,7 @@ namespace Bcg {
         ComputeSurfaceMeshVertexNormals(entity_id);
         //TODO add MeshView etc.
         ModuleMeshView::setup(entity_id);
+        ModuleSphereView::setup(entity_id);
         Log::Info("#v: {}, #e: {}, #h: {}, #f: {}",
                   h_mesh->n_vertices(), h_mesh->n_edges(), h_mesh->n_halfedges(), h_mesh->n_faces());
     }

@@ -338,6 +338,9 @@ namespace Bcg {
                                 Buffer::STATIC_DRAW);
             view.min_color = Map(v_color.vector()).minCoeff();
             view.max_color = Map(v_color.vector()).maxCoeff();
+            if(view.min_color == view.max_color){
+                view.min_color = 0;
+            }
 
             view.color.bound_buffer_name = property_name.c_str();
             view.color.set(nullptr);

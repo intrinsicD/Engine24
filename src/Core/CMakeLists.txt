@@ -8,6 +8,7 @@ target_sources(Engine24 PRIVATE
         CommandsTransform.cpp
         CommandsMesh.cpp
         CommandsMeshView.cpp
+        CommandsSphereView.cpp
         Color.cpp
         CoordinateSystems.cpp
         Engine.cpp
@@ -33,6 +34,7 @@ target_sources(Engine24 PRIVATE
         ModuleTransform.cpp
         ModuleMesh.cpp
         ModuleMeshView.cpp
+        ModuleSphereView.cpp
         Picker.cpp
         Plane.cpp
         Plugins.cpp
@@ -62,7 +64,6 @@ target_sources(Engine24 PRIVATE
         PointCloudGui.cpp
         PropertiesGui.cpp
         SelectionGui.cpp
-        SphereViewGui.cpp
         TransfromGui.cpp
         VectorfieldViewGui.cpp
 )

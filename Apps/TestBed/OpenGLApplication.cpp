@@ -13,6 +13,7 @@
 #include "ModuleCamera.h"
 #include "ModuleTransform.h"
 #include "ModuleMeshView.h"
+#include "ModuleSphereView.h"
 #include "GuiModuleCamera.h"
 #include "GuiModuleTransform.h"
 #include "MainLoop.h"
@@ -31,6 +32,7 @@ namespace Bcg {
             auto &modules = Engine::Context().emplace<Modules>();
             modules.add(std::make_unique<ModuleMesh>());
             modules.add(std::make_unique<ModuleMeshView>());
+            modules.add(std::make_unique<ModuleSphereView>());
             modules.add(std::make_unique<ModuleAABB>());
             modules.add(std::make_unique<ModuleCamera>());
             modules.add(std::make_unique<ModuleTransform>());

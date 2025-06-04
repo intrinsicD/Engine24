@@ -4,7 +4,7 @@
 
 #include "SelectionGui.h"
 #include "Engine.h"
-#include "PluginViewSphere.h"
+#include "ModuleSphereView.h"
 #include "imgui.h"
 
 namespace Bcg::Gui {

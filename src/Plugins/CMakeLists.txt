@@ -8,7 +8,6 @@ target_sources(Engine24 PRIVATE
         PluginPicker.cpp
         PluginPointCloud.cpp
         PluginSelection.cpp
-        PluginSphereView.cpp
         PluginEntity.cpp
         PluginVectorfieldViews.cpp
         PluginPointCloudSampling.cpp
