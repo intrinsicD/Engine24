@@ -44,6 +44,16 @@ namespace Bcg {
 
         void render() override;
 
+        void render_menu() override;
+
+        void render_gui() override;
+
+        static bool show_gui(TransformHandle &h_transform);
+
+        static bool show_gui(Transform &transform);
+
+        static bool show_gui(entt::entity entity_id);
+
         static Transform *setup(entt::entity entity_id);
 
         static void cleanup(entt::entity entity_id);

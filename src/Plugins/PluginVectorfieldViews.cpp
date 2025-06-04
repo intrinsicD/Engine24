@@ -38,7 +38,7 @@ namespace Bcg {
     static bool show_gui = false;
 
     void PluginViewVectorfields::render_menu() {
-        if (ImGui::BeginMenu("Entity")) {
+        if (ImGui::BeginMenu("Rendering")) {
             ImGui::MenuItem("VectorfieldViews", nullptr, &show_gui);
             ImGui::EndMenu();
         }
