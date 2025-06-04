@@ -20,7 +20,6 @@ target_sources(Engine24 PRIVATE
         GraphInterface.cpp
         GLFWUtils.cpp
         HandleGlfwKeyEvents.cpp
-        KDTreeCompute.cpp
         KDTreeCpu.cpp
         Keyboard.cpp
         Line.cpp
@@ -35,6 +34,7 @@ target_sources(Engine24 PRIVATE
         ModuleMesh.cpp
         ModuleMeshView.cpp
         ModuleSphereView.cpp
+        ModulePhongSplattingView.cpp
         Picker.cpp
         Plane.cpp
         Plugins.cpp
@@ -42,6 +42,7 @@ target_sources(Engine24 PRIVATE
         PointCloudInterface.cpp
         PointCloudIo.cpp
         PointCloudCompute.cpp
+        PhongSplattingView.cpp
         Segment.cpp
         SurfaceMesh.cpp
         SurfaceMeshCompute.cpp

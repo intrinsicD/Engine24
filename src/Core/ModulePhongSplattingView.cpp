@@ -1,89 +1,74 @@
 //
-// Created by alex on 02.08.24.
+// Created by alex on 04.06.25.
 //
 
-#include "ModuleSphereView.h"
-#include "Engine.h"
+#include "ModulePhongSplattingView.h"
 #include "imgui.h"
+#include "Engine.h"
 #include "Picker.h"
-#include "CameraUtils.h"
-#include "PluginGraphics.h"
-#include "ModuleTransform.h"
-#include "EventsCallbacks.h"
-#include "Keyboard.h"
-#include "OpenGLState.h"
 #include "GetPrimitives.h"
-#include "glad/gl.h"
-#include <numeric>
+#include "OpenGLState.h"
 #include "PropertyEigenMap.h"
+#include <numeric>
+#include "CameraUtils.h"
+#include "ModuleTransform.h"
+#include "PluginGraphics.h"
+#include "glad/gl.h"
 
 namespace Bcg {
-    float global_point_size = 1.0f;
+    void ModulePhongSplattingView::activate() {
+        if(base_activate()){
 
-    void on_mouse_scroll(const Events::Callback::MouseScroll &event) {
-        auto &keyboard = Engine::Context().get<Keyboard>();
-        if (!keyboard.strg()) return;
-        auto &picked = Engine::Context().get<Picked>();
-        auto entity_id = picked.entity.id;
-        if (!picked.entity.is_background && Engine::has<SphereView>(entity_id)) {
-            auto &view = Engine::State().get<SphereView>(entity_id);
-            view.uniform_radius = std::max<float>(1.0f, view.uniform_radius + event.yoffset);
-        } else {
-            global_point_size = std::max<float>(1.0f, global_point_size + event.yoffset);
-            glPointSize(global_point_size);
         }
     }
 
-    void ModuleSphereView::activate() {
-        if (base_activate()) {
-            Engine::Dispatcher().sink<Events::Callback::MouseScroll>().connect<&on_mouse_scroll>();
+    void ModulePhongSplattingView::deactivate() {
+        if(base_deactivate()){
+
         }
     }
 
-    void ModuleSphereView::deactivate() {
-        if (base_deactivate()) {
-            Engine::Dispatcher().sink<Events::Callback::MouseScroll>().disconnect<&on_mouse_scroll>();
-        }
-    }
+    static bool gui_enabled = false;
 
-    bool gui_enabled = false;
-
-    void ModuleSphereView::render_menu() {
+    void ModulePhongSplattingView::render_menu() {
         if (ImGui::BeginMenu("Rendering")) {
-            ImGui::MenuItem("SphereView", nullptr, &gui_enabled);
+            ImGui::MenuItem("PhongSplattingView", nullptr, &gui_enabled);
             ImGui::EndMenu();
         }
     }
 
-    void ModuleSphereView::render_gui() {
+    void ModulePhongSplattingView::render_gui() {
         if (gui_enabled) {
             auto &picked = Engine::Context().get<Picked>();
-            if (ImGui::Begin("SphereView", &gui_enabled, ImGuiWindowFlags_AlwaysAutoResize)) {
+            if (ImGui::Begin("PhongSplattingView", &gui_enabled, ImGuiWindowFlags_AlwaysAutoResize)) {
                 show_gui(picked.entity.id);
             }
             ImGui::End();
         }
     }
 
-    void ModuleSphereView::render() {
-        auto rendergroup = Engine::State().view<SphereView>();
+    void ModulePhongSplattingView::render() {
+        auto rendergroup = Engine::State().view<PhongSplattingView>();
         auto &camera = Engine::Context().get<Camera>();
         auto vp = PluginGraphics::get_viewport();
         for (auto entity_id: rendergroup) {
-            auto &view = Engine::State().get<SphereView>(entity_id);
+            auto &view = Engine::State().get<PhongSplattingView>(entity_id);
             if (view.hide) continue;
 
             view.vao.bind();
             view.program.use();
-            view.program.set_uniform1ui("width", vp[2]);
-            view.program.set_uniform1ui("height", vp[3]);
             view.program.set_uniform1i("use_uniform_radius", view.use_uniform_radius);
             view.program.set_uniform1f("uniform_radius", view.uniform_radius);
+            view.program.set_uniform1f("shininess", view.uShininess);
             view.program.set_uniform1f("min_color", view.min_color);
             view.program.set_uniform1f("max_color", view.max_color);
             view.program.set_uniform1i("use_uniform_color", view.use_uniform_color);
             view.program.set_uniform3fv("uniform_color", glm::value_ptr(view.uniform_color));
-            view.program.set_uniform3fv("light_position", glm::value_ptr(GetViewParams(camera).eye));
+            view.program.set_uniform3fv("ambient_color", glm::value_ptr(view.uAmbientColor));
+            view.program.set_uniform3fv("specular_color", glm::value_ptr(view.uSpecularColor));
+            glm::vec3 lightCam   = glm::vec3(camera.view * glm::vec4(GetViewParams(camera).eye, 1.0f));
+            view.program.set_uniform3fv("light_position", glm::value_ptr(lightCam));
+            view.program.set_uniform3fv("light_color", glm::value_ptr(view.uLightColor));
 
             if (Engine::has<TransformHandle>(entity_id)) {
                 auto &transform = Engine::State().get<TransformHandle>(entity_id);
@@ -97,10 +82,10 @@ namespace Bcg {
         }
     }
 
-    void ModuleSphereView::show_gui(entt::entity entity_id, const SphereView &view) {
-        if (Engine::valid(entity_id) && Engine::has<SphereView>(entity_id)) {
-            ImGui::PushID("sphere_view");
-            auto &view = Engine::State().get<SphereView>(entity_id);
+    void ModulePhongSplattingView::show_gui(entt::entity entity_id, PhongSplattingView &view) {
+        if (Engine::valid(entity_id)) {
+            ImGui::PushID("phong_splatting_view");
+
             auto *vertices = GetPrimitives(entity_id).vertices();
             ImGui::Checkbox("hide", &view.hide);
             if (vertices) {
@@ -179,35 +164,40 @@ namespace Bcg {
                     }
                 }
             }
-            ImGui::Text("num_spheres: %d", view.num_spheres);
+            ImGui::Text("num_spheres: %d", view.num_points);
+            ImGui::ColorEdit3("uLightColor", glm::value_ptr(view.uLightColor));
+            ImGui::ColorEdit3("uAmbientColor", glm::value_ptr(view.uAmbientColor));
+            ImGui::ColorEdit3("uSpecularColor", glm::value_ptr(view.uSpecularColor));
+            ImGui::InputFloat("uShininess", &view.uShininess);
             ImGui::PopID();
         }
     }
 
-    void ModuleSphereView::show_gui(entt::entity entity_id) {
-        if (!Engine::valid(entity_id) || !Engine::has<SphereView>(entity_id)) return;
-        show_gui(entity_id, Engine::State().get<SphereView>(entity_id));
+    void ModulePhongSplattingView::show_gui(entt::entity entity_id) {
+        if (!Engine::valid(entity_id) || !Engine::has<PhongSplattingView>(entity_id)) return;
+        show_gui(entity_id, Engine::State().get<PhongSplattingView>(entity_id));
     }
 
-    void ModuleSphereView::setup(entt::entity entity_id) {
+    void ModulePhongSplattingView::setup(entt::entity entity_id) {
         auto *vertices = GetPrimitives(entity_id).vertices();
         if (!vertices) return;
 
-        auto &view = Engine::require<SphereView>(entity_id);
+        auto &view = Engine::require<PhongSplattingView>(entity_id);
         size_t num_vertices = vertices->size();
-        view.num_spheres = num_vertices;
+        view.num_points = num_vertices;
 
         OpenGLState openGlState(entity_id);
 
-        auto program = openGlState.get_program("SpheresProgram");
+        auto program = openGlState.get_program("PhongSplattingProgram");
         if (!program) {
-            program.create_from_files("../Shaders/glsl/impostor_spheres_vs.glsl",
-                                      "../Shaders/glsl/impostor_spheres_fs.glsl");
+            program.create_from_files("../Shaders/glsl/phong_splatting_vs.glsl",
+                                      "../Shaders/glsl/phong_splatting_fs.glsl",
+                                      "../Shaders/glsl/phong_splatting_gs.glsl");
 
             auto &camera_ubi = Engine::Context().get<CameraUniformBuffer>();
             view.program.bind_uniform_block("Camera", camera_ubi.binding_point);
 
-            openGlState.register_program("SpheresProgram", program);
+            openGlState.register_program("PhongSplattingProgram", program);
         }
 
         view.program = program;
@@ -230,18 +220,18 @@ namespace Bcg {
         view.vao.unbind();
     }
 
-    static std::string s_name = "ModuleSphereView";
+    static std::string s_name = "ModulePhongSplattingView";
 
-    void ModuleSphereView::set_position(entt::entity entity_id, const std::string &property_name) {
+    void ModulePhongSplattingView::set_position(entt::entity entity_id, const std::string &property_name) {
         auto *vertices = GetPrimitives(entity_id).vertices();
         if (!vertices) return;
 
-        if (!Engine::has<SphereView>(entity_id)) {
-            Log::Error("{}::set_position: failed, because entity does not have SphereView component.", s_name);
+        if (!Engine::has<PhongSplattingView>(entity_id)) {
+            Log::Error("{}::set_position: failed, because entity does not have PhongSplattingView component.", s_name);
             return;
         }
 
-        auto &view = Engine::require<SphereView>(entity_id);
+        auto &view = Engine::require<PhongSplattingView>(entity_id);
         size_t num_vertices = vertices->size();
 
         OpenGLState openGlState(entity_id);
@@ -272,16 +262,16 @@ namespace Bcg {
         }
     }
 
-    void ModuleSphereView::set_normal(entt::entity entity_id, const std::string &property_name) {
+    void ModulePhongSplattingView::set_normal(entt::entity entity_id, const std::string &property_name) {
         auto *vertices = GetPrimitives(entity_id).vertices();
         if (!vertices) return;
 
-        if (!Engine::has<SphereView>(entity_id)) {
-            Log::Error("{}::set_normal: failed, because entity does not have SphereView component.", s_name);
+        if (!Engine::has<PhongSplattingView>(entity_id)) {
+            Log::Error("{}::set_normal: failed, because entity does not have PhongSplattingView component.", s_name);
             return;
         }
 
-        auto &view = Engine::require<SphereView>(entity_id);
+        auto &view = Engine::require<PhongSplattingView>(entity_id);
         size_t num_vertices = vertices->size();
 
         OpenGLState openGlState(entity_id);
@@ -312,16 +302,16 @@ namespace Bcg {
         }
     }
 
-    void ModuleSphereView::set_color(entt::entity entity_id, const std::string &property_name) {
+    void ModulePhongSplattingView::set_color(entt::entity entity_id, const std::string &property_name) {
         auto *vertices = GetPrimitives(entity_id).vertices();
         if (!vertices) return;
 
-        if (!Engine::has<SphereView>(entity_id)) {
-            Log::Error("{}::set_color: failed, because entity does not have SphereView component.", s_name);
+        if (!Engine::has<PhongSplattingView>(entity_id)) {
+            Log::Error("{}::set_color: failed, because entity does not have PhongSplattingView component.", s_name);
             return;
         }
 
-        auto &view = Engine::require<SphereView>(entity_id);
+        auto &view = Engine::require<PhongSplattingView>(entity_id);
         size_t num_vertices = vertices->size();
 
         OpenGLState openGlState(entity_id);
@@ -358,12 +348,12 @@ namespace Bcg {
         }
     }
 
-    void ModuleSphereView::set_scalarfield(entt::entity entity_id, const std::string &property_name) {
+    void ModulePhongSplattingView::set_scalarfield(entt::entity entity_id, const std::string &property_name) {
         auto *vertices = GetPrimitives(entity_id).vertices();
         if (!vertices) return;
 
-        if (!Engine::has<SphereView>(entity_id)) {
-            Log::Error("{}::set_scalarfield: failed, because entity does not have SphereView component.", s_name);
+        if (!Engine::has<PhongSplattingView>(entity_id)) {
+            Log::Error("{}::set_scalarfield: failed, because entity does not have PhongSplattingView component.", s_name);
             return;
         }
 
@@ -409,16 +399,16 @@ namespace Bcg {
         }
     }
 
-    void ModuleSphereView::set_radius(entt::entity entity_id, const std::string &property_name) {
+    void ModulePhongSplattingView::set_radius(entt::entity entity_id, const std::string &property_name) {
         auto *vertices = GetPrimitives(entity_id).vertices();
         if (!vertices) return;
 
-        if (!Engine::has<SphereView>(entity_id)) {
-            Log::Error("{}::set_radius: failed, because entity does not have SphereView component.", s_name);
+        if (!Engine::has<PhongSplattingView>(entity_id)) {
+            Log::Error("{}::set_radius: failed, because entity does not have PhongSplattingView component.", s_name);
             return;
         }
 
-        auto &view = Engine::require<SphereView>(entity_id);
+        auto &view = Engine::require<PhongSplattingView>(entity_id);
         size_t num_vertices = vertices->size();
 
         OpenGLState openGlState(entity_id);
@@ -454,13 +444,13 @@ namespace Bcg {
         }
     }
 
-    void ModuleSphereView::set_uniform_radius(entt::entity entity_id, float radius) {
-        if (!Engine::has<SphereView>(entity_id)) {
-            Log::Error("{}::set_uniform_radius: failed, because entity does not have SphereView component.", s_name);
+    void ModulePhongSplattingView::set_uniform_radius(entt::entity entity_id, float radius) {
+        if (!Engine::has<PhongSplattingView>(entity_id)) {
+            Log::Error("{}::set_uniform_radius: failed, because entity does not have PhongSplattingView component.", s_name);
             return;
         }
 
-        auto &view = Engine::require<SphereView>(entity_id);
+        auto &view = Engine::require<PhongSplattingView>(entity_id);
 
         view.vao.bind();
         view.radius.bound_buffer_name = "uniform_radius";
@@ -471,13 +461,13 @@ namespace Bcg {
         view.vao.unbind();
     }
 
-    void ModuleSphereView::set_uniform_color(entt::entity entity_id, const Vector<float, 3> &color) {
-        if (!Engine::has<SphereView>(entity_id)) {
-            Log::Error("{}::set_uniform_color: failed, because entity does not have SphereView component.", s_name);
+    void ModulePhongSplattingView::set_uniform_color(entt::entity entity_id, const Vector<float, 3> &color) {
+        if (!Engine::has<PhongSplattingView>(entity_id)) {
+            Log::Error("{}::set_uniform_color: failed, because entity does not have PhongSplattingView component.", s_name);
             return;
         }
 
-        auto &view = Engine::require<SphereView>(entity_id);
+        auto &view = Engine::require<PhongSplattingView>(entity_id);
 
         view.vao.bind();
         view.color.bound_buffer_name = "uniform_color";
@@ -488,14 +478,14 @@ namespace Bcg {
         view.vao.unbind();
     }
 
-    void ModuleSphereView::set_indices(entt::entity entity_id, const std::vector<unsigned int> &indices) {
+    void ModulePhongSplattingView::set_indices(entt::entity entity_id, const std::vector<unsigned int> &indices) {
         if (indices.empty()) {
             Log::Error("{}::set_indices: failed, indices vector is empty!", s_name);
             return;
         }
 
-        if (!Engine::has<SphereView>(entity_id)) {
-            Log::Error("{}::set_indices: failed, because entity does not have SphereView component.", s_name);
+        if (!Engine::has<PhongSplattingView>(entity_id)) {
+            Log::Error("{}::set_indices: failed, because entity does not have PhongSplattingView component.", s_name);
             return;
         }
 
@@ -503,7 +493,7 @@ namespace Bcg {
         if (!vertices) return;
 
 
-        auto &view = Engine::require<SphereView>(entity_id);
+        auto &view = Engine::require<PhongSplattingView>(entity_id);
         size_t num_vertices = vertices->size();
 
         OpenGLState openGlState(entity_id);
@@ -524,5 +514,4 @@ namespace Bcg {
         view.vao.unbind();
         b_indices.unbind();
     }
-
 }

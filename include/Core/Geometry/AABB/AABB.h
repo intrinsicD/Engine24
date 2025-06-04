@@ -109,8 +109,8 @@ namespace Bcg {
     };
 
     template<typename T>
-    struct GetterTraits<AABB<T>, Vector<T, 3> > {
-        CUDA_HOST_DEVICE static AABB<T> getter(const Vector<T, 3> &v) noexcept {
+    struct BuilderTraits<AABB<T>, Vector<T, 3> > {
+        CUDA_HOST_DEVICE static AABB<T> build(const Vector<T, 3> &v) noexcept {
             return {v, v};
         }
     };

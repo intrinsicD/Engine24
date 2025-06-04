@@ -8,6 +8,7 @@
 #include "ModuleAABB.h"
 #include "ModuleMeshView.h"
 #include "ModuleSphereView.h"
+#include "ModulePhongSplattingView.h"
 
 #include "imgui.h"
 #include "ImGuiFileDialog.h"
@@ -17,7 +18,6 @@
 #include "ResourcesMesh.h"
 #include "SurfaceMeshIo.h" //TODO move to MeshResources.h
 #include "Picker.h"
-#include "StringUtils.h"
 #include "SurfaceMeshCompute.h"
 
 namespace Bcg {
@@ -86,8 +86,8 @@ namespace Bcg {
     }
 
     template<>
-    struct GetterTraits<AABB<float>, SurfaceMesh> {
-        static AABB<float> getter(const SurfaceMesh &m) noexcept {
+    struct BuilderTraits<AABB<float>, SurfaceMesh> {
+        static AABB<float> build(const SurfaceMesh &m) noexcept {
             return AABB<float>::Build(m.positions().begin(), m.positions().end());
         }
     };
@@ -104,7 +104,7 @@ namespace Bcg {
         }
 
         auto h_mesh = get(entity_id);
-        auto h_aabb = ModuleAABB::create(entity_id, GetterTraits<AABB<float>, SurfaceMesh>::getter(*h_mesh));
+        auto h_aabb = ModuleAABB::create(entity_id, BuilderTraits<AABB<float>, SurfaceMesh>::build(*h_mesh));
         auto h_transform = ModuleTransform::create(entity_id, Transform::Identity());
 
         ModuleAABB::center_and_scale_by_aabb(entity_id, h_mesh->vpoint_.name());
@@ -114,6 +114,7 @@ namespace Bcg {
         //TODO add MeshView etc.
         ModuleMeshView::setup(entity_id);
         ModuleSphereView::setup(entity_id);
+        ModulePhongSplattingView::setup(entity_id);
         Log::Info("#v: {}, #e: {}, #h: {}, #f: {}",
                   h_mesh->n_vertices(), h_mesh->n_edges(), h_mesh->n_halfedges(), h_mesh->n_faces());
     }

@@ -80,8 +80,8 @@ namespace Bcg {
     };
 
     template<typename T>
-    struct GetterTraits<Sphere<T>, Vector<T, 3> > {
-        CUDA_HOST_DEVICE static Sphere<T> getter(const Vector<T, 3> &v) noexcept {
+    struct BuilderTraits<Sphere<T>, Vector<T, 3> > {
+        CUDA_HOST_DEVICE static Sphere<T> build(const Vector<T, 3> &v) noexcept {
             return {v, T(0)};
         }
     };

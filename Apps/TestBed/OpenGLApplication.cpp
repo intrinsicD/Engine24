@@ -16,6 +16,7 @@
 #include "ModuleSphereView.h"
 #include "GuiModuleCamera.h"
 #include "GuiModuleTransform.h"
+#include "ModulePhongSplattingView.h"
 #include "MainLoop.h"
 
 namespace Bcg {
@@ -31,11 +32,13 @@ namespace Bcg {
             Bcg::PluginGraphics::set_window_title(title);
             auto &modules = Engine::Context().emplace<Modules>();
             modules.add(std::make_unique<ModuleMesh>());
-            modules.add(std::make_unique<ModuleMeshView>());
-            modules.add(std::make_unique<ModuleSphereView>());
             modules.add(std::make_unique<ModuleAABB>());
             modules.add(std::make_unique<ModuleCamera>());
             modules.add(std::make_unique<ModuleTransform>());
+            //Rendering Modules
+            modules.add(std::make_unique<ModuleMeshView>());
+            modules.add(std::make_unique<ModuleSphereView>());
+            modules.add(std::make_unique<ModulePhongSplattingView>());
 
             auto &gui_modules = Engine::Context().emplace<GuiModules>();
             gui_modules.add(std::make_unique<GuiModuleCamera>());

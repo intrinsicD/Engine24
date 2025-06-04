@@ -55,7 +55,7 @@ namespace Bcg {
     static bool gui_enabled = false;
 
     void ModuleMeshView::render_menu() {
-        if (ImGui::BeginMenu("Entity")) {
+        if (ImGui::BeginMenu("Rendering")) {
             ImGui::MenuItem("MeshView", nullptr, &gui_enabled);
             ImGui::EndMenu();
         }

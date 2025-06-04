@@ -6,6 +6,7 @@
 #define SPHEREUTILS_H
 
 #include "Sphere.h"
+#include "SurfaceMesh.h"
 
 namespace Bcg {
     template <typename T>
@@ -24,8 +25,8 @@ namespace Bcg {
     }
 
     template<typename T>
-    Sphere<T> Getter(const Vector<T, 3> &v) {
-        return GetterTraits<Sphere<T>, Vector<T, 3>>::getter(v);
+    Sphere<T> Build(const Vector<T, 3> &v) {
+        return BuilderTraits<Sphere<T>, Vector<T, 3>>::build(v);
     }
 
     template<typename T>

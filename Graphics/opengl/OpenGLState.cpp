@@ -9,24 +9,24 @@
 
 namespace Bcg {
     template<typename T>
-    struct Manager : public std::unordered_map<std::string, T> {
+    struct Cache : public std::unordered_map<std::string, T> {
         using std::unordered_map<std::string, T>::unordered_map;
     };
 
-    struct Programs : public Manager<Program> {
-        using Manager<Program>::Manager;
+    struct Programs : public Cache<Program> {
+        using Cache<Program>::Cache;
     };
 
-    struct ComputePrograms : public Manager<ComputeShaderProgram> {
-        using Manager<ComputeShaderProgram>::Manager;
+    struct ComputePrograms : public Cache<ComputeShaderProgram> {
+        using Cache<ComputeShaderProgram>::Cache;
     };
 
-    struct Buffers : public Manager<Buffer> {
-        using Manager<Buffer>::Manager;
+    struct Buffers : public Cache<Buffer> {
+        using Cache<Buffer>::Cache;
     };
 
-    struct VertexArrayObjects : public Manager<VertexArrayObject> {
-        using Manager<VertexArrayObject>::Manager;
+    struct VertexArrayObjects : public Cache<VertexArrayObject> {
+        using Cache<VertexArrayObject>::Cache;
     };
 
     OpenGLState::OpenGLState(entt::entity entity_id) : entity_id(entity_id) {

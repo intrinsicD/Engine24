@@ -25,7 +25,7 @@ namespace Bcg{
     struct IntersectionTraits;
 
     template<typename Object1, typename Object2>
-    struct GetterTraits;
+    struct BuilderTraits;
 }
 
 #endif //ENGINE24_GEOMETRICTRAITS_H
