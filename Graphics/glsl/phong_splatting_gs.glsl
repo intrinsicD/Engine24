@@ -23,16 +23,31 @@ layout (std140) uniform Camera {
     mat4 projection;// CAMERA → CLIP
 };
 
+//Frisvad 2012 – “Building an Orthonormal Basis from a 3D Unit Vector Without Normalization” (JCGT)
+void BuildOrthonormalBasis(in vec3 N, out vec3 T, out vec3 B) {
+    if (N.z < -0.9999999) {
+        T = vec3(0.0, -1.0, 0.0);
+        B = vec3(-1.0, 0.0, 0.0);
+    } else {
+        float a = 1.0 / (1.0 + N.z);
+        float b = -N.x * N.y * a;
+        T = vec3(1.0 - N.x * N.x * a, b, -N.x);
+        B = vec3(b, 1.0 - N.y * N.y * a, -N.y);
+    }
+}
+
 void main() {
     vec3 P = gs_in[0].position;// camera‐space point center
-    vec3 N = normalize(gs_in[0].normal);
+    vec3 N = gs_in[0].normal;// camera‐space normal (assumed to be normalized)
     vec3 C = gs_in[0].color;// per‐point color
     float R = gs_in[0].radius;// splat radius (camera space)
 
     // Build a camera‐facing basis (T, B) perpendicular to N:
     vec3 V = normalize(-P);// view direction from P to camera (0,0,0)
-    vec3 T = normalize(cross(N, V));// tangent
-    vec3 B = cross(T, N);// bitangent
+
+    vec3 T;
+    vec3 B;
+    BuildOrthonormalBasis(N, T, B);// ensure T and B are orthonormal
 
     // Offsets of the four quad corners:
     vec2 offsets[4] = vec2[4](

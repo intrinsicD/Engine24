@@ -36,7 +36,7 @@ void main() {
     // 2) Transform normal into camera space:
     //    (If uModel has non‐uniform scale, you’d want a proper normal‐matrix.
     //     For now we assume no skew/stretch or a uniform scale.)
-    vs_out.normal = -mat3(transpose(inverse(model_view))) * normal;
+    vs_out.normal = normalize(mat3(transpose(inverse(model_view))) * normal);
 
     // 3) Decide color:
     if (use_uniform_color) {

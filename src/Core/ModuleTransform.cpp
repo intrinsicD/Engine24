@@ -273,7 +273,7 @@ namespace Bcg {
         if (Engine::valid(entity_id) && Engine::has<TransformHandle>(entity_id)) {
             return show_gui(Engine::State().get<TransformHandle>(entity_id));
         } else {
-            ImGui::Text("Entity %d has no Transform component", entity_id);
+            ImGui::Text("Entity %d has no Transform component", static_cast<int>(entity_id));
         }
         return false;
     }

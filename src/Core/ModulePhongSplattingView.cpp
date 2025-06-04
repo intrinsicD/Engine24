@@ -66,8 +66,9 @@ namespace Bcg {
             view.program.set_uniform3fv("uniform_color", glm::value_ptr(view.uniform_color));
             view.program.set_uniform3fv("ambient_color", glm::value_ptr(view.uAmbientColor));
             view.program.set_uniform3fv("specular_color", glm::value_ptr(view.uSpecularColor));
-            glm::vec3 lightCam   = glm::vec3(camera.view * glm::vec4(GetViewParams(camera).eye, 1.0f));
-            view.program.set_uniform3fv("light_position", glm::value_ptr(lightCam));
+            auto lightCamWorld = GetViewParams(camera).eye;
+            auto lightCamView = Vector<float, 3>(camera.view * Vector<float, 4>(lightCamWorld, 1.0f));
+            view.program.set_uniform3fv("light_position", glm::value_ptr(lightCamView));
             view.program.set_uniform3fv("light_color", glm::value_ptr(view.uLightColor));
 
             if (Engine::has<TransformHandle>(entity_id)) {

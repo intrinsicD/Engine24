@@ -18,8 +18,7 @@ uniform float min_color;// e.g. 32.0
 uniform float max_color;// e.g. 32.0
 
 float lambertianTerm(vec3 N, vec3 L) {
-    //return max(dot(N, L), 0.0);
-    return abs(dot(N, L));//somehow my normals are inverted, so I use abs...
+    return max(dot(N, L), 0.0);
 }
 
 float specularTerm(vec3 R, vec3 V, float shininess) {
@@ -59,5 +58,5 @@ void main() {
     vec3 C = (fs_in.fragColor - min_color) / (max_color - min_color);// normalize color
 
     vec3 finalColor = PhongShadingFinalColor(C, N, L, fs_in.fragPosition, shininess, dist2);
-    outColor = vec4(finalColor, 1.0);
+    outColor = vec4(finalColor, 1.0f);
 }
