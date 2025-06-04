@@ -4,6 +4,7 @@
 
 #include "PluginFrameTimer.h"
 #include "FrameTimerGui.h"
+#include "PluginGraphics.h"
 #include "Logger.h"
 #include "Engine.h"
 #include "imgui.h"
@@ -21,12 +22,6 @@ namespace Bcg {
             Engine::Context().emplace<Timer>();
             Engine::Context().emplace<FrameTimer>();
         }
-    }
-
-    void PluginFrameTimer::begin_frame() {
-    }
-
-    void PluginFrameTimer::update() {
     }
 
     void PluginFrameTimer::end_frame() {
@@ -60,7 +55,7 @@ namespace Bcg {
 
     void PluginFrameTimer::render_gui() {
         if (show_gui) {
-            if (ImGui::Begin(name.c_str(), &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
+            if (ImGui::Begin(name.c_str(), &show_gui, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar)) {
                 auto &timer = Engine::Context().get<Timer>();
                 auto &frame = Engine::Context().get<FrameTimer>();
                 Gui::Show(frame);
@@ -68,8 +63,5 @@ namespace Bcg {
                 ImGui::End();
             }
         }
-    }
-
-    void PluginFrameTimer::render() {
     }
 }

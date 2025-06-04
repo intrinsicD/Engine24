@@ -70,8 +70,8 @@ namespace Bcg {
             auto kdtree = cuda::KDTreeCuda(entity_id);
             if (!kdtree) {
                 if (Engine::has<MeshHandle>(entity_id)) {
-                    auto &mesh = Engine::State().get<MeshHandle>(entity_id);
-                    kdtree.build(mesh->positions());
+                    auto h_mesh = Engine::State().get<MeshHandle>(entity_id);
+                    kdtree.build(h_mesh->positions());
                 } else /*if(Engine::has<Graph>(entity_id)){
                     auto &graph = Engine::State().get<Graph>(entity_id);
                     kdtree.build(graph.positions());

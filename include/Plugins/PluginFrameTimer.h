@@ -20,10 +20,6 @@ namespace Bcg {
 
         void activate() override;
 
-        void begin_frame() override;
-
-        void update() override;
-
         void end_frame() override;
 
         void deactivate() override;
@@ -31,8 +27,6 @@ namespace Bcg {
         void render_menu() override;
 
         void render_gui() override;
-
-        void render() override;
     };
 }
 

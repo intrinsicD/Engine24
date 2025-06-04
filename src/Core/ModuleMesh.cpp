@@ -132,11 +132,12 @@ namespace Bcg {
     }
 
     static bool gui_enabled = false;
+    static bool file_dialog_gui_enabled = false;
 
     void ModuleMesh::render_menu() {
         if (ImGui::BeginMenu("Module")) {
             if (ImGui::BeginMenu("Mesh")) {
-                if (ImGui::MenuItem("Load Mesh")) {
+                if (ImGui::MenuItem("Load Mesh", nullptr, &file_dialog_gui_enabled)) {
                     IGFD::FileDialogConfig config;
                     config.path = ".";
                     config.path = "/home/alex/Dropbox/Work/Datasets";
@@ -151,7 +152,7 @@ namespace Bcg {
     }
 
     static void render_filedialog() {
-        if (ImGuiFileDialog::Instance()->Display("Load Mesh")) {
+        if (ImGuiFileDialog::Instance()->Display("Load Mesh", {}, ImVec2(1050, 750))) {
             if (ImGuiFileDialog::Instance()->IsOk()) {
                 auto path = ImGuiFileDialog::Instance()->GetFilePathName();
                 auto smesh = ModuleMesh::load_mesh(path);
@@ -162,14 +163,17 @@ namespace Bcg {
                 } else {
                     Log::Error("MeshModule: Failed to load mesh from file: {}", path);
                 }
+                file_dialog_gui_enabled = false;
             }
             ImGuiFileDialog::Instance()->Close();
         }
     }
 
     void ModuleMesh::render_gui() {
-        if (gui_enabled) {
+        if(file_dialog_gui_enabled){
             render_filedialog();
+        }
+        if (gui_enabled) {
             if (ImGui::Begin("Mesh Info", &gui_enabled, ImGuiWindowFlags_AlwaysAutoResize)) {
                 auto &picked = Engine::Context().get<Picked>();
                 show_gui(picked.entity.id);

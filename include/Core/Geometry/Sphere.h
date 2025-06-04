@@ -37,11 +37,11 @@ namespace Bcg {
             radius = T(0);
         }
 
-        T volume() const {
+        CUDA_HOST_DEVICE T volume() const {
             return M_PI * radius * radius * radius;
         }
 
-        T surface_area() const {
+        CUDA_HOST_DEVICE T surface_area() const {
             return 4 * M_PI * radius * radius;
         }
     };
