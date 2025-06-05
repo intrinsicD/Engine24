@@ -17,6 +17,16 @@ namespace Bcg::Events {
         std::vector<size_t> *idx;
     };
 
+    struct PickedEdges {
+        entt::entity entity_id;
+        std::vector<size_t> *idx;
+    };
+
+    struct PickedFaces {
+        entt::entity entity_id;
+        std::vector<size_t> *idx;
+    };
+
     struct PickingRadiusChanged {
         float radius;
     };

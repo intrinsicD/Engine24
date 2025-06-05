@@ -5,6 +5,7 @@
 #include "PluginPicker.h"
 #include "Engine.h"
 #include "PluginGraphics.h"
+#include "PluginSelection.h"
 #include "EventsCallbacks.h"
 #include "Mouse.h"
 #include "imgui.h"
@@ -55,7 +56,7 @@ namespace Bcg {
             if (!kdtree) {
                 auto *vertices = GetPrimitives(entity_id).vertices();
                 if (vertices) {
-                    auto positions = vertices->get<Vector<float, 3>>("v:position");
+                    auto positions = vertices->get<Vector<float, 3> >("v:position");
                     kdtree.build(positions.vector());
                 } else {
                     Log::Error("PluginPicker::pick: Entity {} does not have vertices.", entity_id);
@@ -146,13 +147,13 @@ namespace Bcg {
         ImGui::Text("edge_idx: %u", entity.edge_idx);
         ImGui::Text("face_idx: %u", entity.face_idx);
         ImGui::DragScalar("pick_radius",
-                              ImGuiDataType_Float,
-                              &entity.pick_radius,
-                              0.01f,
-                              nullptr,
-                              nullptr,
-                              "%.2f",
-                              ImGuiSliderFlags_AlwaysClamp);
+                          ImGuiDataType_Float,
+                          &entity.pick_radius,
+                          0.01f,
+                          nullptr,
+                          nullptr,
+                          "%.2f",
+                          ImGuiSliderFlags_AlwaysClamp);
 
         if (ImGui::CollapsingHeader("Spaces")) {
             show_gui(picked.spaces);

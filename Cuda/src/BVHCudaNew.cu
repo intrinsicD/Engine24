@@ -2,6 +2,8 @@
 // Created by alex on 05.06.25.
 //
 
+#define FMT_USE_NONTYPE_TEMPLATE_ARGS 0
+
 #include "../BVHCudaNew.h"
 #include "Engine.h"
 #include "Logger.h"
