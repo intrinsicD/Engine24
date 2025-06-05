@@ -28,6 +28,32 @@ namespace Bcg::cuda {
         }
 
         Object target;
+        unsigned int num_found = 0;
+    };
+
+    template<typename Object>
+    struct query_overlap_count {
+        __device__ __host__
+        query_overlap_count(const Object &tgt) : target(tgt) {}
+
+        query_overlap_count() = default;
+
+        ~query_overlap_count() = default;
+
+        query_overlap_count(const query_overlap_count &) = default;
+
+        query_overlap_count(query_overlap_count &&) = default;
+
+        query_overlap_count &operator=(const query_overlap_count &) = default;
+
+        query_overlap_count &operator=(query_overlap_count &&) = default;
+
+        __device__ __host__
+        inline bool operator()(const Object &object) noexcept {
+            return intersects(object, target);
+        }
+
+        Object target;
     };
 
     __device__ __host__

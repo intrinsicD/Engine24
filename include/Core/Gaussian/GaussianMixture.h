@@ -22,30 +22,30 @@ namespace Bcg {
 
         float pdf(const Vector<float, 3> &x) const;
 
-        Eigen::Vector<float, 3> gradient(const Vector<float, 3> &x) const;
+        Vector<float, 3> gradient(const Vector<float, 3> &x) const;
 
-        Eigen::Matrix<float, 3, 3> hessian(const Vector<float, 3> &x) const;
+        Matrix<float, 3, 3> hessian(const Vector<float, 3> &x) const;
 
-        Eigen::Vector<float, 3> normal(const Vector<float, 3> &x) const{
-            Eigen::Vector<float, 3> grad = gradient(x);
-            float norm = grad.norm();
+        Vector<float, 3> normal(const Vector<float, 3> &x) const{
+            Vector<float, 3> grad = gradient(x);
+            float norm = length(grad);
             if (norm > 0) {
                 return grad / norm;
             } else {
-                return Eigen::Vector<float, 3>::Zero();
+                return Vector<float, 3>(0.0f);
             }
         }
 
-        Eigen::Matrix<float, 3, 3> ortho_projector(const Vector<float, 3> &x) const {
-            Eigen::Vector<float, 3> n = normal(x);
-            return Eigen::Matrix<float, 3, 3>::Identity() - n * n.transpose();
+        Matrix<float, 3, 3> ortho_projector(const Vector<float, 3> &x) const {
+            Vector<float, 3> n = normal(x);
+            return Matrix<float, 3, 3>(1.0f) - outerProduct(n, n);
         }
 
-        Eigen::Matrix<float, 3, 3> second_fundamental_form(const Vector<float, 3> &x) const {
-            Eigen::Vector<float, 3> grad = gradient(x);
-            Eigen::Matrix<float, 3, 3> hess = hessian(x);
-            Eigen::Matrix<float, 3, 3> p = ortho_projector(x);
-            return p * hess * p / grad.norm();
+        Matrix<float, 3, 3> second_fundamental_form(const Vector<float, 3> &x) const {
+            Vector<float, 3> grad = gradient(x);
+            Matrix<float, 3, 3> hess = hessian(x);
+            Matrix<float, 3, 3> p = ortho_projector(x);
+            return p * hess * p / length(grad);
         }
 
         Vertex new_gaussian() {

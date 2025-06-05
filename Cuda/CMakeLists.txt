@@ -19,7 +19,7 @@ add_subdirectory(src)
 target_sources(Engine24 PRIVATE
         src/hem_test.cu
         src/kmeans.cu
-        src/kdtree_cuda.cu
+        src/BVHCuda.cu
         src/local_gaussians.cu
 )
 #target_link_libraries(Engine24 PRIVATE BcgCudaLib)

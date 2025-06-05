@@ -12,7 +12,6 @@ namespace Bcg {
     struct Picked {
         struct Entity {
             entt::entity id;
-            bool show = false;
             bool is_background = true;
 
             operator bool() { return !is_background; }

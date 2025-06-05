@@ -5,14 +5,11 @@
 #ifndef ENGINE24_KDTREECPU_H
 #define ENGINE24_KDTREECPU_H
 
-#include <vector>
-#include "MatVec.h"
-#include "SpatialQueryResult.h"
+#include "SpatialHierarchyQuery.h"
 #include "nanoflann.hpp"
 
 namespace Bcg {
-
-    class KDTreeCpu {
+    class KDTreeCpu : public SpatialHierarchyQuery {
         struct VectorAdapter {
             explicit VectorAdapter(const std::vector<Vector<float, 3>> &points) : points(points) {}
 
@@ -32,15 +29,24 @@ namespace Bcg {
     public:
         KDTreeCpu();
 
-        ~KDTreeCpu();
+        ~KDTreeCpu() override;
 
-        void build(const std::vector<Vector<float, 3>> &positions);
+        void build(const std::vector<Vector<float, 3>> &positions) override;
 
-        [[nodiscard]] QueryResult knn_query(const Vector<float, 3> &query_point, unsigned int num_closest) const;
+        [[nodiscard]] QueryResult
+        knn_query(const Vector<float, 3> &query_point, unsigned int num_closest) const override;
 
-        [[nodiscard]] QueryResult radius_query(const Vector<float, 3> &query_point, float radius) const;
+        [[nodiscard]] QueryResult radius_query(const Vector<float, 3> &query_point, float radius) const override;
 
-        [[nodiscard]] QueryResult closest_query(const Vector<float, 3> &query_point) const;
+        [[nodiscard]] QueryResult closest_query(const Vector<float, 3> &query_point) const override;
+
+        [[nodiscard]] std::vector<QueryResult>
+        knn_query_batch(const std::vector<Vector<float, 3>> &query_points, unsigned int num_closest) const override;
+
+        [[nodiscard]] std::vector<QueryResult>
+        radius_query_batch(const std::vector<Vector<float, 3>> &query_points, float radius) const override;
+
+        [[nodiscard]] std::vector<QueryResult> closest_query_batch(const std::vector<Vector<float, 3>> &query_points) const override;
 
     private:
         std::unique_ptr<VectorAdapter> dataset;

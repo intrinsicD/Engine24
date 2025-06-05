@@ -8,14 +8,14 @@
 #include "Logger.h"
 #include "KDTreeCpu.h"
 #include "Picker.h"
-#include "Cuda/KDTreeCuda.h"
+#include "Cuda/BVHCuda.h"
 #include "SurfaceMesh.h"
 #include "PointCloud.h"
 #include "KDTreeGui.h"
 
 namespace Bcg {
     static void on_construct_entity(entt::registry &registry, entt::entity entity_id) {
-        auto kdtree = cuda::KDTreeCuda(entity_id);
+        auto kdtree = cuda::BVHCuda(entity_id);
         if (!kdtree) {
             if (Engine::has<SurfaceMesh>(entity_id)) {
                 auto &mesh = Engine::State().get<SurfaceMesh>(entity_id);

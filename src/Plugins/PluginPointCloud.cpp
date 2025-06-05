@@ -21,7 +21,7 @@
 #include "PluginHierarchy.h"
 #include "GetPrimitives.h"
 #include "CommandsAABB.h"
-#include "Cuda/KDTreeCuda.h"
+#include "Cuda/BVHCuda.h"
 #include "KDTreeCpu.h"
 #include "Cuda/Kmeans.h"
 #include "Cuda/LocalGaussians.h"
@@ -226,8 +226,8 @@ namespace Bcg {
                 auto query_point = positions[i];
                 auto result = kdtree.knn_query(query_point, num_closest);
                 Matrix<float, 3, 3> cov = Matrix<float, 3, 3>(0.0f);
-                for (long i = 0; i < result.indices.row(0).size(); ++i) {
-                    Vector<float, 3> diff = positions[result.indices(0, i)] - query_point;
+                for (long i = 0; i < result.indices.size(); ++i) {
+                    Vector<float, 3> diff = positions[result.indices[i]] - query_point;
                     cov += glm::outerProduct(diff, diff);
                 }
 

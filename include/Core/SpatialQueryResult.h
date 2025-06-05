@@ -11,14 +11,31 @@
 
 namespace Bcg {
     struct QueryResult {
-/*        std::vector<size_t> indices;
-        std::vector<float> distances;*/
-
-        Eigen::Matrix<size_t, -1, -1> indices;
-        Eigen::Matrix<float, -1, -1> distances;
+        std::vector<size_t> indices;
+        std::vector<float> distances;
 
 
-        bool empty() const {
+        QueryResult() = default;
+
+        explicit QueryResult(size_t size) : indices(size), distances(size) {
+
+        }
+
+        void resize(size_t size) {
+            indices.resize(size);
+            distances.resize(size);
+        }
+
+        void reserve(size_t size) {
+            indices.reserve(size);
+            distances.reserve(size);
+        }
+
+        [[nodiscard]] size_t size() const {
+            return indices.size();
+        }
+
+        [[nodiscard]] bool empty() const {
             return indices.size() == 0;
         }
     };

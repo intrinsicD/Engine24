@@ -3,7 +3,6 @@
 //
 
 #include "PluginPicker.h"
-#include "PickerGui.h"
 #include "Engine.h"
 #include "PluginGraphics.h"
 #include "EventsCallbacks.h"
@@ -13,11 +12,11 @@
 #include "ModuleAABB.h"
 #include "ModuleMesh.h"
 #include "ModuleTransform.h"
-//#include "KDTreeCpu.h"
-#include "Cuda/KDTreeCuda.h"
+#include "Cuda/BVHCudaNew.h"
 #include "PointCloud.h"
-#include "SurfaceMesh.h"
+#include "GetPrimitives.h"
 #include "EventsPicker.h"
+#include "Entity.h"
 
 namespace Bcg {
     static void on_construct_entity(entt::registry &registry, entt::entity entity_id) {
@@ -51,40 +50,22 @@ namespace Bcg {
                 auto &transform = *Engine::State().get<TransformHandle>(entity_id);
                 picked.spaces.osp = glm::inverse(transform.world()) * glm::vec4(picked.spaces.wsp, 1.0f);
             }
-            /*            if (!Engine::has<KDTreeCpu>(entity_id)) {
-                            auto &kdtree = Engine::State().emplace<KDTreeCpu>(entity_id);
-                            if (Engine::has<SurfaceMesh>(entity_id)) {
-                                auto &mesh = Engine::State().get<SurfaceMesh>(entity_id);
-                                kdtree.build(mesh.positions());
-                            }else *//*if(Engine::has<Graph>(entity_id)){
-                    auto &graph = Engine::State().get<Graph>(entity_id);
-                    kdtree.build(graph.positions());
-                }else */ /*if (Engine::has<PointCloud>(entity_id)) {
-                    auto &pc = Engine::State().get<PointCloud>(entity_id);
-                    kdtree.build(pc.positions());
-                }
-            }
 
-            auto &kdtree = Engine::State().get<KDTreeCpu>(entity_id);*/
-
-            auto kdtree = cuda::KDTreeCuda(entity_id);
+            auto kdtree = cuda::BVHCudaNew(entity_id);
             if (!kdtree) {
-                if (Engine::has<MeshHandle>(entity_id)) {
-                    auto h_mesh = Engine::State().get<MeshHandle>(entity_id);
-                    kdtree.build(h_mesh->positions());
-                } else /*if(Engine::has<Graph>(entity_id)){
-                    auto &graph = Engine::State().get<Graph>(entity_id);
-                    kdtree.build(graph.positions());
-                }else */
-                    if (Engine::has<PointCloud>(entity_id)) {
-                        auto &pc = Engine::State().get<PointCloud>(entity_id);
-                        kdtree.build(pc.positions());
-                    }
+                auto *vertices = GetPrimitives(entity_id).vertices();
+                if (vertices) {
+                    auto positions = vertices->get<Vector<float, 3>>("v:position");
+                    kdtree.build(positions.vector());
+                } else {
+                    Log::Error("PluginPicker::pick: Entity {} does not have vertices.", entity_id);
+                    return picked;
+                }
             }
 
             auto result = kdtree.radius_query(picked.spaces.osp, picked.entity.pick_radius);
             if (!result.empty()) {
-                picked.entity.vertex_idx = result.indices(0, 0);
+                picked.entity.vertex_idx = result.indices[0];
                 auto indices = std::vector<size_t>(result.indices.data(),
                                                    result.indices.data() + result.indices.size());
                 Engine::Dispatcher().trigger(Events::PickedVertex{entity_id, &indices});
@@ -135,25 +116,55 @@ namespace Bcg {
         }
     }
 
-    static bool show_gui = false;
+    static bool gui_enabled = false;
 
     void PluginPicker::render_menu() {
         if (ImGui::BeginMenu("Menu")) {
-            ImGui::MenuItem(name.c_str(), nullptr, &show_gui);
+            ImGui::MenuItem(name.c_str(), nullptr, &gui_enabled);
             ImGui::EndMenu();
         }
     }
 
     void PluginPicker::render_gui() {
-        if (show_gui) {
-            if (ImGui::Begin(name.c_str(), &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
+        if (gui_enabled) {
+            if (ImGui::Begin(name.c_str(), &gui_enabled, ImGuiWindowFlags_AlwaysAutoResize)) {
                 auto &picked = last_picked();
-                Gui::Show(picked);
+                show_gui(picked);
                 ImGui::End();
             }
         }
     }
 
     void PluginPicker::render() {
+    }
+
+    void PluginPicker::show_gui(Picked &picked) {
+        auto &entity = picked.entity;
+        ImGui::Text("entity id: %u", static_cast<entt::id_type>(entity.id));
+        ImGui::Text("is_background: %s", entity.is_background ? "true" : "false");
+        ImGui::Text("vertex_idx: %u", entity.vertex_idx);
+        ImGui::Text("edge_idx: %u", entity.edge_idx);
+        ImGui::Text("face_idx: %u", entity.face_idx);
+        ImGui::DragScalar("pick_radius",
+                              ImGuiDataType_Float,
+                              &entity.pick_radius,
+                              0.01f,
+                              nullptr,
+                              nullptr,
+                              "%.2f",
+                              ImGuiSliderFlags_AlwaysClamp);
+
+        if (ImGui::CollapsingHeader("Spaces")) {
+            show_gui(picked.spaces);
+        }
+    }
+
+    void PluginPicker::show_gui(const Points &spaces) {
+        ImGui::Text("Sceen Space Position:               (%f, %f)", spaces.ssp.x, spaces.ssp.y);
+        ImGui::Text("Screen Space Position Dpi Adjusted: (%f, %f)", spaces.sspda.x, spaces.sspda.y);
+        ImGui::Text("Normalized Device Coordinates:      (%f, %f, %f)", spaces.ndc.x, spaces.ndc.y, spaces.ndc.z);
+        ImGui::Text("View Space Position:                (%f, %f, %f)", spaces.vsp.x, spaces.vsp.y, spaces.vsp.z);
+        ImGui::Text("World Space Position:               (%f, %f, %f)", spaces.wsp.x, spaces.wsp.y, spaces.wsp.z);
+        ImGui::Text("Object Space Position:              (%f, %f, %f)", spaces.osp.x, spaces.osp.y, spaces.osp.z);
     }
 }

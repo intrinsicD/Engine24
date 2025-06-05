@@ -3,7 +3,6 @@ add_subdirectory(Input)
 target_sources(Engine24 PRIVATE
         Camera.cpp
         GuiModuleCamera.cpp
-        GuiModuleTransform.cpp
         CommandsCamera.cpp
         CommandsTransform.cpp
         CommandsMesh.cpp
@@ -61,10 +60,8 @@ target_sources(Engine24 PRIVATE
         HierarchyGui.cpp
         KDTreeGui.cpp
         MouseGui.cpp
-        PickerGui.cpp
         PointCloudGui.cpp
         PropertiesGui.cpp
         SelectionGui.cpp
-        TransfromGui.cpp
         VectorfieldViewGui.cpp
 )

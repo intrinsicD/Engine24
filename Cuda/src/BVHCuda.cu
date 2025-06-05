@@ -3,7 +3,7 @@
 //
 #define FMT_USE_NONTYPE_TEMPLATE_ARGS 0
 
-#include "Cuda/KDTreeCuda.h"
+#include "Cuda/BVHCuda.h"
 #include "lbvh.cuh"
 #include "query_device.cuh"
 #include "Engine.h"
@@ -14,19 +14,18 @@
 
 #include "kmeans.cuh"
 
-namespace Bcg::cuda {
-    ;
+namespace Bcg::cuda { ;
 
-    KDTreeCuda::KDTreeCuda(entt::entity entity_id) : entity_id(entity_id) {
+    BVHCuda::BVHCuda(entt::entity entity_id) : entity_id(entity_id) {
     }
 
-    KDTreeCuda::~KDTreeCuda() = default;
+    BVHCuda::~BVHCuda() = default;
 
-    KDTreeCuda::operator bool() const {
+    BVHCuda::operator bool() const {
         return Engine::has<lbvh<vec3, aabb_getter<vec3> > >(entity_id);
     }
 
-    void KDTreeCuda::build(const std::vector<Vector<float, 3> > &positions) {
+    void BVHCuda::build(const std::vector<Vector<float, 3> > &positions) {
         thrust::host_vector<vec3> ps(positions.size());
         cuda::aabb aabb;
         aabb.min = vec3(std::numeric_limits<float>::max());
@@ -44,29 +43,10 @@ namespace Bcg::cuda {
 
         std::chrono::duration<double> build_duration = end_time - start_time;
         Log::Info("Build LBVH in {} seconds", build_duration.count());
-
-        auto result = query_host(h_bvh, nearest(ps[0]), distance_calculator<vec3, vec3>());
-        Log::Info("Nearest to first point: {} with distance: {}", result.first, result.second);
-        {
-            start_time = std::chrono::high_resolution_clock::now();
-            //TODO: build from host to see if there is a problem while loading
-            auto &bvh = Engine::require<cuda::bvh::device_data<vec3> >(entity_id);
-            bvh.objects = ps;
-            bvh::construct_device(bvh);
-            end_time = std::chrono::high_resolution_clock::now();
-
-            build_duration = end_time - start_time;
-            Log::Info("Build LBVH_DEVICE in {} seconds", build_duration.count());
-            const auto &h_bvh_device = Engine::State().emplace_or_replace<cuda::bvh::host_data<vec3>>(entity_id, bvh::get_host_data(bvh));
-
-            distance_calculator<vec3, vec3> dist;
-            auto result = cuda::bvh::query_host<vec3>(h_bvh_device, nearest(ps[0]), dist);
-            Log::Info("Nearest to first point: {} with distance: {}", result.first, result.second);
-        }
     }
 
     [[nodiscard]] QueryResult
-    KDTreeCuda::knn_query(const Vector<float, 3> &query_point, unsigned int num_closest) const {
+    BVHCuda::knn_query(const Vector<float, 3> &query_point, unsigned int num_closest) const {
         auto &bvh = Engine::require<lbvh<vec3, aabb_getter<vec3> > >(entity_id);
         struct distance_calculator {
             __device__ __host__
@@ -77,55 +57,31 @@ namespace Bcg::cuda {
             }
         };
         vec3 d_query = {query_point[0], query_point[1], query_point[2]};
-        QueryResult result;
-        result.indices.resize(1, num_closest);
-        result.distances.resize(1, num_closest);
+        QueryResult result(num_closest);
         const auto indices = query_host(bvh, knn(d_query, num_closest), distance_calculator());
         for (long i = 0; i < num_closest; ++i) {
             auto idx = indices[i];
-            result.indices(0, i) = idx;
-            result.distances(0, i) = length(d_query - bvh.objects_host()[idx]);
+            result.indices[i] = idx;
+            result.distances[i] = length(d_query - bvh.objects_host()[idx]);
         }
         return result;
     }
 
-    [[nodiscard]] QueryResult KDTreeCuda::radius_query(const Vector<float, 3> &query_point, float radius) const {
-        /* auto &bvh = Engine::require<lbvh<vec3, aabb_getter<vec3>>>(entity_id);
-         vec3 d_query = {query_point[0], query_point[1], query_point[2]};
-         QueryResult result;
-         std::vector<size_t> indices;
-         const auto num_found = query_host(bvh, overlaps_sphere(d_query, radius), indices);
-         result.indices.resize(1, num_found);
-         result.distances.resize(1, num_found);
-         for (long i = 0; i < num_found; ++i) {
-             auto idx = indices[i];
-             result.indices(0, i) = idx;
-             result.distances(0, i) = length(d_query - bvh.objects_host()[idx]);
-         }*/
-
-        QueryResult result; {
-            vec3 d_query = {query_point[0], query_point[1], query_point[2]};
-
-            auto &bvh = Engine::require<cuda::bvh::device_data<vec3> >(entity_id);
-
-            const cuda::bvh::host_data<vec3> h_bvh_device = cuda::bvh::get_host_data(bvh);
-
-            std::vector<unsigned int> indices_host;
-            cuda::bvh::query_host(h_bvh_device, overlaps_sphere(d_query, radius), indices_host);
-
-            auto num_found = indices_host.size();
-            result.indices.resize(1, num_found);
-            result.distances.resize(1, num_found);
-            for (long i = 0; i < num_found; ++i) {
-                auto idx = indices_host[i];
-                result.indices(0, i) = idx;
-                result.distances(0, i) = length(d_query - bvh.objects[idx]);
-            }
+    [[nodiscard]] QueryResult BVHCuda::radius_query(const Vector<float, 3> &query_point, float radius) const {
+        auto &bvh = Engine::require<lbvh<vec3, aabb_getter<vec3>>>(entity_id);
+        vec3 d_query = {query_point[0], query_point[1], query_point[2]};
+        std::vector<size_t> indices;
+        const auto num_found = query_host(bvh, overlaps_sphere(d_query, radius), indices);
+        QueryResult result(num_found);
+        for (long i = 0; i < num_found; ++i) {
+            auto idx = indices[i];
+            result.indices[i] = idx;
+            result.distances[i] = length(d_query - bvh.objects_host()[idx]);
         }
         return result;
     }
 
-    [[nodiscard]] QueryResult KDTreeCuda::closest_query(const Vector<float, 3> &query_point) const {
+    [[nodiscard]] QueryResult BVHCuda::closest_query(const Vector<float, 3> &query_point) const {
         auto &bvh = Engine::require<lbvh<vec3, aabb_getter<vec3> > >(entity_id);
         struct distance_calculator {
             __device__ __host__
@@ -137,16 +93,28 @@ namespace Bcg::cuda {
         };
         vec3 d_query = {query_point[0], query_point[1], query_point[2]};
         const auto next = query_host(bvh, nearest(d_query), distance_calculator());
-        QueryResult result;
-        result.indices.resize(1, 1);
-        result.distances.resize(1, 1);
-        result.indices(0, 0) = next.first;
-        result.distances(0, 0) = next.second;
-
+        QueryResult result(1);
+        result.indices[0] = next.first;
+        result.distances[0] = next.second;
         return result;
     }
 
-    std::vector<std::uint32_t> KDTreeCuda::get_samples(unsigned int level) const {
+    [[nodiscard]] std::vector<QueryResult>
+    BVHCuda::knn_query_batch(const std::vector<Vector<float, 3>> &query_points, unsigned int num_closest) const {
+        return {};
+    }
+
+    [[nodiscard]] std::vector<QueryResult>
+    BVHCuda::radius_query_batch(const std::vector<Vector<float, 3>> &query_points, float radius) const {
+        return {};
+    }
+
+    [[nodiscard]] std::vector<QueryResult>
+    BVHCuda::closest_query_batch(const std::vector<Vector<float, 3>> &query_points) const {
+        return {};
+    }
+
+    std::vector<std::uint32_t> BVHCuda::get_samples(unsigned int level) const {
         auto &bvh = Engine::require<lbvh<vec3, aabb_getter<vec3> > >(entity_id);
         auto samples_h = bvh.get_samples(level);
         // Copy to host
@@ -157,12 +125,12 @@ namespace Bcg::cuda {
         return samples;
     }
 
-    unsigned int KDTreeCuda::compute_num_levels() const {
+    unsigned int BVHCuda::compute_num_levels() const {
         auto &bvh = Engine::require<lbvh<vec3, aabb_getter<vec3> > >(entity_id);
         return bvh.compute_num_levels(bvh.objects_host().size());
     }
 
-    void KDTreeCuda::fill_samples() const {
+    void BVHCuda::fill_samples() const {
         auto &bvh = Engine::require<lbvh<vec3, aabb_getter<vec3> > >(entity_id);
         size_t num_closest = 128;
         auto &points = bvh.objects_host();

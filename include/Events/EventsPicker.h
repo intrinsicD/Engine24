@@ -17,6 +17,10 @@ namespace Bcg::Events {
         std::vector<size_t> *idx;
     };
 
+    struct PickingRadiusChanged {
+        float radius;
+    };
+
     struct PickedBackgound{
 
     };

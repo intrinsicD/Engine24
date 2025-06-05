@@ -35,6 +35,10 @@ namespace Bcg{
         void render_gui() override;
 
         void render() override;
+
+        static void show_gui(Picked &picked);
+
+        static void show_gui(const Points &points);
     };
 }
 

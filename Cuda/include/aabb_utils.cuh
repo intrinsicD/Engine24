@@ -30,6 +30,15 @@ namespace Bcg::cuda {
     }
 
     __device__ __host__
+    inline bool intersects(const vec3 &lhs, const aabb &rhs) noexcept {
+        // Check if the point and the AABB overlap
+        if (lhs[0] < rhs.min[0] || lhs[0] > rhs.max[0]) { return false; }
+        if (lhs[1] < rhs.min[1] || lhs[1] > rhs.max[1]) { return false; }
+        if (lhs[2] < rhs.min[2] || lhs[2] > rhs.max[2]) { return false; }
+        return true;
+    }
+
+    __device__ __host__
     inline aabb merge(const aabb &lhs, const aabb &rhs) noexcept {
         aabb merged;
         merged.max[0] = ::fmaxf(lhs.max[0], rhs.max[0]);

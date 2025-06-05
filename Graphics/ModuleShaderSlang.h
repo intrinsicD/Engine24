@@ -6,6 +6,8 @@
 #define MODULESHADERSLANG_H
 
 #include "Module.h"
+#include "Shader.h"
+#include "Program.h"
 
 namespace Bcg {
     class ModuleShaderSlang : public Module {

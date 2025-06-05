@@ -7,6 +7,7 @@
 
 #include "bvh_device.cuh"
 #include "predicator.cuh"
+#include <queue>
 
 namespace Bcg::cuda::bvh {
     /* Query the BVH for objects that overlap with the given query object, e.g., an AABB or a sphere.
@@ -14,10 +15,61 @@ namespace Bcg::cuda::bvh {
      * Returns the number of objects found.
      */
 
+    template<typename ObjectType, typename QueryObjectType>
+    __device__
+    inline unsigned int query_device(const detail::basic_device_bvh<ObjectType, true> &bvh,
+                                     const query_overlap_count <QueryObjectType> &query) noexcept {
+        unsigned int stack[64];
+        unsigned int *stack_ptr = stack;
+        *stack_ptr++ = 0; // Start with the root node
+
+        unsigned int num_found = 0;
+        do {
+            const unsigned int node_index = *--stack_ptr;
+            const detail::node &node = bvh.nodes[node_index];
+
+            const unsigned int L_idx = node.left_idx;
+            const unsigned int R_idx = node.right_idx;
+
+            bool intersects_left = intersects(query.target, bvh.aabbs[L_idx]);
+            bool intersects_right = intersects(query.target, bvh.aabbs[R_idx]);
+
+            if (intersects_left) {
+                const auto obj_idx = bvh.nodes[L_idx].object_idx;
+                if (obj_idx != 0xFFFFFFFF) {
+                    ++num_found;
+                } else {
+                    if (stack_ptr - stack >= 64) {
+                        // Handle stack overflow, e.g., return early or log an error.
+                        printf("stack overflow\n");
+                        return num_found;
+                    }
+                    *stack_ptr++ = L_idx;
+                }
+            }
+
+            if (intersects_right) {
+                const auto obj_idx = bvh.nodes[R_idx].object_idx;
+                if (obj_idx != 0xFFFFFFFF) {
+                    ++num_found;
+                } else {
+                    if (stack_ptr - stack >= 64) {
+                        // Handle stack overflow, e.g., return early or log an error.
+                        printf("stack overflow\n");
+                        return num_found;
+                    }
+                    *stack_ptr++ = R_idx;
+                }
+            }
+        } while (stack < stack_ptr);
+
+        return num_found;
+    }
+
     template<typename ObjectType, typename QueryObjectType, typename OutputIterator>
     __device__
-    inline unsigned int query_device(const device_data<ObjectType> &bvh,
-                                     const query_overlap<QueryObjectType> &query,
+    inline unsigned int query_device(const detail::basic_device_bvh<ObjectType, true> &bvh,
+                                     const query_overlap <QueryObjectType> &query,
                                      OutputIterator outiter,
                                      const unsigned int max_buffer_size = 0xFFFFFFFF) noexcept {
         unsigned int stack[64];
@@ -84,7 +136,7 @@ namespace Bcg::cuda::bvh {
 
     template<typename ObjectType, typename DistanceCalculator>
     __device__
-    inline thrust::pair<unsigned int, float> query_device(const device_data<ObjectType> &bvh,
+    inline thrust::pair<unsigned int, float> query_device(const detail::basic_device_bvh<ObjectType, true> &bvh,
                                                           const query_nearest &query,
                                                           DistanceCalculator calc_dist) noexcept {
         using index_type = unsigned int;
@@ -153,9 +205,9 @@ namespace Bcg::cuda::bvh {
      * Returns the number of objects found.
      */
 
-    template<typename ObjectType, typename DistanceCalculator, typename OutputIterator>
+    template<typename ObjectType, typename DistanceCalculator>
     __device__
-    inline unsigned int query_device(const device_data<ObjectType> &bvh,
+    inline unsigned int query_device(const detail::basic_device_bvh<ObjectType, true> &bvh,
                                      const query_knn &query,
                                      DistanceCalculator calc_dist,
                                      thrust::pair<unsigned int, float> *results) {
@@ -247,11 +299,59 @@ namespace Bcg::cuda::bvh {
         return num_found;
     }
 
+    template<typename ObjectType, typename QueryObjectType>
+    __global__
+    void query_overlap_count_parallel_kernel( // Renamed for clarity
+            const detail::basic_device_bvh<ObjectType, true> &bvh,
+            const QueryObjectType *d_query_targets,
+            unsigned int num_total_queries, // Total number of queries
+            unsigned int *d_num_found_output_buffer // Master output buffer
+    ) {
+        unsigned int query_idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+        if (query_idx < num_total_queries) {
+            auto current_query_object = d_query_targets[query_idx];
+            query_overlap_count<QueryObjectType> current_query(current_query_object);
+
+            unsigned int num_found = query_device(bvh, current_query);
+            d_num_found_output_buffer[query_idx] = num_found;
+        }
+    }
+
+    template<typename ObjectType, typename QueryObjectType>
+    __global__
+    void query_overlap_parallel_kernel( // Renamed for clarity
+            const detail::basic_device_bvh<ObjectType, true> &bvh,
+            const QueryObjectType *d_query_targets,
+            const unsigned int *d_result_offsets, // Optional: to store offsets for each query
+            const unsigned int *d_num_found_per_query, // Optional: to store actual counts
+            unsigned int num_total_queries, // Total number of queries
+            unsigned int *d_all_results_output_buffer // Master output buffer
+    ) {
+        unsigned int query_idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+        if (query_idx < num_total_queries) {
+            auto current_query_object = d_query_targets[query_idx];
+            query_overlap<QueryObjectType> current_query(current_query_object);
+
+            unsigned int max_buffer_size = d_num_found_per_query ? d_num_found_per_query[query_idx] : 0xFFFFFFFF;
+
+            auto num_found = query_device(bvh, current_query,
+                                          d_all_results_output_buffer + d_result_offsets[query_idx],
+                                          max_buffer_size);
+
+            // check if num_found is equal to the max buffer size
+            if (max_buffer_size != num_found) {
+                printf("num_found (%u) != max_buffer_size (%u) for query %u\n", num_found, max_buffer_size, query_idx);
+            }
+        }
+    }
+
 
     template<typename ObjectType, typename DistanceCalculator>
     __global__
     void query_nearest_parallel_kernel( // Renamed for clarity
-            const device_data<ObjectType> bvh,
+            const detail::basic_device_bvh<ObjectType, true> &bvh,
             const ObjectType *d_query_targets,      // Array of query target points/objects
             const unsigned int num_total_queries,
             DistanceCalculator calc_dist,
@@ -279,7 +379,7 @@ namespace Bcg::cuda::bvh {
     template<typename ObjectType, typename DistanceCalculator>
     __global__
     void query_knn_parallel_fixed_k_kernel( // Renamed for clarity
-            const device_data<ObjectType> bvh,
+            const detail::basic_device_bvh<ObjectType, true> &bvh,
             const ObjectType *d_query_targets,      // Array of query target points/objects
             const unsigned int num_total_queries,
             const unsigned int k_fixed_for_all_queries, // The K for KNN, same for all
@@ -321,7 +421,7 @@ namespace Bcg::cuda::bvh {
     template<typename ObjectType, typename QueryObjectType>
     __host__
     inline void query_host(const host_data<ObjectType> &bvh,
-                           const query_overlap<QueryObjectType> &query,
+                           const query_overlap <QueryObjectType> &query,
                            std::vector<unsigned int> &outiter) noexcept {
 
         using index_type = unsigned int;
@@ -434,9 +534,9 @@ namespace Bcg::cuda::bvh {
     template<typename ObjectType, typename DistanceCalculator>
     __host__
     inline void query_host(const host_data<ObjectType> &bvh,
-                                     const query_knn &query,
-                                     DistanceCalculator calc_dist,
-                                     std::vector<std::pair<unsigned int, float>> &results) {
+                           const query_knn &query,
+                           DistanceCalculator calc_dist,
+                           std::vector<std::pair<unsigned int, float>> &results) {
         using index_type = unsigned int;
         // Array to store the k-nearest neighbors and their distances
 
@@ -521,7 +621,7 @@ namespace Bcg::cuda::bvh {
         for (unsigned int i = 0; i < k; ++i) {
             results[i] = knn_heap.top();
             knn_heap.pop();
-            if(knn_heap.empty()) break;
+            if (knn_heap.empty()) break;
         }
     }
 

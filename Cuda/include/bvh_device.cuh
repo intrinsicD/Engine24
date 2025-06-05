@@ -5,7 +5,7 @@
 #ifndef ENGINE24_BVH_DEVICE_CUH
 #define ENGINE24_BVH_DEVICE_CUH
 
-#include "aabb.cuh"
+#include "aabb_utils.cuh"
 #include "morton_code.cuh"
 #include <thrust/swap.h>
 #include <thrust/tuple.h>

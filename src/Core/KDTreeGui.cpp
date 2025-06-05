@@ -10,7 +10,7 @@
 
 namespace Bcg::Gui {
     void ShowKDTree(entt::entity entity_id) {
-        cuda::KDTreeCuda kdtree(entity_id);
+        cuda::BVHCuda kdtree(entity_id);
         if (kdtree) {
             static int max_level = -1;
             if (ImGui::Button("Build Samples")) {
@@ -47,7 +47,7 @@ namespace Bcg::Gui {
         }
     }
 
-    void Show(cuda::KDTreeCuda &kdtree) {
+    void Show(cuda::BVHCuda &kdtree) {
 
     }
 }
