@@ -6,19 +6,19 @@
 #define ENGINE24_GETPRIMITIVES_H
 
 #include "entt/fwd.hpp"
-#include "Properties.h"
+#include "GeometryData.h"
 
 namespace Bcg {
     struct GetPrimitives {
         explicit GetPrimitives(entt::entity entity_id) : entity_id(entity_id) {}
 
-        PropertyContainer *vertices() const;
+        Vertices *vertices() const;
 
-        PropertyContainer *halfedges() const;
+        HalfEdges *halfedges() const;
 
-        PropertyContainer *edges() const;
+        Edges *edges() const;
 
-        PropertyContainer *faces() const;
+        Faces *faces() const;
 
         entt::entity entity_id;
     };

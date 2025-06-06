@@ -8,7 +8,7 @@
 #include "PointCloud.h"
 
 namespace Bcg {
-    PropertyContainer *GetPrimitives::vertices() const {
+    Vertices *GetPrimitives::vertices() const {
         if(Engine::has<MeshHandle>(entity_id)){
             return &Engine::State().get<MeshHandle>(entity_id)->vprops_;
         }
@@ -22,7 +22,7 @@ namespace Bcg {
         return nullptr;
     }
 
-    PropertyContainer *GetPrimitives::halfedges() const {
+    HalfEdges *GetPrimitives::halfedges() const {
         if(Engine::has<MeshHandle>(entity_id)){
             return &Engine::State().get<MeshHandle>(entity_id)->hprops_;
         }
@@ -34,7 +34,7 @@ namespace Bcg {
         return nullptr;
     }
 
-    PropertyContainer *GetPrimitives::edges() const {
+    Edges *GetPrimitives::edges() const {
         if(Engine::has<MeshHandle>(entity_id)){
             return &Engine::State().get<MeshHandle>(entity_id)->eprops_;
         }
@@ -46,7 +46,7 @@ namespace Bcg {
         return nullptr;
     }
 
-    PropertyContainer *GetPrimitives::faces() const {
+    Faces *GetPrimitives::faces() const {
         if(Engine::has<MeshHandle>(entity_id)){
             return &Engine::State().get<MeshHandle>(entity_id)->fprops_;
         }

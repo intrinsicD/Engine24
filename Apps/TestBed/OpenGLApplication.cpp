@@ -16,6 +16,7 @@
 #include "ModuleSphereView.h"
 #include "GuiModuleCamera.h"
 #include "ModulePhongSplattingView.h"
+#include "ModuleGraphView.h"
 #include "MainLoop.h"
 
 namespace Bcg {
@@ -38,6 +39,7 @@ namespace Bcg {
             modules.add(std::make_unique<ModuleMeshView>());
             modules.add(std::make_unique<ModuleSphereView>());
             modules.add(std::make_unique<ModulePhongSplattingView>());
+            modules.add(std::make_unique<ModuleGraphView>());
 
             auto &gui_modules = Engine::Context().emplace<GuiModules>();
             gui_modules.add(std::make_unique<GuiModuleCamera>());

@@ -7,6 +7,7 @@
 
 #include "Program.h"
 #include "Buffer.h"
+#include "Texture.h"
 #include "VertexArrayObject.h"
 #include "entt/fwd.hpp"
 
@@ -37,6 +38,12 @@ namespace Bcg {
         bool register_vao(const std::string &name, const VertexArrayObject &vao);
 
         bool remove_vao(const std::string &name);
+
+        Texture get_texture(const std::string &name);
+
+        bool register_texture(const std::string &name, const Texture &texture);
+
+        bool remove_texture(const std::string &name);
 
         void clear();
 

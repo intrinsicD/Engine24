@@ -8,6 +8,7 @@
 #include "Properties.h"
 #include "Types.h"
 #include "GeometryCommon.h"
+#include "GeometryData.h"
 
 namespace Bcg {
     class PointCloud {
@@ -149,7 +150,7 @@ namespace Bcg {
         // are there any deleted entities?
         [[nodiscard]] bool has_garbage() const { return has_garbage_; }
 
-        PropertyContainer vprops_;
+        Vertices vprops_;
 
         // point coordinates
         VertexProperty<PointType> vpoint_;

@@ -20,11 +20,11 @@ namespace Bcg {
                 vertices(vertices),
                 halfedges(halfEdges),
                 edges(edges),
-                vpoint(vertices.get_vertex_property<PointType>("v:point")),
-                vconnectivity(vertices.get_vertex_property<Halfedge>("v:connectivity")),
-                ecolors(edges.get_edge_property<ColorType>("e:color")),
-                escalarfield(edges.get_edge_property<ScalarType>("e:scalarfield")),
-                hconnectivity(halfEdges.get_halfedge_property<HalfedgeConnectivity>("h:connectivity")) {}
+                vpoint(vertices.get<PointType>("v:point")),
+                vconnectivity(vertices.get<Halfedge>("v:connectivity")),
+                ecolors(edges.get<ColorType>("e:color")),
+                escalarfield(edges.get<ScalarType>("e:scalarfield")),
+                hconnectivity(halfEdges.get<HalfedgeConnectivity>("h:connectivity")) {}
 
         Vertices &vertices;
         HalfEdges &halfedges;
@@ -35,19 +35,6 @@ namespace Bcg {
 
         EdgeProperty<ColorType> ecolors;
         EdgeProperty<ScalarType> escalarfield;
-
-        struct HalfedgeConnectivity {
-            Vertex v;
-            Halfedge nh;
-            Halfedge ph;
-
-            friend std::ostream &operator<<(std::ostream &os, const HalfedgeConnectivity &hc) {
-                os << "v: " << hc.v.idx_
-                   << "nh: " << hc.nh.idx_
-                   << "ph: " << hc.ph.idx_;
-                return os;
-            }
-        };
 
         HalfedgeProperty<HalfedgeConnectivity> hconnectivity;
 
@@ -134,8 +121,20 @@ namespace Bcg {
 
         Property<Vector<IndexType, 2>> get_edges() const;
 
+        inline bool is_valid(Vertex v) const {
+            return v.idx() < vertices.size();
+        }
+
+        inline bool is_valid(Halfedge h) const {
+            return h.idx() < halfedges.size();
+        }
+
+        inline bool is_valid(Edge e) const {
+            return e.idx() < edges.size();
+        }
+
         inline bool is_isolated(Vertex v) const {
-            return halfedges.is_valid(get_halfedge(v)) && halfedges.is_valid(get_opposite(get_halfedge(v)));
+            return is_valid(get_halfedge(v)) && is_valid(get_opposite(get_halfedge(v)));
         }
 
         inline bool is_boundary(Vertex v) const {

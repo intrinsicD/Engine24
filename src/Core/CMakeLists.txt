@@ -1,5 +1,3 @@
-add_subdirectory(Geometry)
-add_subdirectory(Input)
 target_sources(Engine24 PRIVATE
         Camera.cpp
         GuiModuleCamera.cpp
@@ -8,14 +6,18 @@ target_sources(Engine24 PRIVATE
         CommandsMesh.cpp
         CommandsMeshView.cpp
         CommandsSphereView.cpp
+        Colormap1D.cpp
         Color.cpp
         CoordinateSystems.cpp
         Engine.cpp
         Entity.cpp
         EntityCommands.cpp
         FileWatcher.cpp
+        InputModule.cpp
+        FileInputModule.cpp
         GetPrimitives.cpp
         Graph.cpp
+        GraphView.cpp
         GraphInterface.cpp
         GLFWUtils.cpp
         HandleGlfwKeyEvents.cpp
@@ -34,6 +36,7 @@ target_sources(Engine24 PRIVATE
         ModuleMeshView.cpp
         ModuleSphereView.cpp
         ModulePhongSplattingView.cpp
+        ModuleGraphView.cpp
         Picker.cpp
         Plane.cpp
         Plugins.cpp

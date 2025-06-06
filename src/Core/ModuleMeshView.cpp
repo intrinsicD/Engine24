@@ -71,8 +71,8 @@ namespace Bcg {
         }
     }
 
-    void ModuleMeshView::show_gui(entt::entity entity_id, MeshView &view){
-        if(!Engine::valid(entity_id)) {
+    void ModuleMeshView::show_gui(entt::entity entity_id, MeshView &view) {
+        if (!Engine::valid(entity_id)) {
             return;
         }
 
@@ -83,9 +83,9 @@ namespace Bcg {
             auto properties_3d = vertices->properties({3});
 
             static std::pair<int, std::string> curr_pos = {-1, view.position.bound_buffer_name};
-            if(curr_pos.first == -1){
+            if (curr_pos.first == -1) {
                 curr_pos.first = Gui::FindIndex(properties_3d, view.position.bound_buffer_name);
-                if(curr_pos.first == -1){
+                if (curr_pos.first == -1) {
                     curr_pos.first = 0;
                 }
             }
@@ -94,9 +94,9 @@ namespace Bcg {
             }
 
             static std::pair<int, std::string> curr_normal = {-1, view.normal.bound_buffer_name};
-            if(curr_normal.first == -1){
+            if (curr_normal.first == -1) {
                 curr_normal.first = Gui::FindIndex(properties_3d, view.normal.bound_buffer_name);
-                if(curr_normal.first == -1){
+                if (curr_normal.first == -1) {
                     curr_normal.first = 0;
                 }
             }
@@ -109,18 +109,18 @@ namespace Bcg {
                 properties_colors.emplace_back("uniform_color");
                 static std::pair<int, std::string> curr_color = {-1, view.color.bound_buffer_name};
 
-                if(curr_color.first == -1){
+                if (curr_color.first == -1) {
                     curr_color.first = Gui::FindIndex(properties_colors, view.color.bound_buffer_name);
-                    if(curr_color.first == -1){
+                    if (curr_color.first == -1) {
                         curr_color.first = 0;
                     }
                 }
 
                 if (Gui::Combo(view.color.shader_name.c_str(), curr_color, properties_colors)) {
                     auto *p_array = vertices->get_base(properties_colors[curr_color.first]);
-                    if(p_array && p_array->dims() == 1){
+                    if (p_array && p_array->dims() == 1) {
                         set_scalarfield(entity_id, properties_colors[curr_color.first]);
-                    }else{
+                    } else {
                         set_colors(entity_id, properties_colors[curr_color.first]);
                     }
                 }
@@ -138,8 +138,8 @@ namespace Bcg {
         ImGui::PopID();
     }
 
-    void ModuleMeshView::show_gui(entt::entity entity_id){
-        if(!Engine::valid(entity_id) || !Engine::has<MeshView>(entity_id)) {
+    void ModuleMeshView::show_gui(entt::entity entity_id) {
+        if (!Engine::valid(entity_id) || !Engine::has<MeshView>(entity_id)) {
             return;
         }
         show_gui(entity_id, Engine::State().get<MeshView>(entity_id));
@@ -338,7 +338,7 @@ namespace Bcg {
                                 Buffer::STATIC_DRAW);
             view.min_color = Map(v_color.vector()).minCoeff();
             view.max_color = Map(v_color.vector()).maxCoeff();
-            if(view.min_color == view.max_color){
+            if (view.min_color == view.max_color) {
                 view.min_color = 0;
             }
 
@@ -353,13 +353,14 @@ namespace Bcg {
         }
     }
 
-    void ModuleMeshView::set_uniform_color(entt::entity entity_id, const Vector<float, 3> &data) {
-         if (!Engine::has<MeshView>(entity_id)) {
+    void ModuleMeshView::set_uniform_color(entt::entity entity_id, const Vector<float, 3> &uniform_color) {
+        if (!Engine::has<MeshView>(entity_id)) {
             Log::Error("MeshView::set_uniform_color: failed, because entity does not have MeshView component.");
             return;
         }
 
         auto &view = Engine::require<MeshView>(entity_id);
+        view.uniform_color = uniform_color;
 
         view.vao.bind();
         view.color.bound_buffer_name = "uniform_color";

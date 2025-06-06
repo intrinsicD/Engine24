@@ -29,6 +29,10 @@ namespace Bcg {
         using Cache<VertexArrayObject>::Cache;
     };
 
+    struct Textures : public Cache<Texture> {
+        using Cache<Texture>::Cache;
+    };
+
     OpenGLState::OpenGLState(entt::entity entity_id) : entity_id(entity_id) {
         if (!Engine::Context().find<Programs>()) {
             Engine::Context().emplace<Programs>();
@@ -42,9 +46,11 @@ namespace Bcg {
         if (!Engine::State().all_of<Buffers>(entity_id)) {
             Engine::State().emplace<Buffers>(entity_id);
         }
-
         if (!Engine::State().all_of<VertexArrayObjects>(entity_id)) {
             Engine::State().emplace<VertexArrayObjects>(entity_id);
+        }
+        if (!Engine::State().all_of<Textures>(entity_id)) {
+            Engine::State().emplace<Textures>(entity_id);
         }
     }
 
@@ -236,6 +242,29 @@ namespace Bcg {
     bool OpenGLState::remove_vao(const std::string &name) {
         auto &vaos = Engine::State().get<VertexArrayObjects>(entity_id);
         return vaos.erase(name);
+    }
+
+    Texture OpenGLState::get_texture(const std::string &name){
+
+        auto &textures = Engine::State().get<Textures>(entity_id);
+        if (textures.find(name) != textures.end()) {
+            return textures[name];
+        }
+        return {};
+    }
+
+    bool OpenGLState::register_texture(const std::string &name, const Texture &texture){
+        auto &texures = Engine::State().get<Textures>(entity_id);
+        if (texures.find(name) != texures.end()) {
+            return false;
+        }
+        texures[name] = texture;
+        return true;
+    }
+
+    bool OpenGLState::remove_texture(const std::string &name){
+        auto &texures = Engine::State().get<Textures>(entity_id);
+        return texures.erase(name);
     }
 
     void OpenGLState::clear() {

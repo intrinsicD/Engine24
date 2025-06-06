@@ -58,6 +58,20 @@ namespace Bcg {
         return (os << 'f' << f.idx());
     }
 
+    struct HalfedgeConnectivity {
+        Face f;              // face ignored in graph to be compatible with mesh
+        Vertex v;
+        Halfedge nh;
+        Halfedge ph;
+
+        friend std::ostream &operator<<(std::ostream &os, const HalfedgeConnectivity &hc) {
+            os << "v: " << hc.v.idx_
+               << "nh: " << hc.nh.idx_
+               << "ph: " << hc.ph.idx_;
+            return os;
+        }
+    };
+
     template<class T>
     class VertexProperty : public Property<T> {
     public:

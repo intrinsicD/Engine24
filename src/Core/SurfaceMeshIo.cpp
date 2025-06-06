@@ -747,7 +747,7 @@ namespace Bcg {
         // clang-format off
         [[maybe_unused]] size_t nvc = fread((char *) mesh.vconn_.data(), sizeof(SurfaceMesh::VertexConnectivity), nv,
                                             in);
-        [[maybe_unused]] size_t nhc = fread((char *) mesh.hconn_.data(), sizeof(SurfaceMesh::HalfedgeConnectivity), nh,
+        [[maybe_unused]] size_t nhc = fread((char *) mesh.hconn_.data(), sizeof(HalfedgeConnectivity), nh,
                                             in);
         [[maybe_unused]] size_t nfc = fread((char *) mesh.fconn_.data(), sizeof(SurfaceMesh::FaceConnectivity), nf, in);
         [[maybe_unused]] size_t np = fread((char *) mesh.vpoint_.data(), sizeof(PointType), nv, in);
@@ -1147,7 +1147,7 @@ namespace Bcg {
         // write properties to file
         // clang-format off
         fwrite((char *) mesh.vconn_.data(), sizeof(SurfaceMesh::VertexConnectivity), nv, out);
-        fwrite((char *) mesh.hconn_.data(), sizeof(SurfaceMesh::HalfedgeConnectivity), nh, out);
+        fwrite((char *) mesh.hconn_.data(), sizeof(HalfedgeConnectivity), nh, out);
         fwrite((char *) mesh.fconn_.data(), sizeof(SurfaceMesh::FaceConnectivity), nf, out);
         fwrite((char *) mesh.vpoint_.data(), sizeof(PointType), nv, out);
         // clang-format on

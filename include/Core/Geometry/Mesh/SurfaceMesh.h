@@ -17,6 +17,7 @@
 #include "Types.h"
 #include "Properties.h"
 #include "GeometryCommon.h"
+#include "GeometryData.h"
 
 namespace Bcg {
 
@@ -208,7 +209,7 @@ namespace Bcg {
         }
 
         //! \return the vertex the halfedge \p h points to
-        inline Vertex to_vertex(Halfedge h) const { return hconn_[h].vertex_; }
+        inline Vertex to_vertex(Halfedge h) const { return hconn_[h].v; }
 
         //! \return the vertex the halfedge \p h emanates from
         inline Vertex from_vertex(Halfedge h) const {
@@ -216,34 +217,34 @@ namespace Bcg {
         }
 
         //! sets the vertex the halfedge \p h points to to \p v
-        inline void set_vertex(Halfedge h, Vertex v) { hconn_[h].vertex_ = v; }
+        inline void set_vertex(Halfedge h, Vertex v) { hconn_[h].v = v; }
 
         //! \return the face incident to halfedge \p h
-        inline Face face(Halfedge h) const { return hconn_[h].face_; }
+        inline Face face(Halfedge h) const { return hconn_[h].f; }
 
         //! sets the incident face to halfedge \p h to \p f
-        inline void set_face(Halfedge h, Face f) { hconn_[h].face_ = f; }
+        inline void set_face(Halfedge h, Face f) { hconn_[h].f = f; }
 
         //! \return the next halfedge within the incident face
         inline Halfedge next_halfedge(Halfedge h) const {
-            return hconn_[h].next_halfedge_;
+            return hconn_[h].nh;
         }
 
         //! sets the next halfedge of \p h within the face to \p nh
         inline void set_next_halfedge(Halfedge h, Halfedge nh) {
-            hconn_[h].next_halfedge_ = nh;
-            hconn_[nh].prev_halfedge_ = h;
+            hconn_[h].nh = nh;
+            hconn_[nh].ph = h;
         }
 
         //! sets the previous halfedge of \p h and the next halfedge of \p ph to \p nh
         inline void set_prev_halfedge(Halfedge h, Halfedge ph) {
-            hconn_[h].prev_halfedge_ = ph;
-            hconn_[ph].next_halfedge_ = h;
+            hconn_[h].ph = ph;
+            hconn_[ph].nh = h;
         }
 
         //! \return the previous halfedge within the incident face
         inline Halfedge prev_halfedge(Halfedge h) const {
-            return hconn_[h].prev_halfedge_;
+            return hconn_[h].ph;
         }
 
         //! \return the opposite halfedge of \p h
@@ -814,21 +815,6 @@ namespace Bcg {
             }
         };
 
-        struct HalfedgeConnectivity {
-            Face face_;              // face incident to halfedge
-            Vertex vertex_;          // vertex the halfedge points to
-            Halfedge next_halfedge_; // next halfedge
-            Halfedge prev_halfedge_; // previous halfedge
-
-            friend std::ostream &operator<<(std::ostream &os, const HalfedgeConnectivity &hc) {
-                os << "f: " << hc.face_.idx_
-                   << "v: " << hc.vertex_.idx_
-                   << "nh: " << hc.next_halfedge_.idx_
-                   << "ph: " << hc.prev_halfedge_.idx_;
-                return os;
-            }
-        };
-
         struct FaceConnectivity {
             Halfedge halfedge_; // a halfedge that is part of the face
 
@@ -858,10 +844,10 @@ namespace Bcg {
                               const IOFlags &);
 
         // property containers for each entity type and object
-        PropertyContainer vprops_;
-        PropertyContainer hprops_;
-        PropertyContainer eprops_;
-        PropertyContainer fprops_;
+        Vertices vprops_;
+        HalfEdges hprops_;
+        Edges eprops_;
+        Faces fprops_;
 
         // point coordinates
         VertexProperty<PointType> vpoint_;

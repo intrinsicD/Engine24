@@ -1029,10 +1029,8 @@ namespace Bcg {
         auto nF = faces_size();
 
         // setup handle mapping
-        VertexProperty<Vertex> vmap =
-                add_vertex_property<Vertex>("v:garbage-collection");
-        HalfedgeProperty<Halfedge> hmap =
-                add_halfedge_property<Halfedge>("h:garbage-collection");
+        VertexProperty<Vertex> vmap = add_vertex_property<Vertex>("v:garbage-collection");
+        HalfedgeProperty<Halfedge> hmap = add_halfedge_property<Halfedge>("h:garbage-collection");
         FaceProperty<Face> fmap = add_face_property<Face>("f:garbage-collection");
         for (size_t i = 0; i < nV; ++i)
             vmap[Vertex(i)] = Vertex(i);

@@ -1,5 +1,6 @@
 target_include_directories(Engine24 PUBLIC .)
 add_subdirectory(AABB)
+add_subdirectory(Graph)
 add_subdirectory(Mesh)
-add_subdirectory(Sphere)
 add_subdirectory(PointCloud)
+add_subdirectory(Sphere)

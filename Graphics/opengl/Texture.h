@@ -7,227 +7,152 @@
 
 #include <vector>
 #include <queue>
+#include <string>
 
 namespace Bcg {
+
+    // Represents an OpenGL texture object and its properties.
     struct Texture {
-        unsigned int id = -1;
-        unsigned int target;
-        int level;
-        unsigned int width;
-        unsigned int height;
-        int border;
-        unsigned int format;
+        enum Type {
+            UNSIGNED_BYTE = 0x1401, // GL_UNSIGNED_BYTE
+            UNSIGNED_SHORT = 0x1403, // GL_UNSIGNED_SHORT
+            UNSIGNED_INT = 0x1405, // GL_UNSIGNED_INT
+            FLOAT = 0x1406, // GL_FLOAT
+        };
+        enum Format {
+            RED = 0x1903, // GL_RED
+            RG = 0x8227, // GL_RG
+            RGB = 0x1907, // GL_RGB
+            RGBA = 0x1908, // GL_RGBA
+            DEPTH_COMPONENT = 0x1902, // GL_DEPTH_COMPONENT
+            DEPTH_STENCIL = 0x84F9, // GL_DEPTH_STENCIL
+        };
+        enum InternalFormat {
+            R8 = 0x8229, // GL_R8
+            RG8 = 0x822B, // GL_RG8
+            RGB8 = 0x8051, // GL_RGB8
+            RGBA8 = 0x8058, // GL_RGBA8
+            R16F = 0x822D, // GL_R16F
+            RG16F = 0x822F, // GL_RG16F
+            RGB16F = 0x881B, // GL_RGB16F
+            RGBA16F = 0x881A, // GL_RGBA16F
+            DEPTH_COMPONENT24 = 0x81A6, // GL_DEPTH_COMPONENT24
+            DEPTH24_STENCIL8 = 0x88F0, // GL_DEPTH24_STENCIL8
+        };
+        enum Target {
+            TEXTURE_1D = 0x0DE0, // GL_TEXTURE_1D
+            PROXY_TEXTURE_1D = 0x8063, // GL_PROXY_TEXTURE_1D
+            TEXTURE_2D = 0x0DE1, // GL_TEXTURE_2D
+            PROXY_TEXTURE_2D = 0x8064, // GL_PROXY_TEXTURE_2D
+            TEXTURE_1D_ARRAY = 0x8C18, // GL_TEXTURE_1D_ARRAY
+            PROXY_TEXTURE_1D_ARRAY = 0x8C19, // GL_PROXY_TEXTURE_1D_ARRAY
+            TEXTURE_RECTANGLE = 0x84F5, // GL_TEXTURE_RECTANGLE
+            PROXY_TEXTURE_RECTANGLE = 0x84F7, // GL_PROXY_TEXTURE_RECTANGLE
+            TEXTURE_CUBE_MAP_POSITIVE_X = 0x8515, // GL_TEXTURE_CUBE_MAP_POSITIVE_X
+            TEXTURE_CUBE_MAP_NEGATIVE_X = 0x8516, // GL_TEXTURE_CUBE_MAP_NEGATIVE_X
+            TEXTURE_CUBE_MAP_POSITIVE_Y = 0x8517, // GL_TEXTURE_CUBE_MAP_POSITIVE_Y
+            TEXTURE_CUBE_MAP_NEGATIVE_Y = 0x8518, // GL_TEXTURE_CUBE_MAP_NEGATIVE_Y
+            TEXTURE_CUBE_MAP_POSITIVE_Z = 0x8519, // GL_TEXTURE_CUBE_MAP_POSITIVE_Z
+            TEXTURE_CUBE_MAP_NEGATIVE_Z = 0x851A, // GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
+            PROXY_TEXTURE_CUBE_MAP = 0x851B, // GL_PROXY_TEXTURE_CUBE_MAP
+            TEXTURE_3D = 0x806F, // GL_TEXTURE_3D
+            PROXY_TEXTURE_3D = 0x8070, // GL_PROXY_TEXTURE_3D
+            TEXTURE_2D_ARRAY = 0x8C1A, // GL_TEXTURE_2D_ARRAY
+            PROXY_TEXTURE_2D_ARRAY = 0x8C1B, // GL_PROXY_TEXTURE_2D_ARRAY
+        };
+
+        // things like id, target, width, height, format, internal_format, type etc
+        int loc = -1; // Location in the shader (used for binding)
         unsigned int type;
+        std::string shader_name;
+        std::string bound_buffer_name;
 
-        enum class Formats {
-            DEPTH_COMPONENT,
-            DEPTH_STENCIL_COMPONENT,
-            RED,
-            RG,
-            RGB,
-            RGBA,
-            BGR,
-            BGRA
-        };
+        unsigned int id = static_cast<unsigned int>(-1); // OpenGL texture ID
+        unsigned int target;
+        unsigned int format;
+        unsigned int internal_format;
 
-        enum class InternalFormats {
-// Base internal formats
-            ALPHA,
-            LUMINANCE,
-            LUMINANCE_ALPHA,
-            INTENSITY,
-            RED,
-            RG,
-            RGB,
-            RGBA,
+        unsigned int width = 0;
+        unsigned int height = 0;
+        unsigned int channels = 0;
 
-// Sized internal formats
-            R8,
-            R8_SNORM,
-            R16,
-            R16_SNORM,
-            RG8,
-            RG8_SNORM,
-            RG16,
-            RG16_SNORM,
-            R3_G3_B2,
-            RGB4,
-            RGB5,
-            RGB8,
-            RGB8_SNORM,
-            RGB10,
-            RGB12,
-            RGB16_SNORM,
-            RGBA2,
-            RGBA4,
-            RGB5_A1,
-            RGBA8,
-            RGBA8_SNORM,
-            RGB10_A2,
-            RGB10_A2UI,
-            RGBA12,
-            RGBA16,
-            SRGB8,
-            SRGB8_ALPHA8,
-            R16F,
-            RG16F,
-            RGB16F,
-            RGBA16F,
-            R32F,
-            RG32F,
-            RGB32F,
-            RGBA32F,
-            R11F_G11F_B10F,
-            RGB9_E5,
-            R8I,
-            R8UI,
-            R16I,
-            R16UI,
-            R32I,
-            R32UI,
-            RG8I,
-            RG8UI,
-            RG16I,
-            RG16UI,
-            RG32I,
-            RG32UI,
-            RGB8I,
-            RGB8UI,
-            RGB16I,
-            RGB16UI,
-            RGB32I,
-            RGB32UI,
-            RGBA8I,
-            RGBA8UI,
-            RGBA16I,
-            RGBA16UI,
-            RGBA32I,
-            RGBA32UI,
+        int level = 0;                                   // Mipmap level
+        int border = 0;                                  // Border width
 
-// Depth and stencil formats
-            DEPTH_COMPONENT,
-            DEPTH_STENCIL,
-            DEPTH_COMPONENT16,
-            DEPTH_COMPONENT24,
-            DEPTH_COMPONENT32,
-            DEPTH_COMPONENT32F,
-            DEPTH24_STENCIL8,
-            DEPTH32F_STENCIL8,
+        operator bool() const {
+            return id != -1;
+        }
 
-// Compressed internal formats
-            COMPRESSED_RED,
-            COMPRESSED_RG,
-            COMPRESSED_RGB,
-            COMPRESSED_RGBA,
-            COMPRESSED_SRGB,
-            COMPRESSED_SRGB_ALPHA,
-            COMPRESSED_RED_RGTC1,
-            COMPRESSED_SIGNED_RED_RGTC1,
-            COMPRESSED_RG_RGTC2,
-            COMPRESSED_SIGNED_RG_RGTC2,
-            COMPRESSED_RGBA_BPTC_UNORM,
-            COMPRESSED_SRGB_ALPHA_BPTC_UNORM,
-            COMPRESSED_RGB_BPTC_SIGNED_FLOAT,
-            COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT,
-        };
-
-        enum Targets {
-            TEXTURE_1D,
-            PROXY_TEXTURE_1D,
-            TEXTURE_2D,
-            PROXY_TEXTURE_2D,
-            TEXTURE_1D_ARRAY,
-            PROXY_TEXTURE_1D_ARRAY,
-            TEXTURE_RECTANGLE,
-            PROXY_TEXTURE_RECTANGLE,
-            TEXTURE_CUBE_MAP_POSITIVE_X,
-            TEXTURE_CUBE_MAP_NEGATIVE_X,
-            TEXTURE_CUBE_MAP_POSITIVE_Y,
-            TEXTURE_CUBE_MAP_NEGATIVE_Y,
-            TEXTURE_CUBE_MAP_POSITIVE_Z,
-            TEXTURE_CUBE_MAP_NEGATIVE_Z,
-            PROXY_TEXTURE_CUBE_MAP,
-            TEXTURE_3D,
-            PROXY_TEXTURE_3D,
-            TEXTURE_2D_ARRAY,
-            PROXY_TEXTURE_2D_ARRAY,
-        };
-
+        // Creates the OpenGL texture (implementation in .cpp)
         void create();
 
+        // Destroys the OpenGL texture (implementation in .cpp)
         void destroy();
+
+        void bind() const;
+
+        void unbind() const;
+
+        void use(unsigned int program_id) const;
     };
 
+    // 1D texture specialization
     struct Texture1D : public Texture {
         enum Targets1D {
-            TEXTURE_1D,
-            PROXY_TEXTURE_1D
+            TEXTURE_1D = 0x0DE0, // GL_TEXTURE_1D
+            PROXY_TEXTURE_1D = 0x8063, // GL_PROXY_TEXTURE_1D
         };
+
+        void set_data(const void *data, unsigned int width);
     };
 
+    // 2D texture specialization
     struct Texture2D : public Texture {
         enum Targets2D {
-            TEXTURE_2D,
-            PROXY_TEXTURE_2D,
-            TEXTURE_1D_ARRAY,
-            PROXY_TEXTURE_1D_ARRAY,
-            TEXTURE_RECTANGLE,
-            PROXY_TEXTURE_RECTANGLE,
-            TEXTURE_CUBE_MAP_POSITIVE_X,
-            TEXTURE_CUBE_MAP_NEGATIVE_X,
-            TEXTURE_CUBE_MAP_POSITIVE_Y,
-            TEXTURE_CUBE_MAP_NEGATIVE_Y,
-            TEXTURE_CUBE_MAP_POSITIVE_Z,
-            TEXTURE_CUBE_MAP_NEGATIVE_Z,
-            PROXY_TEXTURE_CUBE_MAP
+            // 2D texture targets
+            TEXTURE_2D = 0x0DE1, // GL_TEXTURE_2D
+            PROXY_TEXTURE_2D = 0x8064, // GL_PROXY_TEXTURE_2D
+
+            // 1D array texture targets
+            TEXTURE_1D_ARRAY = 0x8C18, // GL_TEXTURE_1D_ARRAY
+            PROXY_TEXTURE_1D_ARRAY = 0x8C19, // GL_PROXY_TEXTURE_1D_ARRAY
+
+            // Rectangle texture targets
+            TEXTURE_RECTANGLE = 0x84F5, // GL_TEXTURE_RECTANGLE
+            PROXY_TEXTURE_RECTANGLE = 0x84F7, // GL_PROXY_TEXTURE_RECTANGLE
+
+            // Cube-map face targets
+            TEXTURE_CUBE_MAP_POSITIVE_X = 0x8515, // GL_TEXTURE_CUBE_MAP_POSITIVE_X
+            TEXTURE_CUBE_MAP_NEGATIVE_X = 0x8516, // GL_TEXTURE_CUBE_MAP_NEGATIVE_X
+            TEXTURE_CUBE_MAP_POSITIVE_Y = 0x8517, // GL_TEXTURE_CUBE_MAP_POSITIVE_Y
+            TEXTURE_CUBE_MAP_NEGATIVE_Y = 0x8518, // GL_TEXTURE_CUBE_MAP_NEGATIVE_Y
+            TEXTURE_CUBE_MAP_POSITIVE_Z = 0x8519, // GL_TEXTURE_CUBE_MAP_POSITIVE_Z
+            TEXTURE_CUBE_MAP_NEGATIVE_Z = 0x851A, // GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
+
+            // Proxy cube-map target
+            PROXY_TEXTURE_CUBE_MAP = 0x851B  // GL_PROXY_TEXTURE_CUBE_MAP
         };
+
+        void set_data(const void *data, unsigned int width, unsigned int height);
     };
 
+    // 3D texture specialization
     struct Texture3D : public Texture {
         enum Targets3D {
-            TEXTURE_3D,
-            PROXY_TEXTURE_3D,
-            TEXTURE_2D_ARRAY,
-            PROXY_TEXTURE_2D_ARRAY,
+            // 3D texture target
+            TEXTURE_3D = 0x806F, // GL_TEXTURE_3D
+
+            // Proxy 3D texture target
+            PROXY_TEXTURE_3D = 0x8070, // GL_PROXY_TEXTURE_3D
+
+            // 2D array texture target
+            TEXTURE_2D_ARRAY = 0x8C1A, // GL_TEXTURE_2D_ARRAY
+
+            // Proxy 2D array texture target
+            PROXY_TEXTURE_2D_ARRAY = 0x8C1B  // GL_PROXY_TEXTURE_2D_ARRAY
         };
-    };
 
-    struct TextureHandle {
-        unsigned int id;
-        unsigned int index;
-    };
-
-    class Textures {
-        TextureHandle createTexture() {
-            TextureHandle handle;
-            if (!freeIndices.empty()) {
-                handle.index = freeIndices.front();
-                freeIndices.pop();
-                handle.id = -1; // For simplicity, use index as id
-                textures[handle.index] = Texture();
-            } else {
-                handle.index = textures.size();
-                handle.id = handle.index; // For simplicity, use index as id
-                textures.push_back(Texture());
-            }
-            return handle;
-        }
-
-        void destroyTexture(TextureHandle handle) {
-            textures[handle.index] = Texture(); // Optional: Reset texture data
-            freeIndices.push(handle.index);
-        }
-
-        Texture &operator[](unsigned int index) {
-            return textures[index];
-        }
-
-        Texture &operator[](TextureHandle handle) {
-            return textures[handle.index];
-        }
-
-        std::vector<Texture> textures;
-        std::queue<unsigned int> freeIndices;
+        void set_data(const void *data, unsigned int width, unsigned int height, unsigned int depth);
     };
 }
 
