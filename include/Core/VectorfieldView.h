@@ -30,8 +30,6 @@ namespace Bcg {
         bool hide = false;
 
         std::string vectorfield_name;
-
-        void draw();
     };
 
     struct VectorfieldViews {

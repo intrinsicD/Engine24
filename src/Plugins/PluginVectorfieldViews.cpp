@@ -9,7 +9,7 @@
 #include "VectorfieldViewGui.h"
 #include "Picker.h"
 #include "Camera.h"
-#include "../../Graphics/ModuleGraphics.h"
+#include "ModuleGraphics.h"
 #include "Transform.h"
 #include "GetPrimitives.h"
 #include "PropertyEigenMap.h"
@@ -82,9 +82,9 @@ namespace Bcg {
                     view.program.set_uniform4fm("model", glm::value_ptr(glm::mat4(1.0f)), false);
                 }
 
-                view.draw();
-                view.vao.unbind();
+                ModuleGraphics::draw_points(view.num_vectors);
             }
+            ModuleGraphics::unbind_vao();
         }
     }
 

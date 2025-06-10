@@ -47,12 +47,10 @@ target_sources(Engine24 PRIVATE
         SurfaceMeshCompute.cpp
         SurfaceMeshIo.cpp
         SurfaceMeshTriangles.cpp
-        SphereView.cpp
         Timer.cpp
         Triangle.cpp
         TransformUtils.cpp
         Utils.cpp
-        VectorfieldView.cpp
         CameraGui.cpp
         CoordinateSystemsGui.cpp
         FrameTimerGui.cpp

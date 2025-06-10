@@ -7,7 +7,7 @@
 #include "imgui.h"
 #include "Picker.h"
 #include "CameraUtils.h"
-#include "../../Graphics/ModuleGraphics.h"
+#include "ModuleGraphics.h"
 #include "ModuleTransform.h"
 #include "EventsCallbacks.h"
 #include "Keyboard.h"
@@ -92,9 +92,9 @@ namespace Bcg {
                 view.program.set_uniform4fm("model", glm::value_ptr(glm::mat4(1.0f)), false);
             }
 
-            view.draw();
-            view.vao.unbind();
+            ModuleGraphics::draw_points(view.num_spheres);
         }
+        ModuleGraphics::unbind_vao();
     }
 
     void ModuleSphereView::show_gui(entt::entity entity_id, const SphereView &view) {
