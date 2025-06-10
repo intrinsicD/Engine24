@@ -17,7 +17,6 @@ target_sources(Engine24 PRIVATE
         FileInputModule.cpp
         GetPrimitives.cpp
         Graph.cpp
-        GraphView.cpp
         GraphInterface.cpp
         GLFWUtils.cpp
         HandleGlfwKeyEvents.cpp
@@ -26,7 +25,6 @@ target_sources(Engine24 PRIVATE
         Line.cpp
         Logger.cpp
         MeshInterface.cpp
-        MeshView.cpp
         MeshResources.cpp
         Mouse.cpp
         ModuleAABB.cpp
@@ -44,7 +42,6 @@ target_sources(Engine24 PRIVATE
         PointCloudInterface.cpp
         PointCloudIo.cpp
         PointCloudCompute.cpp
-        PhongSplattingView.cpp
         Segment.cpp
         SurfaceMesh.cpp
         SurfaceMeshCompute.cpp

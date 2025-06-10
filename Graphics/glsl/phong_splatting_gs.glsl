@@ -49,12 +49,12 @@ void main() {
     vec3 B;
     BuildOrthonormalBasis(N, T, B);// ensure T and B are orthonormal
 
-    // Offsets of the four quad corners:
+    // Offsets of the four quad corners (centered on P):
     vec2 offsets[4] = vec2[4](
-    vec2(-R, -R),
-    vec2(+R, -R),
-    vec2(-R, +R),
-    vec2(+R, +R)
+        vec2(-0.5 * R, -0.5 * R),
+        vec2(+0.5 * R, -0.5 * R),
+        vec2(-0.5 * R, +0.5 * R),
+        vec2(+0.5 * R, +0.5 * R)
     );
 
     // Emit the quad as a triangle strip of 4 verts:
@@ -67,7 +67,7 @@ void main() {
         gs_out.fragPosition = cornerPos;// camera‐space POS
         gs_out.fragNormal   = N;// same normal everywhere
         gs_out.fragColor    = C;// same color everywhere
-        gs_out.gsUV         = offsets[i] / R * 2.0 - 1.0;// from [0,1] to [-1, 1] range for fragment shader
+        gs_out.gsUV         = offsets[i] / (0.5 * R); // <-- fix: normalize to [-1, 1] for circular splat
         EmitVertex();
     }
     EndPrimitive();

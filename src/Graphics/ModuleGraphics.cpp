@@ -3,7 +3,7 @@
 //
 #define GLAD_GL_IMPLEMENTATION
 
-#include "PluginGraphics.h"
+#include "../../Graphics/ModuleGraphics.h"
 #include "Engine.h"
 #include "EventsCallbacks.h"
 #include "Logger.h"
@@ -106,11 +106,11 @@ namespace Bcg {
         io.Fonts->Build();
     }
 
-    PluginGraphics::PluginGraphics() : Plugin("Graphics") {
+    ModuleGraphics::ModuleGraphics() : Module("ModuleGraphics") {
 
     }
 
-    bool PluginGraphics::init(int width, int height, const char *title) {
+    bool ModuleGraphics::init(int width, int height, const char *title) {
         if (global_window.handle) {
             Log::Info("GLFW context already initialized");
         } else {
@@ -201,34 +201,34 @@ namespace Bcg {
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_PROGRAM_POINT_SIZE);
-        Vector<int, 2> fbs = PluginGraphics::get_framebuffer_size();
+        Vector<int, 2> fbs = ModuleGraphics::get_framebuffer_size();
         Engine::Dispatcher().enqueue(Events::Callback::FramebufferResize{global_window.handle, fbs.x, fbs.y});
         Engine::Context().emplace<FileWatcher>();
         return true;
     }
 
-    bool PluginGraphics::should_close() {
+    bool ModuleGraphics::should_close() {
         return glfwWindowShouldClose(global_window.handle);
     }
 
-    void PluginGraphics::poll_events() {
+    void ModuleGraphics::poll_events() {
         glfwPollEvents();
     }
 
-    void PluginGraphics::set_window_title(const char *title) {
+    void ModuleGraphics::set_window_title(const char *title) {
         glfwSetWindowTitle(global_window.handle, title);
     }
 
-    void PluginGraphics::set_clear_color(const float *color) {
+    void ModuleGraphics::set_clear_color(const float *color) {
         *global_window.clear_color = *color;
         glClearColor(global_window.clear_color[0], global_window.clear_color[1], global_window.clear_color[2], 1.0f);
     }
 
-    void PluginGraphics::clear_framebuffer() {
+    void ModuleGraphics::clear_framebuffer() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    void PluginGraphics::start_gui() {
+    void ModuleGraphics::start_gui() {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -240,14 +240,14 @@ namespace Bcg {
         Engine::Dispatcher().trigger<Events::Gui::Render>();
     }
 
-    void PluginGraphics::render_menu() {
+    void ModuleGraphics::render_menu() {
         if (ImGui::BeginMenu("Graphics")) {
             ImGui::MenuItem("Window", nullptr, &global_window.show_window_gui);
             ImGui::EndMenu();
         }
     }
 
-    void PluginGraphics::render_gui() {
+    void ModuleGraphics::render_gui() {
         if (global_window.show_window_gui) {
             if (ImGui::Begin("Window", &global_window.show_window_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
                 if (ImGui::ColorEdit3("clear_color", global_window.clear_color)) {
@@ -261,11 +261,11 @@ namespace Bcg {
         }
     }
 
-    void PluginGraphics::render() {
+    void ModuleGraphics::render() {
 
     }
 
-    void PluginGraphics::end_gui() {
+    void ModuleGraphics::end_gui() {
         ImGui::EndMainMenuBar();
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -278,65 +278,65 @@ namespace Bcg {
         }
     }
 
-    void PluginGraphics::swap_buffers() {
+    void ModuleGraphics::swap_buffers() {
         glfwSwapBuffers(global_window.handle);
     }
 
-    void PluginGraphics::activate() {
+    void ModuleGraphics::activate() {
         if (base_activate()) {
 
         }
     }
 
-    void PluginGraphics::begin_frame() {
+    void ModuleGraphics::begin_frame() {
 
     }
 
-    void PluginGraphics::update() {
+    void ModuleGraphics::update() {
         auto &watcher = Engine::Context().get<FileWatcher>();
         watcher.check();
     }
 
-    void PluginGraphics::end_frame() {
+    void ModuleGraphics::end_frame() {
 
     }
 
-    void PluginGraphics::deactivate() {
+    void ModuleGraphics::deactivate() {
         if (base_deactivate()) {
 
         }
     }
 
-    Vector<int, 2> PluginGraphics::get_window_pos() {
+    Vector<int, 2> ModuleGraphics::get_window_pos() {
         int windowPosX, windowPosY;
         glfwGetWindowPos(global_window.handle, &windowPosX, &windowPosY);
         return {windowPosX, windowPosY};
     }
 
-    Vector<int, 2> PluginGraphics::get_window_size() {
+    Vector<int, 2> ModuleGraphics::get_window_size() {
         int width, height;
         glfwGetWindowSize(global_window.handle, &width, &height);
         return {width, height};
     }
 
-    Vector<int, 2> PluginGraphics::get_framebuffer_size() {
+    Vector<int, 2> ModuleGraphics::get_framebuffer_size() {
         int width, height;
         glfwGetFramebufferSize(global_window.handle, &width, &height);
         return {width, height};
     }
 
-    Vector<int, 4> PluginGraphics::get_viewport() {
+    Vector<int, 4> ModuleGraphics::get_viewport() {
         Vector<int, 4> viewport;
         glGetIntegerv(GL_VIEWPORT, glm::value_ptr(viewport));
         return std::move(viewport);
     }
 
-    Vector<int, 4> PluginGraphics::get_viewport_dpi_adjusted() {
+    Vector<int, 4> ModuleGraphics::get_viewport_dpi_adjusted() {
         Vector<int, 4> vp = get_viewport();
         return vp * int(dpi_scaling());
     }
 
-    bool PluginGraphics::read_depth_buffer(int x, int y, float &zf) {
+    bool ModuleGraphics::read_depth_buffer(int x, int y, float &zf) {
         Vector<int, 4> viewport = get_viewport();
 
         // in OpenGL y=0 is at the 'bottom'
@@ -347,9 +347,29 @@ namespace Bcg {
         return zf != 1.0f;
     }
 
-    float PluginGraphics::dpi_scaling() {
+    float ModuleGraphics::dpi_scaling() {
         float dpi_scaling_factor;
         glfwGetWindowContentScale(global_window.handle, &dpi_scaling_factor, &dpi_scaling_factor);
         return dpi_scaling_factor;
+    }
+
+    void ModuleGraphics::draw_elements(unsigned int mode, unsigned int count, unsigned int type, const void *indices) {
+        glDrawElements(mode, count, type, indices);
+    }
+
+    void ModuleGraphics::draw_points(unsigned int count) {
+        glDrawElements(GL_POINTS, count, GL_UNSIGNED_INT, nullptr);
+    }
+
+    void ModuleGraphics::draw_lines(unsigned int count) {
+        glDrawElements(GL_LINES, count, GL_UNSIGNED_INT, nullptr);
+    }
+
+    void ModuleGraphics::draw_triangles(unsigned int count) {
+        glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, nullptr);
+    }
+
+    void ModuleGraphics::unbind_vao() {
+        glBindVertexArray(0);
     }
 }

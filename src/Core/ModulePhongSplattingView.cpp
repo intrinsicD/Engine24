@@ -12,8 +12,7 @@
 #include <numeric>
 #include "CameraUtils.h"
 #include "ModuleTransform.h"
-#include "PluginGraphics.h"
-#include "glad/gl.h"
+#include "ModuleGraphics.h"
 
 namespace Bcg {
     void ModulePhongSplattingView::activate() {
@@ -50,7 +49,7 @@ namespace Bcg {
     void ModulePhongSplattingView::render() {
         auto rendergroup = Engine::State().view<PhongSplattingView>();
         auto &camera = Engine::Context().get<Camera>();
-        auto vp = PluginGraphics::get_viewport();
+        auto vp = ModuleGraphics::get_viewport();
         for (auto entity_id: rendergroup) {
             auto &view = Engine::State().get<PhongSplattingView>(entity_id);
             if (view.hide) continue;
@@ -78,9 +77,9 @@ namespace Bcg {
                 view.program.set_uniform4fm("model", glm::value_ptr(glm::mat4(1.0f)), false);
             }
 
-            view.draw();
-            view.vao.unbind();
+            ModuleGraphics::draw_points(view.num_points);
         }
+        ModuleGraphics::unbind_vao();
     }
 
     void ModulePhongSplattingView::show_gui(entt::entity entity_id, PhongSplattingView &view) {

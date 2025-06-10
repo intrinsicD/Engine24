@@ -33,7 +33,7 @@ void main()
     } else {
         f_color = aColor;
     }
-    f_normal = mat3(transpose(inverse(model))) * aNormal;
+    f_normal = normalize(mat3(transpose(inverse(model))) * aNormal);
     f_world = model * vec4(aPos, 1.0);
     f_view = view * f_world;
     vec4 clipSpacePos = projection * f_view;

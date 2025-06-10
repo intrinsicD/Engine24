@@ -6,19 +6,17 @@
 #define ENGINE24_PLUGINGRAPHICS_H
 
 #include "MatVec.h"
-#include "entt/fwd.hpp"
-#include "Plugin.h"
-#include "Command.h"
+#include "Module.h"
 
 struct GLFWwindow;
 
 namespace Bcg {
 
-    class PluginGraphics : public Plugin {
+    class ModuleGraphics : public Module {
     public:
-        PluginGraphics();
+        ModuleGraphics();
 
-        ~PluginGraphics() override = default;
+        ~ModuleGraphics() override = default;
 
         void activate() override;
 
@@ -67,6 +65,16 @@ namespace Bcg {
         static float dpi_scaling();
 
         static bool read_depth_buffer(int x, int y, float &z);
+
+        static void draw_elements(unsigned int mode, unsigned int count, unsigned int type, const void *indices);
+
+        static void draw_points(unsigned int count);
+
+        static void draw_lines(unsigned int count);
+
+        static void draw_triangles(unsigned int count);
+
+        static void unbind_vao();
 
         //--------------------------------------------------------------------------------------------------------------
     };

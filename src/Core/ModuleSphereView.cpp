@@ -7,7 +7,7 @@
 #include "imgui.h"
 #include "Picker.h"
 #include "CameraUtils.h"
-#include "PluginGraphics.h"
+#include "../../Graphics/ModuleGraphics.h"
 #include "ModuleTransform.h"
 #include "EventsCallbacks.h"
 #include "Keyboard.h"
@@ -68,7 +68,7 @@ namespace Bcg {
     void ModuleSphereView::render() {
         auto rendergroup = Engine::State().view<SphereView>();
         auto &camera = Engine::Context().get<Camera>();
-        auto vp = PluginGraphics::get_viewport();
+        auto vp = ModuleGraphics::get_viewport();
         for (auto entity_id: rendergroup) {
             auto &view = Engine::State().get<SphereView>(entity_id);
             if (view.hide) continue;

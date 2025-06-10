@@ -11,7 +11,7 @@
 #include "EventsKeys.h"
 #include "Mouse.h"
 #include "Picker.h"
-#include "PluginGraphics.h"
+#include "../../Graphics/ModuleGraphics.h"
 #include "PluginFrameTimer.h"
 #include "ModuleAABB.h"
 #include "Transform.h"
@@ -41,7 +41,7 @@ namespace Bcg {
         camera.proj_type = Camera::ProjectionType::PERSPECTIVE;
         SetViewParams(camera, view_params);
 
-        auto vp = PluginGraphics::get_viewport();
+        auto vp = ModuleGraphics::get_viewport();
         auto viewport_width = vp[2];
         auto viewport_height = vp[3];
 
@@ -66,7 +66,7 @@ namespace Bcg {
     static bool last_point_ok_ = false;
 
     static bool map_to_sphere(const Vector<int, 2> &point2D, glm::vec3 &result) {
-        auto vp = PluginGraphics::get_viewport();
+        auto vp = ModuleGraphics::get_viewport();
         double w = vp[2];
         double h = vp[3];
         if ((point2D[0] >= 0) && (point2D[0] <= w) && (point2D[1] >= 0) &&
@@ -143,7 +143,7 @@ namespace Bcg {
         float distance_to_scene = glm::length(front);
         // Project the change in screen coordinates to world coordinates
         PerspectiveParams p_params = GetPerspectiveParams(camera);
-        auto vp = PluginGraphics::get_viewport();
+        auto vp = ModuleGraphics::get_viewport();
         float viewport_width = vp[2];
         float viewport_height = vp[3];
         float fov = p_params.fovy_degrees; // Field of view in radians

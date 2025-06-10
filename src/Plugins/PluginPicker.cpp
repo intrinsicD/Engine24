@@ -4,7 +4,7 @@
 
 #include "PluginPicker.h"
 #include "Engine.h"
-#include "PluginGraphics.h"
+#include "../../Graphics/ModuleGraphics.h"
 #include "PluginSelection.h"
 #include "EventsCallbacks.h"
 #include "Mouse.h"

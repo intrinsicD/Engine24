@@ -12,7 +12,6 @@
 #include "PluginHierarchy.h"
 #include "PluginViewVectorfields.h"
 #include "PluginSelection.h"
-#include "PluginGraphics.h"
 #include "PluginPointCloudSampling.h"
 #include "PluginIcp.h"
 #include "PluginKDTree.h"
@@ -22,7 +21,6 @@ namespace Bcg {
     static std::unordered_map<std::string, std::unique_ptr<Plugin>> plugins;
 
     void Plugins::init() {
-        add_plugin(std::make_unique<PluginGraphics>());
         add_plugin(std::make_unique<PluginInput>());
         add_plugin(std::make_unique<PluginEntity>());
         add_plugin(std::make_unique<PluginPointCloud>());

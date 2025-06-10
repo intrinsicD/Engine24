@@ -5,7 +5,7 @@
 #include "PluginInput.h"
 #include "Engine.h"
 #include "Camera.h"
-#include "PluginGraphics.h"
+#include "../../Graphics/ModuleGraphics.h"
 #include "MouseGui.h"
 #include "imgui.h"
 
@@ -42,8 +42,8 @@ namespace Bcg {
         if (mouse.gui_captured) return mouse;
         auto &camera = Engine::Context().get<Camera>();
         float zf;
-        PluginGraphics::read_depth_buffer(xpos, ypos, zf);
-        mouse.cursor.current = PointTransformer(PluginGraphics::dpi_scaling(), PluginGraphics::get_viewport_dpi_adjusted(),
+        ModuleGraphics::read_depth_buffer(xpos, ypos, zf);
+        mouse.cursor.current = PointTransformer(ModuleGraphics::dpi_scaling(), ModuleGraphics::get_viewport_dpi_adjusted(),
                                                 camera.proj,
                                                 camera.view).apply(ScreenSpacePos(xpos, ypos), zf);
         return mouse;

@@ -4,7 +4,7 @@
 
 #include "MeshViewer.h"
 #include "Engine.h"
-#include "PluginGraphics.h"
+#include "../../Graphics/ModuleGraphics.h"
 #include "Plugins.h"
 
 namespace Bcg {

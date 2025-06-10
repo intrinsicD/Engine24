@@ -24,8 +24,6 @@ namespace Bcg{
         float min_color = 0;
         float max_color = 1;
         bool hide = false;
-
-        void draw();
     };
 }
 

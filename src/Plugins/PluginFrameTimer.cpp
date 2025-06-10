@@ -4,7 +4,7 @@
 
 #include "PluginFrameTimer.h"
 #include "FrameTimerGui.h"
-#include "PluginGraphics.h"
+#include "../../Graphics/ModuleGraphics.h"
 #include "Logger.h"
 #include "Engine.h"
 #include "imgui.h"

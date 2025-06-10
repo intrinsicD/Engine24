@@ -19,27 +19,28 @@ out vec4 FragColor;
 
 void main()
 {
-    vec2 coord = gl_PointCoord * 2.0 - 1.0;// Convert from [0,1] to [-1,1]
+    vec2 coord = gl_PointCoord * 2.0 - 1.0;
     float dist = dot(coord, coord);
 
     if (dist > 1.0) {
-        discard;// Discard fragments outside the sphere
+        discard; // Discard fragments outside the unit circle
     }
 
-    float z = sqrt(1.0 - dist);// Sphere depth
-    //float adjustedViewDepth = f_view.z + z * f_radius_view_space * 0.2; //f_view.z is negative, so add a value to mode towards the near plane
-    float adjustedViewDepth = f_view.z + z * f_radius_view_space * 0.2; //f_view.z is negative, so add a value to mode towards the near plane
+    float z = sqrt(1.0 - dist);
+    float adjustedViewDepth = f_view.z + z * f_radius_view_space * 0.2;
     vec4 adjustedClipSpacePos = projection * vec4(f_view.xy, adjustedViewDepth, f_view.w);
 
     float ndcDepth = adjustedClipSpacePos.z / adjustedClipSpacePos.w;
     gl_FragDepth = (ndcDepth * 0.5 + 0.5);
 
     vec3 normal = normalize(f_normal);
-    float diff = max(dot(normal, normalize(light_position - f_world.xyz)), 0);
+    vec3 light_dir = normalize(light_position - f_world.xyz);
+    float diff = max(dot(normal, light_dir), 0.0);
 
     vec3 normal_sphere = normalize(vec3(coord, z));
-    diff = z * abs(normal_sphere.z); // * diff;
+    diff = z * abs(normal_sphere.z);
+
     vec3 finalColor = (f_color - min_color) / (max_color - min_color);
     finalColor = diff * finalColor;
-    FragColor = vec4(finalColor, 1.0f);
+    FragColor = vec4(finalColor, 1.0);
 }

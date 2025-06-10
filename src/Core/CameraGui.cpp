@@ -5,7 +5,7 @@
 #include "CameraGui.h"
 #include "CameraUtils.h"
 #include "imgui.h"
-#include "PluginGraphics.h"
+#include "../../Graphics/ModuleGraphics.h"
 
 namespace Bcg::Gui {
     bool Show(ViewParams &v_params) {
@@ -91,7 +91,7 @@ namespace Bcg::Gui {
             camera.proj_type = Camera::ProjectionType::PERSPECTIVE;
             SetViewParams(camera, view_params);
 
-            auto vp = PluginGraphics::get_viewport();
+            auto vp = ModuleGraphics::get_viewport();
             auto viewport_width = vp[2];
             auto viewport_height = vp[3];
 

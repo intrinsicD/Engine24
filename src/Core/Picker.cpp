@@ -3,11 +3,11 @@
 //
 
 #include "Picker.h"
-#include "PluginGraphics.h"
+#include "../../Graphics/ModuleGraphics.h"
 
 namespace Bcg {
     Vector<float, 3> screen_to_ndc(const Vector<int, 4> &viewport, float x, float y, float z) {
-        float dpi = PluginGraphics::dpi_scaling();
+        float dpi = ModuleGraphics::dpi_scaling();
         x *= dpi;
         y *= dpi;
         float xf = ((x - viewport[0]) / viewport[2]) * 2.0f - 1.0f;

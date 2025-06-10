@@ -9,6 +9,7 @@
 #include "GetPrimitives.h"
 #include "CameraUtils.h"
 #include "ModuleTransform.h"
+#include "ModuleGraphics.h"
 #include "OpenGLState.h"
 #include "PropertyEigenMap.h"
 #include "GraphEdges.h"
@@ -67,9 +68,9 @@ namespace Bcg {
                 view.program.set_uniform4fm("model", glm::value_ptr(glm::mat4(1.0f)), false);
             }
 
-            view.draw();
-            view.vao.unbind();
+            ModuleGraphics::draw_lines(view.num_indices);
         }
+        ModuleGraphics::unbind_vao();
     }
 
     void ModuleGraphView::show_gui(entt::entity entity_id) {
