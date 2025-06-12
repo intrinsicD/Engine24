@@ -10,7 +10,6 @@
 #include <string>
 
 namespace Bcg {
-
     // Represents an OpenGL texture object and its properties.
     struct Texture {
         enum Type {
@@ -19,6 +18,7 @@ namespace Bcg {
             UNSIGNED_INT = 0x1405, // GL_UNSIGNED_INT
             FLOAT = 0x1406, // GL_FLOAT
         };
+
         enum Format {
             RED = 0x1903, // GL_RED
             RG = 0x8227, // GL_RG
@@ -27,6 +27,7 @@ namespace Bcg {
             DEPTH_COMPONENT = 0x1902, // GL_DEPTH_COMPONENT
             DEPTH_STENCIL = 0x84F9, // GL_DEPTH_STENCIL
         };
+
         enum InternalFormat {
             R8 = 0x8229, // GL_R8
             RG8 = 0x822B, // GL_RG8
@@ -39,6 +40,7 @@ namespace Bcg {
             DEPTH_COMPONENT24 = 0x81A6, // GL_DEPTH_COMPONENT24
             DEPTH24_STENCIL8 = 0x88F0, // GL_DEPTH24_STENCIL8
         };
+
         enum Target {
             TEXTURE_1D = 0x0DE0, // GL_TEXTURE_1D
             PROXY_TEXTURE_1D = 0x8063, // GL_PROXY_TEXTURE_1D
@@ -62,7 +64,7 @@ namespace Bcg {
         };
 
         // things like id, target, width, height, format, internal_format, type etc
-        int loc = -1; // Location in the shader (used for binding)
+        int unit = -1; // Location in the shader (used for binding)
         unsigned int type;
         std::string shader_name;
         std::string bound_buffer_name;
@@ -76,8 +78,8 @@ namespace Bcg {
         unsigned int height = 0;
         unsigned int channels = 0;
 
-        int level = 0;                                   // Mipmap level
-        int border = 0;                                  // Border width
+        int level = 0; // Mipmap level
+        int border = 0; // Border width
 
         operator bool() const {
             return id != -1;
@@ -130,7 +132,7 @@ namespace Bcg {
             TEXTURE_CUBE_MAP_NEGATIVE_Z = 0x851A, // GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
 
             // Proxy cube-map target
-            PROXY_TEXTURE_CUBE_MAP = 0x851B  // GL_PROXY_TEXTURE_CUBE_MAP
+            PROXY_TEXTURE_CUBE_MAP = 0x851B // GL_PROXY_TEXTURE_CUBE_MAP
         };
 
         void set_data(const void *data, unsigned int width, unsigned int height);
@@ -149,10 +151,36 @@ namespace Bcg {
             TEXTURE_2D_ARRAY = 0x8C1A, // GL_TEXTURE_2D_ARRAY
 
             // Proxy 2D array texture target
-            PROXY_TEXTURE_2D_ARRAY = 0x8C1B  // GL_PROXY_TEXTURE_2D_ARRAY
+            PROXY_TEXTURE_2D_ARRAY = 0x8C1B // GL_PROXY_TEXTURE_2D_ARRAY
         };
 
         void set_data(const void *data, unsigned int width, unsigned int height, unsigned int depth);
+    };
+
+    struct SamplerDescriptor {
+        enum class Filter {
+            Nearest = 0x2600, // GL_NEAREST
+            Linear = 0x2601, // GL_LINEAR
+        };
+
+        enum class Wrap {
+            Repeat = 0x2901, // GL_REPEAT
+            ClampToEdge = 0x812F, // GL_CLAMP_TO_EDGE
+            MirroredRepeat = 0x8370, // GL_MIRRORED_REPEAT
+            ClampToBorder = 0x812D, // GL_CLAMP_TO_BORDER
+        };
+
+        Filter min_filter = Filter::Linear;
+        Filter mag_filter = Filter::Linear;
+        Wrap wrap_s = Wrap::Repeat;
+        Wrap wrap_t = Wrap::Repeat;
+
+        bool operator==(const SamplerDescriptor &other) const {
+            return min_filter == other.min_filter &&
+                   mag_filter == other.mag_filter &&
+                   wrap_s == other.wrap_s &&
+                   wrap_t == other.wrap_t;
+        }
     };
 }
 

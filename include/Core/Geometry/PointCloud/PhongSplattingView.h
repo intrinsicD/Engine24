@@ -7,9 +7,10 @@
 
 #include "VertexArrayObject.h"
 #include "Program.h"
+#include "Material.h"
 #include "MatVec.h"
 
-namespace Bcg{
+namespace Bcg {
     struct PhongSplattingView {
         Attribute position{0, 3, Attribute::Type::FLOAT, false, 3 * sizeof(float), "position", ""};
         Attribute color{1, 3, Attribute::Type::FLOAT, false, 3 * sizeof(float), "color", ""};
@@ -24,6 +25,8 @@ namespace Bcg{
         Vector<float, 3> uniform_color{1.0, 1.0, 1.0};
         bool use_uniform_radius = true;
         float uniform_radius = 0.001;
+
+        unsigned int material_id = -1;
 
         Vector<float, 3> uLightColor = {1.0f, 1.0f, 1.0f};
         Vector<float, 3> uAmbientColor = {0.1f, 0.1f, 0.1f};

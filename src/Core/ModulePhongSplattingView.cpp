@@ -16,14 +16,12 @@
 
 namespace Bcg {
     void ModulePhongSplattingView::activate() {
-        if(base_activate()){
-
+        if (base_activate()) {
         }
     }
 
     void ModulePhongSplattingView::deactivate() {
-        if(base_deactivate()){
-
+        if (base_deactivate()) {
         }
     }
 
@@ -110,9 +108,7 @@ namespace Bcg {
                 }
                 if (Gui::Combo(view.normal.shader_name.c_str(), curr_normal, properties_3d)) {
                     set_normal(entity_id, properties_3d[curr_normal.first]);
-                }
-
-                {
+                } {
                     auto properties_colors = vertices->properties({1, 3});
                     properties_colors.emplace_back("uniform_color");
                     std::pair<int, std::string> curr_color = {-1, view.color.bound_buffer_name};
@@ -126,23 +122,21 @@ namespace Bcg {
                     if (Gui::Combo(view.color.shader_name.c_str(), curr_color, properties_colors)) {
                         auto *p_array = vertices->get_base(properties_colors[curr_color.first]);
                         if (p_array && p_array->dims() == 1) {
-                            set_scalarfield(entity_id,properties_colors[curr_color.first]);
+                            set_scalarfield(entity_id, properties_colors[curr_color.first]);
                         } else {
                             set_color(entity_id, properties_colors[curr_color.first]);
                         }
                     }
 
                     if (view.use_uniform_color) {
-                        if(ImGui::ColorEdit3("##uniform_color_sphere_view", glm::value_ptr(view.uniform_color))){
+                        if (ImGui::ColorEdit3("##uniform_color_sphere_view", glm::value_ptr(view.uniform_color))) {
                             set_uniform_color(entity_id, view.uniform_color);
                         }
                     } else {
                         ImGui::InputFloat("min_color", &view.min_color);
                         ImGui::InputFloat("max_color", &view.max_color);
                     }
-                }
-
-                {
+                } {
                     auto properties_1d = vertices->properties({1});
                     properties_1d.emplace_back("uniform_radius");
                     std::pair<int, std::string> curr_radius = {-1, view.radius.bound_buffer_name};
@@ -158,7 +152,7 @@ namespace Bcg {
                     }
 
                     if (view.use_uniform_radius) {
-                        if(ImGui::InputFloat("##uniform_radius", &view.uniform_radius)){
+                        if (ImGui::InputFloat("##uniform_radius", &view.uniform_radius)) {
                             set_uniform_radius(entity_id, view.uniform_radius);
                         }
                     }
@@ -236,7 +230,7 @@ namespace Bcg {
 
         OpenGLState openGlState(entity_id);
 
-        auto v_positions = vertices->get<Vector<float, 3>>(property_name);
+        auto v_positions = vertices->get<Vector<float, 3> >(property_name);
         auto b_position = openGlState.get_buffer(property_name);
 
         if (v_positions) {
@@ -276,7 +270,7 @@ namespace Bcg {
 
         OpenGLState openGlState(entity_id);
 
-        auto v_normals = vertices->get<Vector<float, 3>>(property_name);
+        auto v_normals = vertices->get<Vector<float, 3> >(property_name);
         auto b_normals = openGlState.get_buffer(property_name);
 
         if (v_normals) {
@@ -316,7 +310,7 @@ namespace Bcg {
 
         OpenGLState openGlState(entity_id);
 
-        auto v_color = vertices->get<Vector<float, 3>>(property_name);
+        auto v_color = vertices->get<Vector<float, 3> >(property_name);
         auto b_color = openGlState.get_buffer(property_name);
 
         if (v_color) {
@@ -333,7 +327,7 @@ namespace Bcg {
                                 Buffer::STATIC_DRAW);
             view.min_color = Map(v_color.vector()).minCoeff();
             view.max_color = Map(v_color.vector()).maxCoeff();
-            if(view.min_color == view.max_color){
+            if (view.min_color == view.max_color) {
                 view.min_color = 0;
             }
 
@@ -353,48 +347,50 @@ namespace Bcg {
         if (!vertices) return;
 
         if (!Engine::has<PhongSplattingView>(entity_id)) {
-            Log::Error("{}::set_scalarfield: failed, because entity does not have PhongSplattingView component.", s_name);
+            Log::Error("{}::set_scalarfield: failed, because entity does not have PhongSplattingView component.",
+                       s_name);
             return;
         }
 
         bool any = false;
         auto v_colorf = vertices->get<float>(property_name);
         Eigen::Vector<float, -1> t(vertices->size());
-        if(v_colorf){
+        if (v_colorf) {
             t = Map(v_colorf.vector());
             any = true;
         }
-        if(!any){
+        if (!any) {
             auto v_colori = vertices->get<int>(property_name);
-            if(v_colori){
+            if (v_colori) {
                 t = Map(v_colori.vector()).cast<float>();
                 any = true;
             }
         }
 
-        if(!any){
+        if (!any) {
             auto v_colorui = vertices->get<unsigned int>(property_name);
-            if(v_colorui){
+            if (v_colorui) {
                 t = Map(v_colorui.vector()).cast<float>();
                 any = true;
             }
         }
 
-        if(!any){
+        if (!any) {
             auto v_colorb = vertices->get<bool>(property_name);
-            if(v_colorb){
-                for(size_t i = 0; i < t.size(); ++i){
+            if (v_colorb) {
+                for (size_t i = 0; i < t.size(); ++i) {
                     t[i] = v_colorb[i];
                 }
                 any = true;
             }
         }
 
-        if(any){
+        if (any) {
             std::string property_name_3d = property_name + "Color3d";
-            auto v_colorf3 = vertices->get_or_add<Vector<float, 3>>(property_name_3d);
+            auto v_colorf3 = vertices->get_or_add<Vector<float, 3> >(property_name_3d);
             t = (t.array() - t.minCoeff()) / (t.maxCoeff() - t.minCoeff());
-            Map(v_colorf3.vector()) = t * Eigen::Vector<float, 3>::Unit(0).transpose() + (1.0f - t.array()).matrix() * Eigen::Vector<float, 3>::Unit(1).transpose();
+            Map(v_colorf3.vector()) = t * Eigen::Vector<float, 3>::Unit(0).transpose() + (1.0f - t.array()).matrix() *
+                                      Eigen::Vector<float, 3>::Unit(1).transpose();
             set_color(entity_id, property_name_3d);
         }
     }
@@ -430,7 +426,8 @@ namespace Bcg {
                                  Buffer::STATIC_DRAW);
 
             if (Map(v_radius.vector()).minCoeff() < 0) {
-                Log::Warn("{}::set_radius: {} has negative values which cannot be used as radius!", s_name, property_name);
+                Log::Warn("{}::set_radius: {} has negative values which cannot be used as radius!", s_name,
+                          property_name);
             }
 
             view.radius.bound_buffer_name = property_name;
@@ -446,7 +443,8 @@ namespace Bcg {
 
     void ModulePhongSplattingView::set_uniform_radius(entt::entity entity_id, float radius) {
         if (!Engine::has<PhongSplattingView>(entity_id)) {
-            Log::Error("{}::set_uniform_radius: failed, because entity does not have PhongSplattingView component.", s_name);
+            Log::Error("{}::set_uniform_radius: failed, because entity does not have PhongSplattingView component.",
+                       s_name);
             return;
         }
 
@@ -463,7 +461,8 @@ namespace Bcg {
 
     void ModulePhongSplattingView::set_uniform_color(entt::entity entity_id, const Vector<float, 3> &color) {
         if (!Engine::has<PhongSplattingView>(entity_id)) {
-            Log::Error("{}::set_uniform_color: failed, because entity does not have PhongSplattingView component.", s_name);
+            Log::Error("{}::set_uniform_color: failed, because entity does not have PhongSplattingView component.",
+                       s_name);
             return;
         }
 

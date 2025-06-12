@@ -56,9 +56,9 @@ namespace Bcg {
     void Texture::use(unsigned int program_id) const {
         if (id != -1) {
             int id = glGetUniformLocation(program_id, shader_name.c_str());
-            if (id >= 0) glUniform1i(id, loc);
+            if (id >= 0) glUniform1i(id, unit);
 
-            glActiveTexture(GL_TEXTURE0 + loc);
+            glActiveTexture(GL_TEXTURE0 + unit);
             bind();
         }
     }
