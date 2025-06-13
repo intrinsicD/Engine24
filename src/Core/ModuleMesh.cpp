@@ -46,7 +46,7 @@ namespace Bcg {
 
     MeshHandle ModuleMesh::make_handle(const SurfaceMesh &object) {
         auto &pool = Engine::Context().get<MeshPool>();
-        return pool.create(object);
+        return pool.create_smart_handle(object);
     }
 
     static std::string s_name = "MeshModule";

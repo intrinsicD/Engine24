@@ -11,11 +11,13 @@ namespace Bcg {
     template<typename T>
     struct PoolHandle;
 
+
     template<typename T>
     class Pool {
     public:
-        Pool() : ref_count(properties.get_or_add<size_t>(ref_count_name, 0)),
-                 objects(properties.get_or_add<T>(objects_name)) {
+        Pool() : ref_count(properties.get_or_add<size_t>("ref_count", 0)),
+                 objects(properties.get_or_add<T>("objects")),
+                 generations(properties.get_or_add<size_t>("generations", 0)) {
 
         }
 
@@ -24,42 +26,43 @@ namespace Bcg {
         PropertyContainer properties;
         Property<size_t> ref_count;
         Property<T> objects;
+        Property<size_t> generations;
 
-        PoolHandle<T> create() {
+        template<typename U>
+        PoolHandle<T> create_smart_handle(U &&obj) {
             size_t idx;
             if (free_list.empty()) {
+                idx = properties.size();
                 properties.push_back();
-                idx = properties.size() - 1;
+                generations[idx] = 1; // Initialize generation for the new object
             } else {
                 idx = free_list.front();
                 free_list.pop();
+                ++generations[idx];
             }
-            return {this, idx};
-        }
-
-        template<typename U>
-        PoolHandle<T> create(U&& obj) {
-            PoolHandle<T> handle = create();
-            properties.get<T>(objects_name)[handle.idx] = std::forward<U>(obj);
-            return handle;
+            objects[idx] = std::forward<U>(obj);
+            return {this, idx, generations[idx]};
         }
 
         void destroy(const PoolHandle<T> &handle) {
-            if (handle.pool && handle.idx < handle.pool->properties.size()) {
-                size_t &ref_count = handle.pool->ref_count[handle.idx];
-                if (ref_count > 0) {
-                    --ref_count;
-                }
-                if (ref_count == 0) {
-                    free_list.push(handle.idx);
-                }
+            if (handle.pool != this) return; // Ensure the handle belongs to this pool
+            if (handle.pool == nullptr) return; // Handle is invalid
+            if (handle.idx >= properties.size()) return; // Invalid index
+
+            size_t &r_count = ref_count[handle.idx];
+            if (r_count > 0) {
+                --r_count;
+            }
+
+            if (r_count == 0) {
+                objects[handle.idx].~T(); // Call destructor for the object
+                objects[handle.idx] = T(); // Reset the object
+                free_list.push(handle.idx);
             }
         }
 
     protected:
         friend struct PoolHandle<T>;
-        static constexpr const char *ref_count_name = "ref_count";
-        static constexpr const char *objects_name = "objects";
         std::queue<size_t> free_list;
     };
 }

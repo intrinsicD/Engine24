@@ -70,7 +70,7 @@ namespace Bcg {
 
     AABBHandle ModuleAABB::make_handle(const AABB<float> &object) {
         auto &pool = Engine::Context().get<AABBPool>();
-        return pool.create(object);
+        return pool.create_smart_handle(object);
     }
 
     AABBHandle ModuleAABB::create(entt::entity entity_id, const AABB<float> &object) {

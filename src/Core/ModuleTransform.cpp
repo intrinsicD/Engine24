@@ -47,7 +47,7 @@ namespace Bcg {
 
     TransformHandle ModuleTransform::make_handle(const Transform &object){
         auto &pool = Engine::Context().get<TransformPool>();
-        return pool.create(object);
+        return pool.create_smart_handle(object);
     }
 
     TransformHandle ModuleTransform::create(entt::entity entity_id, const Transform &object){

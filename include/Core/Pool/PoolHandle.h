@@ -13,30 +13,35 @@ namespace Bcg {
 
     template<typename T>
     struct PoolHandle {
-        PoolHandle() : pool(nullptr), idx(std::numeric_limits<size_t>::max()) {}
+        PoolHandle() : pool(nullptr), idx(std::numeric_limits<size_t>::max()), generation(0) {}
 
         // Copy constructor
-        PoolHandle(const PoolHandle &other) : pool(other.pool), idx(other.idx) {
+        PoolHandle(const PoolHandle &other) : pool(other.pool), idx(other.idx), generation(other.generation) {
             if (other.pool && idx < pool->properties.size()) {
-                ++pool->properties.template get<size_t>(pool->ref_count_name)[idx];
+                ++pool->ref_count[idx];
             }
         }
 
         // Move constructor
-        PoolHandle(PoolHandle &&other) noexcept : pool(other.pool), idx(other.idx) {
+        PoolHandle(PoolHandle &&other) noexcept : pool(other.pool), idx(other.idx), generation(other.generation) {
             other.pool = nullptr;
             other.idx = std::numeric_limits<size_t>::max();
+            other.generation = 0;
         }
 
         size_t get_index() const {
             return idx;
         }
 
+        size_t get_generation() const{
+            return generation;
+        }
+
         PoolHandle& operator=(const PoolHandle& other) {
             if (this != &other) {
                 // Decrement current reference
                 if (pool && idx < pool->properties.size()) {
-                    size_t &ref = pool->properties.template get<size_t>(pool->ref_count_name)[idx];
+                    size_t &ref = pool->ref_count[idx];
                     if (ref > 0) {
                         --ref;
                         if (ref == 0) {
@@ -48,8 +53,9 @@ namespace Bcg {
                 // Copy new reference
                 pool = other.pool;
                 idx = other.idx;
+                generation = other.generation;
                 if (pool && idx < pool->properties.size()) {
-                    ++pool->properties.template get<size_t>(pool->ref_count_name)[idx];
+                    ++pool->ref_count[idx];
                 }
             }
             return *this;
@@ -59,7 +65,7 @@ namespace Bcg {
             if (this != &other) {
                 // Decrement current reference
                 if (pool && idx < pool->properties.size()) {
-                    size_t &ref = pool->properties.template get<size_t>(pool->ref_count_name)[idx];
+                    size_t &ref = pool->ref_count[idx];
                     if (ref > 0) {
                         --ref;
                         if (ref == 0) {
@@ -71,15 +77,19 @@ namespace Bcg {
                 // Move new reference
                 pool = other.pool;
                 idx = other.idx;
+                generation = other.generation;
+
+                // Reset the moved-from handle
                 other.pool = nullptr;
                 other.idx = std::numeric_limits<size_t>::max();
+                other.generation = 0;
             }
             return *this;
         }
 
         ~PoolHandle() {
             if (pool && idx < pool->properties.size()) {
-                size_t &ref_count = pool->properties.template get<size_t>(pool->ref_count_name)[idx];
+                size_t &ref_count = pool->ref_count[idx];
                 if (ref_count > 0) {
                     --ref_count;
                     if (ref_count == 0) {
@@ -94,31 +104,31 @@ namespace Bcg {
         }
 
         size_t get_ref_count() const {
-            return pool->properties.template get<size_t>(pool->ref_count_name)[idx];
+            return pool->ref_count[idx];
         }
 
         operator T &() {
-            return pool->properties.template get<T>(pool->objects_name)[idx];
+            return pool->objects[idx];
         }
 
         operator const T &() const {
-            return pool->properties.template get<T>(pool->objects_name)[idx];
+            return pool->objects[idx];
         }
 
         T &operator*() {
-            return pool->properties.template get<T>(pool->objects_name)[idx];
+            return pool->objects[idx];
         }
 
         const T &operator*() const {
-            return pool->properties.template get<T>(pool->objects_name)[idx];
+            return pool->objects[idx];
         }
 
         T *operator->() {
-            return &pool->properties.template get<T>(pool->objects_name)[idx];
+            return &pool->objects[idx];
         }
 
         const T *operator->() const {
-            return &pool->properties.template get<T>(pool->objects_name)[idx];
+            return &pool->objects[idx];
         }
 
         bool operator==(const PoolHandle &other) const {
@@ -132,14 +142,15 @@ namespace Bcg {
     protected:
         friend class Pool<T>;
 
-        PoolHandle(Pool<T> *pool, size_t idx) : pool(pool), idx(idx) {
+        PoolHandle(Pool<T> *pool, size_t idx, size_t generation) : pool(pool), idx(idx), generation(generation) {
             if (pool && idx < pool->properties.size()) {
-                ++pool->properties.template get_or_add<size_t>(pool->ref_count_name, 0)[idx];
+                ++pool->ref_count[idx];
             }
         }
 
-        Pool<T> *pool;
-        size_t idx;
+        Pool<T>* pool = nullptr;
+        size_t idx = std::numeric_limits<size_t>::max();
+        size_t generation = 0;
     };
 }
 

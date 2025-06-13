@@ -7,6 +7,7 @@
 
 #include "ComponentModule.h"
 #include "AABBUtils.h"
+#include "MemoryPool.h"
 
 
 namespace Bcg {
