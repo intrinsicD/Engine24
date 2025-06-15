@@ -25,6 +25,27 @@ namespace Bcg {
         TimePoint m_end;
         float delta;
     };
+
+    class TimeTicker{
+    public:
+        TimeTicker() {
+            reset();
+        }
+
+        void reset() {
+            m_last_time_point = Clock::now();
+        }
+
+        double tick() {
+            const TimePoint current_time_point = Clock::now();
+            const Duration time_span = std::chrono::duration_cast<Duration>(current_time_point - m_last_time_point);
+            m_last_time_point = current_time_point;
+            return time_span.count();
+        }
+
+    private:
+        TimePoint m_last_time_point;
+    };
 }
 
 #endif //ENGINE24_TIMER_H

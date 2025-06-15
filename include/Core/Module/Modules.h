@@ -29,6 +29,10 @@ namespace Bcg {
 
         void update();
 
+        void fixed_update(double fixed_time_step);
+
+        void variable_update(double delta_time, double alpha);
+
         void render();
 
         void render_menu();

@@ -6,6 +6,8 @@
 #define ENGINE24_APPLICATION_H
 
 #include "Engine.h"
+#include "Window.h"
+#include "Renderer.h"
 
 namespace Bcg {
     class Application {
@@ -19,6 +21,8 @@ namespace Bcg {
         void cleanup();
 
         Engine engine;
+        std::unique_ptr<Window> window;
+        std::unique_ptr<Renderer> renderer;
     };
 }
 

@@ -13,12 +13,14 @@ target_sources(Engine24 PRIVATE
         Entity.cpp
         EntityCommands.cpp
         FileWatcher.cpp
+        InputManager.cpp
         InputModule.cpp
         FileInputModule.cpp
         GetPrimitives.cpp
         Graph.cpp
         GraphInterface.cpp
         GLFWUtils.cpp
+        GLFWContext.cpp
         HandleGlfwKeyEvents.cpp
         KDTreeCpu.cpp
         Keyboard.cpp
@@ -42,6 +44,7 @@ target_sources(Engine24 PRIVATE
         PointCloudInterface.cpp
         PointCloudIo.cpp
         PointCloudCompute.cpp
+        Renderer.cpp
         Segment.cpp
         SurfaceMesh.cpp
         SurfaceMeshCompute.cpp
@@ -62,4 +65,5 @@ target_sources(Engine24 PRIVATE
         PropertiesGui.cpp
         SelectionGui.cpp
         VectorfieldViewGui.cpp
+        Window.cpp
 )

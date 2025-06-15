@@ -44,6 +44,14 @@ namespace Bcg{
         }
     }
 
+    void Modules::fixed_update(double fixed_time_step) {
+
+    }
+
+    void Modules::variable_update(double delta_time, double alpha) {
+
+    }
+
     void Modules::render(){
         for(auto &module : modules){
             module.second->render();

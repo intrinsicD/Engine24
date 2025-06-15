@@ -8,6 +8,7 @@
 #include "../../Graphics/ModuleGraphics.h"
 #include "MouseGui.h"
 #include "imgui.h"
+#include "Application.h"
 
 namespace Bcg {
     PluginInput::PluginInput() : Plugin("Input") {
@@ -37,13 +38,16 @@ namespace Bcg {
         return keyboard;
     }
 
-    Mouse &PluginInput::set_mouse_cursor_position(GLFWwindow *window, double xpos, double ypos) {
+    Mouse &PluginInput::set_mouse_cursor_position(GLFWwindow */*window*/, double xpos, double ypos) {
         auto &mouse = Engine::Context().get<Mouse>();
         if (mouse.gui_captured) return mouse;
         auto &camera = Engine::Context().get<Camera>();
         float zf;
         ModuleGraphics::read_depth_buffer(xpos, ypos, zf);
-        mouse.cursor.current = PointTransformer(ModuleGraphics::dpi_scaling(), ModuleGraphics::get_viewport_dpi_adjusted(),
+        auto *window = Engine::Context().get<Application*>()->window.get();
+        auto *renderer = Engine::Context().get<Application *>()->renderer.get();
+        float xscale = window->get_xy_dpi_scaling()[0];
+        mouse.cursor.current = PointTransformer(xscale,renderer->get_viewport_dpi_adjusted(),
                                                 camera.proj,
                                                 camera.view).apply(ScreenSpacePos(xpos, ypos), zf);
         return mouse;

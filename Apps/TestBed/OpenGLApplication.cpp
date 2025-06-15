@@ -17,21 +17,26 @@
 #include "GuiModuleCamera.h"
 #include "ModulePhongSplattingView.h"
 #include "ModuleGraphView.h"
-#include "MainLoop.h"
+#include "TimeAccumulator.h"
+#include "Timer.h"
+#include "GLFWContext.h"
+#include "FileWatcher.h"
 
 namespace Bcg {
     Application::Application() {
-
+        Engine::Context().emplace<GLFWContext>().init();
+        Engine::Context().emplace<InputManager>();
+        Engine::Context().emplace<FileWatcher>();
+        Engine::Context().emplace<Application *>(this);
     }
 
     void Application::init(int width, int height, const char *title) {
-        Engine::Dispatcher().trigger<Bcg::Events::Initialize>();
-        Engine::Context().get<Bcg::Commands::InitializationCommands>().handle();
-
-        if (Bcg::ModuleGraphics::init(width, height, title)) {
-            Bcg::ModuleGraphics::set_window_title(title);
+        window = std::make_unique<Window>(width, height, title, Engine::Context().get<InputManager>());
+        //load renderer & imgui
+        renderer = std::make_unique<Renderer>(*window);
+        if (window->exists()) {
             auto &modules = Engine::Context().emplace<Modules>();
-            modules.add(std::make_unique<ModuleGraphics>());
+            //modules.add(std::make_unique<ModuleGraphics>());
             modules.add(std::make_unique<ModuleMesh>());
             modules.add(std::make_unique<ModuleAABB>());
             modules.add(std::make_unique<ModuleCamera>());
@@ -45,16 +50,16 @@ namespace Bcg {
             auto &gui_modules = Engine::Context().emplace<GuiModules>();
             gui_modules.add(std::make_unique<GuiModuleCamera>());
 
-            Bcg::Plugins::init();
-            Bcg::Plugins::activate_all();
-            Bcg::Engine::handle_command_double_buffer();
+            Plugins::init();
+            Plugins::activate_all();
+            Engine::handle_command_double_buffer();
         }
+        /*if (ModuleGraphics::init(width, height, title)) {
+
+        }*/
     }
 
     void Application::run() {
-        Engine::Dispatcher().trigger<Bcg::Events::Startup>();
-        Engine::Context().get<Bcg::Commands::StartupCommands>().handle();
-
         auto &modules = Engine::Context().get<Modules>();
         modules.activate();
 
@@ -62,48 +67,67 @@ namespace Bcg {
         gui_modules.activate();
         // Game loop
 
-        auto &main_loop = Engine::Context().get<Bcg::Commands::MainLoop>();
-        while (!Bcg::ModuleGraphics::should_close()) {
-            main_loop.handle(Engine::Dispatcher());
-            {
-                Bcg::ModuleGraphics::poll_events();
-                Bcg::Plugins::begin_frame_all();
-                modules.begin_frame();
-                Bcg::Plugins::update_all();
-                modules.update();
-                Bcg::Engine::handle_command_double_buffer();
-                Bcg::Engine::handle_buffered_events();
+        TimeAccumulator accumulator;
+        const double k_fixed_time_step = 1.0 / 60.0;
+        const int k_max_updates_per_frame = 5;
+
+        TimeTicker main_loop_ticker;
+        while (!window->should_close()) {
+            double delta_time = main_loop_ticker.tick();
+            accumulator.add(delta_time);
+            window->poll_events();
+            /*ModuleGraphics::poll_events();*/
+
+            int updates = 0;
+            while (accumulator.has_step(k_fixed_time_step) && updates < k_max_updates_per_frame) {
+                modules.fixed_update(k_fixed_time_step);
+                accumulator.consume_step(k_fixed_time_step);
+                ++updates;
             }
+            Engine::handle_command_double_buffer();
+
+            double alpha = accumulator.get_alpha(k_fixed_time_step);
+            modules.begin_frame();
+            modules.variable_update(delta_time, alpha);
+            modules.update();
+            Plugins::begin_frame_all();
+            Plugins::update_all();
+
+            Engine::handle_command_double_buffer();
+            Engine::handle_buffered_events();
             {
-                Bcg::ModuleGraphics::clear_framebuffer();
-                Bcg::Plugins::render_all();
+                renderer->begin_frame();
+                /*ModuleGraphics::clear_framebuffer();*/
+                Plugins::render_all();
                 modules.render();
-                Bcg::Engine::handle_command_double_buffer();
-                Bcg::Engine::handle_buffered_events();
-                Bcg::ModuleGraphics::start_gui();
-                Bcg::Plugins::render_menu();
+                Engine::handle_command_double_buffer();
+                Engine::handle_buffered_events();
+                renderer->begin_gui();
+                /*ModuleGraphics::start_gui();*/
+                Plugins::render_menu();
                 modules.render_menu();
                 gui_modules.render_menu();
-                Bcg::Plugins::render_gui();
+                Plugins::render_gui();
                 modules.render_gui();
                 gui_modules.render_gui();
-                Bcg::ModuleGraphics::end_gui();
-                Bcg::Engine::handle_command_double_buffer();
-                Bcg::Engine::handle_buffered_events();
-                Bcg::Plugins::end_frame();
+                renderer->end_gui();
+                /*ModuleGraphics::end_gui();*/
+                Engine::handle_command_double_buffer();
+                Engine::handle_buffered_events();
                 modules.end_frame();
-                Bcg::ModuleGraphics::swap_buffers();
+                Plugins::end_frame();
+                renderer->end_frame();
+                /*ModuleGraphics::swap_buffers();*/
             }
         }
     }
 
     void Application::cleanup() {
-        Engine::Dispatcher().trigger<Bcg::Events::Shutdown>();
-        Engine::Context().get<Bcg::Commands::ShutdownCommands>().handle();
         auto &modules = Engine::Context().get<Modules>();
         modules.deactivate();
         auto &gui_modules = Engine::Context().emplace<GuiModules>();
         gui_modules.deactivate();
-        Bcg::Plugins::deactivate_all();
+        Plugins::deactivate_all();
+        Engine::Context().get<GLFWContext>().shutdown();
     }
 }
