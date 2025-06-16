@@ -36,7 +36,6 @@ namespace Bcg {
             glfwDestroyWindow(m_window);
             m_window = nullptr;
         }
-        glfwTerminate();
     }
 
     bool Window::should_close() const {

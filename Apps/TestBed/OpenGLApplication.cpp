@@ -19,15 +19,22 @@
 #include "ModuleGraphView.h"
 #include "TimeAccumulator.h"
 #include "Timer.h"
-#include "GLFWContext.h"
 #include "FileWatcher.h"
+#include "GuiModuleRendererSettings.h"
+#include "TransformSystem.h"
 
 namespace Bcg {
     Application::Application() {
-        Engine::Context().emplace<GLFWContext>().init();
+        platform = std::make_unique<Platform>();
         Engine::Context().emplace<InputManager>();
         Engine::Context().emplace<FileWatcher>();
         Engine::Context().emplace<Application *>(this);
+    }
+
+    Application::~Application() {
+        renderer.reset();
+        window.reset();
+        platform.reset();
     }
 
     void Application::init(int width, int height, const char *title) {
@@ -49,14 +56,13 @@ namespace Bcg {
 
             auto &gui_modules = Engine::Context().emplace<GuiModules>();
             gui_modules.add(std::make_unique<GuiModuleCamera>());
+            gui_modules.add(std::make_unique<GuiModuleRendererSettings>(*renderer));
 
             Plugins::init();
             Plugins::activate_all();
             Engine::handle_command_double_buffer();
         }
-        /*if (ModuleGraphics::init(width, height, title)) {
 
-        }*/
     }
 
     void Application::run() {
@@ -76,10 +82,11 @@ namespace Bcg {
             double delta_time = main_loop_ticker.tick();
             accumulator.add(delta_time);
             window->poll_events();
-            /*ModuleGraphics::poll_events();*/
+
 
             int updates = 0;
             while (accumulator.has_step(k_fixed_time_step) && updates < k_max_updates_per_frame) {
+                UpdateTransformSystem(engine.state);
                 modules.fixed_update(k_fixed_time_step);
                 accumulator.consume_step(k_fixed_time_step);
                 ++updates;
@@ -87,6 +94,8 @@ namespace Bcg {
             Engine::handle_command_double_buffer();
 
             double alpha = accumulator.get_alpha(k_fixed_time_step);
+            //Second UpdateTransformSystem call to ensure that the transforms are up to date
+            UpdateTransformSystem(engine.state);
             modules.begin_frame();
             modules.variable_update(delta_time, alpha);
             modules.update();
@@ -97,13 +106,13 @@ namespace Bcg {
             Engine::handle_buffered_events();
             {
                 renderer->begin_frame();
-                /*ModuleGraphics::clear_framebuffer();*/
+
                 Plugins::render_all();
                 modules.render();
                 Engine::handle_command_double_buffer();
                 Engine::handle_buffered_events();
                 renderer->begin_gui();
-                /*ModuleGraphics::start_gui();*/
+
                 Plugins::render_menu();
                 modules.render_menu();
                 gui_modules.render_menu();
@@ -111,13 +120,13 @@ namespace Bcg {
                 modules.render_gui();
                 gui_modules.render_gui();
                 renderer->end_gui();
-                /*ModuleGraphics::end_gui();*/
+
                 Engine::handle_command_double_buffer();
                 Engine::handle_buffered_events();
                 modules.end_frame();
                 Plugins::end_frame();
                 renderer->end_frame();
-                /*ModuleGraphics::swap_buffers();*/
+
             }
         }
     }
@@ -128,6 +137,6 @@ namespace Bcg {
         auto &gui_modules = Engine::Context().emplace<GuiModules>();
         gui_modules.deactivate();
         Plugins::deactivate_all();
-        Engine::Context().get<GLFWContext>().shutdown();
+
     }
 }

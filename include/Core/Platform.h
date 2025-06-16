@@ -2,19 +2,21 @@
 // Created by alex on 6/15/25.
 //
 
-#ifndef GLFWCONTEXT_H
-#define GLFWCONTEXT_H
+#ifndef PLATFORM_H
+#define PLATFORM_H
 
 namespace Bcg {
-    class GLFWContext {
+    class Platform {
     public:
-        bool init();
+        Platform();
 
-        void shutdown();
+        ~Platform();
+
+        static bool is_initialized();
 
     private:
         static void glfw_error_callback(int error, const char *description);
     };
 }
 
-#endif //GLFWCONTEXT_H
+#endif //PLATFORM_H

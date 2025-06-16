@@ -11,6 +11,7 @@
 #include "Picker.h"
 #include "../../Graphics/ModuleGraphics.h"
 #include "CameraUtils.h"
+#include "Application.h"
 
 
 namespace Bcg {
@@ -194,8 +195,10 @@ namespace Bcg {
         const float* projPtr = glm::value_ptr(camera.proj);
 
         // Set the area where the gizmo lives (must match your 3D viewport)
-        auto   win_pos   = ModuleGraphics::get_window_pos();
-        auto   win_size  = ModuleGraphics::get_window_size();
+        auto *app = Engine::Context().get<Application*>();
+
+        auto   win_pos   =  app->window->get_window_pos();
+        auto   win_size  =  app->window->get_window_size();
         ImGuizmo::SetRect(win_pos.x, win_pos.y, win_size.x, win_size.y);
 
         // Perform the manipulation: ImGuizmo writes into `m` if user drags

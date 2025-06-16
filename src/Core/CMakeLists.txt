@@ -19,6 +19,8 @@ target_sources(Engine24 PRIVATE
         GetPrimitives.cpp
         Graph.cpp
         GraphInterface.cpp
+        GuiModuleRendererSettings.cpp
+        GuiModuleTransforms.cpp
         GLFWUtils.cpp
         GLFWContext.cpp
         HandleGlfwKeyEvents.cpp
@@ -64,6 +66,7 @@ target_sources(Engine24 PRIVATE
         PointCloudGui.cpp
         PropertiesGui.cpp
         SelectionGui.cpp
+        TransformSystem.cpp
         VectorfieldViewGui.cpp
         Window.cpp
 )

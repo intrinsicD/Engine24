@@ -10,7 +10,7 @@
 namespace Bcg {
     class Renderer {
     public:
-        Renderer(Window &window);
+        explicit Renderer(Window &window);
 
         ~Renderer();
 
@@ -20,7 +20,7 @@ namespace Bcg {
 
         void set_clear_color(const Vector<float, 4> &color);
 
-        Vector<float, 4> get_clear_color();
+        const Vector<float, 4> &get_clear_color() const;
 
         void clear_framebuffer();
 

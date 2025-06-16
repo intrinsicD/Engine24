@@ -22,9 +22,9 @@ namespace Bcg {
 
         [[nodiscard]] bool is_activated() const { return activated; }
 
-        virtual void activate() = 0; //registers callbacks to events
+        virtual void activate(){} //registers callbacks to events
 
-        virtual void deactivate() = 0; //unregisters callbacks to events
+        virtual void deactivate(){} //unregisters callbacks to events
 
         // Optional lifecycle hooks
         virtual void begin_frame() {

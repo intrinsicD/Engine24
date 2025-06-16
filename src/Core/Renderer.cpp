@@ -49,7 +49,7 @@ namespace Bcg {
         m_clear_color = color;
     }
 
-    Vector<float, 4> Renderer::get_clear_color() {
+    const Vector<float, 4> &Renderer::get_clear_color() const {
         return m_clear_color;
     }
 
