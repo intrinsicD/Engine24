@@ -3,17 +3,20 @@
 //
 
 #include "TransformUtils.h"
+#include <glm/gtx/matrix_decompose.hpp>
 
-namespace Bcg{
-    void pre_transform(Transform &t, glm::mat4 &other) {
-        t.set_local(t.local() * other);
+namespace Bcg {
+    void pre_transform(TransformComponent &t, glm::mat4 &other) {
+        glm::mat4 result = t.matrix() * other;
+        t = decompose(result);
     }
 
-    void post_transform(Transform &t, glm::mat4 &other) {
-        t.set_local(other * t.local());
+    void post_transform(TransformComponent &t, glm::mat4 &other) {
+        glm::mat4 result = other * t.matrix();
+        t = decompose(result);
     }
 
-    TransformParameters decompose(const glm::mat4 &matrix) {
+    TransformComponent decompose(const glm::mat4 &matrix) {
         glm::vec3 scale, skew;
         glm::vec4 perspective;
         glm::quat orientation;
@@ -23,17 +26,10 @@ namespace Bcg{
         return {scale, angle_axis, translation};
     }
 
-    glm::mat4 compose(const TransformParameters &params) {
-        glm::mat4 matrix(1.0f);
-        matrix = glm::translate(matrix, params.position);
-        matrix = glm::rotate(matrix, params.angle_axis.x, glm::vec3(1.0f, 0.0f, 0.0f));
-        matrix = glm::rotate(matrix, params.angle_axis.y, glm::vec3(0.0f, 1.0f, 0.0f));
-        matrix = glm::rotate(matrix, params.angle_axis.z, glm::vec3(0.0f, 0.0f, 1.0f));
-        matrix = glm::scale(matrix, params.scale);
-        return matrix;
-    }
-
-    void set_transform_params(Transform &t, const TransformParameters &params){
-        t.set_local(compose(params));
+    glm::mat4 compose(const TransformComponent &transform) {
+        glm::mat4 trans = glm::translate(glm::mat4(1.0f), transform.position);
+        glm::mat4 rot = glm::mat4_cast(transform.rotation);
+        glm::mat4 sc = glm::scale(glm::mat4(1.0f), transform.scale);
+        return trans * rot * sc;
     }
 }

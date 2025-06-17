@@ -93,7 +93,7 @@ namespace Bcg {
             openGlState.register_compute_program("ComputeHalfedgeMeshVertexNormals", program);
         }
 
-        program.use();
+        program.bind();
 
         // Bind buffers
         b_positions.bind_base(0);
@@ -192,7 +192,7 @@ namespace Bcg {
             openGlState.register_compute_program("ComputeHalfedgeMeshFaceNormals", program);
         }
 
-        program.use();
+        program.bind();
 
         // Bind buffers
         b_positions.bind_base(0);
@@ -325,7 +325,7 @@ namespace Bcg {
         b_responsibility_denominator.bind_base(2);
         b_pt1.bind_base(3);
 
-        program.use();
+        program.bind();
 
 // Set uniform values
         program.set_uniform1f("variance", sigma2);
@@ -409,7 +409,7 @@ namespace Bcg {
             openGlState.register_compute_program("P1PX", program);
         }
 
-        program.use();
+        program.bind();
 
         // Set up FixedPoints
         auto &target = Engine::State().get<SurfaceMesh>(target_id);

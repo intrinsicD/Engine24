@@ -10,7 +10,7 @@
 #include "Picker.h"
 #include "Camera.h"
 #include "ModuleGraphics.h"
-#include "Transform.h"
+#include "WorldTransformComponent.h"
 #include "GetPrimitives.h"
 #include "PropertyEigenMap.h"
 #include "OpenGLState.h"
@@ -67,7 +67,7 @@ namespace Bcg {
                 if (view.hide) continue;
 
                 view.vao.bind();
-                view.program.use();
+                view.program.bind();
                 view.program.set_uniform1i("use_uniform_length", view.use_uniform_length);
                 view.program.set_uniform1f("uniform_length", view.uniform_length);
                 view.program.set_uniform1f("min_color", view.min_color);
@@ -75,9 +75,9 @@ namespace Bcg {
                 view.program.set_uniform1i("use_uniform_color", view.use_uniform_color);
                 view.program.set_uniform3fv("uniform_color", glm::value_ptr(view.uniform_color));
 
-                if (Engine::has<Transform>(entity_id)) {
-                    auto &transform = Engine::State().get<Transform>(entity_id);
-                    view.program.set_uniform4fm("model", glm::value_ptr(transform.world()), false);
+                if (Engine::has<WorldTransformComponent>(entity_id)) {
+                    auto &transform = Engine::State().get<WorldTransformComponent>(entity_id);
+                    view.program.set_uniform4fm("model", glm::value_ptr(transform.world_transform), false);
                 } else {
                     view.program.set_uniform4fm("model", glm::value_ptr(glm::mat4(1.0f)), false);
                 }

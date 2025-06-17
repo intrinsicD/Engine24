@@ -11,10 +11,9 @@
 #include "EventsKeys.h"
 #include "Mouse.h"
 #include "Picker.h"
-#include "../../Graphics/ModuleGraphics.h"
+#include "ModuleGraphics.h"
 #include "PluginFrameTimer.h"
 #include "ModuleAABB.h"
-#include "Transform.h"
 
 namespace Bcg {
     //TODO fix camera, and setup aspect on camera creation etc...
@@ -92,8 +91,8 @@ namespace Bcg {
         ViewParams v_params = GetViewParams(camera);
         glm::vec4 ec = camera.view * glm::vec4(v_params.center, 1.0f);
         glm::vec3 c(ec[0] / ec[3], ec[1] / ec[3], ec[2] / ec[3]);
-        glm::mat4 center_matrix = translation_matrix(c);
-        glm::mat4 rot_matrix = rotation_matrix(axis, angle);
+        glm::mat4 center_matrix = glm::translate(glm::mat4(1.0f), -c);
+        glm::mat4 rot_matrix = glm::rotate(glm::mat4(1.0f), glm::radians(angle), axis);
 
         camera.view = center_matrix * rot_matrix * glm::inverse(center_matrix) * camera.view;
         glm::mat4 inv_view = glm::inverse(camera.view);
@@ -117,7 +116,7 @@ namespace Bcg {
 
                 if (fabs(cosAngle) < 1.0) {
                     float angle = 2.0 * acos(cosAngle) * 180.0 / std::numbers::pi;
-                    rotate(camera, axis, angle);
+                    rotate(camera, axis, -angle);
                 }
             }
         }

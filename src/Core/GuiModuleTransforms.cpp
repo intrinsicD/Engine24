@@ -104,7 +104,7 @@ namespace Bcg {
         ImGuizmo::SetDrawlist();
 
         // Define the viewport area for the gizmo
-        const auto &viewport = m_renderer.get_viewport();
+        const auto &viewport = m_renderer.get_viewport().vec();
         ImGuizmo::SetRect(viewport[0], viewport[1], viewport[2], viewport[3]);
 
         static ImGuizmo::OPERATION m_current_gizmo_operation = ImGuizmo::TRANSLATE;

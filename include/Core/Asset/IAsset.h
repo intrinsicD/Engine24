@@ -5,11 +5,14 @@
 #ifndef ENGINE24_IASSET_H
 #define ENGINE24_IASSET_H
 
+#include "AssetHandle.h"
 
 namespace Bcg{
     class IAsset {
     public:
         virtual ~IAsset() = default;
+
+        AssetHandle handle;
     };
 }
 

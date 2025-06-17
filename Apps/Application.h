@@ -9,6 +9,7 @@
 #include "Window.h"
 #include "Renderer.h"
 #include "Platform.h"
+#include "PickerSystem.h"
 
 namespace Bcg {
     class Application {
@@ -27,6 +28,7 @@ namespace Bcg {
         std::unique_ptr<Platform> platform;
         std::unique_ptr<Window> window;
         std::unique_ptr<Renderer> renderer;
+        std::unique_ptr<PickerSystem> picker_system;
     };
 }
 

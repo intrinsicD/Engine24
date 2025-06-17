@@ -5,21 +5,19 @@
 #ifndef ENGINE24_HIERARCHY_H
 #define ENGINE24_HIERARCHY_H
 
-#include "entt/entt.hpp"
+#include "entt/fwd.hpp"
 
 namespace Bcg {
-    struct Hierarchy {
-        entt::entity parent = entt::null;
-        std::vector<entt::entity> children;
-        std::vector<entt::entity> overlays;
+    class Hierarchy{
+    public:
+        explicit Hierarchy(entt::registry &registry);
 
-        bool has_child(entt::entity child) {
-            return std::find(children.begin(), children.end(), child) != children.end();
-        }
+        void set_parent(entt::entity child_id, entt::entity parent_id);
 
-        bool has_overlay(entt::entity overlay) {
-            return std::find(overlays.begin(), overlays.end(), overlay) != overlays.end();
-        }
+        void destroy_entity(entt::entity entity_id);
+
+    protected:
+        entt::registry &m_registry;
     };
 }
 

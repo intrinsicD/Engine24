@@ -5,32 +5,31 @@
 #ifndef ENGINE24_TRANSFORMUTILS_H
 #define ENGINE24_TRANSFORMUTILS_H
 
-#include "Transform.h"
+#include "TransformComponent.h"
 #include "StringTraits.h"
 #include "glm/gtx/string_cast.hpp"
 
 namespace Bcg{
 
     template<>
-    struct StringTraits<Transform> {
-        static std::string ToString(const Transform &t) {
+    struct StringTraits<TransformComponent> {
+        static std::string ToString(const TransformComponent &t) {
             std::stringstream ss;
             ss << "Transform: \n";
-            ss << "Local Matrix: \n" << glm::to_string(t.local()) << "\n";
-            ss << "World Matrix: \n" << glm::to_string(t.world()) << "\n";
+            ss << "Position: " << glm::to_string(t.position) << "\n";
+            ss << "Rotation: " << glm::to_string(t.rotation) << "\n";
+            ss << "Scale: " << glm::to_string(t.scale) << "\n";
             return ss.str();
         }
     };
 
-    void pre_transform(Transform &t, glm::mat4 &other);
+    void pre_transform(TransformComponent &t, glm::mat4 &other);
 
-    void post_transform(Transform &t, glm::mat4 &other);
+    void post_transform(TransformComponent &t, glm::mat4 &other);
 
-    TransformParameters decompose(const glm::mat4 &matrix);
+    TransformComponent decompose(const glm::mat4 &matrix);
 
-    glm::mat4 compose(const TransformParameters &params);
-
-    void set_transform_params(Transform &t, const TransformParameters &params);
+    glm::mat4 compose(const TransformComponent &component);
 }
 
 #endif //ENGINE24_TRANSFORMUTILS_H

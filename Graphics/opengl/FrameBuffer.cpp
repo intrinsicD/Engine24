@@ -3,102 +3,125 @@
 //
 
 #include "FrameBuffer.h"
-#include "Logger.h"
 #include "glad/gl.h"
 
 namespace Bcg {
-    void FrameBuffer::create() {
-        glGenFramebuffers(1, &id);
+    Framebuffer::Framebuffer(uint32_t width, uint32_t height)
+            : m_width(width), m_height(height) {
+        invalidate();
     }
 
-    void FrameBuffer::destroy() {
-        if (id != 0) {
-            glDeleteFramebuffers(1, &id);
-            id = 0;
+    Framebuffer::~Framebuffer() {
+        glDeleteFramebuffers(1, &m_renderer_id);
+        glDeleteTextures(1, &m_color_attachment);
+        glDeleteTextures(1, &m_depth_attachment);
+    }
+
+// Move constructor
+    Framebuffer::Framebuffer(Framebuffer&& other) noexcept
+            : m_renderer_id(other.m_renderer_id),
+              m_color_attachment(other.m_color_attachment),
+              m_depth_attachment(other.m_depth_attachment),
+              m_width(other.m_width),
+              m_height(other.m_height) {
+        // Invalidate the other object to prevent double deletion
+        other.m_renderer_id = 0;
+        other.m_color_attachment = 0;
+        other.m_depth_attachment = 0;
+    }
+
+// Move assignment
+    Framebuffer& Framebuffer::operator=(Framebuffer&& other) noexcept {
+        if (this != &other) {
+            // Delete own resources first
+            glDeleteFramebuffers(1, &m_renderer_id);
+            glDeleteTextures(1, &m_color_attachment);
+            glDeleteTextures(1, &m_depth_attachment);
+
+            // Pilfer other's resources
+            m_renderer_id = other.m_renderer_id;
+            m_color_attachment = other.m_color_attachment;
+            m_depth_attachment = other.m_depth_attachment;
+            m_width = other.m_width;
+            m_height = other.m_height;
+
+            // Invalidate other
+            other.m_renderer_id = 0;
+            other.m_color_attachment = 0;
+            other.m_depth_attachment = 0;
         }
+        return *this;
     }
 
-    void FrameBuffer::bind() const {
-        glBindFramebuffer(target, id);
-    }
 
-    void FrameBuffer::unbind() const {
-        glBindFramebuffer(target, 0);
-    }
-
-    std::string getStatusDestription(unsigned int status) {
-        switch (status) {
-            case GL_FRAMEBUFFER_UNDEFINED : {
-                return "GL_FRAMEBUFFER_UNDEFINED is returned if the specified framebuffer is the default read or draw framebuffer, but the default framebuffer does not exist.";
-            }
-            case GL_FRAMEBUFFER_COMPLETE : {
-                return "GL_FRAMEBUFFER_COMPLETE is returned if the framebuffer is complete.";
-            }
-            case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT : {
-                return "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT is returned if any of the framebuffer attachment points are framebuffer incomplete.";
-            }
-            case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT : {
-                return "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT is returned if the framebuffer does not have at least one image attached to it.";
-            }
-            case GL_FRAMEBUFFER_UNSUPPORTED : {
-                return "GL_FRAMEBUFFER_UNSUPPORTED is returned if the combination of internal formats of the attached images violates an implementation-dependent set of restrictions.";
-            }
-            case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE : {
-                return "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE is returned if the value of GL_RENDERBUFFER_SAMPLES is not the same for all attached renderbuffers; if the value of GL_TEXTURE_SAMPLES is the not same for all attached textures; or, if the attached images are a mix of renderbuffers and textures, the value of GL_RENDERBUFFER_SAMPLES does not match the value of GL_TEXTURE_SAMPLES.";
-            }
-            case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER : {
-                return "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER is returned if the value of GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE is GL_NONE for any color attachment point(s) named by GL_DRAW_BUFFERi.";
-            }
-            case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER : {
-                return "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER is returned if the value of GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE is GL_NONE for the color attachment point named by GL_READ_BUFFER.";
-            }
-            case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS : {
-                return "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS is returned if any framebuffer attachment is layered, and any populated attachment is not layered, or if all populated color attachments are not from textures of the same target.";
-            }
-            default: {
-                return "Unknown framebuffer status.";
-            }
+    void Framebuffer::invalidate() {
+        // If we are resizing, delete old objects first
+        if (m_renderer_id) {
+            glDeleteFramebuffers(1, &m_renderer_id);
+            glDeleteTextures(1, &m_color_attachment);
+            glDeleteTextures(1, &m_depth_attachment);
         }
+
+        // --- Create the Framebuffer Object ---
+        glGenFramebuffers(1, &m_renderer_id);
+        glBindFramebuffer(GL_FRAMEBUFFER, m_renderer_id);
+
+        // --- Create the Color Attachment (for Entity IDs) ---
+        glGenTextures(1, &m_color_attachment);
+        glBindTexture(GL_TEXTURE_2D, m_color_attachment);
+        // Use an integer format for the texture
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_R32I, m_width, m_height, 0, GL_RED_INTEGER, GL_INT, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+        // Attach the color texture to the framebuffer
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_color_attachment, 0);
+
+        // --- Create the Depth Attachment ---
+        glGenTextures(1, &m_depth_attachment);
+        glBindTexture(GL_TEXTURE_2D, m_depth_attachment);
+        // Use a standard depth format
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, m_width, m_height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
+
+        // Attach the depth texture to the framebuffer
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, m_depth_attachment, 0);
+
+        // --- Final Check and Unbind ---
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+            // Log an error here in a real engine
+            // std::cerr << "Framebuffer is not complete!" << std::endl;
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0); // Unbind to avoid accidental rendering to it
     }
 
-    bool FrameBuffer::check() const {
-        bind();
-        unsigned int status = glCheckFramebufferStatus(target);
-        bool complete = (status == GL_FRAMEBUFFER_COMPLETE);
-        if (!complete) {
-            Log::Error("Framebuffer not complete: " + getStatusDestription(status));
+    void Framebuffer::resize(uint32_t width, uint32_t height) {
+        if (width == 0 || height == 0 || (width == m_width && height == m_height)) {
+            return;
         }
+        m_width = width;
+        m_height = height;
+        invalidate();
+    }
+
+    void Framebuffer::bind() const {
+        glBindFramebuffer(GL_FRAMEBUFFER, m_renderer_id);
+        glViewport(0, 0, m_width, m_height);
+    }
+
+    void Framebuffer::unbind() const {
+        // Bind the default framebuffer (the screen)
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+    int Framebuffer::read_pixel(uint32_t x, uint32_t y) {
+        bind(); // Ensure we are reading from this framebuffer
+
+        int pixel_data;
+        // Read a 1x1 block of pixels at the specified coordinate
+        glReadPixels(x, y, 1, 1, GL_RED_INTEGER, GL_INT, &pixel_data);
+
         unbind();
-        return complete;
-    }
-
-    void FrameBuffer::blit(int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1,
-                           unsigned int mask, unsigned int filter, const FrameBuffer &other) const {
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, id);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, other.id);
-        glBlitFramebuffer(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    }
-
-    void FrameBuffer::read_pixels(int x, int y, int width, int height, unsigned int format, unsigned int type,
-                                  void *data) const {
-        bind();
-        glReadPixels(x, y, width, height, format, type, data);
-        unbind();
-    }
-
-    unsigned int FrameBuffer::get_max_color_attachments() const {
-        GLint maxColorAttachments;
-        glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &maxColorAttachments);
-        return maxColorAttachments;
-    }
-
-    bool FrameBuffer::add_texture_2d(const Texture2D &texture2D) {
-        if (attachments.size() >= get_max_color_attachments()) return false;
-        glFramebufferTexture2D(target, GL_COLOR_ATTACHMENT0 + attachments.size(), texture2D.target, texture2D.id,
-                               texture2D.level);
-        attachments.push_back(texture2D);
-        return true;
+        return pixel_data;
     }
 }

@@ -8,7 +8,7 @@
 #include "Picker.h"
 #include "CameraUtils.h"
 #include "ModuleGraphics.h"
-#include "ModuleTransform.h"
+#include "WorldTransformComponent.h"
 #include "EventsCallbacks.h"
 #include "Keyboard.h"
 #include "OpenGLState.h"
@@ -74,7 +74,7 @@ namespace Bcg {
             if (view.hide) continue;
 
             view.vao.bind();
-            view.program.use();
+            view.program.bind();
             view.program.set_uniform1ui("width", vp[2]);
             view.program.set_uniform1ui("height", vp[3]);
             view.program.set_uniform1i("use_uniform_radius", view.use_uniform_radius);
@@ -85,9 +85,9 @@ namespace Bcg {
             view.program.set_uniform3fv("uniform_color", glm::value_ptr(view.uniform_color));
             view.program.set_uniform3fv("light_position", glm::value_ptr(GetViewParams(camera).eye));
 
-            if (Engine::has<TransformHandle>(entity_id)) {
-                auto &transform = Engine::State().get<TransformHandle>(entity_id);
-                view.program.set_uniform4fm("model", glm::value_ptr(transform->world()), false);
+            if (Engine::has<WorldTransformComponent>(entity_id)) {
+                auto &transform = Engine::State().get<WorldTransformComponent>(entity_id);
+                view.program.set_uniform4fm("model", glm::value_ptr(transform.world_transform), false);
             } else {
                 view.program.set_uniform4fm("model", glm::value_ptr(glm::mat4(1.0f)), false);
             }

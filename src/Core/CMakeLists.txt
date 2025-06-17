@@ -2,7 +2,6 @@ target_sources(Engine24 PRIVATE
         Camera.cpp
         GuiModuleCamera.cpp
         CommandsCamera.cpp
-        CommandsTransform.cpp
         CommandsMesh.cpp
         CommandsMeshView.cpp
         CommandsSphereView.cpp
@@ -13,17 +12,19 @@ target_sources(Engine24 PRIVATE
         Entity.cpp
         EntityCommands.cpp
         FileWatcher.cpp
+        FileInputModule.cpp
         InputManager.cpp
         InputModule.cpp
-        FileInputModule.cpp
         GetPrimitives.cpp
         Graph.cpp
         GraphInterface.cpp
         GuiModuleRendererSettings.cpp
         GuiModuleTransforms.cpp
+        GuiModuleHierarchy.cpp
         GLFWUtils.cpp
         GLFWContext.cpp
         HandleGlfwKeyEvents.cpp
+        Hierarchy.cpp
         KDTreeCpu.cpp
         Keyboard.cpp
         Line.cpp
@@ -33,13 +34,13 @@ target_sources(Engine24 PRIVATE
         Mouse.cpp
         ModuleAABB.cpp
         ModuleCamera.cpp
-        ModuleTransform.cpp
         ModuleMesh.cpp
         ModuleMeshView.cpp
         ModuleSphereView.cpp
         ModulePhongSplattingView.cpp
         ModuleGraphView.cpp
         Picker.cpp
+        PickerSystem.cpp
         Plane.cpp
         Plugins.cpp
         PointCloud.cpp
@@ -52,21 +53,20 @@ target_sources(Engine24 PRIVATE
         SurfaceMeshCompute.cpp
         SurfaceMeshIo.cpp
         SurfaceMeshTriangles.cpp
+        SelectionGui.cpp
         Timer.cpp
         Triangle.cpp
         TransformUtils.cpp
+        TransformSystem.cpp
         Utils.cpp
         CameraGui.cpp
         CoordinateSystemsGui.cpp
         FrameTimerGui.cpp
         GuiUtils.cpp
-        HierarchyGui.cpp
         KDTreeGui.cpp
         MouseGui.cpp
         PointCloudGui.cpp
         PropertiesGui.cpp
-        SelectionGui.cpp
-        TransformSystem.cpp
         VectorfieldViewGui.cpp
         Window.cpp
 )

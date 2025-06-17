@@ -4,7 +4,7 @@
 
 #include "ModuleMesh.h"
 #include "ModuleCamera.h"
-#include "ModuleTransform.h"
+#include "TransformComponent.h"
 #include "ModuleAABB.h"
 #include "ModuleMeshView.h"
 #include "ModuleSphereView.h"
@@ -106,7 +106,7 @@ namespace Bcg {
 
         auto h_mesh = get(entity_id);
         auto h_aabb = ModuleAABB::create(entity_id, BuilderTraits<AABB<float>, SurfaceMesh>::build(*h_mesh));
-        auto h_transform = ModuleTransform::create(entity_id, Transform::Identity());
+        auto &transform = Engine::require<TransformComponent>(entity_id);
 
         ModuleAABB::center_and_scale_by_aabb(entity_id, h_mesh->vpoint_.name());
         ModuleCamera::center_camera_at_distance(h_aabb->center(), 1.5f * glm::compMax(h_aabb->diagonal()));

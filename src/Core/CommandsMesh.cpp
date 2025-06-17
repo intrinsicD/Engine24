@@ -12,7 +12,7 @@
 #include "CommandsAABB.h"
 #include "ModuleCamera.h"
 #include "Hierarchy.h"
-#include "ModuleTransform.h"
+#include "TransformComponent.h"
 #include "SurfaceMeshCompute.h"
 
 namespace Bcg::Commands {
@@ -51,8 +51,7 @@ namespace Bcg::Commands {
         CenterAndScaleByAABB(entity_id, mesh.vpoint_.name()).execute();
 
         auto h_aabb = Engine::State().get<AABBHandle>(entity_id);
-        auto &transform = *ModuleTransform::setup(entity_id);
-        auto &hierarchy = Engine::require<Hierarchy>(entity_id);
+        auto &transform = Engine::State().emplace<TransformComponent>(entity_id);
 
         std::string message = name + ": ";
         message += " #v: " + std::to_string(mesh.n_vertices());

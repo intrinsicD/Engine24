@@ -9,6 +9,10 @@
 
 namespace Bcg {
     struct Program {
+        Program() = default;
+        Program(const std::string &vs, const std::string &fs,
+                const std::string &gs = "", const std::string &tc = "", const std::string &te = "");
+
         unsigned int id = -1;
 
         operator bool() const {
@@ -33,7 +37,7 @@ namespace Bcg {
 
         bool check_link_errors();
 
-        void use();
+        void bind();
 
         unsigned int get_uniform_location(const std::string &name);
 

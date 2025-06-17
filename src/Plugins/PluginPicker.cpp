@@ -9,10 +9,9 @@
 #include "EventsCallbacks.h"
 #include "Mouse.h"
 #include "imgui.h"
-#include "Transform.h"
+#include "WorldTransformComponent.h"
 #include "ModuleAABB.h"
 #include "ModuleMesh.h"
-#include "ModuleTransform.h"
 #include "Cuda/BVHCudaNew.h"
 #include "PointCloud.h"
 #include "GetPrimitives.h"
@@ -35,11 +34,11 @@ namespace Bcg {
         auto &picked = last_picked();
         picked.spaces = mouse.cursor.last_left.press;
         picked.entity.is_background = picked.spaces.ndc.z == 1.0;
-        auto view = Engine::State().view<AABBHandle, Transform>();
+        auto view = Engine::State().view<AABBHandle, WorldTransformComponent>();
         for (const auto entity_id: view) {
             auto h_aabb = ModuleAABB::get(entity_id);
-            auto &transform = Engine::State().get<Transform>(entity_id);
-            if (AABBUtils::Contains(*h_aabb, (glm::inverse(transform.world()) * glm::vec4(picked.spaces.wsp, 1.0f)))) {
+            auto &transform = Engine::State().get<WorldTransformComponent>(entity_id);
+            if (AABBUtils::Contains(*h_aabb, (glm::inverse(transform.world_transform) * glm::vec4(picked.spaces.wsp, 1.0f)))) {
                 picked.entity.id = entity_id;
                 break;
             }
@@ -47,9 +46,9 @@ namespace Bcg {
 
         auto entity_id = picked.entity.id;
         if (Engine::valid(entity_id) && !picked.entity.is_background) {
-            if (Engine::has<TransformHandle>(entity_id)) {
-                auto &transform = *Engine::State().get<TransformHandle>(entity_id);
-                picked.spaces.osp = glm::inverse(transform.world()) * glm::vec4(picked.spaces.wsp, 1.0f);
+            if (Engine::has<WorldTransformComponent>(entity_id)) {
+                auto &transform = Engine::State().get<WorldTransformComponent>(entity_id);
+                picked.spaces.osp = glm::inverse(transform.world_transform) * glm::vec4(picked.spaces.wsp, 1.0f);
             }
 
             auto kdtree = cuda::BVHCudaNew(entity_id);

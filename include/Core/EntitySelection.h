@@ -31,7 +31,7 @@ namespace Bcg {
         }
 
     private:
-        entt::entity selected_entity;
+        entt::entity selected_entity = entt::null;
     };
 }
 

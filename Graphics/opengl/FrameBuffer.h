@@ -9,37 +9,44 @@
 #include <vector>
 
 namespace Bcg {
-    struct FrameBuffer {
-        unsigned int id = 0;
+    class Framebuffer {
+    public:
+        Framebuffer(uint32_t width, uint32_t height);
 
-        enum Targets {
-            FRAMEBUFFER = 0x8D40,
-            READ_FRAMEBUFFER = 0x8CA8,
-            DRAW_FRAMEBUFFER = 0x8CA8,
-        } target = FRAMEBUFFER;
+        ~Framebuffer();
 
-        std::vector<Texture2D> attachments;
+        // Prevent copying to avoid issues with OpenGL handle ownership
+        Framebuffer(const Framebuffer &) = delete;
 
-        void create();
+        Framebuffer &operator=(const Framebuffer &) = delete;
 
-        void destroy();
+        // Allow moving
+        Framebuffer(Framebuffer &&other) noexcept;
+
+        Framebuffer &operator=(Framebuffer &&other) noexcept;
 
         void bind() const;
 
         void unbind() const;
 
-        [[nodiscard]] bool check() const;
+        void resize(uint32_t width, uint32_t height);
 
-        void blit(int srcX0, int srcY0, int srcX1, int srcY1,
-                  int dstX0, int dstY0, int dstX1, int dstY1,
-                  unsigned int mask, unsigned int filter,
-                  const FrameBuffer &other) const;
+        // Reads the integer value of a single pixel from the framebuffer.
+        int read_pixel(uint32_t x, uint32_t y);
 
-        void read_pixels(int x, int y, int width, int height, unsigned int format, unsigned int type, void *data) const;
+        uint32_t get_width() const { return m_width; }
 
-        unsigned int get_max_color_attachments() const;
+        uint32_t get_height() const { return m_height; }
 
-        bool add_texture_2d(const Texture2D &texture2D);
+    private:
+        void invalidate(); // Recreate textures and re-attach them
+
+        uint32_t m_renderer_id = 0;
+        uint32_t m_color_attachment = 0; // The texture that stores entity IDs
+        uint32_t m_depth_attachment = 0; // The depth buffer
+
+        uint32_t m_width;
+        uint32_t m_height;
     };
 }
 

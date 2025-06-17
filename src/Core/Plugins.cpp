@@ -9,7 +9,6 @@
 #include "PluginPointCloud.h"
 #include "PluginPicker.h"
 #include "PluginFrameTimer.h"
-#include "PluginHierarchy.h"
 #include "PluginViewVectorfields.h"
 #include "PluginSelection.h"
 #include "PluginPointCloudSampling.h"
@@ -26,7 +25,6 @@ namespace Bcg {
         add_plugin(std::make_unique<PluginPointCloud>());
         add_plugin(std::make_unique<PluginPicker>());
         add_plugin(std::make_unique<PluginFrameTimer>());
-        add_plugin(std::make_unique<PluginHierarchy>());
         add_plugin(std::make_unique<PluginViewVectorfields>());
         add_plugin(std::make_unique<PluginSelection>());
         add_plugin(std::make_unique<PluginIcp>());

@@ -252,7 +252,7 @@ namespace Bcg {
             openGlState.register_compute_program("ComputePointCloudVertexNormals", program);
         }
 
-        program.use();
+        program.bind();
 
         // Bind buffers
         b_positions.bind_base(0);

@@ -8,7 +8,7 @@
 #include "Engine.h"
 #include "GetPrimitives.h"
 #include "CameraUtils.h"
-#include "ModuleTransform.h"
+#include "WorldTransformComponent.h"
 #include "ModuleGraphics.h"
 #include "OpenGLState.h"
 #include "PropertyEigenMap.h"
@@ -54,16 +54,16 @@ namespace Bcg {
             if (view.hide) continue;
 
             view.vao.bind();
-            view.program.use();
+            view.program.bind();
             view.program.set_uniform3fv("light_position", glm::value_ptr(GetViewParams(camera).eye));
             view.program.set_uniform1f("min_color", view.min_color);
             view.program.set_uniform1f("max_color", view.max_color);
             view.program.set_uniform1i("use_uniform_color", view.use_uniform_color);
             view.program.set_uniform3fv("uniform_color", glm::value_ptr(view.uniform_color));
 
-            if (Engine::has<TransformHandle>(entity_id)) {
-                auto h_transform = Engine::State().get<TransformHandle>(entity_id);
-                view.program.set_uniform4fm("model", glm::value_ptr(h_transform->world()), false);
+            if (Engine::has<WorldTransformComponent>(entity_id)) {
+                auto &transform = Engine::State().get<WorldTransformComponent>(entity_id);
+                view.program.set_uniform4fm("model", glm::value_ptr(transform.world_transform), false);
             } else {
                 view.program.set_uniform4fm("model", glm::value_ptr(glm::mat4(1.0f)), false);
             }

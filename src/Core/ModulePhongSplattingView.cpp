@@ -11,7 +11,7 @@
 #include "PropertyEigenMap.h"
 #include <numeric>
 #include "CameraUtils.h"
-#include "ModuleTransform.h"
+#include "WorldTransformComponent.h"
 #include "ModuleGraphics.h"
 
 namespace Bcg {
@@ -53,7 +53,7 @@ namespace Bcg {
             if (view.hide) continue;
 
             view.vao.bind();
-            view.program.use();
+            view.program.bind();
             view.program.set_uniform1i("use_uniform_radius", view.use_uniform_radius);
             view.program.set_uniform1f("uniform_radius", view.uniform_radius);
             view.program.set_uniform1f("shininess", view.uShininess);
@@ -68,9 +68,9 @@ namespace Bcg {
             view.program.set_uniform3fv("light_position", glm::value_ptr(lightCamView));
             view.program.set_uniform3fv("light_color", glm::value_ptr(view.uLightColor));
 
-            if (Engine::has<TransformHandle>(entity_id)) {
-                auto &transform = Engine::State().get<TransformHandle>(entity_id);
-                view.program.set_uniform4fm("model", glm::value_ptr(transform->world()), false);
+            if (Engine::has<WorldTransformComponent>(entity_id)) {
+                auto &transform = Engine::State().get<WorldTransformComponent>(entity_id);
+                view.program.set_uniform4fm("model", glm::value_ptr(transform.world_transform), false);
             } else {
                 view.program.set_uniform4fm("model", glm::value_ptr(glm::mat4(1.0f)), false);
             }

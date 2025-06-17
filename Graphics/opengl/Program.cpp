@@ -8,6 +8,10 @@
 #include "glad/gl.h"
 
 namespace Bcg {
+    Program::Program(const std::string &vs, const std::string &fs,
+                     const std::string &gs, const std::string &tc, const std::string &te) {
+        create_from_files(vs, fs, gs, tc, te);
+    }
     void Program::create() {
         if (id == -1) {
             id = glCreateProgram();
@@ -135,7 +139,7 @@ namespace Bcg {
         return success;
     }
 
-    void Program::use() {
+    void Program::bind() {
         glUseProgram(id);
     }
 

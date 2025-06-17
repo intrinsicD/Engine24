@@ -17,8 +17,7 @@
 #include "Picker.h"
 #include "ModuleAABB.h"
 #include "ModuleCamera.h"
-#include "ModuleTransform.h"
-#include "PluginHierarchy.h"
+#include "TransformComponent.h"
 #include "GetPrimitives.h"
 #include "CommandsAABB.h"
 #include "Cuda/BVHCuda.h"
@@ -162,9 +161,7 @@ namespace Bcg {
             h_aabb->max -= c;
 
 
-            auto &transform = Engine::require<Transform>(entity_id);
-            auto &hierarchy = Engine::require<Hierarchy>(entity_id);
-
+            auto &transform = Engine::require<TransformComponent>(entity_id);
 
             Setup<SphereView>(entity_id).execute();
 

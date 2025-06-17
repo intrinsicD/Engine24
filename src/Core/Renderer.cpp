@@ -18,7 +18,7 @@
 #include "Events/EventsGui.h"
 
 namespace Bcg {
-    Renderer::Renderer(Window &window) : m_window(window) {
+    Renderer::Renderer(Window &window, AssetManager &asset_manager) : m_window(window), m_asset_manager(asset_manager) {
         init_graphics();
         init_imgui();
     }
@@ -142,14 +142,14 @@ namespace Bcg {
         ImGui::GetStyle().ScaleAllSizes(dpi);
     }
 
-    Vector<float, 4> Renderer::get_viewport() const {
+    Viewport Renderer::get_viewport() const {
         Vector<float, 4> viewport;
         glGetFloatv(GL_VIEWPORT, glm::value_ptr(viewport));
-        return viewport;
+        return {viewport};
     }
 
     Vector<float, 4> Renderer::get_viewport_dpi_adjusted() const {
-        Vector<int, 4> vp = get_viewport();
+        Vector<int, 4> vp = get_viewport().vec();
         return vp * int(m_window.get_xy_dpi_scaling()[0]);
     }
 }

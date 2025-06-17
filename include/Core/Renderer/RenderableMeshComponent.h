@@ -2,15 +2,15 @@
 // Created by alex on 17.06.25.
 //
 
-#ifndef ENGINE24_RENDERABLECOMPONENT_H
-#define ENGINE24_RENDERABLECOMPONENT_H
+#ifndef ENGINE24_RENDERABLEMESHCOMPONENT_H
+#define ENGINE24_RENDERABLEMESHCOMPONENT_H
 
 #include <vector>
 #include "AssetHandle.h"
 
 namespace Bcg {
 
-    struct RenderableComponent {
+    struct RenderableMeshComponent {
         // Handle to the Mesh asset, which may contain one or more sub-meshes.
         AssetHandle mesh_handle;
 
@@ -28,4 +28,4 @@ namespace Bcg {
     };
 }
 
-#endif //ENGINE24_RENDERABLECOMPONENT_H
+#endif //ENGINE24_RENDERABLEMESHCOMPONENT_H

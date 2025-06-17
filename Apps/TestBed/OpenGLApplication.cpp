@@ -11,7 +11,6 @@
 #include "ModuleMesh.h"
 #include "ModuleAABB.h"
 #include "ModuleCamera.h"
-#include "ModuleTransform.h"
 #include "ModuleMeshView.h"
 #include "ModuleSphereView.h"
 #include "GuiModuleCamera.h"
@@ -22,6 +21,10 @@
 #include "FileWatcher.h"
 #include "GuiModuleRendererSettings.h"
 #include "TransformSystem.h"
+#include "GuiModuleTransforms.h"
+#include "GuiModuleHierarchy.h"
+#include "AssetManager.h"
+
 
 namespace Bcg {
     Application::Application() {
@@ -29,6 +32,7 @@ namespace Bcg {
         Engine::Context().emplace<InputManager>();
         Engine::Context().emplace<FileWatcher>();
         Engine::Context().emplace<Application *>(this);
+        Engine::Context().emplace<AssetManager>();
     }
 
     Application::~Application() {
@@ -41,13 +45,16 @@ namespace Bcg {
         window = std::make_unique<Window>(width, height, title, Engine::Context().get<InputManager>());
         //load renderer & imgui
         renderer = std::make_unique<Renderer>(*window);
+        auto viewport_size = renderer->get_viewport().get_size();
+        picker_system = std::make_unique<PickerSystem>(width, height);
+        auto &entity_selection = engine.state.ctx().emplace<EntitySelection>();
+        auto &asset_manager = Engine::Context().get<AssetManager>();
         if (window->exists()) {
             auto &modules = Engine::Context().emplace<Modules>();
             //modules.add(std::make_unique<ModuleGraphics>());
             modules.add(std::make_unique<ModuleMesh>());
             modules.add(std::make_unique<ModuleAABB>());
             modules.add(std::make_unique<ModuleCamera>());
-            modules.add(std::make_unique<ModuleTransform>());
             //Rendering Modules
             modules.add(std::make_unique<ModuleMeshView>());
             modules.add(std::make_unique<ModuleSphereView>());
@@ -57,6 +64,8 @@ namespace Bcg {
             auto &gui_modules = Engine::Context().emplace<GuiModules>();
             gui_modules.add(std::make_unique<GuiModuleCamera>());
             gui_modules.add(std::make_unique<GuiModuleRendererSettings>(*renderer));
+            gui_modules.add(std::make_unique<GuiModuleTransforms>(engine.state, *renderer, entity_selection));
+            gui_modules.add(std::make_unique<GuiModuleHierarchy>(engine.state, entity_selection));
 
             Plugins::init();
             Plugins::activate_all();
@@ -66,6 +75,8 @@ namespace Bcg {
     }
 
     void Application::run() {
+        auto &entity_selection = engine.state.ctx().get<EntitySelection>();
+        auto &camera = engine.state.ctx().get<Camera>();
         auto &modules = Engine::Context().get<Modules>();
         modules.activate();
 
@@ -127,6 +138,7 @@ namespace Bcg {
                 Plugins::end_frame();
                 renderer->end_frame();
 
+                picker_system->update(engine.state, camera, entity_selection);
             }
         }
     }

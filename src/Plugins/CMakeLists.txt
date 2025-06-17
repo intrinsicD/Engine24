@@ -1,6 +1,5 @@
 target_sources(Engine24 PRIVATE
         PluginFrameTimer.cpp
-        PluginHierarchy.cpp
         PluginIcp.cpp
         PluginInput.cpp
         PluginKDTree.cpp
