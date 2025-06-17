@@ -6,11 +6,13 @@
 #define RENDERER_H
 
 #include "Window.h"
+#include "Viewport.h"
+#include "AssetManager.h"
 
 namespace Bcg {
     class Renderer {
     public:
-        explicit Renderer(Window &window);
+        explicit Renderer(Window &window, AssetManager &asset_manager);
 
         ~Renderer();
 
@@ -28,7 +30,7 @@ namespace Bcg {
 
         void end_gui();
 
-        Vector<float, 4> get_viewport() const;
+        Viewport get_viewport() const;
 
         Vector<float, 4> get_viewport_dpi_adjusted() const;
 
@@ -38,6 +40,7 @@ namespace Bcg {
         void init_imgui();
 
         Window &m_window;
+        AssetManager &m_asset_manager;
         Vector<float, 4> m_clear_color = {0.2f, 0.3f, 0.3f, 1.0f}; // Default clear color
     };
 }

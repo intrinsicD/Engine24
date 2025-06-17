@@ -1,0 +1,8 @@
+//
+// Created by alex on 17.06.25.
+//
+
+#ifndef ENGINE24_IASSETLOADER_H
+#define ENGINE24_IASSETLOADER_H
+
+#endif //ENGINE24_IASSETLOADER_H
