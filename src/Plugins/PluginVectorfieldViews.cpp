@@ -56,8 +56,6 @@ namespace Bcg {
 
     void PluginViewVectorfields::render() {
         auto rendergroup = Engine::State().view<VectorfieldViews>();
-        auto &camera = Engine::Context().get<Camera>();
-        auto vp = ModuleGraphics::get_viewport();
         for (auto entity_id: rendergroup) {
             auto &views = Engine::State().get<VectorfieldViews>(entity_id);
             if (views.hide) continue;

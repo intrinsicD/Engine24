@@ -7,6 +7,7 @@
 
 #include "Texture.h"
 #include <vector>
+#include <cstdint>
 
 namespace Bcg {
     class Framebuffer {

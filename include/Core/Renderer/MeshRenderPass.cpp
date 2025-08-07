@@ -3,9 +3,9 @@
 //
 
 #include "MeshRenderPass.h"
-#include "Camera.h"
 #include "RenderableMeshComponent.h"
 #include "GpuMesh.h"
+#include "Texture.h"
 #include "WorldTransformComponent.h"
 #include <glad/gl.h>
 #include "entt/entity/registry.hpp"
@@ -38,25 +38,25 @@ namespace Bcg{
                 // *** HERE IS THE KEY INTERACTION ***
 
                 // 1. Get the Shader Program from the Material
-                auto shader = m_asset_manager.get_asset<Shader>(material->shader_handle);
-                if (!shader) continue;
+                auto program = m_asset_manager.get_asset<Program>(material->program_handle);
+                if (!program) continue;
 
                 // 2. The Render Pass Binds the Shader
-                shader->Bind();
+                program->bind();
 
                 // 3. The Render Pass Sets Engine-Level Uniforms (Camera, etc.)
-                shader->SetUniformMat4("u_Model", model_matrix);
+                program->set_uniform4fm("u_Model", model_matrix);
 
                 // 4. The Render Pass Sets Material-Specific Uniforms
-                shader->SetUniformVec4("u_Material.albedoColor", material->albedo_color);
-                shader->SetUniformFloat("u_Material.metallic", material->metallic);
-                shader->SetUniformFloat("u_Material.roughness", material->roughness);
+                program->set_uniform4fv("u_Material.albedoColor", material->albedo_color);
+                program->set_uniform1f("u_Material.metallic", material->metallic);
+                program->set_uniform1f("u_Material.roughness", material->roughness);
 
                 // 5. The Render Pass Binds Textures from the Material
                 auto albedo_tex = m_asset_manager.get_asset<Texture>(material->albedo_texture_handle);
                 if (albedo_tex) {
-                    albedo_tex->Bind(0); // Bind to texture slot 0
-                    shader->SetUniformInt("u_Material.albedoMap", 0);
+                    albedo_tex->bind(0); // Bind to texture slot 0
+                    program->set_uniform1i("u_Material.albedoMap", 0);
                 }
                 // ... bind other textures to other slots ...
 

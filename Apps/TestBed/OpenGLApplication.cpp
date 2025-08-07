@@ -44,11 +44,11 @@ namespace Bcg {
     void Application::init(int width, int height, const char *title) {
         window = std::make_unique<Window>(width, height, title, Engine::Context().get<InputManager>());
         //load renderer & imgui
-        renderer = std::make_unique<Renderer>(*window);
+        auto &asset_manager = Engine::Context().get<AssetManager>();
+        renderer = std::make_unique<Renderer>(*window, asset_manager);
         auto viewport_size = renderer->get_viewport().get_size();
         picker_system = std::make_unique<PickerSystem>(width, height);
         auto &entity_selection = engine.state.ctx().emplace<EntitySelection>();
-        auto &asset_manager = Engine::Context().get<AssetManager>();
         if (window->exists()) {
             auto &modules = Engine::Context().emplace<Modules>();
             //modules.add(std::make_unique<ModuleGraphics>());
@@ -75,10 +75,11 @@ namespace Bcg {
     }
 
     void Application::run() {
-        auto &entity_selection = engine.state.ctx().get<EntitySelection>();
-        auto &camera = engine.state.ctx().get<Camera>();
         auto &modules = Engine::Context().get<Modules>();
         modules.activate();
+
+        auto &entity_selection = engine.state.ctx().get<EntitySelection>();
+        auto &camera = engine.state.ctx().get<Camera>();
 
         auto &gui_modules = Engine::Context().get<GuiModules>();
         gui_modules.activate();

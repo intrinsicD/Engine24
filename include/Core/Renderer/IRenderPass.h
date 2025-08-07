@@ -9,12 +9,13 @@
 
 namespace Bcg{
     struct Camera;
+    struct IRenderer;
 
     class IRenderPass{
     public:
         virtual ~IRenderPass() = default;
         // Each pass executes its logic using the provided scene data.
-        virtual void execute(entt::registry& registry, const Camera& camera) = 0;
+        virtual void execute(IRenderer *renderer, entt::registry& registry, const Camera& camera) = 0;
     };
 }
 #endif //ENGINE24_IRENDERPASS_H

@@ -53,6 +53,8 @@ namespace Bcg {
 
         void set_uniform3fv(const std::string &name, const float *ptr);
 
+        void set_uniform4fv(const std::string &name, const float *ptr);
+
         void set_uniform4fm(const std::string &name, const float *ptr, bool transpose = false);
 
         VertexShader vs;

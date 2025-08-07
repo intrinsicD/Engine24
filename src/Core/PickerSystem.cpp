@@ -2,8 +2,10 @@
 // Created by alex on 17.06.25.
 //
 #include "PickerSystem.h"
-#include "RenderableMeshComponent.h" // Or whatever holds your mesh
+#include "MeshView.h" // Or whatever holds your mesh
 #include "WorldTransformComponent.h"
+#include "ModuleGraphics.h"
+#include "Engine.h"
 
 #include "glad/gl.h" // Or your OpenGL header
 
@@ -72,22 +74,24 @@ namespace Bcg {
 
         // --- D. Render all relevant entities ---
         // Query for entities that can be rendered (and thus, picked).
-        auto view = registry.view<RenderableMeshComponent, WorldTransformComponent>();
-        for (auto entity: view) {
+        auto rendergroup = registry.view<MeshView>();
+        for (auto entity_id: rendergroup) {
+            auto &view = registry.get<MeshView>(entity_id);
+            if (view.hide) continue;
+
+            view.vao.bind();
             // Set the entity ID uniform for this specific draw call.
             // We must cast the entt::entity handle to a plain integer.
-            m_picking_shader.set_uniform1i("u_EntityID", static_cast<int32_t>(entity));
+            m_picking_shader.set_uniform1i("u_EntityID", static_cast<int32_t>(entity_id));
 
             // Set the model matrix
-            const auto &world_transform = registry.get<WorldTransformComponent>(entity);
-            m_picking_shader.set_uniform4fm("u_Model", glm::value_ptr(world_transform.world_transform));
+            if (Engine::has<WorldTransformComponent>(entity_id)) {
+                auto &transform = Engine::State().get<WorldTransformComponent>(entity_id);
+                m_picking_shader.set_uniform4fm("model", glm::value_ptr(transform.world_transform), false);
+            } else {
+                m_picking_shader.set_uniform4fm("model", glm::value_ptr(glm::mat4(1.0f)), false);
+            }
 
-            // Draw the entity's mesh. We don't care about materials or textures here.
-            const auto &renderable = registry.get<RenderableMeshComponent>(entity);
-            // You need a way to draw a mesh, perhaps on your Renderer or Mesh class.
-            // This call should just bind the VAO and call glDrawElements/glDrawArrays.
-            renderable.mesh->Draw();
-            glDrawElements(GL_TRIANGLES, renderable, GL_UNSIGNED_INT, nullptr);
             ModuleGraphics::draw_triangles(view.num_indices);
         }
 

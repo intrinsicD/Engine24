@@ -187,6 +187,14 @@ namespace Bcg {
         }
     }
 
+    void Program::set_uniform4fv(const std::string &name, const float *ptr) {
+        int loc = get_uniform_location(name);
+
+        if (loc != -1) {
+            glUniform4fv(loc, 1, ptr);
+        }
+    }
+
     void Program::set_uniform4fm(const std::string &name, const float *ptr, bool transpose) {
         int loc = get_uniform_location(name);
 

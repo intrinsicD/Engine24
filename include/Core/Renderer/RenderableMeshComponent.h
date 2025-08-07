@@ -9,7 +9,6 @@
 #include "AssetHandle.h"
 
 namespace Bcg {
-
     struct RenderableMeshComponent {
         // Handle to the Mesh asset, which may contain one or more sub-meshes.
         AssetHandle mesh_handle;
