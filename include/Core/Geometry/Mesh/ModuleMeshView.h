@@ -13,7 +13,9 @@
 namespace Bcg {
     class ModuleMeshView : public GuiModule {
     public:
-        ModuleMeshView() : GuiModule("MeshView") {}
+        ModuleMeshView();
+
+        ~ModuleMeshView() override = default;
 
         void activate() override;
 

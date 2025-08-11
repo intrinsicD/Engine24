@@ -11,7 +11,6 @@
 struct GLFWwindow;
 
 namespace Bcg {
-
     class ModuleGraphics : public Module {
     public:
         ModuleGraphics();

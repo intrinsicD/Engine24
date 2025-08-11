@@ -35,6 +35,8 @@ namespace Bcg {
         openGlState.clear();
     }
 
+    ModuleMeshView::ModuleMeshView() : GuiModule("MeshView") {}
+
     void ModuleMeshView::activate() {
         if (base_activate()) {
             Engine::Dispatcher().sink<Events::Entity::Destroy>().connect<&on_destroy>();
@@ -57,7 +59,10 @@ namespace Bcg {
 
     void ModuleMeshView::render_menu() {
         if (ImGui::BeginMenu("Rendering")) {
-            ImGui::MenuItem("MeshView", nullptr, &gui_enabled);
+            if(ImGui::BeginMenu("Views")) {
+                ImGui::MenuItem("Mesh", nullptr, &gui_enabled);
+                ImGui::EndMenu();
+            }
             ImGui::EndMenu();
         }
     }
@@ -65,7 +70,7 @@ namespace Bcg {
     void ModuleMeshView::render_gui() {
         if (gui_enabled) {
             auto &picked = Engine::Context().get<Picked>();
-            if (ImGui::Begin("MeshView", &gui_enabled, ImGuiWindowFlags_AlwaysAutoResize)) {
+            if (ImGui::Begin("Views - Mesh", &gui_enabled, ImGuiWindowFlags_AlwaysAutoResize)) {
                 show_gui(picked.entity.id);
             }
             ImGui::End();

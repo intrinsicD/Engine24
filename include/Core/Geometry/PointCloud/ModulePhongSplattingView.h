@@ -12,7 +12,9 @@
 namespace Bcg {
     class ModulePhongSplattingView : public Module {
     public:
-        ModulePhongSplattingView() : Module("ModulePhongSplattingView") {}
+        ModulePhongSplattingView();
+
+        ~ModulePhongSplattingView() override = default;
 
         void activate() override;
 

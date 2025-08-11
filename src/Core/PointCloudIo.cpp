@@ -54,9 +54,9 @@ namespace Bcg {
         auto intensities = pc.vertex_property<ScalarType>("v:intensity", 1);
 
         pc.vprops_.resize(rows);
-        Map(pc.positions()) = mapped.block(0, 0, rows, 3);
+        Map(pc.positions()) = mapped.block(0, 0, rows, 3).transpose();
         Map(intensities.vector()) = mapped.block(0, 3, rows, 1);
-        Map(colors.vector()) = mapped.block(0, 4, rows, 3);
+        Map(colors.vector()) = mapped.block(0, 4, rows, 3).transpose();
         return true;
     }
 

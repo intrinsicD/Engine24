@@ -56,7 +56,7 @@ namespace Bcg {
     static bool show_gui = false;
 
     void PluginKDTree::render_menu() {
-        if (ImGui::BeginMenu("Menu")) {
+        if (ImGui::BeginMenu("Module")) {
             ImGui::MenuItem(name.c_str(), nullptr, &show_gui);
             ImGui::EndMenu();
         }

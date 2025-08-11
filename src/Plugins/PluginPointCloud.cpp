@@ -89,7 +89,7 @@ namespace Bcg {
     static bool show_pc_gui = false;
 
     void PluginPointCloud::render_menu() {
-        if (ImGui::BeginMenu("Entity")) {
+        if (ImGui::BeginMenu("Module")) {
             if (ImGui::BeginMenu("PointCloud")) {
                 if (ImGui::MenuItem("Load PointCloud")) {
                     IGFD::FileDialogConfig config;
@@ -160,10 +160,9 @@ namespace Bcg {
             h_aabb->min -= c;
             h_aabb->max -= c;
 
-
             auto &transform = Engine::require<TransformComponent>(entity_id);
 
-            Setup<SphereView>(entity_id).execute();
+            ModuleSphereView::setup(entity_id);
 
             std::string message = name + ": ";
             message += " #v: " + std::to_string(pc.n_vertices());

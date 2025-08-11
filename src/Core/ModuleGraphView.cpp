@@ -31,7 +31,10 @@ namespace Bcg {
 
     void ModuleGraphView::render_menu() {
         if (ImGui::BeginMenu("Rendering")) {
-            ImGui::MenuItem("GraphView", nullptr, &gui_enabled);
+            if(ImGui::BeginMenu("Views")) {
+                ImGui::MenuItem("Graph", nullptr, &gui_enabled);
+                ImGui::EndMenu();
+            }
             ImGui::EndMenu();
         }
     }
@@ -39,7 +42,7 @@ namespace Bcg {
     void ModuleGraphView::render_gui() {
         if (gui_enabled) {
             auto &picked = Engine::Context().get<Picked>();
-            if (ImGui::Begin("GraphView", &gui_enabled, ImGuiWindowFlags_AlwaysAutoResize)) {
+            if (ImGui::Begin("Views - Graph", &gui_enabled, ImGuiWindowFlags_AlwaysAutoResize)) {
                 show_gui(picked.entity.id);
             }
             ImGui::End();

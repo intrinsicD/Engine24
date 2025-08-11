@@ -132,7 +132,7 @@ namespace Bcg {
     static bool show_input_gui;
 
     void PluginInput::render_menu() {
-        if (ImGui::BeginMenu("Input")) {
+        if (ImGui::BeginMenu("Module")) {
             ImGui::MenuItem("Input", nullptr, &show_input_gui);
             ImGui::EndMenu();
         }
@@ -140,7 +140,7 @@ namespace Bcg {
 
     void PluginInput::render_gui() {
         if (show_input_gui) {
-            if (ImGui::Begin("Input", &show_input_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
+            if (ImGui::Begin("Module", &show_input_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
                 ImGui::Text("Keyboard:");
                 ImGui::Separator();
                 Gui::Show(Engine::Context().get<Keyboard>());

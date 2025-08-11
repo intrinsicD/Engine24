@@ -22,7 +22,7 @@ namespace Bcg {
             : GuiModule("Transforms"), m_registry(registry), m_renderer(renderer), m_entity_selection(entity_selection) {}
 
     void GuiModuleTransforms::render_menu() {
-        if (ImGui::BeginMenu("Engine")) {
+        if (ImGui::BeginMenu("Module")) {
             ImGui::MenuItem(name.c_str(), nullptr, &m_is_window_open);
             ImGui::EndMenu();
         }

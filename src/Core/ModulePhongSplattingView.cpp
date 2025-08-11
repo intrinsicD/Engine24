@@ -15,6 +15,8 @@
 #include "ModuleGraphics.h"
 
 namespace Bcg {
+    ModulePhongSplattingView::ModulePhongSplattingView() : Module("ModulePhongSplattingView") {}
+
     void ModulePhongSplattingView::activate() {
         if (base_activate()) {
         }
@@ -29,7 +31,10 @@ namespace Bcg {
 
     void ModulePhongSplattingView::render_menu() {
         if (ImGui::BeginMenu("Rendering")) {
-            ImGui::MenuItem("PhongSplattingView", nullptr, &gui_enabled);
+            if (ImGui::BeginMenu("Views")) {
+                ImGui::MenuItem("PhongSplatting", nullptr, &gui_enabled);
+                ImGui::EndMenu();
+            }
             ImGui::EndMenu();
         }
     }
@@ -37,7 +42,7 @@ namespace Bcg {
     void ModulePhongSplattingView::render_gui() {
         if (gui_enabled) {
             auto &picked = Engine::Context().get<Picked>();
-            if (ImGui::Begin("PhongSplattingView", &gui_enabled, ImGuiWindowFlags_AlwaysAutoResize)) {
+            if (ImGui::Begin("Views - PhongSplatting", &gui_enabled, ImGuiWindowFlags_AlwaysAutoResize)) {
                 show_gui(picked.entity.id);
             }
             ImGui::End();
@@ -108,7 +113,8 @@ namespace Bcg {
                 }
                 if (Gui::Combo(view.normal.shader_name.c_str(), curr_normal, properties_3d)) {
                     set_normal(entity_id, properties_3d[curr_normal.first]);
-                } {
+                }
+                {
                     auto properties_colors = vertices->properties({1, 3});
                     properties_colors.emplace_back("uniform_color");
                     std::pair<int, std::string> curr_color = {-1, view.color.bound_buffer_name};
@@ -136,7 +142,8 @@ namespace Bcg {
                         ImGui::InputFloat("min_color", &view.min_color);
                         ImGui::InputFloat("max_color", &view.max_color);
                     }
-                } {
+                }
+                {
                     auto properties_1d = vertices->properties({1});
                     properties_1d.emplace_back("uniform_radius");
                     std::pair<int, std::string> curr_radius = {-1, view.radius.bound_buffer_name};
@@ -390,7 +397,8 @@ namespace Bcg {
             auto v_colorf3 = vertices->get_or_add<Vector<float, 3> >(property_name_3d);
             t = (t.array() - t.minCoeff()) / (t.maxCoeff() - t.minCoeff());
             Map(v_colorf3.vector()) = t * Eigen::Vector<float, 3>::Unit(0).transpose() + (1.0f - t.array()).matrix() *
-                                      Eigen::Vector<float, 3>::Unit(1).transpose();
+                                                                                         Eigen::Vector<float, 3>::Unit(
+                                                                                                 1).transpose();
             set_color(entity_id, property_name_3d);
         }
     }

@@ -17,7 +17,7 @@ namespace Bcg {
             : GuiModule("Hierarchy"), m_registry(registry), m_entity_selection(entity_selection) {}
 
     void GuiModuleHierarchy::render_menu() {
-        if (ImGui::BeginMenu("Engine")) {
+        if (ImGui::BeginMenu("Module")) {
             ImGui::MenuItem(name.c_str(), nullptr, &m_is_window_open);
             ImGui::EndMenu();
         }

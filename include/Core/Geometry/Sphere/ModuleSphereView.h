@@ -45,8 +45,6 @@ namespace Bcg {
         static void set_uniform_color(entt::entity entity_id, const Vector<float, 3> &color);
 
         static void set_indices(entt::entity entity_id, const std::vector<unsigned int> &indices);
-
-
     };
 }
 

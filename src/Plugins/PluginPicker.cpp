@@ -119,7 +119,7 @@ namespace Bcg {
     static bool gui_enabled = false;
 
     void PluginPicker::render_menu() {
-        if (ImGui::BeginMenu("Menu")) {
+        if (ImGui::BeginMenu("Module")) {
             ImGui::MenuItem(name.c_str(), nullptr, &gui_enabled);
             ImGui::EndMenu();
         }

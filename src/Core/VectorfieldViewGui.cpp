@@ -17,7 +17,7 @@ namespace Bcg::Gui {
 
     void ShowVectorfieldViews(entt::entity entity_id) {
         if (!Engine::valid(entity_id)) return;
-        ImGui::PushID("VectorfieldViews");
+        ImGui::PushID("Views - Vectorfield");
         auto *vertices = GetPrimitives(entity_id).vertices();
         auto properties_3d = vertices->properties({3});
         std::pair<int, std::string> curr = {0, ""};

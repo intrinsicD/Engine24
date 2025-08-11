@@ -114,20 +114,28 @@ namespace Bcg {
     bool show_selection_mode_gui = false;
 
     void PluginSelection::render_menu() {
-        if (ImGui::BeginMenu("Entity")) {
-            ImGui::MenuItem("Selection", nullptr, &show_selection_gui);
-            ImGui::MenuItem("Selection Modes", nullptr, &show_selection_mode_gui);
+        if (ImGui::BeginMenu("Module")) {
+            if (ImGui::BeginMenu("Selection")) {
+                ImGui::MenuItem("Current", nullptr, &show_selection_gui);
+                ImGui::MenuItem("Modes", nullptr, &show_selection_mode_gui);
+                ImGui::EndMenu();
+            }
             ImGui::EndMenu();
         }
     }
 
     static const char *ModeLabel(SelectionMode mode) {
         switch (mode) {
-            case SelectionMode::None: return "None";
-            case SelectionMode::Entity: return "Entity";
-            case SelectionMode::Vertex: return "Vertex";
-            case SelectionMode::Edge: return "Edge";
-            case SelectionMode::Face: return "Face";
+            case SelectionMode::None:
+                return "None";
+            case SelectionMode::Entity:
+                return "Entity";
+            case SelectionMode::Vertex:
+                return "Vertex";
+            case SelectionMode::Edge:
+                return "Edge";
+            case SelectionMode::Face:
+                return "Face";
         }
         return "Unknown";
     }

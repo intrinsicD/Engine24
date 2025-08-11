@@ -241,7 +241,7 @@ namespace Bcg {
     }
 
     void ModuleGraphics::render_menu() {
-        if (ImGui::BeginMenu("Graphics")) {
+        if (ImGui::BeginMenu("Rendering")) {
             ImGui::MenuItem("Window", nullptr, &global_window.show_window_gui);
             ImGui::EndMenu();
         }

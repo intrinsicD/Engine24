@@ -50,7 +50,10 @@ namespace Bcg {
 
     void ModuleSphereView::render_menu() {
         if (ImGui::BeginMenu("Rendering")) {
-            ImGui::MenuItem("SphereView", nullptr, &gui_enabled);
+            if(ImGui::BeginMenu("Views")) {
+                ImGui::MenuItem("Sphere", nullptr, &gui_enabled);
+                ImGui::EndMenu();
+            }
             ImGui::EndMenu();
         }
     }
@@ -58,7 +61,7 @@ namespace Bcg {
     void ModuleSphereView::render_gui() {
         if (gui_enabled) {
             auto &picked = Engine::Context().get<Picked>();
-            if (ImGui::Begin("SphereView", &gui_enabled, ImGuiWindowFlags_AlwaysAutoResize)) {
+            if (ImGui::Begin("Views - Sphere", &gui_enabled, ImGuiWindowFlags_AlwaysAutoResize)) {
                 show_gui(picked.entity.id);
             }
             ImGui::End();

@@ -11,7 +11,7 @@
 namespace Bcg{
     class GuiModuleRendererSettings : public GuiModule{
     public:
-        GuiModuleRendererSettings(Renderer &renderer);
+        explicit GuiModuleRendererSettings(Renderer &renderer);
 
         ~GuiModuleRendererSettings() = default;
 

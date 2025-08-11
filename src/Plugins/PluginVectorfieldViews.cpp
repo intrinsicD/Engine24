@@ -39,7 +39,10 @@ namespace Bcg {
 
     void PluginViewVectorfields::render_menu() {
         if (ImGui::BeginMenu("Rendering")) {
-            ImGui::MenuItem("VectorfieldViews", nullptr, &show_gui);
+            if(ImGui::BeginMenu("Views")){
+                ImGui::MenuItem("Vectorfield", nullptr, &show_gui);
+                ImGui::EndMenu();
+            }
             ImGui::EndMenu();
         }
     }
@@ -47,7 +50,7 @@ namespace Bcg {
     void PluginViewVectorfields::render_gui() {
         if (show_gui) {
             auto &picked = Engine::Context().get<Picked>();
-            if (ImGui::Begin("VectorfieldViews", &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
+            if (ImGui::Begin("Views - Vectorfield", &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
                 Gui::ShowVectorfieldViews(picked.entity.id);
             }
             ImGui::End();

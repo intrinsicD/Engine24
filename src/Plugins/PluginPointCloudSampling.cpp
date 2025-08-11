@@ -35,7 +35,7 @@ namespace Bcg {
     static bool show_gui = false;
 
     void PluginPointCloudSampling::render_menu() {
-        if (ImGui::BeginMenu("Entity")) {
+        if (ImGui::BeginMenu("Module")) {
             if (ImGui::BeginMenu("PointCloud")) {
                 ImGui::MenuItem("Sampling", nullptr, &show_gui);
                 ImGui::EndMenu();

@@ -47,7 +47,7 @@ namespace Bcg {
     static bool show_gui = false;
 
     void PluginFrameTimer::render_menu() {
-        if (ImGui::BeginMenu("Graphics")) {
+        if (ImGui::BeginMenu("Rendering")) {
             ImGui::MenuItem(name.c_str(), nullptr, &show_gui);
             ImGui::EndMenu();
         }

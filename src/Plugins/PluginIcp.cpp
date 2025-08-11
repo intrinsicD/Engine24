@@ -38,15 +38,18 @@ namespace Bcg {
     static bool show_gui = false;
 
     void PluginIcp::render_menu() {
-        if (ImGui::BeginMenu("Registration")) {
-            ImGui::MenuItem("ICP", nullptr, &show_gui);
+        if (ImGui::BeginMenu("Module")) {
+            if(ImGui::BeginMenu("Registration")) {
+                ImGui::MenuItem(name.c_str(), nullptr, &show_gui);
+                ImGui::EndMenu();
+            }
             ImGui::EndMenu();
         }
     }
 
     void PluginIcp::render_gui() {
         if (show_gui) {
-            if (ImGui::Begin("ICP", &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
+            if (ImGui::Begin(name.c_str(), &show_gui, ImGuiWindowFlags_AlwaysAutoResize)) {
                 static std::pair<entt::entity, std::string> source;
                 static std::pair<entt::entity, std::string> target;
                 bool changed = Gui::ComboEntities("Source", source);

@@ -136,7 +136,7 @@ namespace Bcg {
 
     std::string ReadTextFile(const std::string &filename);
 
-    std::vector<float> ParseNumbers(const std::string &s, unsigned int &num_lines, const char *skip_chars = nullptr);
+    std::vector<float> ParseNumbers(const std::string &s, unsigned int &num_lines, const char *skip_chars = nullptr, const char *delimiters = " \t\r;,");
 
 }
 

@@ -11,8 +11,8 @@ namespace Bcg {
     }
 
     void GuiModuleRendererSettings::render_menu() {
-        if (ImGui::BeginMenu("Engine")) {
-            ImGui::MenuItem(name.c_str(), nullptr, &m_is_window_open);
+        if (ImGui::BeginMenu("Rendering")) {
+            ImGui::MenuItem("Settings", nullptr, &m_is_window_open);
             ImGui::EndMenu();
         }
     }

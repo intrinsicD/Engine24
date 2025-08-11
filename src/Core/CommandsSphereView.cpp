@@ -6,8 +6,6 @@
 #include "ModuleSphereView.h"
 
 namespace Bcg::Commands {
-
-
     void Commands::Setup<SphereView>::execute() const {
         ModuleSphereView::setup(entity_id);
     }
