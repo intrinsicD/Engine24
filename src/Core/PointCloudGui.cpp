@@ -10,6 +10,7 @@
 #include "Engine.h"
 #include "PluginPointCloud.h"
 #include "GetPrimitives.h"
+#include "CommandsPointCloud.h"
 
 namespace Bcg::Gui {
     void ShowLoadPointCloud() {

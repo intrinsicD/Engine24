@@ -120,7 +120,7 @@ namespace Bcg {
         //! \return end iterator for vertices
         [[nodiscard]] VertexIterator vertices_end() const {
             return {Vertex(static_cast<IndexType>(vertices_size())),
-                                  this};
+                    this};
         }
 
         //! \return vertex container for C++11 range-based for-loops
@@ -136,6 +136,8 @@ namespace Bcg {
 
         //! \return vector of point positions
         std::vector<PointType> &positions() { return vpoint_.vector(); }
+
+        const std::vector<PointType> &positions() const { return vpoint_.vector(); }
 
         Vertex new_vertex() {
             if (vertices_size() == BCG_MAX_INDEX - 1) {

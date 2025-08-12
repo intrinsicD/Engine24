@@ -16,6 +16,7 @@
 #include "GuiModuleCamera.h"
 #include "ModulePhongSplattingView.h"
 #include "ModuleGraphView.h"
+#include "ModulePointCloud.h"
 #include "TimeAccumulator.h"
 #include "Timer.h"
 #include "FileWatcher.h"
@@ -53,6 +54,7 @@ namespace Bcg {
             auto &modules = Engine::Context().emplace<Modules>();
             //modules.add(std::make_unique<ModuleGraphics>());
             modules.add(std::make_unique<ModuleMesh>());
+            modules.add(std::make_unique<ModulePointCloud>());
             modules.add(std::make_unique<ModuleAABB>());
             modules.add(std::make_unique<ModuleCamera>());
             //Rendering Modules

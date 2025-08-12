@@ -5,12 +5,15 @@
 #include "GetPrimitives.h"
 #include "Engine.h"
 #include "ModuleMesh.h"
-#include "PointCloud.h"
+#include "ModulePointCloud.h"
 
 namespace Bcg {
     Vertices *GetPrimitives::vertices() const {
         if(Engine::has<MeshHandle>(entity_id)){
             return &Engine::State().get<MeshHandle>(entity_id)->vprops_;
+        }
+        if(Engine::has<PointCloudHandle>(entity_id)){
+            return &Engine::State().get<PointCloudHandle>(entity_id)->vprops_;
         }
         if (Engine::has<SurfaceMesh>(entity_id)) {
             return &Engine::State().get<SurfaceMesh>(entity_id).vprops_;

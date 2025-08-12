@@ -5,6 +5,7 @@ target_sources(Engine24 PRIVATE
         CommandsMesh.cpp
         CommandsMeshView.cpp
         CommandsSphereView.cpp
+        CommandsPointCloud.cpp
         Colormap1D.cpp
         Color.cpp
         CoordinateSystems.cpp
@@ -39,11 +40,13 @@ target_sources(Engine24 PRIVATE
         ModuleSphereView.cpp
         ModulePhongSplattingView.cpp
         ModuleGraphView.cpp
+        ModulePointCloud.cpp
         Picker.cpp
         PickerSystem.cpp
         Plane.cpp
         Plugins.cpp
         PointCloud.cpp
+        PointCloudResources.cpp
         PointCloudInterface.cpp
         PointCloudIo.cpp
         PointCloudCompute.cpp

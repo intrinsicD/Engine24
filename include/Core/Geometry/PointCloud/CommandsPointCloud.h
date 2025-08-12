@@ -1,0 +1,118 @@
+//
+// Created by alex on 12.08.25.
+//
+
+#ifndef ENGINE24_COMMANDSPOINTCLOUD_H
+#define ENGINE24_COMMANDSPOINTCLOUD_H
+
+#include "Command.h"
+#include "PointCloud.h"
+
+namespace Bcg::Commands{
+    template<>
+    struct Load<PointCloud> : public AbstractCommand {
+        explicit Load(entt::entity entity_id, const std::string &filepath) : AbstractCommand(
+                "Load<PointCloud>"),
+                                                                             entity_id(entity_id),
+                                                                             filepath(filepath) {}
+
+        void execute() const override;
+
+        entt::entity entity_id;
+        std::string filepath;
+    };
+
+    template<>
+    struct Setup<PointCloud> : public AbstractCommand {
+        explicit Setup<PointCloud>(entt::entity entity_id) : AbstractCommand("Setup<PointCloud>"),
+                                                             entity_id(entity_id) {}
+
+        void execute() const override;
+
+        entt::entity entity_id;
+    };
+
+    template<>
+    struct Cleanup<PointCloud> : public AbstractCommand {
+        explicit Cleanup<PointCloud>(entt::entity entity_id) : AbstractCommand("Cleanup<PointCloud>"),
+                                                               entity_id(entity_id) {}
+
+        void execute() const override;
+
+        entt::entity entity_id;
+    };
+
+    struct ComputePointCloudLocalPcasKnn : public AbstractCommand {
+        explicit ComputePointCloudLocalPcasKnn(entt::entity entity_id, int num_closest) : AbstractCommand(
+                "ComputePointCloudLocalPcasKnn"),
+                                                                                          entity_id(entity_id),
+                                                                                          num_closest(
+                                                                                                  num_closest) {}
+
+        void execute() const override;
+
+        entt::entity entity_id;
+        int num_closest;
+    };
+
+    struct ComputeKMeans : public AbstractCommand {
+        explicit ComputeKMeans(entt::entity entity_id, int k, unsigned int iterations = 100) : AbstractCommand(
+                "ComputeKMeans"),
+                                                                                               entity_id(entity_id),
+                                                                                               k(k),
+                                                                                               iterations(
+                                                                                                       iterations) {}
+
+        void execute() const override;
+
+        entt::entity entity_id;
+        int k;
+        unsigned int iterations;
+    };
+
+    struct ComputeHierarchicalKMeans : public AbstractCommand {
+        explicit ComputeHierarchicalKMeans(entt::entity entity_id, int k, unsigned int iterations = 100)
+                : AbstractCommand(
+                "ComputeHierarchicalKMeans"),
+                  entity_id(entity_id),
+                  k(k),
+                  iterations(
+                          iterations) {}
+
+        void execute() const override;
+
+        entt::entity entity_id;
+        int k;
+        unsigned int iterations;
+    };
+
+    struct ComputeLocalGaussians : public AbstractCommand {
+        explicit ComputeLocalGaussians(entt::entity entity_id, int num_closest) : AbstractCommand(
+                "ComputeLocalGaussians"),
+                                                                                  entity_id(entity_id),
+                                                                                  num_closest(
+                                                                                          num_closest) {}
+
+        void execute() const override;
+
+        entt::entity entity_id;
+        int num_closest;
+    };
+
+    struct ComputeHem : public AbstractCommand {
+        explicit ComputeHem(entt::entity entity_id, int levels, int num_closest) : AbstractCommand(
+                "ComputeHem"),
+                                                                                   entity_id(entity_id),
+                                                                                   levels(levels),
+                                                                                   num_closest(
+                                                                                           num_closest) {}
+
+        void execute() const override;
+
+        entt::entity entity_id;
+        int levels;
+        int num_closest;
+    };
+}
+
+#endif //ENGINE24_COMMANDSPOINTCLOUD_H
