@@ -18,6 +18,7 @@
 #include "Engine.h"
 #include "ResourcesPointCloud.h"
 #include "PointCloudIo.h"
+#include "CommandsPointCloud.h"
 #include "Picker.h"
 
 namespace Bcg {
@@ -110,7 +111,7 @@ namespace Bcg {
         ModuleAABB::center_and_scale_by_aabb(entity_id, h_pc->vpoint_.name());
         ModuleCamera::center_camera_at_distance(h_aabb->center(), glm::compMax(h_aabb->diagonal()));
 
-        //ComputeSurfacePointCloudVertexNormals(entity_id);
+        Commands::ComputePointCloudLocalPcasKnn(entity_id, 32).execute();
         //TODO add ComputeSurfacePointCloudVertexNormals etc.
         ModuleSphereView::setup(entity_id);
         ModulePhongSplattingView::setup(entity_id);

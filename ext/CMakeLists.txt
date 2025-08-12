@@ -28,6 +28,12 @@ target_link_libraries(Engine24 PUBLIC fmt::fmt)
 add_subdirectory(slang)
 target_link_libraries(Engine24 PUBLIC slang)
 
+install(TARGETS eigen EXPORT Eigen_export)
+install(EXPORT Eigen_export DESTINATION lib/cmake/eigen3)
+
+add_subdirectory(spectra)
+target_link_libraries(Engine24 PUBLIC Spectra)
+
 target_sources(Engine24 PRIVATE glad/src/gl.c)
 
 target_include_directories(Engine24 PUBLIC

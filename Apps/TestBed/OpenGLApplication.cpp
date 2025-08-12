@@ -24,6 +24,7 @@
 #include "TransformSystem.h"
 #include "GuiModuleTransforms.h"
 #include "GuiModuleHierarchy.h"
+#include "GuiModuleMeshLaplacian.h"
 #include "AssetManager.h"
 
 
@@ -68,6 +69,7 @@ namespace Bcg {
             gui_modules.add(std::make_unique<GuiModuleRendererSettings>(*renderer));
             gui_modules.add(std::make_unique<GuiModuleTransforms>(engine.state, *renderer, entity_selection));
             gui_modules.add(std::make_unique<GuiModuleHierarchy>(engine.state, entity_selection));
+            gui_modules.add(std::make_unique<GuiModuleMeshLaplacian>(engine.state));
 
             Plugins::init();
             Plugins::activate_all();

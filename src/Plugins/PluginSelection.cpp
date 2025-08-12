@@ -44,6 +44,7 @@ namespace Bcg {
                 }
                 case SelectionMode::Face: {
                 }
+                default:{}
             }
         }
     }

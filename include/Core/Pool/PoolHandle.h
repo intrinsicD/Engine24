@@ -131,6 +131,15 @@ namespace Bcg {
             return &pool->objects[idx];
         }
 
+        T *ptr() {
+            return &pool->objects[idx];
+        }
+
+        const T *ptr() const {
+            return &pool->objects[idx];
+        }
+
+
         bool operator==(const PoolHandle &other) const {
             return pool == other.pool && idx == other.idx;
         }

@@ -13,6 +13,7 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 #include <ImGuizmo/ImGuizmo.h>
+#include <implot/implot.h>
 
 #include "Engine.h"
 #include "Events/EventsGui.h"
@@ -26,6 +27,7 @@ namespace Bcg {
     Renderer::~Renderer() {
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
+        ImPlot::DestroyContext();
         ImGui::DestroyContext();
     }
 
@@ -119,6 +121,7 @@ namespace Bcg {
     void Renderer::init_imgui() {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
+        ImPlot::CreateContext();
         ImGuiIO &io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;

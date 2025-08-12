@@ -109,7 +109,6 @@ namespace Bcg::Commands{
         if (!Engine::has<KDTreeCpu>(entity_id)) {
             auto &kdtree = Engine::require<KDTreeCpu>(entity_id);
             kdtree.build(positions.vector());
-            return;
         }
         auto &kdtree = Engine::require<KDTreeCpu>(entity_id);
 

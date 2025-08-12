@@ -22,6 +22,7 @@ target_sources(Engine24 PRIVATE
         GuiModuleRendererSettings.cpp
         GuiModuleTransforms.cpp
         GuiModuleHierarchy.cpp
+        GuiModuleMeshLaplacian.cpp
         GLFWUtils.cpp
         GLFWContext.cpp
         HandleGlfwKeyEvents.cpp
