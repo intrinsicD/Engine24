@@ -8,17 +8,35 @@
 #include "PointCloud.h"
 
 namespace Bcg {
-    class GaussianMixture : public PointCloud {
+    class GaussianMixture {
     public:
+        Vertices vprops_;
         VertexProperty<Vector<float, 3>> means;
         VertexProperty<Matrix<float, 3, 3>> covariances;
         VertexProperty<float> weights;
 
-        GaussianMixture() : PointCloud() {
-            means = add_vertex_property<Vector<float, 3>>("means");
-            covariances = add_vertex_property<Matrix<float, 3, 3>>("covariances");
-            weights = add_vertex_property<float>("weights");
+        explicit GaussianMixture(PointCloud &pc) {
+            vprops_ = pc.vprops_;
         }
+
+        GaussianMixture() = default;
+
+        void set_means(const std::vector<PointType> &means_data) {
+            means = vprops_.vertex_property<Vector<float, 3>>("means");
+            means.vector() = means_data;
+        }
+
+        void set_covs(const std::vector<Matrix<float, 3, 3>> &covs_data) {
+            covariances = vprops_.vertex_property<Matrix<float, 3, 3>>("covariances");
+            covariances.vector() = covs_data;
+        }
+
+        void set_weights(const std::vector<float> &weights_data) {
+            weights = vprops_.vertex_property<float>("weights");
+            weights.vector() = weights_data;
+        }
+
+        void fit(const std::vector<PointType> &means_data, size_t num_gaussians);
 
         float pdf(const Vector<float, 3> &x) const;
 
@@ -26,39 +44,11 @@ namespace Bcg {
 
         Matrix<float, 3, 3> hessian(const Vector<float, 3> &x) const;
 
-        Vector<float, 3> normal(const Vector<float, 3> &x) const{
-            Vector<float, 3> grad = gradient(x);
-            float norm = length(grad);
-            if (norm > 0) {
-                return grad / norm;
-            } else {
-                return Vector<float, 3>(0.0f);
-            }
-        }
+        Vector<float, 3> normal(const Vector<float, 3> &x) const;
 
-        Matrix<float, 3, 3> ortho_projector(const Vector<float, 3> &x) const {
-            Vector<float, 3> n = normal(x);
-            return Matrix<float, 3, 3>(1.0f) - outerProduct(n, n);
-        }
+        Matrix<float, 3, 3> ortho_projector(const Vector<float, 3> &x) const;
 
-        Matrix<float, 3, 3> second_fundamental_form(const Vector<float, 3> &x) const {
-            Vector<float, 3> grad = gradient(x);
-            Matrix<float, 3, 3> hess = hessian(x);
-            Matrix<float, 3, 3> p = ortho_projector(x);
-            return p * hess * p / length(grad);
-        }
-
-        Vertex new_gaussian() {
-            return new_vertex();
-        }
-
-        Vertex add_gaussian(const Vector<float, 3> &mean, const Matrix<float, 3, 3> &covariance, float weight = 1.0f) {
-            Vertex v = new_gaussian();
-            means[v] = mean;
-            covariances[v] = covariance;
-            weights[v] = weight;
-            return v;
-        }
+        Matrix<float, 3, 3> second_fundamental_form(const Vector<float, 3> &x) const;
     };
 }
 

@@ -77,6 +77,7 @@ namespace Bcg {
                     PluginSelection::mark_selected_faces(entity_id, Vector<float, 3>(1.0f, 0.0f, 0.0f));
                     break;
                 }
+                default:{}
             }
         }
     }
