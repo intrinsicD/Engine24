@@ -6,32 +6,48 @@ target_include_directories(Engine24 SYSTEM PUBLIC lbvh)
 target_include_directories(Engine24 SYSTEM PUBLIC happly)
 target_include_directories(Engine24 SYSTEM PUBLIC glm)
 
-set(GLFW_BUILD_WAYLAND OFF)
-add_subdirectory(glfw)
-target_link_libraries(Engine24 PRIVATE glfw)
-
-add_subdirectory(fast_float)
+if (NOT TARGET fast_float)
+    add_subdirectory(fast_float)
+endif ()
 target_link_libraries(Engine24 PUBLIC fast_float)
 
-add_subdirectory(eigen)
+if (NOT TARGET Eigen3::Eigen)
+    add_subdirectory(eigen)
+endif ()
 target_link_libraries(Engine24 PUBLIC Eigen3::Eigen)
 
-add_subdirectory(entt)
+if (NOT TARGET EnTT::EnTT)
+    add_subdirectory(entt)
+endif ()
 target_link_libraries(Engine24 PUBLIC EnTT::EnTT)
 
-add_subdirectory(tinyobjloader)
+if (NOT TARGET tinyobjloader)
+    add_subdirectory(tinyobjloader)
+endif ()
 target_link_libraries(Engine24 PRIVATE tinyobjloader)
 
-add_subdirectory(fmt)
+if (NOT TARGET fmt::fmt)
+    add_subdirectory(fmt)
+endif ()
 target_link_libraries(Engine24 PUBLIC fmt::fmt)
 
-add_subdirectory(slang)
+if (NOT TARGET slang)
+    add_subdirectory(slang)
+endif ()
 target_link_libraries(Engine24 PUBLIC slang)
+
+if (NOT TARGET glfw)
+    set(GLFW_BUILD_WAYLAND OFF)
+    add_subdirectory(glfw)
+endif ()
+target_link_libraries(Engine24 PRIVATE glfw)
 
 install(TARGETS eigen EXPORT Eigen_export)
 install(EXPORT Eigen_export DESTINATION lib/cmake/eigen3)
 
-add_subdirectory(spectra)
+if (NOT TARGET spectra)
+    add_subdirectory(spectra)
+endif ()
 target_link_libraries(Engine24 PUBLIC Spectra)
 
 target_sources(Engine24 PRIVATE glad/src/gl.c)
@@ -78,14 +94,16 @@ add_library(imguizmo STATIC
 target_include_directories(imguizmo PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/imgui)
 
-add_library(implot STATIC
-        implot/implot.cpp
-        implot/implot_demo.cpp
-        implot/implot_items.cpp
-)
+if (NOT TARGET implot)
+    add_library(implot STATIC
+            implot/implot.cpp
+            implot/implot_demo.cpp
+            implot/implot_items.cpp
+    )
 
-target_include_directories(implot PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/imgui)
+    target_include_directories(implot PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/imgui)
+endif ()
 
 target_link_libraries(Engine24 PUBLIC bcg_imgui ImGuiFileDialog imguizmo implot)
 
