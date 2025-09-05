@@ -14,7 +14,7 @@ namespace Bcg {
 
         Vertices *vertices() const;
 
-        HalfEdges *halfedges() const;
+        Halfedges *halfedges() const;
 
         Edges *edges() const;
 

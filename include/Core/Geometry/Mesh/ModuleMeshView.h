@@ -33,7 +33,7 @@ namespace Bcg {
 
         static void cleanup(entt::entity entity_id);
 
-        static void set_positions(entt::entity entity_id, const std::string &property_name = "v:position");
+        static void set_positions(entt::entity entity_id, const std::string &property_name = "v:point");
 
         static void set_normals(entt::entity entity_id, const std::string &property_name = "v:normal");
 

@@ -55,7 +55,7 @@ namespace Bcg {
             if (!kdtree) {
                 auto *vertices = GetPrimitives(entity_id).vertices();
                 if (vertices) {
-                    auto positions = vertices->get<Vector<float, 3> >("v:position");
+                    auto positions = vertices->get<Vector<float, 3> >("v:point");
                     kdtree.build(positions.vector());
                 } else {
                     Log::Error("PluginPicker::pick: Entity {} does not have vertices.", entity_id);

@@ -100,7 +100,7 @@ namespace Bcg::Commands{
             return;
         }
 
-        auto positions = vertices->get<Vector<float, 3>>("v:position");
+        auto positions = vertices->get<Vector<float, 3>>("v:point");
         if (!positions) {
             Log::Warn(name + " Entity does not have positions property. Abort Command!");
             return;
@@ -147,7 +147,7 @@ namespace Bcg::Commands{
             return;
         }
 
-        auto positions = vertices->get<Vector<float, 3>>("v:position");
+        auto positions = vertices->get<Vector<float, 3>>("v:point");
         if (!positions) {
             Log::Warn(name + " Entity does not have positions property. Abort Command!");
             return;
@@ -173,7 +173,7 @@ namespace Bcg::Commands{
             return;
         }
 
-        auto positions = vertices->get<Vector<float, 3>>("v:position");
+        auto positions = vertices->get<Vector<float, 3>>("v:point");
         if (!positions) {
             Log::Warn(name + " Entity does not have positions property. Abort Command!");
             return;
@@ -199,7 +199,7 @@ namespace Bcg::Commands{
             return;
         }
 
-        auto positions = vertices->get<Vector<float, 3>>("v:position");
+        auto positions = vertices->get<Vector<float, 3>>("v:point");
         if (!positions) {
             Log::Warn(name + " Entity does not have positions property. Abort Command!");
             return;
@@ -233,7 +233,7 @@ namespace Bcg::Commands{
             return;
         }
 
-        auto positions = vertices->get<Vector<float, 3>>("v:position");
+        auto positions = vertices->get<Vector<float, 3>>("v:point");
         if (!positions) {
             Log::Warn(name + " Entity does not have positions property. Abort Command!");
             return;

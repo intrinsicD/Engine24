@@ -203,7 +203,7 @@ namespace Bcg {
         view.program = program;
 
         view.vao.create();
-        auto positions = vertices->get<Vector<float, 3>>("v:position");
+        auto positions = vertices->get<Vector<float, 3>>("v:point");
         set_positions(entity_id, positions.name());
         auto normals = vertices->get<Vector<float, 3>>("v:normal");
         set_normals(entity_id, normals.name());

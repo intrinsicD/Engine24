@@ -6,7 +6,7 @@
 
 namespace Bcg{
     Graph::Graph(){
-        vpoint_ = add_vertex_property<PointType>("v:position");
+        vpoint_ = add_vertex_property<PointType>("v:point");
         vconn_ = add_vertex_property<Halfedge>("v:connectivity");
         hconn_ = add_halfedge_property<HalfedgeConnectivity>("h:connectivity");
 
@@ -22,7 +22,7 @@ namespace Bcg{
             eprops_ = rhs.eprops_;
 
             // property handles contain pointers, have to be reassigned
-            vpoint_ = vertex_property<PointType>("v:position");
+            vpoint_ = vertex_property<PointType>("v:point");
             vconn_ = vertex_property<Halfedge>("v:connectivity");
             hconn_ = halfedge_property<HalfedgeConnectivity>("h:connectivity");
 
@@ -47,7 +47,7 @@ namespace Bcg{
             eprops_.clear();
 
             // allocate standard properties
-            vpoint_ = add_vertex_property<PointType>("v:position");
+            vpoint_ = add_vertex_property<PointType>("v:point");
             vconn_ = add_vertex_property<Halfedge>("v:connectivity");
             hconn_ = add_halfedge_property<HalfedgeConnectivity>("h:connectivity");
 
@@ -83,6 +83,27 @@ namespace Bcg{
         return v;
     }
 
+    void Graph::mark_vertex_deleted(Vertex v) {
+        if (!vprops_.is_valid(v)) return;
+        if (!vdeleted_[v]){
+            vdeleted_[v] = true;
+            ++deleted_vertices_;
+        }
+
+        has_garbage_ = true;
+    }
+
+    void Graph::remove_vertex(Vertex v) {
+        if (!vprops_.is_valid(v)) return;
+        if (vdeleted_[v]) return;
+
+        for (const auto &h: get_halfedges(v)) {
+            remove_edge(get_edge(h));
+        }
+
+        mark_vertex_deleted(v);
+    }
+
     void Graph::clear(){
         // remove all properties
         vprops_.clear();
@@ -93,7 +114,7 @@ namespace Bcg{
         free_memory();
 
         // add the standard properties back
-        vpoint_ = add_vertex_property<PointType>("v:position");
+        vpoint_ = add_vertex_property<PointType>("v:point");
         vconn_ = add_vertex_property<Halfedge>("v:connectivity");
         hconn_ = add_halfedge_property<HalfedgeConnectivity>("h:connectivity");
         vdeleted_ = add_vertex_property<bool>("v:deleted", false);
@@ -193,7 +214,7 @@ namespace Bcg{
         // update halfedge connectivity
         for (size_t i = 0; i < nH; ++i) {
             auto h = Halfedge(i);
-            set_vertex(h, vmap[get_vertex(h)]);
+            set_vertex(h, vmap[to_vertex(h)]);
             set_next(h, hmap[get_next(h)]);
         }
 
@@ -216,20 +237,131 @@ namespace Bcg{
     Property<Vector<IndexType, 2>> Graph::get_edges(){
         auto indices = edge_property<Vector<IndexType, 2>>("e:indices");
         for (auto e: edges()) {
-            indices[e] = {get_vertex(get_halfedge(e, 0)).idx(), get_vertex(get_halfedge(e, 1)).idx()};
+            indices[e] = {to_vertex(get_halfedge(e, 0)).idx(), to_vertex(get_halfedge(e, 1)).idx()};
         }
         return indices;
     }
 
     Halfedge Graph::find_halfedge(Vertex v0, Vertex v1) const{
         if (!is_valid(get_halfedge(v0))) {
-            return Halfedge();
+            return {};
         }
-        for (auto h: halfedges()) {
-            if (get_vertex(h) == v1) {
+        for (auto h: get_halfedges(v0)) {
+            if (to_vertex(h) == v1) {
                 return h;
             }
         }
         return {};
+    }
+
+
+    Halfedge Graph::new_edge(Vertex v0, Vertex v1) {
+        if (v0 == v1 || !v0.is_valid() || !v1.is_valid()) {
+            assert(v0 != v1);
+            return {};
+        }
+
+        eprops_.push_back();
+        hprops_.push_back();
+        hprops_.push_back();
+
+        Halfedge h(hprops_.size() - 2);
+        Halfedge o(hprops_.size() - 1);
+
+        set_vertex(h, v1);
+        set_vertex(o, v0);
+
+        set_next(h, o);
+        set_next(o, h);
+
+        return h;
+    }
+
+    Halfedge Graph::add_edge(Vertex v0, Vertex v1) {
+        if (v1 == v0 || !v0.is_valid() || !v1.is_valid()) {
+            assert(v0 != v1);
+            return {};
+        }
+        Halfedge h01 = find_halfedge(v0, v1);
+        if (is_valid(h01)) {
+            return h01;
+        }
+
+        Halfedge h = new_edge(v0, v1);
+        Halfedge o = get_opposite(h);
+
+        Halfedge in_0 = get_opposite(get_halfedge(v0));
+        if (is_valid(in_0)) {
+            Halfedge out_next_0 = get_next(in_0);
+            set_next(in_0, h);
+            set_next(o, out_next_0);
+        }
+        set_halfedge(v0, h);
+
+        Halfedge out_1 = get_halfedge(v1);
+        if (is_valid(out_1)) {
+            Halfedge out_prev_1 = get_prev(out_1);
+            set_next(h, out_1);
+            set_next(out_prev_1, o);
+        }
+        set_halfedge(v1, o);
+
+        return h;
+    }
+
+
+    void Graph::mark_edge_deleted(Edge e) {
+        if (!edeleted_[e]) {
+            edeleted_[e] = true;
+            ++deleted_edges_;
+            mark_halfedge_deleted(get_halfedge(e, 0));
+            mark_halfedge_deleted(get_halfedge(e, 1));
+        }
+        has_garbage_ = true;
+    }
+
+    void Graph::remove_edge(Edge e) {
+        if (edeleted_[e]) return;
+
+        auto h0 = get_halfedge(e, 0);
+        auto h1 = get_halfedge(e, 1);
+
+        auto from_v = to_vertex(h1);
+        auto to_v = to_vertex(h0);
+
+        if (hprops_.is_valid(h0)) {
+            auto p = get_prev(h0);
+            auto n = get_next(h1);
+            if (find_halfedge(to_vertex(n), from_v).is_valid()) {
+                set_next(p, n);
+            }
+        }
+        if (hprops_.is_valid(h1)) {
+            auto p = get_prev(h1);
+            auto n = get_next(h0);
+            if (find_halfedge(to_vertex(n), to_v).is_valid()) {
+                set_next(p, n);
+            }
+        }
+
+        mark_edge_deleted(e);
+    }
+
+    void Graph::mark_halfedge_deleted(Halfedge h) {
+        if (!hdeleted_[h]) {
+            hdeleted_[h] = true;
+            ++deleted_halfedges_;
+        }
+        has_garbage_ = true;
+    }
+
+    size_t Graph::get_valence(Vertex v) const {
+        size_t count(0);
+        for (const auto &vj: get_vertices(v)) {
+            if (vj.is_valid()) {
+                ++count;
+            }
+        }
+        return count;
     }
 }

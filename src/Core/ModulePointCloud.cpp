@@ -18,8 +18,11 @@
 #include "Engine.h"
 #include "ResourcesPointCloud.h"
 #include "PointCloudIo.h"
+#include "PointCloudToGraph.h"
 #include "CommandsPointCloud.h"
 #include "Picker.h"
+
+#include "ModuleGraphView.h"
 
 namespace Bcg {
     ModulePointCloud::ModulePointCloud() : Module("PointCloudModule") {
@@ -135,6 +138,7 @@ namespace Bcg {
 
     static bool gui_enabled = false;
     static bool file_dialog_gui_enabled = false;
+    static bool gui_to_graph = false;
 
     void ModulePointCloud::render_menu() {
         if (ImGui::BeginMenu("Module")) {
@@ -147,6 +151,7 @@ namespace Bcg {
                                                             config);
                 }
                 ImGui::MenuItem("Info", nullptr, &gui_enabled);
+                ImGui::MenuItem("To Graph", nullptr, &gui_to_graph);
                 ImGui::EndMenu();
             }
             ImGui::EndMenu();
@@ -179,6 +184,37 @@ namespace Bcg {
             if (ImGui::Begin("PointCloud Info", &gui_enabled, ImGuiWindowFlags_AlwaysAutoResize)) {
                 auto &picked = Engine::Context().get<Picked>();
                 show_gui(picked.entity.id);
+            }
+            ImGui::End();
+        }
+        if (gui_to_graph) {
+            if (ImGui::Begin("PointCloud To Graph", &gui_to_graph, ImGuiWindowFlags_AlwaysAutoResize)) {
+                auto &picked = Engine::Context().get<Picked>();
+                const auto entity_id = picked.entity.id;
+                if (has(entity_id)) {
+                    auto &pc = *get(entity_id);
+                    if (ImGui::CollapsingHeader("Knn - Graph")) {
+                        static int num_closest = 6;
+                        ImGui::InputInt("num_closest", &num_closest);
+                        if (ImGui::Button("Create##KnnGraph")) {
+                            auto graph = PointCloudToKNNGraph(pc.vpoint_, num_closest);
+                            Engine::State().emplace_or_replace<Graph>(entity_id, graph);
+                            ModuleGraphView::setup(entity_id);
+                        }
+                        ImGui::Separator();
+                    }
+                    if (ImGui::CollapsingHeader("Radius - Graph")) {
+                        static float radius = 0.1f;
+                        ImGui::InputFloat("radius", &radius);
+                        if (ImGui::Button("Create##KnnGraph")) {
+                            auto graph = PointCloudToRadiusGraph(pc.vpoint_, radius);
+                            Engine::State().emplace_or_replace<Graph>(entity_id, graph);
+                            ModuleGraphView::setup(entity_id);
+                        }
+                    }
+
+
+                }
             }
             ImGui::End();
         }

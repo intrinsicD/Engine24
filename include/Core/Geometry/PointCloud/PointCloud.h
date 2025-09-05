@@ -34,6 +34,10 @@ namespace Bcg {
         //! add a new vertex with position \p p
         Vertex add_vertex(const PointType &p);
 
+        void mark_vertex_deleted(Vertex v);
+
+        void remove_vertex(Vertex v);
+
         //! \return number of (deleted and valid) vertices in the mesh
         [[nodiscard]] size_t vertices_size() const { return vprops_.size(); }
 

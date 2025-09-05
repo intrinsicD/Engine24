@@ -165,7 +165,7 @@ namespace Bcg {
         view.program = program;
 
         view.vao.create();
-        auto positions = vertices->get<Vector<float, 3>>("v:position");
+        auto positions = vertices->get<Vector<float, 3>>("v:point");
         set_positions(entity_id, positions.name());
         auto e_colors = edges->get<Vector<float, 3>>("v:color");
         if (e_colors) {

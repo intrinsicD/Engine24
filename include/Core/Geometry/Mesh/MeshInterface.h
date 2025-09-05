@@ -6,6 +6,7 @@
 #define ENGINE24_MESHINTERFACE_H
 
 #include "GeometryData.h"
+#include "GeometryCommon.h"
 
 namespace Bcg {
     struct HalfedgeMeshInterface {
@@ -20,7 +21,7 @@ namespace Bcg {
                                                                                data.edges, data.faces) {}
 
         HalfedgeMeshInterface(Vertices &vertices,
-                              HalfEdges &halfEdges,
+                              Halfedges &halfEdges,
                               Edges &edges, Faces &faces) :
                 vertices(vertices),
                 halfedges(halfEdges),
@@ -34,26 +35,12 @@ namespace Bcg {
                 fscalarfield(faces.get_face_property<ScalarType>("f:scalarfield")) {}
 
         Vertices &vertices;
-        HalfEdges &halfedges;
+        Halfedges &halfedges;
         Edges &edges;
         Faces &faces;
 
         VertexProperty<PointType> vpoint;
         VertexProperty<Halfedge> vconnectivity;
-
-        struct HalfedgeConnectivity {
-            Face f;
-            Vertex v;
-            Halfedge nh, ph;
-
-            friend std::ostream &operator<<(std::ostream &os, const HalfedgeConnectivity &hc) {
-                os << "f: " << hc.f.idx_
-                   << "v: " << hc.v.idx_
-                   << "nh: " << hc.nh.idx_
-                   << "ph: " << hc.ph.idx_;
-                return os;
-            }
-        };
 
         HalfedgeProperty<HalfedgeConnectivity> hconnectivity;
 

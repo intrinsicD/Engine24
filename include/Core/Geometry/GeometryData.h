@@ -69,10 +69,10 @@ namespace Bcg {
         }
     };
 
-    struct HalfEdges : public PropertyContainer {
-        using HalfEdgeIterator = Iterator<HalfEdges, Halfedge>;
+    struct Halfedges : public PropertyContainer {
+        using HalfEdgeIterator = Iterator<Halfedges, Halfedge>;
 
-        HalfEdges() : deleted_halfedges(0) {}
+        Halfedges() : deleted_halfedges(0) {}
 
         HalfedgeProperty<bool> hdeleted;
         size_t deleted_halfedges = 0;
@@ -258,13 +258,13 @@ namespace Bcg {
 
     struct GraphData {
         Vertices vertices;
-        HalfEdges halfedges;
+        Halfedges halfedges;
         Edges edges;
     };
 
     struct MeshData {
         Vertices vertices;
-        HalfEdges halfedges;
+        Halfedges halfedges;
         Edges edges;
         Faces faces;
     };

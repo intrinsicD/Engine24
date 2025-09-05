@@ -217,7 +217,7 @@ namespace Bcg {
 
         view.vao.create();
 
-        set_position(entity_id, "v:position");
+        set_position(entity_id, "v:point");
         set_uniform_radius(entity_id, 1.0f);
         set_normal(entity_id, "v:normal");
         set_uniform_color(entity_id, view.uniform_color);

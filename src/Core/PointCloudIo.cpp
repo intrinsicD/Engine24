@@ -98,7 +98,7 @@ namespace Bcg {
         std::ofstream out(filepath);
         if (!out.is_open()) return false;
 
-        auto positions = pc.get_vertex_property<PointType>("v:position");
+        auto positions = pc.get_vertex_property<PointType>("v:point");
         auto intensities = pc.get_vertex_property<ScalarType>("v:intensity");
 
         if (flags.use_colors) {
@@ -118,7 +118,7 @@ namespace Bcg {
         std::ofstream out(filepath);
         if (!out.is_open()) return false;
 
-        auto positions = pc.get_vertex_property<PointType>("v:position");
+        auto positions = pc.get_vertex_property<PointType>("v:point");
         auto intensities = pc.get_vertex_property<ScalarType>("v:intensity");
 
         if (flags.use_colors) {
@@ -138,7 +138,7 @@ namespace Bcg {
         std::ofstream out(filepath);
         if (!out.is_open()) return false;
 
-        auto positions = pc.get_vertex_property<PointType>("v:position");
+        auto positions = pc.get_vertex_property<PointType>("v:point");
         auto intensities = pc.get_vertex_property<ScalarType>("v:intensity");
 
         if (flags.use_colors) {
@@ -251,7 +251,7 @@ namespace Bcg {
         std::ofstream out(filepath);
         if (!out.is_open()) return false;
 
-        auto positions = pci.vertices.get_vertex_property<PointType>("v:position");
+        auto positions = pci.vertices.get_vertex_property<PointType>("v:point");
         auto intensities = pci.vertices.get_vertex_property<ScalarType>("v:intensity");
 
         if (flags.use_colors) {
@@ -271,7 +271,7 @@ namespace Bcg {
         std::ofstream out(filepath);
         if (!out.is_open()) return false;
 
-        auto positions = pci.vertices.get_vertex_property<PointType>("v:position");
+        auto positions = pci.vertices.get_vertex_property<PointType>("v:point");
         auto intensities = pci.vertices.get_vertex_property<ScalarType>("v:intensity");
 
         if (flags.use_colors) {
@@ -291,7 +291,7 @@ namespace Bcg {
         std::ofstream out(filepath);
         if (!out.is_open()) return false;
 
-        auto positions = pci.vertices.get_vertex_property<PointType>("v:position");
+        auto positions = pci.vertices.get_vertex_property<PointType>("v:point");
         auto intensities = pci.vertices.get_vertex_property<ScalarType>("v:intensity");
 
         if (flags.use_colors) {

@@ -12,22 +12,23 @@ namespace Bcg {
         using VertexAroundVertexCirculator = VertexAroundVertexCirculatorBase<GraphInterface>;
         using HalfedgeAroundVertexCirculator = HalfedgeAroundVertexCirculatorBase<GraphInterface>;
 
-        explicit GraphInterface(GraphData &data) : GraphInterface(data.vertices, data.halfedges, data.edges) {}
+        explicit GraphInterface(GraphData &data) : GraphInterface(data.vertices, data.halfedges, data.edges) {
+        }
 
-        GraphInterface(Vertices &vertices,
-                       HalfEdges &halfEdges,
-                       Edges &edges) :
-                vertices(vertices),
-                halfedges(halfEdges),
-                edges(edges),
-                vpoint(vertices.get<PointType>("v:point")),
-                vconnectivity(vertices.get<Halfedge>("v:connectivity")),
-                ecolors(edges.get<ColorType>("e:color")),
-                escalarfield(edges.get<ScalarType>("e:scalarfield")),
-                hconnectivity(halfEdges.get<HalfedgeConnectivity>("h:connectivity")) {}
+        GraphInterface(Vertices &vertices_,
+                       Halfedges &halfedges_,
+                       Edges &edges_) : vertices(vertices_),
+                                        halfedges(halfedges_),
+                                        edges(edges_) {
+            vpoint = vertices.get_vertex_property<PointType>("v:point");
+            vconnectivity = vertices.get_vertex_property<Halfedge>("v:connectivity");
+            ecolors = edges.get_edge_property<ColorType>("e:color");
+            hconnectivity = halfedges.get_halfedge_property<HalfedgeConnectivity>("h:connectivity");
+            escalarfield = edges.get_edge_property<ScalarType>("e:scalarfield");
+        }
 
         Vertices &vertices;
-        HalfEdges &halfedges;
+        Halfedges &halfedges;
         Edges &edges;
 
         VertexProperty<PointType> vpoint;
@@ -119,7 +120,7 @@ namespace Bcg {
 
         void set_edge_scalarfield(const std::vector<ScalarType> &escalarfield);
 
-        Property<Vector<IndexType, 2>> get_edges() const;
+        Property<Vector<IndexType, 2> > get_edges() const;
 
         inline bool is_valid(Vertex v) const {
             return v.idx() < vertices.size();
@@ -172,7 +173,7 @@ namespace Bcg {
         }
 
         inline Vertex get_vertex(Edge e, int i) const {
-            return get_vertex(get_halfedge(e, i));
+            return to_vertex(get_halfedge(e, i));
         }
 
         inline void set_vertex(Halfedge h, Vertex v) {
@@ -183,20 +184,17 @@ namespace Bcg {
             vconnectivity[v] = h;
         }
 
-        inline Vertex get_vertex(Halfedge h) const {
+        inline Vertex to_vertex(Halfedge h) const {
             return hconnectivity[h].v;
         }
 
         inline void set_next(Halfedge h, Halfedge nh) {
             hconnectivity[h].nh = nh;
+            hconnectivity[nh].ph = h;
         }
 
         inline Halfedge get_next(Halfedge h) const {
             return hconnectivity[h].nh;
-        }
-
-        inline void set_prev(Halfedge h, Halfedge ph) {
-            hconnectivity[h].ph = ph;
         }
 
         inline Halfedge get_prev(Halfedge h) const {
@@ -239,7 +237,8 @@ namespace Bcg {
     };
 
     struct GraphOwning : public GraphInterface {
-        GraphOwning() : GraphInterface(data) {}
+        GraphOwning() : GraphInterface(data) {
+        }
 
     private:
         GraphData data;

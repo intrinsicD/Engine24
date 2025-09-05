@@ -8,7 +8,7 @@ namespace Bcg {
     PointCloud::PointCloud() {
         // allocate standard properties
         // same list is used in operator=() and assign()
-        vpoint_ = add_vertex_property<PointType>("v:position");
+        vpoint_ = add_vertex_property<PointType>("v:point");
 
         vdeleted_ = add_vertex_property<bool>("v:deleted", false);
     }
@@ -23,7 +23,7 @@ namespace Bcg {
             vprops_ = rhs.vprops_;
 
             // property handles contain pointers, have to be reassigned
-            vpoint_ = vertex_property<PointType>("v:position");
+            vpoint_ = vertex_property<PointType>("v:point");
 
             vdeleted_ = vertex_property<bool>("v:deleted");
 
@@ -43,7 +43,7 @@ namespace Bcg {
             vprops_.clear();
 
             // allocate standard properties
-            vpoint_ = add_vertex_property<PointType>("v:position");
+            vpoint_ = add_vertex_property<PointType>("v:point");
 
             vdeleted_ = add_vertex_property<bool>("v:deleted", false);
 
@@ -71,6 +71,19 @@ namespace Bcg {
         return v;
     }
 
+
+    void PointCloud::mark_vertex_deleted(Vertex v) {
+        if (!vdeleted_[v]) {
+            vdeleted_[v] = true;
+            ++deleted_vertices_;
+        }
+        has_garbage_ = true;
+    }
+
+    void PointCloud::remove_vertex(Vertex v) {
+        mark_vertex_deleted(v);
+    }
+
     //! clear mesh: remove all vertices, edges, faces
     void PointCloud::clear() {
 // remove all properties
@@ -80,7 +93,7 @@ namespace Bcg {
         free_memory();
 
         // add the standard properties back
-        vpoint_ = add_vertex_property<PointType>("v:position");
+        vpoint_ = add_vertex_property<PointType>("v:point");
 
         vdeleted_ = add_vertex_property<bool>("v:deleted", false);
 

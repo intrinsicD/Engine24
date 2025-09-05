@@ -845,7 +845,7 @@ namespace Bcg {
 
         // property containers for each entity type and object
         Vertices vprops_;
-        HalfEdges hprops_;
+        Halfedges hprops_;
         Edges eprops_;
         Faces fprops_;
 

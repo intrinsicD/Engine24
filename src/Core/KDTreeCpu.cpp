@@ -30,10 +30,9 @@ namespace Bcg {
     }
 
     QueryResult KDTreeCpu::radius_query(const Vector<float, 3> &query_point, float radius) const {
-
         nanoflann::SearchParameters params;
         std::vector<nanoflann::ResultItem<size_t, float>> items;
-        nanoflann::RadiusResultSet resultSet(radius, items);
+        nanoflann::RadiusResultSet resultSet(radius * radius, items);
         resultSet.init();
 
         index->findNeighbors(resultSet, &query_point[0], params);

@@ -807,7 +807,7 @@ namespace Bcg {
         fprintf(out, "# OBJ export from PMP\n");
 
         // write vertices
-        auto points = mesh.get_vertex_property<PointType>("v:position");
+        auto points = mesh.get_vertex_property<PointType>("v:point");
         for (auto v: mesh.vertices()) {
             const PointType &p = points[v];
             fprintf(out, "v %.10f %.10f %.10f\n", p[0], p[1], p[2]);
@@ -898,7 +898,7 @@ namespace Bcg {
         WriteBinary(ofs, nf);
         WriteBinary(ofs, ne);
 
-        auto points = mesh.get_vertex_property<PointType>("v:position");
+        auto points = mesh.get_vertex_property<PointType>("v:point");
         for (auto v: mesh.vertices()) {
             const auto p = points[v];
             WriteBinary(ofs, p[0]);
@@ -962,7 +962,7 @@ namespace Bcg {
         fprintf(out, "OFF\n%zu %zu 0\n", mesh.n_vertices(), mesh.n_faces());
 
         // vertices, and optionally normals and texture coordinates
-        VertexProperty<PointType> points = mesh.get_vertex_property<PointType>("v:position");
+        VertexProperty<PointType> points = mesh.get_vertex_property<PointType>("v:point");
         for (auto v: mesh.vertices()) {
             const PointType &p = points[v];
             fprintf(out, "%.10f %.10f %.10f", p[0], p[1], p[2]);
@@ -1008,7 +1008,7 @@ namespace Bcg {
 
         meshVertexPositions.reserve(mesh.n_vertices());
         meshFaceIndices.reserve(mesh.n_faces());
-        auto positions = mesh.get_vertex_property<Vector<float, 3 >>("v:position");
+        auto positions = mesh.get_vertex_property<Vector<float, 3 >>("v:point");
 
         for (const auto v: mesh.vertices()) {
             meshVertexPositions.push_back({positions[v][0], positions[v][1], positions[v][2]});
@@ -1063,7 +1063,7 @@ namespace Bcg {
 
         // write normal, points, and attribute byte count
         auto normals = mesh.get_face_property<NormalType>("f:normal");
-        auto points = mesh.get_vertex_property<PointType>("v:position");
+        auto points = mesh.get_vertex_property<PointType>("v:point");
         for (auto f: mesh.faces()) {
             auto n = normals[f];
             ofs.write((char *) &n[0], sizeof(float));
@@ -1099,7 +1099,7 @@ namespace Bcg {
         }
 
         std::ofstream ofs(filepath.c_str());
-        auto points = mesh.get_vertex_property<PointType>("v:position");
+        auto points = mesh.get_vertex_property<PointType>("v:point");
 
         ofs << "solid stl\n";
 
@@ -1876,7 +1876,7 @@ namespace Bcg {
         [[maybe_unused]] size_t nvc = fread((char *) mesh.vconnectivity.data(), sizeof(Halfedge), nv,
                                             in);
         [[maybe_unused]] size_t nhc = fread((char *) mesh.hconnectivity.data(),
-                                            sizeof(HalfedgeMeshInterface::HalfedgeConnectivity), nh,
+                                            sizeof(HalfedgeConnectivity), nh,
                                             in);
         [[maybe_unused]] size_t nfc = fread((char *) mesh.fconnectivity.data(), sizeof(Halfedge), nf, in);
         [[maybe_unused]] size_t np = fread((char *) mesh.vpoint.data(), sizeof(PointType), nv, in);
@@ -1936,7 +1936,7 @@ namespace Bcg {
         fprintf(out, "# OBJ export from PMP\n");
 
         // write vertices
-        auto points = mesh.vertices.get_vertex_property<PointType>("v:position");
+        auto points = mesh.vertices.get_vertex_property<PointType>("v:point");
         for (auto v: mesh.vertices) {
             const PointType &p = points[v];
             fprintf(out, "v %.10f %.10f %.10f\n", p[0], p[1], p[2]);
@@ -2017,7 +2017,7 @@ namespace Bcg {
         WriteBinary(ofs, nf);
         WriteBinary(ofs, ne);
 
-        auto points = mesh.vertices.get_vertex_property<PointType>("v:position");
+        auto points = mesh.vertices.get_vertex_property<PointType>("v:point");
         for (auto v: mesh.vertices) {
             const auto p = points[v];
             WriteBinary(ofs, p[0]);
@@ -2081,7 +2081,7 @@ namespace Bcg {
         fprintf(out, "OFF\n%zu %zu 0\n", mesh.vertices.n_vertices(), mesh.faces.n_faces());
 
         // vertices, and optionally normals and texture coordinates
-        VertexProperty<PointType> points = mesh.get_vertex_property<PointType>("v:position");
+        VertexProperty<PointType> points = mesh.get_vertex_property<PointType>("v:point");
         for (auto v: mesh.vertices) {
             const PointType &p = points[v];
             fprintf(out, "%.10f %.10f %.10f", p[0], p[1], p[2]);
@@ -2127,7 +2127,7 @@ namespace Bcg {
 
         meshVertexPositions.reserve(mesh.vertices.n_vertices());
         meshFaceIndices.reserve(mesh.faces.n_faces());
-        auto positions = mesh.get_vertex_property<Vector<float, 3 >>("v:position");
+        auto positions = mesh.get_vertex_property<Vector<float, 3 >>("v:point");
 
         for (const auto v: mesh.vertices) {
             meshVertexPositions.push_back({positions[v][0], positions[v][1], positions[v][2]});
@@ -2182,7 +2182,7 @@ namespace Bcg {
 
         // write normal, points, and attribute byte count
         auto normals = mesh.get_face_property<NormalType>("f:normal");
-        auto points = mesh.get_vertex_property<PointType>("v:position");
+        auto points = mesh.get_vertex_property<PointType>("v:point");
         for (auto f: mesh.faces) {
             auto n = normals[f];
             ofs.write((char *) &n[0], sizeof(float));
@@ -2218,7 +2218,7 @@ namespace Bcg {
         }
 
         std::ofstream ofs(filepath.c_str());
-        auto points = mesh.get_vertex_property<PointType>("v:position");
+        auto points = mesh.get_vertex_property<PointType>("v:point");
 
         ofs << "solid stl\n";
 
@@ -2266,7 +2266,7 @@ namespace Bcg {
         // write properties to file
         // clang-format off
         fwrite((char *) mesh.vconnectivity.data(), sizeof(Halfedge), nv, out);
-        fwrite((char *) mesh.hconnectivity.data(), sizeof(HalfedgeMeshInterface::HalfedgeConnectivity), nh, out);
+        fwrite((char *) mesh.hconnectivity.data(), sizeof(HalfedgeConnectivity), nh, out);
         fwrite((char *) mesh.fconnectivity.data(), sizeof(Halfedge), nf, out);
         fwrite((char *) mesh.vpoint.data(), sizeof(PointType), nv, out);
         // clang-format on

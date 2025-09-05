@@ -109,7 +109,7 @@ namespace Bcg {
             return;
         }
 
-        auto positions = vertices->get<PointType>("v:position");
+        auto positions = vertices->get<PointType>("v:point");
         if (!positions) {
             Log::Warn("Setup {} failed, entity {} has no property {}.", s_name, entity_id, positions.name());
             return;

@@ -9,6 +9,7 @@
 #include "Properties.h"
 #include "Types.h"
 #include "GeometryCommon.h"
+#include "GeometryData.h"
 
 namespace Bcg {
     class Graph {
@@ -23,7 +24,7 @@ namespace Bcg {
         Graph();
 
         //! destructor
-        virtual ~Graph();
+        virtual ~Graph() = default;
 
         //! copy constructor: copies \p rhs to \p *this. performs a deep copy of all
         //! properties.
@@ -37,6 +38,10 @@ namespace Bcg {
 
         //! add a new vertex with position \p p
         Vertex add_vertex(const PointType &p);
+
+        void mark_vertex_deleted(Vertex v);
+
+        void remove_vertex(Vertex v);
 
         //! \return number of (deleted and valid) vertices in the mesh
         inline size_t vertices_size() const { return vprops_.size(); }
@@ -271,7 +276,7 @@ namespace Bcg {
         inline bool has_garbage() const { return has_garbage_; }
 
 
-        Property<Vector<IndexType, 2>> get_edges();
+        Property<Vector<IndexType, 2> > get_edges();
 
         inline bool is_isolated(Vertex v) const {
             return is_valid(get_halfedge(v)) && is_valid(get_opposite(get_halfedge(v)));
@@ -308,15 +313,19 @@ namespace Bcg {
         }
 
         inline Vertex get_vertex(Edge e, int i) const {
-            return get_vertex(get_halfedge(e, i));
+            return to_vertex(get_halfedge(e, i));
         }
 
         inline void set_vertex(Halfedge h, Vertex v) {
             hconn_[h].v = v;
         }
 
-        inline Vertex get_vertex(Halfedge h) const {
+        inline Vertex to_vertex(Halfedge h) const {
             return hconn_[h].v;
+        }
+
+        inline Vertex from_vertex(Halfedge h) const {
+            return to_vertex(get_opposite(h));
         }
 
         inline Halfedge get_next(Halfedge h) const {
@@ -325,6 +334,7 @@ namespace Bcg {
 
         inline void set_next(Halfedge h, Halfedge nh) {
             hconn_[h].nh = nh;
+            hconn_[nh].ph = h;
         }
 
         inline Halfedge get_prev(Halfedge h) const {
@@ -343,6 +353,16 @@ namespace Bcg {
             return Edge(h.idx() >> 1);
         }
 
+        Halfedge new_edge(Vertex v0, Vertex v1);
+
+        Halfedge add_edge(Vertex v0, Vertex v1);
+
+        void mark_edge_deleted(Edge e);
+
+        void remove_edge(Edge e);
+
+        void mark_halfedge_deleted(Halfedge h);
+
         size_t get_valence(Vertex v) const;
 
         inline VertexAroundVertexCirculatorBase<Graph> get_vertices(Vertex v) const {
@@ -357,26 +377,13 @@ namespace Bcg {
             return {this, v};
         }
 
-        PropertyContainer vprops_;
-        PropertyContainer hprops_;
-        PropertyContainer eprops_;
+        Vertices vprops_;
+        Halfedges hprops_;
+        Edges eprops_;
 
         // point coordinates
         VertexProperty<PointType> vpoint_;
         VertexProperty<Halfedge> vconn_;
-
-        struct HalfedgeConnectivity {
-            Vertex v;
-            Halfedge nh;
-            Halfedge ph;
-
-            friend std::ostream &operator<<(std::ostream &os, const HalfedgeConnectivity &hc) {
-                os << "v: " << hc.v.idx_
-                   << "nh: " << hc.nh.idx_
-                   << "ph: " << hc.ph.idx_;
-                return os;
-            }
-        };
 
         HalfedgeProperty<HalfedgeConnectivity> hconn_;
 

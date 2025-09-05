@@ -36,7 +36,7 @@ namespace Bcg {
     Property<Vector<IndexType, 2>> GraphInterface::get_edges() const {
         auto indices = edges.edge_property<Vector<IndexType, 2>>("e:indices");
         for (auto e: edges) {
-            indices[e] = {get_vertex(get_halfedge(e, 0)).idx(), get_vertex(get_halfedge(e, 1)).idx()};
+            indices[e] = {to_vertex(get_halfedge(e, 0)).idx(), to_vertex(get_halfedge(e, 1)).idx()};
         }
         return indices;
     }
@@ -71,6 +71,9 @@ namespace Bcg {
 
         set_vertex(h, v1);
         set_vertex(o, v0);
+
+        set_next(h, o);
+        set_next(o, h);
         return h;
     }
 
@@ -80,43 +83,22 @@ namespace Bcg {
             return h01;
         }
 
-        Halfedge out_h0 = get_halfedge(v0);
-        Halfedge out_h1 = get_halfedge(v1);
-
         Halfedge h = new_edge(v0, v1);
         Halfedge o = get_opposite(h);
 
-        if (halfedges.is_valid(out_h1)) {
-            Halfedge nh = get_next(out_h1);
-            Halfedge ph = get_prev(out_h1);
+        Halfedge in_0 = get_opposite(get_halfedge(v0));
+        Halfedge out_next_0 = get_next(in_0);
 
-            set_next(h, nh);
-            set_prev(nh, h);
+        Halfedge out_1 = get_halfedge(v1);
+        Halfedge out_prev_1 = get_prev(out_1);
 
-            set_next(ph, o);
-            set_prev(o, ph);
-        } else {
-            set_next(h, o);
-            set_prev(o, h);
-        }
-
-        set_halfedge(v1, o);
-
-        if (halfedges.is_valid(out_h0)) {
-            Halfedge nh = get_next(out_h0);
-            Halfedge ph = get_prev(out_h0);
-
-            set_next(o, nh);
-            set_prev(nh, o);
-
-            set_next(ph, h);
-            set_prev(h, ph);
-        } else {
-            set_next(o, h);
-            set_prev(h, o);
-        }
-
+        set_next(in_0, h);
+        set_next(o, out_next_0);
         set_halfedge(v0, h);
+
+        set_next(h, out_1);
+        set_next(out_prev_1, o);
+        set_halfedge(v1, o);
 
         return h;
     }
@@ -125,8 +107,8 @@ namespace Bcg {
         if (!halfedges.is_valid(get_halfedge(v0))) {
             return Halfedge();
         }
-        for (auto h: halfedges) {
-            if (get_vertex(h) == v1) {
+        for (auto h: get_halfedges(v0)) {
+            if (to_vertex(h) == v1) {
                 return h;
             }
         }
@@ -134,13 +116,13 @@ namespace Bcg {
     }
 
     size_t GraphInterface::get_valence(Vertex v) const {
-        size_t valence = 0;
-        for (auto h: halfedges) {
-            if (get_vertex(h) == v) {
-                ++valence;
+        size_t count(0);
+        for (const auto &vj: get_vertices(v)) {
+            if (vj.is_valid()) {
+                ++count;
             }
         }
-        return valence;
+        return count;
     }
 
     void GraphInterface::remove_edge(Edge e) {
@@ -157,14 +139,13 @@ namespace Bcg {
         halfedges.hdeleted[h] = true;
         halfedges.hdeleted[o] = true;
 
-        Vertex v0 = get_vertex(h);
-        Vertex v1 = get_vertex(o);
+        Vertex v0 = to_vertex(h);
+        Vertex v1 = to_vertex(o);
 
         Halfedge out_v1 = get_next(h);
         Halfedge in_v1 = get_prev(o);
 
         if (out_v1 != o) {
-            set_prev(out_v1, in_v1);
             set_next(in_v1, out_v1);
         } else {
             set_halfedge(v1, Halfedge());
@@ -174,7 +155,6 @@ namespace Bcg {
         Halfedge in_v0 = get_prev(h);
 
         if (out_v0 != h) {
-            set_prev(out_v0, in_v0);
             set_next(in_v0, out_v0);
         } else {
             set_halfedge(v0, Halfedge());
@@ -261,7 +241,7 @@ namespace Bcg {
         // update halfedge connectivity
         for (size_t i = 0; i < nH; ++i) {
             auto h = Halfedge(i);
-            set_vertex(h, vmap[get_vertex(h)]);
+            set_vertex(h, vmap[to_vertex(h)]);
             set_next(h, hmap[get_next(h)]);
         }
 
@@ -287,20 +267,16 @@ namespace Bcg {
         Halfedge nh = get_next(h);
         Halfedge po = get_prev(o);
 
-        Vertex v1 = get_vertex(h);
+        Vertex v1 = to_vertex(h);
 
         Halfedge new_h = add_edge(v, v1);
         Halfedge new_o = get_opposite(new_h);
 
         set_next(new_h, nh);
-        set_prev(nh, new_h);
-        set_prev(new_h, h);
         set_next(h, new_h);
 
-        set_prev(new_o, po);
         set_next(po, new_o);
         set_next(new_o, o);
-        set_prev(o, new_o);
 
         set_halfedge(v, new_h);
 
@@ -309,7 +285,7 @@ namespace Bcg {
 
     Vertex GraphInterface::split(Bcg::Edge e, ScalarType t) {
         return split(e, add_vertex(
-                (1 - t) * vpoint[get_vertex(get_halfedge(e, 0))] + t * vpoint[get_vertex(get_halfedge(e, 1))]));
+                (1 - t) * vpoint[to_vertex(get_halfedge(e, 0))] + t * vpoint[to_vertex(get_halfedge(e, 1))]));
     }
 
     Vertex GraphInterface::split(Edge e, PointType point) {
@@ -320,8 +296,8 @@ namespace Bcg {
         Halfedge h = get_halfedge(e, 0);
         Halfedge o = get_halfedge(e, 1);
 
-        Vertex v0 = get_vertex(h);
-        Vertex v1 = get_vertex(o);
+        Vertex v0 = to_vertex(h);
+        Vertex v1 = to_vertex(o);
 
         PointType p = (1 - t) * vpoint[v0] + t * vpoint[v1];
 
@@ -331,13 +307,11 @@ namespace Bcg {
         Halfedge ph = get_prev(h);
 
         set_next(ph, nh);
-        set_prev(nh, ph);
 
         Halfedge no = get_next(o);
         Halfedge po = get_prev(o);
 
         set_next(po, no);
-        set_prev(no, po);
         set_halfedge(v0, nh);
 
         vertices.vdeleted[v1] = true;
