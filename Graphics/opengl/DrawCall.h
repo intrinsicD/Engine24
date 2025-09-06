@@ -5,43 +5,30 @@
 #ifndef ENGINE24_DRAWCALL_H
 #define ENGINE24_DRAWCALL_H
 
-namespace Bcg {
+namespace Bcg::OpenGL {
+    enum DrawMode {
+        POINTS,
+        LINE_STRIP,
+        LINE_LOOP,
+        LINES,
+        LINE_STRIP_ADJACENCY,
+        LINES_ADJACENCY,
+        TRIANGLE_STRIP,
+        TRIANGLE_FAN,
+        TRIANGLES,
+        TRIANGLE_STRIP_ADJACENCY,
+        TRIANGLES_ADJACENCY,
+        PATCHES
+    };
+
     struct DrawArrays {
-        enum Mode {
-            POINTS,
-            LINE_STRIP,
-            LINE_LOOP,
-            LINES,
-            LINE_STRIP_ADJACENCY,
-            LINES_ADJACENCY,
-            TRIANGLE_STRIP,
-            TRIANGLE_FAN,
-            TRIANGLES,
-            TRIANGLE_STRIP_ADJACENCY,
-            TRIANGLES_ADJACENCY,
-            PATCHES
-        };
-        unsigned int mode;
+        DrawMode mode;
         int first;
         unsigned int count;
     };
 
     struct DrawElements {
-        enum Mode {
-            POINTS,
-            LINE_STRIP,
-            LINE_LOOP,
-            LINES,
-            LINE_STRIP_ADJACENCY,
-            LINES_ADJACENCY,
-            TRIANGLE_STRIP,
-            TRIANGLE_FAN,
-            TRIANGLES,
-            TRIANGLE_STRIP_ADJACENCY,
-            TRIANGLES_ADJACENCY,
-            PATCHES
-        };
-        unsigned int mode;
+        DrawMode mode;
         unsigned int size;
         unsigned int type;
         const void *indices;

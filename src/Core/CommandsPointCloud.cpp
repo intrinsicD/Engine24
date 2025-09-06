@@ -242,23 +242,23 @@ namespace Bcg::Commands{
         entt::entity entity_id = Engine::State().create();
         auto &hem = Engine::State().emplace<PointCloud>(entity_id);
         for(const auto &mean : result.means){
-            hem.add_vertex(mean);
+            hem.interface.add_vertex(mean);
         }
 
-        auto means = hem.vertex_property<Vector<float, 3>>("v:hem:means");
-        auto covs = hem.vertex_property<Matrix<float, 3, 3>>("v:hem:covs");
-        auto nvars = hem.vertex_property<Vector<float, 3>>("v:hem:nvars");
-        auto weights = hem.vertex_property<float>("v:hem:weigths");
-        auto evecs0 = hem.vertex_property<Vector<float, 3>>("v:hem:evecs0");
-        auto evecs1 = hem.vertex_property<Vector<float, 3>>("v:hem:evecs1");
-        auto evecs2 = hem.vertex_property<Vector<float, 3>>("v:hem:evecs2");
+        auto means = hem.interface.vertex_property<Vector<float, 3>>("v:hem:means");
+        auto covs = hem.interface.vertex_property<Matrix<float, 3, 3>>("v:hem:covs");
+        auto nvars = hem.interface.vertex_property<Vector<float, 3>>("v:hem:nvars");
+        auto weights = hem.interface.vertex_property<float>("v:hem:weigths");
+        auto evecs0 = hem.interface.vertex_property<Vector<float, 3>>("v:hem:evecs0");
+        auto evecs1 = hem.interface.vertex_property<Vector<float, 3>>("v:hem:evecs1");
+        auto evecs2 = hem.interface.vertex_property<Vector<float, 3>>("v:hem:evecs2");
 
         covs.vector() = result.covs;
         means.vector() = result.means;
         nvars.vector() = result.nvars;
         weights.vector() = result.weights;
 
-        for (size_t i = 0; i < hem.n_vertices(); ++i) {
+        for (size_t i = 0; i < hem.data.vertices.n_vertices(); ++i) {
             Eigen::SelfAdjointEigenSolver<Eigen::Matrix<float, 3, 3>> eigensolver(MapConst(covs.vector()[i]));
             Map(evecs0.vector()[i]) = eigensolver.eigenvectors().col(0);
             Map(evecs1.vector()[i]) = eigensolver.eigenvectors().col(1);

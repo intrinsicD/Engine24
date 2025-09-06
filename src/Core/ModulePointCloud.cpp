@@ -92,7 +92,7 @@ namespace Bcg {
     template<>
     struct BuilderTraits<AABB<float>, PointCloud> {
         static AABB<float> build(const PointCloud &pc) noexcept {
-            return AABB<float>::Build(pc.positions().begin(), pc.positions().end());
+            return AABB<float>::Build(pc.interface.vpoint.vector().begin(), pc.interface.vpoint.vector().end());
         }
     };
 
@@ -111,14 +111,14 @@ namespace Bcg {
         auto h_aabb = ModuleAABB::create(entity_id, BuilderTraits<AABB<float>, PointCloud>::build(*h_pc));
         auto &transform = Engine::require<TransformComponent>(entity_id);
 
-        ModuleAABB::center_and_scale_by_aabb(entity_id, h_pc->vpoint_.name());
+        ModuleAABB::center_and_scale_by_aabb(entity_id, h_pc->interface.vpoint.name());
         ModuleCamera::center_camera_at_distance(h_aabb->center(), glm::compMax(h_aabb->diagonal()));
 
         Commands::ComputePointCloudLocalPcasKnn(entity_id, 32).execute();
         //TODO add ComputeSurfacePointCloudVertexNormals etc.
         ModuleSphereView::setup(entity_id);
         ModulePhongSplattingView::setup(entity_id);
-        Log::Info("#v: {}", h_pc->n_vertices());
+        Log::Info("#v: {}", h_pc->data.vertices.n_vertices());
     }
 
     void ModulePointCloud::cleanup(entt::entity entity_id) {
@@ -163,7 +163,7 @@ namespace Bcg {
             if (ImGuiFileDialog::Instance()->IsOk()) {
                 auto path = ImGuiFileDialog::Instance()->GetFilePathName();
                 auto spc = ModulePointCloud::load_point_cloud(path);
-                if (!spc.is_empty()) {
+                if (!spc.interface.is_empty()) {
                     auto entity_id = Engine::State().create();
                     ModulePointCloud::create(entity_id, spc);
                     ModulePointCloud::setup(entity_id);
@@ -197,7 +197,7 @@ namespace Bcg {
                         static int num_closest = 6;
                         ImGui::InputInt("num_closest", &num_closest);
                         if (ImGui::Button("Create##KnnGraph")) {
-                            auto graph = PointCloudToKNNGraph(pc.vpoint_, num_closest);
+                            auto graph = PointCloudToKNNGraph(pc.interface.vpoint, num_closest);
                             Engine::State().emplace_or_replace<Graph>(entity_id, graph);
                             ModuleGraphView::setup(entity_id);
                         }
@@ -207,7 +207,7 @@ namespace Bcg {
                         static float radius = 0.1f;
                         ImGui::InputFloat("radius", &radius);
                         if (ImGui::Button("Create##KnnGraph")) {
-                            auto graph = PointCloudToRadiusGraph(pc.vpoint_, radius);
+                            auto graph = PointCloudToRadiusGraph(pc.interface.vpoint, radius);
                             Engine::State().emplace_or_replace<Graph>(entity_id, graph);
                             ModuleGraphView::setup(entity_id);
                         }
@@ -227,9 +227,9 @@ namespace Bcg {
     }
 
     void ModulePointCloud::show_gui(const PointCloud &pc) {
-        if (ImGui::CollapsingHeader(("Vertices #v: " + std::to_string(pc.n_vertices())).c_str())) {
+        if (ImGui::CollapsingHeader(("Vertices #v: " + std::to_string(pc.data.vertices.n_vertices())).c_str())) {
             ImGui::PushID("Vertices");
-            Gui::Show("##Vertices", pc.vprops_);
+            Gui::Show("##Vertices", pc.data.vertices);
             ImGui::PopID();
         }
     }
@@ -249,7 +249,7 @@ namespace Bcg {
             auto end_time = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> build_duration = end_time - start_time;
 
-            if (spc.is_empty()) {
+            if (spc.interface.is_empty()) {
                 Log::Error("Failed to load pc from file: {}", event.paths[i]);
                 continue;
             }

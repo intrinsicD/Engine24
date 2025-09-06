@@ -20,7 +20,7 @@ namespace Bcg {
             Log::Error("Number of edge colors does not match number of edges");
             return;
         }
-        ecolors = edges.edge_property<PointType>("e:color");
+        ecolors = edges.edge_property<ColorType>("e:color");
         ecolors.vector() = colors;
     }
 
@@ -33,10 +33,13 @@ namespace Bcg {
         escalarfield.vector() = scalarfield;
     }
 
-    Property<Vector<IndexType, 2>> GraphInterface::get_edges() const {
-        auto indices = edges.edge_property<Vector<IndexType, 2>>("e:indices");
+    Property<Vector<IndexType, 2> > GraphInterface::get_edges() const {
+        auto indices = edges.edge_property<Vector<IndexType, 2> >("e:indices");
         for (auto e: edges) {
-            indices[e] = {to_vertex(get_halfedge(e, 0)).idx(), to_vertex(get_halfedge(e, 1)).idx()};
+            indices[e] = {
+                to_vertex(get_halfedge(e, 1)).idx(),
+                to_vertex(get_halfedge(e, 0)).idx()
+            };
         }
         return indices;
     }
@@ -47,7 +50,7 @@ namespace Bcg {
             throw AllocationException(what);
         }
         vertices.push_back();
-        return Vertex(static_cast<IndexType>(vertices.size()) - 1);
+        return Vertex{static_cast<IndexType>(vertices.size()) - 1};
     }
 
     Vertex GraphInterface::add_vertex(const PointType &p) {
@@ -59,7 +62,7 @@ namespace Bcg {
     Halfedge GraphInterface::new_edge(Vertex v0, Vertex v1) {
         if (v0 == v1) {
             Log::Error("GraphInterface: cannot create edge with same vertices");
-            return Halfedge();
+            return {};
         }
 
         edges.push_back();
@@ -78,26 +81,37 @@ namespace Bcg {
     }
 
     Halfedge GraphInterface::add_edge(Vertex v0, Vertex v1) {
+        if (v0 == v1) {
+            Log::Warn("GraphInterface: ignoring self-edge (%u -> %u)", v0.idx(), v1.idx());
+            return {};
+        }
+
         Halfedge h01 = find_halfedge(v0, v1);
         if (halfedges.is_valid(h01)) {
             return h01;
         }
 
         Halfedge h = new_edge(v0, v1);
+        if (!halfedges.is_valid(h)) return {};
+
         Halfedge o = get_opposite(h);
 
         Halfedge in_0 = get_opposite(get_halfedge(v0));
-        Halfedge out_next_0 = get_next(in_0);
+        if (is_valid(in_0)) {
+            Halfedge out_next_0 = get_next(in_0);
+            set_next(in_0, h);
+            set_next(o, out_next_0);
+        }
 
-        Halfedge out_1 = get_halfedge(v1);
-        Halfedge out_prev_1 = get_prev(out_1);
-
-        set_next(in_0, h);
-        set_next(o, out_next_0);
         set_halfedge(v0, h);
 
-        set_next(h, out_1);
-        set_next(out_prev_1, o);
+        Halfedge out_1 = get_halfedge(v1);
+        if (is_valid(out_1)) {
+            Halfedge out_prev_1 = get_prev(out_1);
+            set_next(h, out_1);
+            set_next(out_prev_1, o);
+        }
+
         set_halfedge(v1, o);
 
         return h;
@@ -105,7 +119,7 @@ namespace Bcg {
 
     Halfedge GraphInterface::find_halfedge(Vertex v0, Vertex v1) const {
         if (!halfedges.is_valid(get_halfedge(v0))) {
-            return Halfedge();
+            return {};
         }
         for (auto h: get_halfedges(v0)) {
             if (to_vertex(h) == v1) {
@@ -139,8 +153,8 @@ namespace Bcg {
         halfedges.hdeleted[h] = true;
         halfedges.hdeleted[o] = true;
 
-        Vertex v0 = to_vertex(h);
-        Vertex v1 = to_vertex(o);
+        Vertex v1 = to_vertex(h);
+        Vertex v0 = to_vertex(o);
 
         Halfedge out_v1 = get_next(h);
         Halfedge in_v1 = get_prev(o);
@@ -260,6 +274,30 @@ namespace Bcg {
         vertices.deleted_vertices = edges.deleted_edges = halfedges.deleted_halfedges = 0;
     }
 
+    void GraphInterface::clear() {
+        vertices.clear();
+
+        free_memory();
+
+        vpoint = vertices.vertex_property<PointType>("v:point");
+        vconnectivity = vertices.vertex_property<Halfedge>("v:connectivity");
+        ecolors = edges.edge_property<ColorType>("e:color");
+        hconnectivity = halfedges.halfedge_property<HalfedgeConnectivity>("h:connectivity");
+        escalarfield = edges.edge_property<ScalarType>("e:scalarfield");
+    }
+
+    void GraphInterface::reserve(size_t nvertices, size_t nedges) {
+        vertices.reserve(nvertices);
+        edges.reserve(nedges);
+        halfedges.reserve(2 * nedges);
+    }
+
+    void GraphInterface::free_memory() {
+        vertices.free_memory();
+        edges.free_memory();
+        halfedges.free_memory();
+    }
+
     Vertex GraphInterface::split(Edge e, Vertex v) {
         Halfedge h = get_halfedge(e, 0);
         Halfedge o = get_halfedge(e, 1);
@@ -285,7 +323,7 @@ namespace Bcg {
 
     Vertex GraphInterface::split(Bcg::Edge e, ScalarType t) {
         return split(e, add_vertex(
-                (1 - t) * vpoint[to_vertex(get_halfedge(e, 0))] + t * vpoint[to_vertex(get_halfedge(e, 1))]));
+                         (1 - t) * vpoint[to_vertex(get_halfedge(e, 0))] + t * vpoint[to_vertex(get_halfedge(e, 1))]));
     }
 
     Vertex GraphInterface::split(Edge e, PointType point) {

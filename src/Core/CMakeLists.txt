@@ -17,7 +17,6 @@ target_sources(Engine24 PRIVATE
         InputManager.cpp
         InputModule.cpp
         GetPrimitives.cpp
-        Graph.cpp
         GraphInterface.cpp
         GuiModuleRendererSettings.cpp
         GuiModuleTransforms.cpp
@@ -47,7 +46,6 @@ target_sources(Engine24 PRIVATE
         PickerSystem.cpp
         Plane.cpp
         Plugins.cpp
-        PointCloud.cpp
         PointCloudResources.cpp
         PointCloudInterface.cpp
         PointCloudIo.cpp

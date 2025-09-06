@@ -68,6 +68,18 @@ namespace Bcg {
         return v;
     }
 
+    void PointCloudInterface::mark_vertex_deleted(Vertex v) {
+        if (!vdeleted[v]) {
+            vdeleted[v] = true;
+            ++vertices.deleted_vertices;
+        }
+        vertices.has_garbage_ = true;
+    }
+
+    void PointCloudInterface::remove_vertex(Vertex v) {
+        mark_vertex_deleted(v);
+    }
+
     void PointCloudInterface::garbage_collection() {
         if (!vertices.has_garbage_)
             return;

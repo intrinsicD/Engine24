@@ -8,15 +8,41 @@
 
 namespace Bcg {
     struct PointCloudInterface {
-        explicit PointCloudInterface(PointCloudData &data) : PointCloudInterface(data.vertices) {}
+        explicit PointCloudInterface(PointCloudData &data) : PointCloudInterface(data.vertices) {
+        }
 
-        explicit PointCloudInterface(Vertices &vertices) :
-                vertices(vertices),
-                vpoint(vertices.get_vertex_property<PointType>("v:point")),
-                vnormal(vertices.get_vertex_property<NormalType>("v:normal")),
-                vcolor(vertices.get_vertex_property<ColorType>("v:color")),
-                vscalarfield(vertices.get_vertex_property<ScalarType>("v:scalarfield")),
-                vradius(vertices.get_vertex_property<ScalarType>("v:radius")) {}
+        explicit PointCloudInterface(Vertices &vertices) : vertices(vertices),
+                                                           vpoint(vertices.vertex_property<PointType>("v:point")),
+                                                           vnormal(vertices.vertex_property<NormalType>("v:normal")),
+                                                           vcolor(vertices.vertex_property<ColorType>("v:color")),
+                                                           vscalarfield(
+                                                               vertices.vertex_property<ScalarType>("v:scalarfield")),
+                                                           vradius(vertices.vertex_property<ScalarType>("v:radius")),
+                                                           vdeleted(vertices.vertex_property<bool>("v:deleted")) {
+        }
+
+        PointCloudInterface(PointCloudInterface &&other) noexcept
+            : vertices(other.vertices) {
+            vpoint = other.vpoint;
+            vnormal = other.vnormal;
+            vcolor = other.vcolor;
+            vscalarfield = other.vscalarfield;
+            vradius = other.vradius;
+            vdeleted = other.vdeleted;
+        }
+
+        PointCloudInterface &operator=(PointCloudInterface &&other) noexcept {
+            if (this != &other) {
+                vertices = other.vertices;
+                vpoint = other.vpoint;
+                vnormal = other.vnormal;
+                vcolor = other.vcolor;
+                vscalarfield = other.vscalarfield;
+                vradius = other.vradius;
+                vdeleted = other.vdeleted;
+            }
+            return *this;
+        }
 
         Vertices &vertices;
 
@@ -25,31 +51,37 @@ namespace Bcg {
         VertexProperty<ColorType> vcolor;
         VertexProperty<ScalarType> vscalarfield;
         VertexProperty<ScalarType> vradius;
+        VertexProperty<bool> vdeleted;
 
         template<class T>
-        inline VertexProperty<T> add_vertex_property(const std::string &name,
-                                                     const T t = T()) {
+        VertexProperty<T> add_vertex_property(const std::string &name, const T t = T()) {
             return VertexProperty<T>(vertices.add<T>(name, t));
         }
 
         template<class T>
-        inline VertexProperty<T> get_vertex_property(const std::string &name) const {
+        VertexProperty<T> get_vertex_property(const std::string &name) const {
             return VertexProperty<T>(vertices.get<T>(name));
         }
 
         template<class T>
-        inline VertexProperty<T> vertex_property(const std::string &name, const T t = T()) {
+        VertexProperty<T> vertex_property(const std::string &name, const T t = T()) {
             return VertexProperty<T>(vertices.get_or_add<T>(name, t));
         }
 
         template<class T>
-        inline void remove_vertex_property(VertexProperty<T> &p) {
+        void remove_vertex_property(VertexProperty<T> &p) {
             vertices.remove(p);
         }
 
-        inline bool has_vertex_property(const std::string &name) const {
+        [[nodiscard]] bool has_vertex_property(const std::string &name) const {
             return vertices.exists(name);
         }
+
+        [[nodiscard]] bool is_empty() const { return vertices.size() == 0; }
+
+        [[nodiscard]] bool is_deleted(Vertex v) const { return vdeleted[v]; }
+
+        [[nodiscard]] bool is_valid(Vertex v) const { return (v.idx() < vertices.size()); }
 
         void set_points(const std::vector<PointType> &points);
 
@@ -65,11 +97,16 @@ namespace Bcg {
 
         Vertex add_vertex(const PointType &p);
 
+        void mark_vertex_deleted(Vertex v);
+
+        void remove_vertex(Vertex v);
+
         void garbage_collection();
     };
 
     struct PointCloudOwning : public PointCloudInterface {
-        PointCloudOwning() : PointCloudInterface(vertices_) {}
+        PointCloudOwning() : PointCloudInterface(vertices_) {
+        }
 
     private:
         Vertices vertices_;

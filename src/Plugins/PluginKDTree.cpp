@@ -25,7 +25,7 @@ namespace Bcg {
                     kdtree.build(graph.positions());
                 }else */if (Engine::has<PointCloud>(entity_id)) {
                 auto &pc = Engine::State().get<PointCloud>(entity_id);
-                kdtree.build(pc.positions());
+                kdtree.build(pc.interface.vpoint.vector());
             }
         }
     }

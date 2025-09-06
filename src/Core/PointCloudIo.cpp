@@ -32,11 +32,11 @@ namespace Bcg {
         cols = numbers.size() / rows;
         assert(cols == 7);
         auto mapped = Map(numbers, rows, cols);
-        auto colors = pc.vertex_property<ColorType>("v:color", ColorType(0.0f));
-        auto intensities = pc.vertex_property<ScalarType>("v:intensity", 1);
+        auto colors = pc.interface.vertex_property<ColorType>("v:color", ColorType(0.0f));
+        auto intensities = pc.interface.vertex_property<ScalarType>("v:intensity", 1);
 
-        pc.vprops_.resize(rows);
-        Map(pc.positions()) = mapped.block(0, 0, rows, 3);
+        pc.data.vertices.resize(rows);
+        Map(pc.interface.vpoint.vector()) = mapped.block(0, 0, rows, 3);
         Map(intensities.vector()) = mapped.block(0, 3, rows, 1);
         Map(colors.vector()) = mapped.block(0, 4, rows, 3);
         return true;
@@ -50,11 +50,11 @@ namespace Bcg {
         cols = numbers.size() / rows;
         assert(cols == 7);
         auto mapped = Map(numbers, rows, cols);
-        auto colors = pc.vertex_property<ColorType>("v:color", ColorType(0.0f));
-        auto intensities = pc.vertex_property<ScalarType>("v:intensity", 1);
+        auto colors = pc.interface.vertex_property<ColorType>("v:color", ColorType(0.0f));
+        auto intensities = pc.interface.vertex_property<ScalarType>("v:intensity", 1);
 
-        pc.vprops_.resize(rows);
-        Map(pc.positions()) = mapped.block(0, 0, rows, 3).transpose();
+        pc.data.vertices.resize(rows);
+        Map(pc.interface.vpoint.vector()) = mapped.block(0, 0, rows, 3).transpose();
         Map(intensities.vector()) = mapped.block(0, 3, rows, 1);
         Map(colors.vector()) = mapped.block(0, 4, rows, 3).transpose();
         return true;
@@ -69,11 +69,11 @@ namespace Bcg {
 
         auto mapped = Map(numbers, rows, cols);
 
-        pc.vprops_.resize(cols);
-        Map(pc.positions()) = mapped.block(0, 0, 3, cols);
+        pc.data.vertices.resize(cols);
+        Map(pc.interface.vpoint.vector()) = mapped.block(0, 0, 3, cols);
 
         if (cols == 6) {
-            auto colors = pc.vertex_property<ColorType>("v:color", ColorType(0.0f));
+            auto colors = pc.interface.vertex_property<ColorType>("v:color", ColorType(0.0f));
             Map(colors.vector()) = mapped.block(3, 0, 3, cols);
         }
         return true;
@@ -98,60 +98,63 @@ namespace Bcg {
         std::ofstream out(filepath);
         if (!out.is_open()) return false;
 
-        auto positions = pc.get_vertex_property<PointType>("v:point");
-        auto intensities = pc.get_vertex_property<ScalarType>("v:intensity");
+        auto positions = pc.interface.get_vertex_property<PointType>("v:point");
+        auto intensities = pc.interface.get_vertex_property<ScalarType>("v:intensity");
 
         if (flags.use_colors) {
-            auto colors = pc.get_vertex_property<ColorType>("v:color");
-            for (const auto v: pc.vertices()) {
-                out << Map(positions[v]).transpose() << " " << intensities[v] << " " << Map(colors[v]).transpose() << std::endl;
+            auto colors = pc.interface.get_vertex_property<ColorType>("v:color");
+            for (const auto v: pc.data.vertices) {
+                out << Map(positions[v]).transpose() << " " << intensities[v] << " " << Map(colors[v]).transpose() <<
+                        std::endl;
             }
         } else {
-            for (const auto v: pc.vertices()) {
+            for (const auto v: pc.data.vertices) {
                 out << Map(positions[v]).transpose() << " " << intensities[v] << std::endl;
             }
         }
-        return false;
+        return true;
     }
 
     bool WritePts(const std::string &filepath, const PointCloud &pc, const PointCloudIOFlags &flags) {
         std::ofstream out(filepath);
         if (!out.is_open()) return false;
 
-        auto positions = pc.get_vertex_property<PointType>("v:point");
-        auto intensities = pc.get_vertex_property<ScalarType>("v:intensity");
+        auto positions = pc.interface.get_vertex_property<PointType>("v:point");
+        auto intensities = pc.interface.get_vertex_property<ScalarType>("v:intensity");
 
         if (flags.use_colors) {
-            auto colors = pc.get_vertex_property<ColorType>("v:color");
-            for (const auto v: pc.vertices()) {
-                out << Map(positions[v]).transpose() << " " << intensities[v] << " " << Map(colors[v]).transpose() << std::endl;
+            auto colors = pc.interface.get_vertex_property<ColorType>("v:color");
+            for (const auto v: pc.data.vertices) {
+                out << Map(positions[v]).transpose() << " " << intensities[v] << " " << Map(colors[v]).transpose() <<
+                        std::endl;
             }
         } else {
-            for (const auto v: pc.vertices()) {
+            for (const auto v: pc.data.vertices) {
                 out << Map(positions[v]).transpose() << " " << intensities[v] << std::endl;
             }
         }
-        return false;
+        return true;
     }
 
     bool WriteXyz(const std::string &filepath, const PointCloud &pc, const PointCloudIOFlags &flags) {
         std::ofstream out(filepath);
         if (!out.is_open()) return false;
 
-        auto positions = pc.get_vertex_property<PointType>("v:point");
-        auto intensities = pc.get_vertex_property<ScalarType>("v:intensity");
+        auto positions = pc.interface.get_vertex_property<PointType>("v:point");
+        auto intensities = pc.interface.get_vertex_property<ScalarType>("v:intensity");
 
         if (flags.use_colors) {
-            auto colors = pc.get_vertex_property<ColorType>("v:color");
-            for (const auto v: pc.vertices()) {
-                out << Map(positions[v]).transpose() << " " << intensities[v] << " " << Map(colors[v]).transpose() << std::endl;
+            auto colors = pc.interface.get_vertex_property<ColorType>("v:color");
+            for (const auto v: pc.data.vertices) {
+                out << Map(positions[v]).transpose() << " " << intensities[v] << " " << Map(colors[v]).transpose() <<
+                        std::endl;
             }
         } else {
-            for (const auto v: pc.vertices()) {
+            for (const auto v: pc.data.vertices) {
                 out << Map(positions[v]).transpose() << " " << intensities[v] << std::endl;
             }
         }
-        return false;
+        return true;
     }
 
     //------------------------------------------------------------------------------------------------------------------
@@ -238,13 +241,14 @@ namespace Bcg {
 
         if (ext == ".csv") {
             return WriteCsv(filepath, pci, flags);
-        } else if (ext == ".pts") {
-            return WritePts(filepath, pci, flags);
-        } else if (ext == ".xyz") {
-            return WriteXyz(filepath, pci, flags);
-        } else {
-            return false;
         }
+        if (ext == ".pts") {
+            return WritePts(filepath, pci, flags);
+        }
+        if (ext == ".xyz") {
+            return WriteXyz(filepath, pci, flags);
+        }
+        return false;
     }
 
     bool WriteCsv(const std::string &filepath, const PointCloudInterface &pci, const PointCloudIOFlags &flags) {
@@ -257,14 +261,15 @@ namespace Bcg {
         if (flags.use_colors) {
             auto colors = pci.vertices.get_vertex_property<ColorType>("v:color");
             for (const auto v: pci.vertices) {
-                out << Map(positions[v]).transpose() << " " << intensities[v] << " " << Map(colors[v]).transpose() << std::endl;
+                out << Map(positions[v]).transpose() << " " << intensities[v] << " " << Map(colors[v]).transpose() <<
+                        std::endl;
             }
         } else {
             for (const auto v: pci.vertices) {
                 out << Map(positions[v]).transpose() << " " << intensities[v] << std::endl;
             }
         }
-        return false;
+        return true;
     }
 
     bool WritePts(const std::string &filepath, const PointCloudInterface &pci, const PointCloudIOFlags &flags) {
@@ -277,14 +282,15 @@ namespace Bcg {
         if (flags.use_colors) {
             auto colors = pci.vertices.get_vertex_property<ColorType>("v:color");
             for (const auto v: pci.vertices) {
-                out << Map(positions[v]).transpose() << " " << intensities[v] << " " << Map(colors[v]).transpose() << std::endl;
+                out << Map(positions[v]).transpose() << " " << intensities[v] << " " << Map(colors[v]).transpose() <<
+                        std::endl;
             }
         } else {
             for (const auto v: pci.vertices) {
                 out << Map(positions[v]).transpose() << " " << intensities[v] << std::endl;
             }
         }
-        return false;
+        return true;
     }
 
     bool WriteXyz(const std::string &filepath, const PointCloudInterface &pci, const PointCloudIOFlags &flags) {
@@ -297,13 +303,14 @@ namespace Bcg {
         if (flags.use_colors) {
             auto colors = pci.vertices.get_vertex_property<ColorType>("v:color");
             for (const auto v: pci.vertices) {
-                out << Map(positions[v]).transpose() << " " << intensities[v] << " " << Map(colors[v]).transpose() << std::endl;
+                out << Map(positions[v]).transpose() << " " << intensities[v] << " " << Map(colors[v]).transpose() <<
+                        std::endl;
             }
         } else {
             for (const auto v: pci.vertices) {
                 out << Map(positions[v]).transpose() << " " << intensities[v] << std::endl;
             }
         }
-        return false;
+        return true;
     }
 }

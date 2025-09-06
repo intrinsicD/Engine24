@@ -14,16 +14,16 @@ namespace Bcg {
             return &Engine::State().get<MeshHandle>(entity_id)->vprops_;
         }
         if(Engine::has<PointCloudHandle>(entity_id)){
-            return &Engine::State().get<PointCloudHandle>(entity_id)->vprops_;
+            return &Engine::State().get<PointCloudHandle>(entity_id)->data.vertices;
         }
         if (Engine::has<SurfaceMesh>(entity_id)) {
             return &Engine::State().get<SurfaceMesh>(entity_id).vprops_;
         }
         if(Engine::has<Graph>(entity_id)){
-            return &Engine::State().get<Graph>(entity_id).vprops_;
+            return &Engine::State().get<Graph>(entity_id).data.vertices;
         }
         if (Engine::has<PointCloud>(entity_id)) {
-            return &Engine::State().get<PointCloud>(entity_id).vprops_;
+            return &Engine::State().get<PointCloud>(entity_id).data.vertices;
         }
         return nullptr;
     }
@@ -36,7 +36,7 @@ namespace Bcg {
             return &Engine::State().get<SurfaceMesh>(entity_id).hprops_;
         }
         if(Engine::has<Graph>(entity_id)){
-            return &Engine::State().get<Graph>(entity_id).hprops_;
+            return &Engine::State().get<Graph>(entity_id).data.halfedges;
         }
         return nullptr;
     }
@@ -49,7 +49,7 @@ namespace Bcg {
             return &Engine::State().get<SurfaceMesh>(entity_id).eprops_;
         }
         if(Engine::has<Graph>(entity_id)){
-            return &Engine::State().get<Graph>(entity_id).eprops_;
+            return &Engine::State().get<Graph>(entity_id).data.edges;
         }
         return nullptr;
     }

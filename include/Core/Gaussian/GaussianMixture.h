@@ -16,7 +16,7 @@ namespace Bcg {
         VertexProperty<float> weights;
 
         explicit GaussianMixture(PointCloud &pc) {
-            vprops_ = pc.vprops_;
+            vprops_ = pc.data.vertices;
         }
 
         GaussianMixture() = default;

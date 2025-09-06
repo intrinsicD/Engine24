@@ -36,7 +36,7 @@ namespace Bcg {
                 auto start_time = std::chrono::high_resolution_clock::now();
 
                 PointCloud pc = PluginPointCloud::load(event.paths[i]);
-                if (!pc.is_empty()) {
+                if (!pc.interface.is_empty()) {
                     auto end_time = std::chrono::high_resolution_clock::now();
 
                     std::chrono::duration<double> build_duration = end_time - start_time;

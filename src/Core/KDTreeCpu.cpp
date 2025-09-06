@@ -22,10 +22,16 @@ namespace Bcg {
     }
 
     QueryResult KDTreeCpu::knn_query(const Vector<float, 3> &query_point, unsigned int num_closest) const {
-        QueryResult result(num_closest);
-        nanoflann::KNNResultSet<float> resultSet(num_closest);
+        int k = num_closest + 1;
+        QueryResult result(k);
+        nanoflann::KNNResultSet<float> resultSet(k);
         resultSet.init(result.indices.data(), result.distances.data());
-        index->findNeighbors(resultSet, &query_point[0], nanoflann::SearchParameters(10));
+        nanoflann::SearchParameters params;
+        params.sorted = true;
+        params.eps = 0.0;
+        index->findNeighbors(resultSet, &query_point[0], params);
+        result.indices = std::vector(result.indices.begin() + 1, result.indices.end());
+        result.distances = std::vector(result.distances.begin() + 1, result.distances.end());
         return result;
     }
 
