@@ -745,7 +745,7 @@ namespace Bcg {
 
         // read properties from file
         // clang-format off
-        [[maybe_unused]] size_t nvc = fread((char *) mesh.vconn_.data(), sizeof(SurfaceMesh::VertexConnectivity), nv,
+        [[maybe_unused]] size_t nvc = fread((char *) mesh.vconn_.data(), sizeof(Halfedge), nv,
                                             in);
         [[maybe_unused]] size_t nhc = fread((char *) mesh.hconn_.data(), sizeof(HalfedgeConnectivity), nh,
                                             in);
@@ -1146,7 +1146,7 @@ namespace Bcg {
 
         // write properties to file
         // clang-format off
-        fwrite((char *) mesh.vconn_.data(), sizeof(SurfaceMesh::VertexConnectivity), nv, out);
+        fwrite((char *) mesh.vconn_.data(), sizeof(Halfedge), nv, out);
         fwrite((char *) mesh.hconn_.data(), sizeof(HalfedgeConnectivity), nh, out);
         fwrite((char *) mesh.fconn_.data(), sizeof(SurfaceMesh::FaceConnectivity), nf, out);
         fwrite((char *) mesh.vpoint_.data(), sizeof(PointType), nv, out);

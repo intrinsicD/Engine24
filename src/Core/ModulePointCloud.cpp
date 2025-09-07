@@ -206,7 +206,7 @@ namespace Bcg {
                     if (ImGui::CollapsingHeader("Radius - Graph")) {
                         static float radius = 0.1f;
                         ImGui::InputFloat("radius", &radius);
-                        if (ImGui::Button("Create##KnnGraph")) {
+                        if (ImGui::Button("Create##RadiusGraph")) {
                             auto graph = PointCloudToRadiusGraph(pc.interface.vpoint, radius);
                             Engine::State().emplace_or_replace<Graph>(entity_id, graph);
                             ModuleGraphView::setup(entity_id);

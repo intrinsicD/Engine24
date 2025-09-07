@@ -74,7 +74,7 @@ namespace Bcg {
 
         //! copy constructor: copies \p rhs to \p *this. performs a deep copy of all
         //! properties.
-        inline SurfaceMesh(const SurfaceMesh &rhs) { operator=(rhs); }
+        SurfaceMesh(const SurfaceMesh &rhs) { operator=(rhs); }
 
         //! assign \p rhs to \p *this. performs a deep copy of all properties.
         SurfaceMesh &operator=(const SurfaceMesh &rhs);
@@ -107,31 +107,31 @@ namespace Bcg {
         //!@{
 
         //! \return number of (deleted and valid) vertices in the mesh
-        inline size_t vertices_size() const { return vprops_.size(); }
+        size_t vertices_size() const { return vprops_.size(); }
 
         //! \return number of (deleted and valid) halfedges in the mesh
-        inline size_t halfedges_size() const { return hprops_.size(); }
+        size_t halfedges_size() const { return hprops_.size(); }
 
         //! \return number of (deleted and valid) edges in the mesh
-        inline size_t edges_size() const { return eprops_.size(); }
+        size_t edges_size() const { return eprops_.size(); }
 
         //! \return number of (deleted and valid) faces in the mesh
-        inline size_t faces_size() const { return fprops_.size(); }
+        size_t faces_size() const { return fprops_.size(); }
 
         //! \return number of vertices in the mesh
-        inline size_t n_vertices() const { return vertices_size() - deleted_vertices_; }
+        size_t n_vertices() const { return vertices_size() - deleted_vertices_; }
 
         //! \return number of halfedge in the mesh
-        inline size_t n_halfedges() const { return halfedges_size() - 2 * deleted_edges_; }
+        size_t n_halfedges() const { return halfedges_size() - 2 * deleted_edges_; }
 
         //! \return number of edges in the mesh
-        inline size_t n_edges() const { return edges_size() - deleted_edges_; }
+        size_t n_edges() const { return edges_size() - deleted_edges_; }
 
         //! \return number of faces in the mesh
-        inline size_t n_faces() const { return faces_size() - deleted_faces_; }
+        size_t n_faces() const { return faces_size() - deleted_faces_; }
 
         //! \return true if the mesh is empty, i.e., has no vertices
-        inline bool is_empty() const { return n_vertices() == 0; }
+        bool is_empty() const { return n_vertices() == 0; }
 
         //! clear mesh: remove all vertices, edges, faces
         virtual void clear();
@@ -147,31 +147,31 @@ namespace Bcg {
 
         //! \return whether vertex \p v is deleted
         //! \sa garbage_collection()
-        inline bool is_deleted(Vertex v) const { return vdeleted_[v]; }
+        bool is_deleted(Vertex v) const { return vdeleted_[v]; }
 
         //! \return whether halfedge \p h is deleted
         //! \sa garbage_collection()
-        inline bool is_deleted(Halfedge h) const { return edeleted_[edge(h)]; }
+        bool is_deleted(Halfedge h) const { return edeleted_[edge(h)]; }
 
         //! \return whether edge \p e is deleted
         //! \sa garbage_collection()
-        inline bool is_deleted(Edge e) const { return edeleted_[e]; }
+        bool is_deleted(Edge e) const { return edeleted_[e]; }
 
         //! \return whether face \p f is deleted
         //! \sa garbage_collection()
-        inline bool is_deleted(Face f) const { return fdeleted_[f]; }
+        bool is_deleted(Face f) const { return fdeleted_[f]; }
 
         //! \return whether vertex \p v is valid.
-        inline bool is_valid(Vertex v) const { return (v.idx() < vertices_size()); }
+        bool is_valid(Vertex v) const { return (v.idx() < vertices_size()); }
 
         //! \return whether halfedge \p h is valid.
-        inline bool is_valid(Halfedge h) const { return (h.idx() < halfedges_size()); }
+        bool is_valid(Halfedge h) const { return (h.idx() < halfedges_size()); }
 
         //! \return whether edge \p e is valid.
-        inline bool is_valid(Edge e) const { return (e.idx() < edges_size()); }
+        bool is_valid(Edge e) const { return (e.idx() < edges_size()); }
 
         //! \return whether the face \p f is valid.
-        inline bool is_valid(Face f) const { return (f.idx() < faces_size()); }
+        bool is_valid(Face f) const { return (f.idx() < faces_size()); }
 
         //!@}
         //! \name Low-level connectivity
@@ -179,19 +179,19 @@ namespace Bcg {
 
         //! \return an outgoing halfedge of vertex \p v.
         //! if \p v is a boundary vertex this will be a boundary halfedge.
-        inline Halfedge get_halfedge(Vertex v) const { return vconn_[v].halfedge_; }
+        Halfedge get_halfedge(Vertex v) const { return vconn_[v]; }
 
         //! set the outgoing halfedge of vertex \p v to \p h
-        inline void set_halfedge(Vertex v, Halfedge h) { vconn_[v].halfedge_ = h; }
+        void set_halfedge(Vertex v, Halfedge h) { vconn_[v] = h; }
 
         //! \return whether \p v is a boundary vertex
-        inline bool is_boundary(Vertex v) const {
+        bool is_boundary(Vertex v) const {
             Halfedge h(get_halfedge(v));
             return (!(h.is_valid() && face(h).is_valid()));
         }
 
         //! \return whether \p v is isolated, i.e., not incident to any edge
-        inline bool is_isolated(Vertex v) const { return !get_halfedge(v).is_valid(); }
+        bool is_isolated(Vertex v) const { return !get_halfedge(v).is_valid(); }
 
         //! \return whether \p v is a manifold vertex (not incident to several patches)
         bool is_manifold(Vertex v) const {
@@ -209,99 +209,99 @@ namespace Bcg {
         }
 
         //! \return the vertex the halfedge \p h points to
-        inline Vertex to_vertex(Halfedge h) const { return hconn_[h].v; }
+        Vertex to_vertex(Halfedge h) const { return hconn_[h].v; }
 
         //! \return the vertex the halfedge \p h emanates from
-        inline Vertex from_vertex(Halfedge h) const {
+        Vertex from_vertex(Halfedge h) const {
             return to_vertex(opposite_halfedge(h));
         }
 
         //! sets the vertex the halfedge \p h points to to \p v
-        inline void set_vertex(Halfedge h, Vertex v) { hconn_[h].v = v; }
+        void set_vertex(Halfedge h, Vertex v) { hconn_[h].v = v; }
 
         //! \return the face incident to halfedge \p h
-        inline Face face(Halfedge h) const { return hconn_[h].f; }
+        Face face(Halfedge h) const { return hconn_[h].f; }
 
         //! sets the incident face to halfedge \p h to \p f
-        inline void set_face(Halfedge h, Face f) { hconn_[h].f = f; }
+        void set_face(Halfedge h, Face f) { hconn_[h].f = f; }
 
         //! \return the next halfedge within the incident face
-        inline Halfedge next_halfedge(Halfedge h) const {
+        Halfedge next_halfedge(Halfedge h) const {
             return hconn_[h].nh;
         }
 
         //! sets the next halfedge of \p h within the face to \p nh
-        inline void set_next_halfedge(Halfedge h, Halfedge nh) {
+        void set_next_halfedge(Halfedge h, Halfedge nh) {
             hconn_[h].nh = nh;
             hconn_[nh].ph = h;
         }
 
         //! sets the previous halfedge of \p h and the next halfedge of \p ph to \p nh
-        inline void set_prev_halfedge(Halfedge h, Halfedge ph) {
+        void set_prev_halfedge(Halfedge h, Halfedge ph) {
             hconn_[h].ph = ph;
             hconn_[ph].nh = h;
         }
 
         //! \return the previous halfedge within the incident face
-        inline Halfedge prev_halfedge(Halfedge h) const {
+        Halfedge prev_halfedge(Halfedge h) const {
             return hconn_[h].ph;
         }
 
         //! \return the opposite halfedge of \p h
-        inline Halfedge opposite_halfedge(Halfedge h) const {
+        Halfedge opposite_halfedge(Halfedge h) const {
             return Halfedge((h.idx() & 1) ? h.idx() - 1 : h.idx() + 1);
         }
 
         //! \return the halfedge that is rotated counter-clockwise around the
         //! start vertex of \p h. it is the opposite halfedge of the previous
         //! halfedge of \p h.
-        inline Halfedge rotate_ccw(Halfedge h) const {
+        Halfedge rotate_ccw(Halfedge h) const {
             return opposite_halfedge(prev_halfedge(h));
         }
 
         //! \return the halfedge that is rotated clockwise around the start
         //! vertex of \p h. it is the next halfedge of the opposite halfedge of
         //! \p h.
-        inline Halfedge rotate_cw(Halfedge h) const {
+        Halfedge rotate_cw(Halfedge h) const {
             return next_halfedge(opposite_halfedge(h));
         }
 
         //! \return the edge that contains halfedge \p h as one of its two
         //! halfedges.
-        inline Edge edge(Halfedge h) const { return Edge(h.idx() >> 1); }
+        Edge edge(Halfedge h) const { return Edge(h.idx() >> 1); }
 
         //! \return whether h is a boundary halfedge, i.e., if its face does not exist.
-        inline bool is_boundary(Halfedge h) const { return !face(h).is_valid(); }
+        bool is_boundary(Halfedge h) const { return !face(h).is_valid(); }
 
         //! \return the \p i'th halfedge of edge \p e. \p i has to be 0 or 1.
-        inline Halfedge get_halfedge(Edge e, unsigned int i) const {
+        Halfedge get_halfedge(Edge e, unsigned int i) const {
             assert(i <= 1);
             return Halfedge((e.idx() << 1) + i);
         }
 
         //! \return the \p i'th vertex of edge \p e. \p i has to be 0 or 1.
-        inline Vertex vertex(Edge e, unsigned int i) const {
+        Vertex vertex(Edge e, unsigned int i) const {
             assert(i <= 1);
             return to_vertex(get_halfedge(e, i));
         }
 
         //! \return the face incident to the \p i'th halfedge of edge \p e. \p i has to be 0 or 1.
-        inline Face face(Edge e, unsigned int i) const {
+        Face face(Edge e, unsigned int i) const {
             assert(i <= 1);
             return face(get_halfedge(e, i));
         }
 
         //! \return whether \p e is a boundary edge, i.e., if one of its
         //! halfedges is a boundary halfedge.
-        inline bool is_boundary(Edge e) const {
+        bool is_boundary(Edge e) const {
             return (is_boundary(get_halfedge(e, 0)) || is_boundary(get_halfedge(e, 1)));
         }
 
         //! \return a halfedge of face \p f
-        inline Halfedge get_halfedge(Face f) const { return fconn_[f].halfedge_; }
+        Halfedge get_halfedge(Face f) const { return fconn_[f].halfedge_; }
 
         //! sets the halfedge of face \p f to \p h
-        inline void set_halfedge(Face f, Halfedge h) { fconn_[f].halfedge_ = h; }
+        void set_halfedge(Face f, Halfedge h) { fconn_[f].halfedge_ = h; }
 
         //! \return whether \p f is a boundary face, i.e., it one of its edges is a boundary edge.
         bool is_boundary(Face f) const {
@@ -324,7 +324,7 @@ namespace Bcg {
         //! since the name has to be unique. in this case it returns an
         //! invalid property
         template<class T>
-        inline VertexProperty<T> add_vertex_property(const std::string &name,
+        VertexProperty<T> add_vertex_property(const std::string &name,
                                                      const T t = T()) {
             return VertexProperty<T>(vprops_.add<T>(name, t));
         }
@@ -333,7 +333,7 @@ namespace Bcg {
         //! invalid VertexProperty if the property does not exist or if the
         //! type does not match.
         template<class T>
-        inline VertexProperty<T> get_vertex_property(const std::string &name) const {
+        VertexProperty<T> get_vertex_property(const std::string &name) const {
             return VertexProperty<T>(vprops_.get<T>(name));
         }
 
@@ -341,18 +341,18 @@ namespace Bcg {
         //! returned. otherwise this property is added (with default value \c
         //! t)
         template<class T>
-        inline VertexProperty<T> vertex_property(const std::string &name, const T t = T()) {
+        VertexProperty<T> vertex_property(const std::string &name, const T t = T()) {
             return VertexProperty<T>(vprops_.get_or_add<T>(name, t));
         }
 
         //! remove the vertex property \p p
         template<class T>
-        inline void remove_vertex_property(VertexProperty<T> &p) {
+        void remove_vertex_property(VertexProperty<T> &p) {
             vprops_.remove(p);
         }
 
         //! does the mesh have a vertex property with name \p name?
-        inline bool has_vertex_property(const std::string &name) const {
+        bool has_vertex_property(const std::string &name) const {
             return vprops_.exists(name);
         }
 
@@ -361,7 +361,7 @@ namespace Bcg {
         //! since the name has to be unique. in this case it returns an
         //! invalid property.
         template<class T>
-        inline HalfedgeProperty<T> add_halfedge_property(const std::string &name,
+        HalfedgeProperty<T> add_halfedge_property(const std::string &name,
                                                          const T t = T()) {
             return HalfedgeProperty<T>(hprops_.add<T>(name, t));
         }
@@ -371,7 +371,7 @@ namespace Bcg {
         //! since the name has to be unique.  in this case it returns an
         //! invalid property.
         template<class T>
-        inline EdgeProperty<T> add_edge_property(const std::string &name, const T t = T()) {
+        EdgeProperty<T> add_edge_property(const std::string &name, const T t = T()) {
             return EdgeProperty<T>(eprops_.add<T>(name, t));
         }
 
@@ -379,7 +379,7 @@ namespace Bcg {
         //! invalid VertexProperty if the property does not exist or if the
         //! type does not match.
         template<class T>
-        inline HalfedgeProperty<T> get_halfedge_property(const std::string &name) const {
+        HalfedgeProperty<T> get_halfedge_property(const std::string &name) const {
             return HalfedgeProperty<T>(hprops_.get<T>(name));
         }
 
@@ -387,7 +387,7 @@ namespace Bcg {
         //! invalid VertexProperty if the property does not exist or if the
         //! type does not match.
         template<class T>
-        inline EdgeProperty<T> get_edge_property(const std::string &name) const {
+        EdgeProperty<T> get_edge_property(const std::string &name) const {
             return EdgeProperty<T>(eprops_.get<T>(name));
         }
 
@@ -395,7 +395,7 @@ namespace Bcg {
         //! returned.  otherwise this property is added (with default value \c
         //! t)
         template<class T>
-        inline HalfedgeProperty<T> halfedge_property(const std::string &name,
+        HalfedgeProperty<T> halfedge_property(const std::string &name,
                                                      const T t = T()) {
             return HalfedgeProperty<T>(hprops_.get_or_add<T>(name, t));
         }
@@ -404,44 +404,44 @@ namespace Bcg {
         //! returned.  otherwise this property is added (with default value \c
         //! t)
         template<class T>
-        inline EdgeProperty<T> edge_property(const std::string &name, const T t = T()) {
+        EdgeProperty<T> edge_property(const std::string &name, const T t = T()) {
             return EdgeProperty<T>(eprops_.get_or_add<T>(name, t));
         }
 
         //! remove the halfedge property \p p
         template<class T>
-        inline void remove_halfedge_property(HalfedgeProperty<T> &p) {
+        void remove_halfedge_property(HalfedgeProperty<T> &p) {
             hprops_.remove(p);
         }
 
         //! does the mesh have a halfedge property with name \p name?
-        inline bool has_halfedge_property(const std::string &name) const {
+        bool has_halfedge_property(const std::string &name) const {
             return hprops_.exists(name);
         }
 
         //! remove the edge property \p p
         template<class T>
-        inline void remove_edge_property(EdgeProperty<T> &p) {
+        void remove_edge_property(EdgeProperty<T> &p) {
             eprops_.remove(p);
         }
 
         //! does the mesh have an edge property with name \p name?
-        inline bool has_edge_property(const std::string &name) const {
+        bool has_edge_property(const std::string &name) const {
             return eprops_.exists(name);
         }
 
         //! \return the names of all vertex properties
-        inline std::vector<std::string> vertex_properties() const {
+        std::vector<std::string> vertex_properties() const {
             return vprops_.properties();
         }
 
         //! \return the names of all halfedge properties
-        inline std::vector<std::string> halfedge_properties() const {
+        std::vector<std::string> halfedge_properties() const {
             return hprops_.properties();
         }
 
         //! \return the names of all edge properties
-        inline std::vector<std::string> edge_properties() const {
+        std::vector<std::string> edge_properties() const {
             return eprops_.properties();
         }
 
@@ -586,7 +586,7 @@ namespace Bcg {
         //! points to \p p.
         //! \sa insert_vertex(Edge, Vertex)
         //! \sa insert_vertex(Halfedge, Vertex)
-        inline Halfedge insert_vertex(Edge e, const PointType &p) {
+        Halfedge insert_vertex(Edge e, const PointType &p) {
             return insert_vertex(get_halfedge(e, 0), add_vertex(p));
         }
 
@@ -595,7 +595,7 @@ namespace Bcg {
         //! other edge or faces. It simply splits the edge. Returns halfedge
         //! that points to \p p. \sa insert_vertex(Edge, Point) \sa
         //! insert_vertex(Halfedge, Vertex)
-        inline Halfedge insert_vertex(Edge e, Vertex v) {
+        Halfedge insert_vertex(Edge e, Vertex v) {
             return insert_vertex(get_halfedge(e, 0), v);
         }
 
@@ -649,7 +649,7 @@ namespace Bcg {
         //! inserting edges between \p p and the vertices of \p f. For a triangle
         //! this is a standard one-to-three split.
         //! \sa split(Face, Vertex)
-        inline Vertex split(Face f, const PointType &p) {
+        Vertex split(Face f, const PointType &p) {
             Vertex v = add_vertex(p);
             split(f, v);
             return v;
@@ -667,7 +667,7 @@ namespace Bcg {
         //!
         //! \attention This function is only valid for triangle meshes.
         //! \sa split(Edge, Vertex)
-        inline Halfedge split(Edge e, const PointType &p) { return split(e, add_vertex(p)); }
+        Halfedge split(Edge e, const PointType &p) { return split(e, add_vertex(p)); }
 
         //! Split the edge \p e by connecting vertex \p v it to the two
         //! vertices of the adjacent triangles that are opposite to edge \c
@@ -719,16 +719,16 @@ namespace Bcg {
         //!@{
 
         //! position of a vertex (read only)
-        inline const PointType &position(Vertex v) const { return vpoint_[v]; }
+        const PointType &position(Vertex v) const { return vpoint_[v]; }
 
         //! position of a vertex
-        inline PointType &position(Vertex v) { return vpoint_[v]; }
+        PointType &position(Vertex v) { return vpoint_[v]; }
 
         //! \return vector of point positions
-        inline std::vector<PointType> &positions() { return vpoint_.vector(); }
+        std::vector<PointType> &positions() { return vpoint_.vector(); }
 
         //! \return vector of point positions
-        inline const std::vector<PointType> &positions() const { return vpoint_.vector(); }
+        const std::vector<PointType> &positions() const { return vpoint_.vector(); }
 
         //!@}
 
@@ -737,7 +737,7 @@ namespace Bcg {
 
         //! \brief Allocate a new vertex, resize vertex properties accordingly.
         //! \throw AllocationException in case of failure to allocate a new vertex.
-        inline Vertex new_vertex() {
+        Vertex new_vertex() {
             if (vertices_size() == BCG_MAX_INDEX - 1) {
                 auto what =
                         "SurfaceMesh: cannot allocate vertex, max. index reached";
@@ -749,7 +749,7 @@ namespace Bcg {
 
         //! \brief Allocate a new edge, resize edge and halfedge properties accordingly.
         //! \throw AllocationException in case of failure to allocate a new edge.
-        inline Halfedge new_edge() {
+        Halfedge new_edge() {
             if (halfedges_size() == BCG_MAX_INDEX - 1) {
                 auto what = "SurfaceMesh: cannot allocate edge, max. index reached";
                 throw AllocationException(what);
@@ -769,7 +769,7 @@ namespace Bcg {
         //! \throw AllocationException in case of failure to allocate a new edge.
         //! \param start starting Vertex of the new edge
         //! \param end end Vertex of the new edge
-        inline Halfedge new_edge(Vertex start, Vertex end) {
+        Halfedge new_edge(Vertex start, Vertex end) {
             assert(start != end);
 
             if (halfedges_size() == BCG_MAX_INDEX - 1) {
@@ -792,7 +792,7 @@ namespace Bcg {
 
         //! \brief Allocate a new face, resize face properties accordingly.
         //! \throw AllocationException in case of failure to allocate a new face.
-        inline Face new_face() {
+        Face new_face() {
             if (faces_size() == BCG_MAX_INDEX - 1) {
                 auto what = "SurfaceMesh: cannot allocate face, max. index reached";
                 throw AllocationException(what);
@@ -803,17 +803,6 @@ namespace Bcg {
         }
 
         //!@}
-
-        struct VertexConnectivity {
-            // an outgoing halfedge per vertex (it will be a boundary halfedge
-            // for boundary vertices)
-            Halfedge halfedge_;
-
-            friend std::ostream &operator<<(std::ostream &os, const VertexConnectivity &vc) {
-                os << "h: " << vc.halfedge_.idx_;
-                return os;
-            }
-        };
 
         struct FaceConnectivity {
             Halfedge halfedge_; // a halfedge that is part of the face
@@ -835,7 +824,7 @@ namespace Bcg {
         void remove_loop_helper(Halfedge h);
 
         // are there any deleted entities?
-        inline bool has_garbage() const { return has_garbage_; }
+        bool has_garbage() const { return has_garbage_; }
 
         // io functions that need access to internal details
         friend void read_pmp(SurfaceMesh &, const std::filesystem::path &);
@@ -853,7 +842,7 @@ namespace Bcg {
         VertexProperty<PointType> vpoint_;
 
         // connectivity information
-        VertexProperty<VertexConnectivity> vconn_;
+        VertexProperty<Halfedge> vconn_;
         HalfedgeProperty<HalfedgeConnectivity> hconn_;
         FaceProperty<FaceConnectivity> fconn_;
 

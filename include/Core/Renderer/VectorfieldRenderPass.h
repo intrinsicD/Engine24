@@ -12,9 +12,9 @@
 namespace Bcg{
     class VectorfieldRenderPass : public IRenderPass {
     public:
-        explicit VectorfieldRenderPass(AssetManager& asset_manager);
+        VectorfieldRenderPass(AssetManager& asset_manager);
 
-        void execute(IRenderer *renderer, entt::registry& registry, const Camera& camera) override;
+        void execute(entt::registry& registry, const Camera& camera) override;
     private:
         AssetManager& m_asset_manager;
         Program m_static_mesh_shader;

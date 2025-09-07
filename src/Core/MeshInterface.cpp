@@ -37,7 +37,7 @@ namespace Bcg {
         auto triangles = faces.face_property<Vector<IndexType, 3>>("f:triangles");
         for (auto f: faces) {
             auto h = get_halfedge(f);
-            triangles[f] = {to_vertex(h).idx(), to_vertex(next_halfedge(h)).idx(), to_vertex(prev_halfedge(h)).idx()};
+            triangles[f] = {to_vertex(h).idx(), to_vertex(get_next(h)).idx(), to_vertex(get_prev(h)).idx()};
         }
         return triangles;
     }
@@ -108,20 +108,20 @@ namespace Bcg {
                 inner_prev = halfedges[i];
                 inner_next = halfedges[ii];
 
-                if (next_halfedge(inner_prev) != inner_next) {
+                if (get_next(inner_prev) != inner_next) {
                     // here comes the ugly part... we have to relink a whole patch
 
                     // search a free gap
                     // free gap will be between boundaryPrev and boundaryNext
-                    outer_prev = opposite_halfedge(inner_next);
-                    outer_next = opposite_halfedge(inner_prev);
+                    outer_prev = get_opposite(inner_next);
+                    outer_next = get_opposite(inner_prev);
                     boundary_prev = outer_prev;
                     do {
                         boundary_prev =
-                                opposite_halfedge(next_halfedge(boundary_prev));
+                                get_opposite(get_next(boundary_prev));
                     } while (!is_boundary(boundary_prev) ||
                              boundary_prev == inner_prev);
-                    boundary_next = next_halfedge(boundary_prev);
+                    boundary_next = get_next(boundary_prev);
                     assert(is_boundary(boundary_prev));
                     assert(is_boundary(boundary_next));
 
@@ -133,8 +133,8 @@ namespace Bcg {
                     }
 
                     // other halfedges' handles
-                    patch_start = next_halfedge(inner_prev);
-                    patch_end = prev_halfedge(inner_next);
+                    patch_start = get_next(inner_prev);
+                    patch_end = get_prev(inner_next);
 
                     // relink
                     next_cache.emplace_back(boundary_prev, patch_start);
@@ -168,19 +168,19 @@ namespace Bcg {
                 id |= 2;
 
             if (id) {
-                outer_prev = opposite_halfedge(inner_next);
-                outer_next = opposite_halfedge(inner_prev);
+                outer_prev = get_opposite(inner_next);
+                outer_next = get_opposite(inner_prev);
 
                 // set outer links
                 switch (id) {
                     case 1: // prev is new, next is old
-                        boundary_prev = prev_halfedge(inner_next);
+                        boundary_prev = get_prev(inner_next);
                         next_cache.emplace_back(boundary_prev, outer_next);
                         set_halfedge(v, outer_next);
                         break;
 
                     case 2: // next is new, prev is old
-                        boundary_next = next_halfedge(inner_prev);
+                        boundary_next = get_next(inner_prev);
                         next_cache.emplace_back(outer_prev, boundary_next);
                         set_halfedge(v, boundary_next);
                         break;
@@ -191,7 +191,7 @@ namespace Bcg {
                             next_cache.emplace_back(outer_prev, outer_next);
                         } else {
                             boundary_next = get_halfedge(v);
-                            boundary_prev = prev_halfedge(boundary_next);
+                            boundary_prev = get_prev(boundary_next);
                             next_cache.emplace_back(boundary_prev, outer_next);
                             next_cache.emplace_back(outer_prev, boundary_next);
                         }
@@ -210,7 +210,7 @@ namespace Bcg {
         // process next halfedge cache
         NextCache::const_iterator ncIt(next_cache.begin()), ncEnd(next_cache.end());
         for (; ncIt != ncEnd; ++ncIt) {
-            set_next_halfedge(ncIt->first, ncIt->second);
+            set_next(ncIt->first, ncIt->second);
         }
 
         // adjust vertices' halfedge handle
@@ -343,7 +343,7 @@ namespace Bcg {
         for (size_t i = 0; i < nH; ++i) {
             auto h = Halfedge(i);
             set_vertex(h, vmap[to_vertex(h)]);
-            set_next_halfedge(h, hmap[next_halfedge(h)]);
+            set_next(h, hmap[get_next(h)]);
             if (!is_boundary(h))
                 set_face(h, fmap[face(h)]);
         }
@@ -390,9 +390,9 @@ namespace Bcg {
         Halfedge h = get_halfedge(f);
         Halfedge hh = h;
         do {
-            if (is_boundary(opposite_halfedge(h)))
+            if (is_boundary(get_opposite(h)))
                 return true;
-            h = next_halfedge(h);
+            h = get_next(h);
         } while (h != hh);
         return false;
     }
@@ -412,25 +412,25 @@ namespace Bcg {
         //   <------ <-------
         //     o0       o1
 
-        Halfedge h2 = next_halfedge(h0);
-        Halfedge o0 = opposite_halfedge(h0);
-        Halfedge o2 = prev_halfedge(o0);
+        Halfedge h2 = get_next(h0);
+        Halfedge o0 = get_opposite(h0);
+        Halfedge o2 = get_prev(o0);
         Vertex v2 = to_vertex(h0);
         Face fh = face(h0);
         Face fo = face(o0);
 
         Halfedge h1 = new_edge(v, v2);
-        Halfedge o1 = opposite_halfedge(h1);
+        Halfedge o1 = get_opposite(h1);
 
         // adjust halfedge connectivity
-        set_next_halfedge(h1, h2);
-        set_next_halfedge(h0, h1);
+        set_next(h1, h2);
+        set_next(h0, h1);
         set_vertex(h0, v);
         set_vertex(h1, v2);
         set_face(h1, fh);
 
-        set_next_halfedge(o1, o0);
-        set_next_halfedge(o2, o1);
+        set_next(o1, o0);
+        set_next(o2, o1);
         set_vertex(o1, v);
         set_face(o1, fo);
 
@@ -468,7 +468,7 @@ namespace Bcg {
 
     Edge HalfedgeMeshInterface::find_edge(Vertex a, Vertex b) const {
         Halfedge h = find_halfedge(a, b);
-        return h.is_valid() ? edge(h) : Edge();
+        return h.is_valid() ? get_edge(h) : Edge();
     }
 
     bool HalfedgeMeshInterface::is_triangle_mesh() const {
@@ -488,7 +488,7 @@ namespace Bcg {
     }
 
     bool HalfedgeMeshInterface::is_collapse_ok(Halfedge v0v1) const {
-        Halfedge v1v0(opposite_halfedge(v0v1));
+        Halfedge v1v0(get_opposite(v0v1));
         Vertex v0(to_vertex(v1v0));
         Vertex v1(to_vertex(v0v1));
         Vertex vl, vr;
@@ -496,21 +496,21 @@ namespace Bcg {
 
         // the edges v1-vl and vl-v0 must not be both boundary edges
         if (!is_boundary(v0v1)) {
-            vl = to_vertex(next_halfedge(v0v1));
-            h1 = next_halfedge(v0v1);
-            h2 = next_halfedge(h1);
-            if (is_boundary(opposite_halfedge(h1)) &&
-                is_boundary(opposite_halfedge(h2)))
+            vl = to_vertex(get_next(v0v1));
+            h1 = get_next(v0v1);
+            h2 = get_next(h1);
+            if (is_boundary(get_opposite(h1)) &&
+                is_boundary(get_opposite(h2)))
                 return false;
         }
 
         // the edges v0-vr and vr-v1 must not be both boundary edges
         if (!is_boundary(v1v0)) {
-            vr = to_vertex(next_halfedge(v1v0));
-            h1 = next_halfedge(v1v0);
-            h2 = next_halfedge(h1);
-            if (is_boundary(opposite_halfedge(h1)) &&
-                is_boundary(opposite_halfedge(h2)))
+            vr = to_vertex(get_next(v1v0));
+            h1 = get_next(v1v0);
+            h2 = get_next(h1);
+            if (is_boundary(get_opposite(h1)) &&
+                is_boundary(get_opposite(h2)))
                 return false;
         }
 
@@ -536,19 +536,19 @@ namespace Bcg {
 
     void HalfedgeMeshInterface::collapse(Halfedge h) {
         Halfedge h0 = h;
-        Halfedge h1 = prev_halfedge(h0);
-        Halfedge o0 = opposite_halfedge(h0);
-        Halfedge o1 = next_halfedge(o0);
+        Halfedge h1 = get_prev(h0);
+        Halfedge o0 = get_opposite(h0);
+        Halfedge o1 = get_next(o0);
 
         // remove edge
         remove_edge_helper(h0);
 
         // remove loops
-        if (next_halfedge(next_halfedge(h1)) == h1) {
+        if (get_next(get_next(h1)) == h1) {
             remove_loop_helper(h1);
         }
 
-        if (next_halfedge(next_halfedge(o1)) == o1) {
+        if (get_next(get_next(o1)) == o1) {
             remove_loop_helper(o1);
         }
     }
@@ -592,10 +592,10 @@ namespace Bcg {
         Face f0 = face(h0);
         Face f1 = face(h1);
 
-        Halfedge h0_prev = prev_halfedge(h0);
-        Halfedge h0_next = next_halfedge(h0);
-        Halfedge h1_prev = prev_halfedge(h1);
-        Halfedge h1_next = next_halfedge(h1);
+        Halfedge h0_prev = get_prev(h0);
+        Halfedge h0_next = get_next(h0);
+        Halfedge h1_prev = get_prev(h1);
+        Halfedge h1_next = get_next(h1);
 
         // adjust vertex->halfedge
         if (get_halfedge(v0) == h1)
@@ -608,8 +608,8 @@ namespace Bcg {
             set_face(h, f1);
 
         // adjust halfedge->halfedge
-        set_next_halfedge(h1_prev, h0_next);
-        set_next_halfedge(h0_prev, h1_next);
+        set_next(h1_prev, h0_next);
+        set_next(h0_prev, h1_next);
 
         // adjust face->halfedge
         if (get_halfedge(f1) == h1)
@@ -631,38 +631,38 @@ namespace Bcg {
         // old halfedges.
 
         Halfedge hend = get_halfedge(f);
-        Halfedge h = next_halfedge(hend);
+        Halfedge h = get_next(hend);
 
         Halfedge hold = new_edge(to_vertex(hend), v);
 
-        set_next_halfedge(hend, hold);
+        set_next(hend, hold);
         set_face(hold, f);
 
-        hold = opposite_halfedge(hold);
+        hold = get_opposite(hold);
 
         while (h != hend) {
-            Halfedge hnext = next_halfedge(h);
+            Halfedge hnext = get_next(h);
 
             Face fnew = new_face();
             set_halfedge(fnew, h);
 
             Halfedge hnew = new_edge(to_vertex(h), v);
 
-            set_next_halfedge(hnew, hold);
-            set_next_halfedge(hold, h);
-            set_next_halfedge(h, hnew);
+            set_next(hnew, hold);
+            set_next(hold, h);
+            set_next(h, hnew);
 
             set_face(hnew, fnew);
             set_face(hold, fnew);
             set_face(h, fnew);
 
-            hold = opposite_halfedge(hnew);
+            hold = get_opposite(hnew);
 
             h = hnext;
         }
 
-        set_next_halfedge(hold, hend);
-        set_next_halfedge(next_halfedge(hend), hold);
+        set_next(hold, hend);
+        set_next(get_next(hend), hold);
 
         set_face(hold, f);
 
@@ -676,7 +676,7 @@ namespace Bcg {
         Vertex v2 = to_vertex(o0);
 
         Halfedge e1 = new_edge(v, v2);
-        Halfedge t1 = opposite_halfedge(e1);
+        Halfedge t1 = get_opposite(e1);
 
         Face f0 = face(h0);
         Face f3 = face(o0);
@@ -685,13 +685,13 @@ namespace Bcg {
         set_vertex(o0, v);
 
         if (!is_boundary(h0)) {
-            Halfedge h1 = next_halfedge(h0);
-            Halfedge h2 = next_halfedge(h1);
+            Halfedge h1 = get_next(h0);
+            Halfedge h2 = get_next(h1);
 
             Vertex v1 = to_vertex(h1);
 
             Halfedge e0 = new_edge(v, v1);
-            Halfedge t0 = opposite_halfedge(e0);
+            Halfedge t0 = get_opposite(e0);
 
             Face f1 = new_face();
             set_halfedge(f0, h0);
@@ -705,27 +705,27 @@ namespace Bcg {
             set_face(t1, f1);
             set_face(e0, f1);
 
-            set_next_halfedge(h0, h1);
-            set_next_halfedge(h1, t0);
-            set_next_halfedge(t0, h0);
+            set_next(h0, h1);
+            set_next(h1, t0);
+            set_next(t0, h0);
 
-            set_next_halfedge(e0, h2);
-            set_next_halfedge(h2, t1);
-            set_next_halfedge(t1, e0);
+            set_next(e0, h2);
+            set_next(h2, t1);
+            set_next(t1, e0);
         } else {
-            set_next_halfedge(prev_halfedge(h0), t1);
-            set_next_halfedge(t1, h0);
+            set_next(get_prev(h0), t1);
+            set_next(t1, h0);
             // halfedge handle of vh already is h0
         }
 
         if (!is_boundary(o0)) {
-            Halfedge o1 = next_halfedge(o0);
-            Halfedge o2 = next_halfedge(o1);
+            Halfedge o1 = get_next(o0);
+            Halfedge o2 = get_next(o1);
 
             Vertex v3 = to_vertex(o1);
 
             Halfedge e2 = new_edge(v, v3);
-            Halfedge t2 = opposite_halfedge(e2);
+            Halfedge t2 = get_opposite(e2);
 
             Face f2 = new_face();
             set_halfedge(f2, o1);
@@ -739,16 +739,16 @@ namespace Bcg {
             set_face(o0, f3);
             set_face(e2, f3);
 
-            set_next_halfedge(e1, o1);
-            set_next_halfedge(o1, t2);
-            set_next_halfedge(t2, e1);
+            set_next(e1, o1);
+            set_next(o1, t2);
+            set_next(t2, e1);
 
-            set_next_halfedge(o0, e2);
-            set_next_halfedge(e2, o2);
-            set_next_halfedge(o2, o0);
+            set_next(o0, e2);
+            set_next(e2, o2);
+            set_next(o2, o0);
         } else {
-            set_next_halfedge(e1, next_halfedge(o0));
-            set_next_halfedge(o0, e1);
+            set_next(e1, get_next(o0));
+            set_next(o0, e1);
             set_halfedge(v, e1);
         }
 
@@ -765,11 +765,11 @@ namespace Bcg {
         Vertex v0 = to_vertex(h0);
         Vertex v1 = to_vertex(h1);
 
-        Halfedge h2 = next_halfedge(h0);
-        Halfedge h3 = next_halfedge(h1);
+        Halfedge h2 = get_next(h0);
+        Halfedge h3 = get_next(h1);
 
         Halfedge h4 = new_edge(v0, v1);
-        Halfedge h5 = opposite_halfedge(h4);
+        Halfedge h5 = get_opposite(h4);
 
         Face f0 = face(h0);
         Face f1 = new_face();
@@ -777,16 +777,16 @@ namespace Bcg {
         set_halfedge(f0, h0);
         set_halfedge(f1, h1);
 
-        set_next_halfedge(h0, h4);
-        set_next_halfedge(h4, h3);
+        set_next(h0, h4);
+        set_next(h4, h3);
         set_face(h4, f0);
 
-        set_next_halfedge(h1, h5);
-        set_next_halfedge(h5, h2);
+        set_next(h1, h5);
+        set_next(h5, h2);
         Halfedge h = h2;
         do {
             set_face(h, f1);
-            h = next_halfedge(h);
+            h = get_next(h);
         } while (h != h2);
 
         return h4;
@@ -801,8 +801,8 @@ namespace Bcg {
         Halfedge h0 = get_halfedge(e, 0);
         Halfedge h1 = get_halfedge(e, 1);
 
-        Vertex v0 = to_vertex(next_halfedge(h0));
-        Vertex v1 = to_vertex(next_halfedge(h1));
+        Vertex v0 = to_vertex(get_next(h0));
+        Vertex v1 = to_vertex(get_next(h1));
 
         if (v0 == v1) // this is generally a bad sign !!!
             return false;
@@ -820,11 +820,11 @@ namespace Bcg {
         Halfedge a0 = get_halfedge(e, 0);
         Halfedge b0 = get_halfedge(e, 1);
 
-        Halfedge a1 = next_halfedge(a0);
-        Halfedge a2 = next_halfedge(a1);
+        Halfedge a1 = get_next(a0);
+        Halfedge a2 = get_next(a1);
 
-        Halfedge b1 = next_halfedge(b0);
-        Halfedge b2 = next_halfedge(b1);
+        Halfedge b1 = get_next(b0);
+        Halfedge b2 = get_next(b1);
 
         Vertex va0 = to_vertex(a0);
         Vertex va1 = to_vertex(a1);
@@ -838,13 +838,13 @@ namespace Bcg {
         set_vertex(a0, va1);
         set_vertex(b0, vb1);
 
-        set_next_halfedge(a0, a2);
-        set_next_halfedge(a2, b1);
-        set_next_halfedge(b1, a0);
+        set_next(a0, a2);
+        set_next(a2, b1);
+        set_next(b1, a0);
 
-        set_next_halfedge(b0, b2);
-        set_next_halfedge(b2, a1);
-        set_next_halfedge(a1, b0);
+        set_next(b0, b2);
+        set_next(b2, a1);
+        set_next(a1, b0);
 
         set_face(a1, fb);
         set_face(b1, fa);
@@ -928,8 +928,8 @@ namespace Bcg {
         for (auto hc: get_halfedges(f)) {
             set_face(hc, Face());
 
-            if (is_boundary(opposite_halfedge(hc)))
-                deletedEdges.push_back(edge(hc));
+            if (is_boundary(get_opposite(hc)))
+                deletedEdges.push_back(get_edge(hc));
 
             vertex_indices.push_back(to_vertex(hc));
         }
@@ -945,17 +945,17 @@ namespace Bcg {
             for (; delit != delend; ++delit) {
                 h0 = get_halfedge(*delit, 0);
                 v0 = to_vertex(h0);
-                next0 = next_halfedge(h0);
-                prev0 = prev_halfedge(h0);
+                next0 = get_next(h0);
+                prev0 = get_prev(h0);
 
                 h1 = get_halfedge(*delit, 1);
                 v1 = to_vertex(h1);
-                next1 = next_halfedge(h1);
-                prev1 = prev_halfedge(h1);
+                next1 = get_next(h1);
+                prev1 = get_prev(h1);
 
                 // adjust next and prev handles
-                set_next_halfedge(prev0, next1);
-                set_next_halfedge(prev1, next0);
+                set_next(prev0, next1);
+                set_next(prev1, next0);
 
                 // mark edge deleted
                 if (!edges.edeleted[*delit]) {
@@ -1036,12 +1036,12 @@ namespace Bcg {
     }
 
     void HalfedgeMeshInterface::remove_edge_helper(Halfedge h) {
-        Halfedge hn = next_halfedge(h);
-        Halfedge hp = prev_halfedge(h);
+        Halfedge hn = get_next(h);
+        Halfedge hp = get_prev(h);
 
-        Halfedge o = opposite_halfedge(h);
-        Halfedge on = next_halfedge(o);
-        Halfedge op = prev_halfedge(o);
+        Halfedge o = get_opposite(h);
+        Halfedge on = get_next(o);
+        Halfedge op = get_prev(o);
 
         Face fh = face(h);
         Face fo = face(o);
@@ -1051,12 +1051,12 @@ namespace Bcg {
 
         // halfedge -> vertex
         for (const auto hc: get_halfedges(vo)) {
-            set_vertex(opposite_halfedge(hc), vh);
+            set_vertex(get_opposite(hc), vh);
         }
 
         // halfedge -> halfedge
-        set_next_halfedge(hp, hn);
-        set_next_halfedge(op, on);
+        set_next(hp, hn);
+        set_next(op, on);
 
         // face -> halfedge
         if (fh.is_valid())
@@ -1073,16 +1073,16 @@ namespace Bcg {
         // delete stuff
         vertices.vdeleted[vo] = true;
         ++vertices.deleted_vertices;
-        edges.edeleted[edge(h)] = true;
+        edges.edeleted[get_edge(h)] = true;
         ++edges.deleted_edges;
     }
 
     void HalfedgeMeshInterface::remove_loop_helper(Halfedge h) {
         Halfedge h0 = h;
-        Halfedge h1 = next_halfedge(h0);
+        Halfedge h1 = get_next(h0);
 
-        Halfedge o0 = opposite_halfedge(h0);
-        Halfedge o1 = opposite_halfedge(h1);
+        Halfedge o0 = get_opposite(h0);
+        Halfedge o1 = get_opposite(h1);
 
         Vertex v0 = to_vertex(h0);
         Vertex v1 = to_vertex(h1);
@@ -1091,11 +1091,11 @@ namespace Bcg {
         Face fo = face(o0);
 
         // is it a loop ?
-        assert((next_halfedge(h1) == h0) && (h1 != o0));
+        assert((get_next(h1) == h0) && (h1 != o0));
 
         // halfedge -> halfedge
-        set_next_halfedge(h1, next_halfedge(o0));
-        set_next_halfedge(prev_halfedge(o0), h1);
+        set_next(h1, get_next(o0));
+        set_next(get_prev(o0), h1);
 
         // halfedge -> face
         set_face(h1, fo);
@@ -1115,7 +1115,7 @@ namespace Bcg {
             faces.fdeleted[fh] = true;
             ++faces.deleted_faces;
         }
-        edges.edeleted[edge(h)] = true;
+        edges.edeleted[get_edge(h)] = true;
         ++edges.deleted_edges;
     }
 }

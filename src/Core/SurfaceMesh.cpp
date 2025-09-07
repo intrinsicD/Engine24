@@ -10,7 +10,7 @@ namespace Bcg {
         // allocate standard properties
         // same list is used in operator=() and assign()
         vpoint_ = add_vertex_property<PointType>("v:point");
-        vconn_ = add_vertex_property<VertexConnectivity>("v:connectivity");
+        vconn_ = add_vertex_property<Halfedge>("v:connectivity");
         hconn_ = add_halfedge_property<HalfedgeConnectivity>("h:connectivity");
         fconn_ = add_face_property<FaceConnectivity>("f:connectivity");
 
@@ -31,7 +31,7 @@ namespace Bcg {
 
             // property handles contain pointers, have to be reassigned
             vpoint_ = vertex_property<PointType>("v:point");
-            vconn_ = vertex_property<VertexConnectivity>("v:connectivity");
+            vconn_ = vertex_property<Halfedge>("v:connectivity");
             hconn_ = halfedge_property<HalfedgeConnectivity>("h:connectivity");
             fconn_ = face_property<FaceConnectivity>("f:connectivity");
 
@@ -60,7 +60,7 @@ namespace Bcg {
 
             // allocate standard properties
             vpoint_ = add_vertex_property<PointType>("v:point");
-            vconn_ = add_vertex_property<VertexConnectivity>("v:connectivity");
+            vconn_ = add_vertex_property<Halfedge>("v:connectivity");
             hconn_ = add_halfedge_property<HalfedgeConnectivity>("h:connectivity");
             fconn_ = add_face_property<FaceConnectivity>("f:connectivity");
 
@@ -106,7 +106,7 @@ namespace Bcg {
 
         // add the standard properties back
         vpoint_ = add_vertex_property<PointType>("v:point");
-        vconn_ = add_vertex_property<VertexConnectivity>("v:connectivity");
+        vconn_ = add_vertex_property<Halfedge>("v:connectivity");
         hconn_ = add_halfedge_property<HalfedgeConnectivity>("h:connectivity");
         fconn_ = add_face_property<FaceConnectivity>("f:connectivity");
         vdeleted_ = add_vertex_property<bool>("v:deleted", false);
