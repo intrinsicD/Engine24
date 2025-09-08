@@ -40,6 +40,36 @@ namespace Bcg {
                                                                 faces.face_property<ScalarType>("f:scalarfield")) {
         }
 
+        // Define move constructor
+        HalfedgeMeshInterface(HalfedgeMeshInterface &&other) noexcept
+            : vertices(other.vertices),
+              halfedges(other.halfedges),
+              edges(other.edges),
+              faces(other.faces) {
+            vpoint = other.vpoint;
+            vconnectivity = other.vconnectivity;
+            hconnectivity = other.hconnectivity;
+            fconnectivity = other.fconnectivity;
+            fcolors = other.fcolors;
+            fscalarfield = other.fscalarfield;
+        }
+
+        // Define move assignment operator
+        HalfedgeMeshInterface &operator=(HalfedgeMeshInterface &&other) noexcept {
+            if (this != &other) {
+                vertices = std::move(other.vertices);
+                halfedges = std::move(other.halfedges);
+                edges = std::move(other.edges);
+                vpoint = other.vpoint;
+                vconnectivity = other.vconnectivity;
+                hconnectivity = other.hconnectivity;
+                fconnectivity = other.fconnectivity;
+                fcolors = other.fcolors;
+                fscalarfield = other.fscalarfield;
+            }
+            return *this;
+        }
+
         Vertices &vertices;
         Halfedges &halfedges;
         Edges &edges;
@@ -155,6 +185,10 @@ namespace Bcg {
 
         [[nodiscard]] bool has_face_property(const std::string &name) const {
             return faces.exists(name);
+        }
+
+        [[nodiscard]] bool is_empty() const {
+            return (vertices.n_vertices() == 0) && (edges.n_edges() == 0) && (faces.n_faces() == 0);
         }
 
         void set_points(const std::vector<PointType> &points);

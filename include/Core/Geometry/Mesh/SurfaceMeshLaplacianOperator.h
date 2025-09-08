@@ -22,7 +22,7 @@ namespace Bcg {
      */
     inline LaplacianMatrices ComputeCotanLaplacianOperator(SurfaceMesh &mesh) {
         LaplacianMatrices matrices;
-        const long n_vertices = mesh.n_vertices();
+        const long n_vertices = mesh.data.vertices.n_vertices();
         if (n_vertices == 0) return matrices;
 
         // Use a list of triplets to build the sparse matrices efficiently.
@@ -34,17 +34,17 @@ namespace Bcg {
 
         // Iterate over all faces to compute cotangent weights and barycentric areas.
         // This is more robust than iterating over edges for handling boundary conditions.
-        for (const auto face : mesh.faces()) {
+        for (const auto face : mesh.data.faces) {
             // Get the 3 vertices of the triangle face
-            auto h = mesh.get_halfedge(face);
-            auto v0_h = mesh.to_vertex(h);
-            auto v1_h = mesh.to_vertex(mesh.next_halfedge(h));
-            auto v2_h = mesh.to_vertex(mesh.prev_halfedge(h));
+            auto h = mesh.interface.get_halfedge(face);
+            auto v0_h = mesh.interface.to_vertex(h);
+            auto v1_h = mesh.interface.to_vertex(mesh.interface.get_next(h));
+            auto v2_h = mesh.interface.to_vertex(mesh.interface.get_prev(h));
 
             // Get their 3D positions
-            const PointType & p0 = mesh.position(v0_h);
-            const PointType & p1 = mesh.position(v1_h);
-            const PointType & p2 = mesh.position(v2_h);
+            const PointType & p0 = mesh.interface.vpoint[v0_h];
+            const PointType & p1 = mesh.interface.vpoint[v1_h];
+            const PointType & p2 = mesh.interface.vpoint[v2_h];
 
             // Calculate edge vectors
             glm::dvec3 e0 = glm::dvec3(p2) - glm::dvec3(p1);
@@ -118,20 +118,20 @@ namespace Bcg {
      */
     inline LaplacianMatrices ComputeGraphLaplacianOperator(SurfaceMesh &mesh) {
         LaplacianMatrices matrices;
-        const long n_vertices = mesh.n_vertices();
+        const long n_vertices = mesh.data.vertices.n_vertices();
         if (n_vertices == 0) return matrices;
 
         std::vector<Eigen::Triplet<float>> S_triplets;
         // Reserve space: 2 triplets for each edge (i,j) and (j,i), plus n for the diagonal.
-        S_triplets.reserve(mesh.n_edges() * 2 + n_vertices);
+        S_triplets.reserve(mesh.data.edges.n_edges() * 2 + n_vertices);
 
         Eigen::VectorXf diagonal_degrees = Eigen::VectorXf::Zero(n_vertices);
 
         // Iterate over all edges to set off-diagonal entries
-        for (const auto edge : mesh.edges()) {
-            auto h0 = mesh.get_halfedge(edge, 0);
-            auto v_i = mesh.from_vertex(h0);
-            auto v_j = mesh.to_vertex(h0);
+        for (const auto edge : mesh.data.edges) {
+            auto h0 = mesh.interface.get_halfedge(edge, 0);
+            auto v_i = mesh.interface.from_vertex(h0);
+            auto v_j = mesh.interface.to_vertex(h0);
 
             // Off-diagonal elements are -1 for every connected edge
             S_triplets.emplace_back(v_i.idx(), v_j.idx(), -1.0f);

@@ -19,55 +19,55 @@ namespace Bcg {
 
         auto h_mesh = Engine::State().get<MeshHandle>(entity_id);
 
-        auto &vpoint = h_mesh->vpoint_.vector();
-        auto &vconn = h_mesh->vconn_.vector();
-        auto &hconn = h_mesh->hconn_.vector();
-        auto &fconn = h_mesh->fconn_.vector();
-        auto normals = h_mesh->vertex_property<Vector<float, 3>>("v:normal");
+        auto &vpoint = h_mesh->interface.vpoint;
+        auto &vconn = h_mesh->interface.vconnectivity;
+        auto &hconn = h_mesh->interface.hconnectivity;
+        auto &fconn = h_mesh->interface.fconnectivity;
+        auto normals = h_mesh->interface.vertex_property<Vector<float, 3>>("v:normal");
 
         OpenGLState openGlState(entity_id);
-        auto b_positions = openGlState.get_buffer(h_mesh->vpoint_.name());
+        auto b_positions = openGlState.get_buffer(vpoint.name());
         if (!b_positions) {
             b_positions = ArrayBuffer();
             b_positions.create();
             b_positions.bind();
-            b_positions.buffer_data(h_mesh->positions().data(),
-                                    h_mesh->positions().size() * 3 * sizeof(float),
+            b_positions.buffer_data(vpoint.data(),
+                                    vpoint.vector().size() * 3 * sizeof(float),
                                     Buffer::Usage::STATIC_DRAW);
-            openGlState.register_buffer(h_mesh->vpoint_.name(), b_positions);
+            openGlState.register_buffer(h_mesh->interface.vpoint.name(), b_positions);
         }
 
-        auto b_vconns = openGlState.get_buffer(h_mesh->vconn_.name());
+        auto b_vconns = openGlState.get_buffer(vconn.name());
         if (!b_vconns) {
             b_vconns = ShaderStorageBuffer();
             b_vconns.create();
             b_vconns.bind();
-            b_vconns.buffer_data(h_mesh->vconn_.data(),
-                                 h_mesh->vconn_.vector().size() * sizeof(unsigned int),
+            b_vconns.buffer_data(vconn.data(),
+                                 vconn.vector().size() * sizeof(unsigned int),
                                  Buffer::Usage::STATIC_DRAW);
-            openGlState.register_buffer(h_mesh->vconn_.name(), b_vconns);
+            openGlState.register_buffer(vconn.name(), b_vconns);
         }
 
-        auto b_hconns = openGlState.get_buffer(h_mesh->hconn_.name());
+        auto b_hconns = openGlState.get_buffer(hconn.name());
         if (!b_hconns) {
             b_hconns = ShaderStorageBuffer();
             b_hconns.create();
             b_hconns.bind();
-            b_hconns.buffer_data(h_mesh->hconn_.data(),
-                                 h_mesh->hconn_.vector().size() * 4 * sizeof(unsigned int),
+            b_hconns.buffer_data(hconn.data(),
+            hconn.vector().size() * 4 * sizeof(unsigned int),
                                  Buffer::Usage::STATIC_DRAW);
-            openGlState.register_buffer(h_mesh->hconn_.name(), b_hconns);
+            openGlState.register_buffer(hconn.name(), b_hconns);
         }
 
-        auto b_fconns = openGlState.get_buffer(h_mesh->fconn_.name());
+        auto b_fconns = openGlState.get_buffer(fconn.name());
         if (!b_fconns) {
             b_fconns = ShaderStorageBuffer();
             b_fconns.create();
             b_fconns.bind();
-            b_fconns.buffer_data(h_mesh->fconn_.data(),
-                                 h_mesh->fconn_.vector().size() * sizeof(unsigned int),
+            b_fconns.buffer_data(fconn.data(),
+                                 fconn.vector().size() * sizeof(unsigned int),
                                  Buffer::Usage::STATIC_DRAW);
-            openGlState.register_buffer(h_mesh->fconn_.name(), b_fconns);
+            openGlState.register_buffer(fconn.name(), b_fconns);
         }
 
         auto b_normals = openGlState.get_buffer(normals.name());
@@ -102,7 +102,7 @@ namespace Bcg {
         b_fconns.bind_base(3);
         b_normals.bind_base(4);
 
-        program.dispatch(h_mesh->vertices_size(), 1, 1);
+        program.dispatch(h_mesh->interface.vertices.size(), 1, 1);
 
         // Ensure all computations are done
         program.memory_barrier(ComputeShaderProgram::Barrier::SHADER_STORAGE_BARRIER_BIT);
@@ -142,19 +142,20 @@ namespace Bcg {
         }
     )";
 
-        auto f_normals = mesh.add_face_property<Vector<float,
+        auto f_normals = mesh.interface.add_face_property<Vector<float,
                 3 >>("f:normal");
 
         OpenGLState openGlState(entity_id);
-        auto b_positions = openGlState.get_buffer(mesh.vpoint_.name());
+        const auto &vpoint = mesh.interface.vpoint;
+        auto b_positions = openGlState.get_buffer(vpoint.name());
         if (!b_positions) {
             b_positions = ArrayBuffer();
             b_positions.create();
             b_positions.bind();
-            b_positions.buffer_data(mesh.positions().data(),
-                                    mesh.positions().size() * 3 * sizeof(float),
+            b_positions.buffer_data(vpoint.data(),
+                                    vpoint.vector().size() * 3 * sizeof(float),
                                     Buffer::Usage::STATIC_DRAW);
-            openGlState.register_buffer(mesh.vpoint_.name(), b_positions);
+            openGlState.register_buffer(vpoint.name(), b_positions);
         }
 
         auto f_triangles = SurfaceMeshTriangles(mesh);
@@ -269,32 +270,34 @@ namespace Bcg {
 
         // Set up FixedPoints
         auto &target = Engine::State().get<SurfaceMesh>(target_id);
-        auto b_fixed_points = openGlState.get_buffer(target.vpoint_.name());
+        const auto &target_vpoint = target.interface.vpoint;
+        auto b_fixed_points = openGlState.get_buffer(target_vpoint.name());
         if (!b_fixed_points) {
             b_fixed_points = ArrayBuffer();
             b_fixed_points.create();
             b_fixed_points.bind();
-            b_fixed_points.buffer_data(target.positions().data(),
-                                       target.positions().size() * 3 * sizeof(float),
+            b_fixed_points.buffer_data(target_vpoint.data(),
+                                       target_vpoint.vector().size() * 3 * sizeof(float),
                                        Buffer::Usage::STATIC_DRAW);
-            openGlState.register_buffer(target.vpoint_.name(), b_fixed_points);
+            openGlState.register_buffer(target_vpoint.name(), b_fixed_points);
         }
 
         // Set up MovingPoints
         auto &source = Engine::State().get<SurfaceMesh>(source_id);
-        auto b_moving_points = openGlState.get_buffer(source.vpoint_.name());
+        const auto &source_vpoint = source.interface.vpoint;
+        auto b_moving_points = openGlState.get_buffer(source_vpoint.name());
         if (!b_moving_points) {
             b_moving_points = ArrayBuffer();
             b_moving_points.create();
             b_moving_points.bind();
-            b_moving_points.buffer_data(source.positions().data(),
-                                        source.positions().size() * 3 * sizeof(float),
+            b_moving_points.buffer_data(source_vpoint.data(),
+                                        source_vpoint.vector().size() * 3 * sizeof(float),
                                         Buffer::Usage::STATIC_DRAW);
-            openGlState.register_buffer(source.vpoint_.name(), b_moving_points);
+            openGlState.register_buffer(source_vpoint.name(), b_moving_points);
         }
 
         // Set up ResponsibilityDenominator buffer
-        auto responsibilityDenominator = target.vprops_.get_or_add<float>("v:ResponsibilityDenominator", 0);
+        auto responsibilityDenominator = target.data.vertices.get_or_add<float>("v:ResponsibilityDenominator", 0);
         auto b_responsibility_denominator = openGlState.get_buffer(responsibilityDenominator.name());
         if (!b_responsibility_denominator) {
             b_responsibility_denominator = ArrayBuffer();
@@ -307,7 +310,7 @@ namespace Bcg {
         }
 
         // Set up PT1 buffer
-        auto pt1 = target.vprops_.get_or_add<float>("v:PT1", 0);
+        auto pt1 = target.data.vertices.get_or_add<float>("v:PT1", 0);
         auto b_pt1 = openGlState.get_buffer(pt1.name());
         if (!b_pt1) {
             b_pt1 = ArrayBuffer();
@@ -330,11 +333,11 @@ namespace Bcg {
 // Set uniform values
         program.set_uniform1f("variance", sigma2);
         program.set_uniform1f("constant_c", c);
-        program.set_uniform1ui("numMovingPoints", source.positions().size());
+        program.set_uniform1ui("numMovingPoints", source_vpoint.vector().size());
 
 
 // Dispatch the compute shader
-        program.dispatch(target.positions().size(), 1, 1);
+        program.dispatch(target_vpoint.vector().size(), 1, 1);
 
 
 // Make sure the computation is done before accessing the results
@@ -413,32 +416,34 @@ namespace Bcg {
 
         // Set up FixedPoints
         auto &target = Engine::State().get<SurfaceMesh>(target_id);
-        auto b_fixed_points = openGlState.get_buffer(target.vpoint_.name());
+        const auto &target_vpoint = target.interface.vpoint;
+        auto b_fixed_points = openGlState.get_buffer(target_vpoint.name());
         if (!b_fixed_points) {
             b_fixed_points = ArrayBuffer();
             b_fixed_points.create();
             b_fixed_points.bind();
-            b_fixed_points.buffer_data(target.positions().data(),
-                                       target.positions().size() * 3 * sizeof(float),
+            b_fixed_points.buffer_data(target_vpoint.data(),
+                                       target_vpoint.vector().size() * 3 * sizeof(float),
                                        Buffer::Usage::STATIC_DRAW);
-            openGlState.register_buffer(target.vpoint_.name(), b_fixed_points);
+            openGlState.register_buffer(target_vpoint.name(), b_fixed_points);
         }
 
         // Set up MovingPoints
         auto &source = Engine::State().get<SurfaceMesh>(source_id);
-        auto b_moving_points = openGlState.get_buffer(source.vpoint_.name());
+        const auto &source_vpoint = source.interface.vpoint;
+        auto b_moving_points = openGlState.get_buffer(source_vpoint.name());
         if (!b_moving_points) {
             b_moving_points = ArrayBuffer();
             b_moving_points.create();
             b_moving_points.bind();
-            b_moving_points.buffer_data(source.positions().data(),
-                                        source.positions().size() * 3 * sizeof(float),
+            b_moving_points.buffer_data(source_vpoint.data(),
+                                        source_vpoint.vector().size() * 3 * sizeof(float),
                                         Buffer::Usage::STATIC_DRAW);
-            openGlState.register_buffer(source.vpoint_.name(), b_moving_points);
+            openGlState.register_buffer(source_vpoint.name(), b_moving_points);
         }
 
         // Set up ResponsibilityDenominator buffer
-        auto responsibilityDenominator = target.vprops_.get_or_add<float>("v:ResponsibilityDenominator", 0);
+        auto responsibilityDenominator = target.data.vertices.get_or_add<float>("v:ResponsibilityDenominator", 0);
         auto b_responsibility_denominator = openGlState.get_buffer(responsibilityDenominator.name());
         if (!b_responsibility_denominator) {
             b_responsibility_denominator = ArrayBuffer();
@@ -451,7 +456,7 @@ namespace Bcg {
         }
 
         // Set up P1 buffer
-        auto p1 = source.vprops_.get_or_add<float>("v:P1", 0);
+        auto p1 = source.data.vertices.get_or_add<float>("v:P1", 0);
         auto b_p1 = openGlState.get_buffer(p1.name());
         if (!b_p1) {
             b_p1 = ArrayBuffer();
@@ -464,7 +469,7 @@ namespace Bcg {
         }
 
         // Set up PX buffer
-        auto px = source.vprops_.get_or_add<Vector<float, 3>>("v:PX", Vector<float, 3>(0.0f));
+        auto px = source.data.vertices.get_or_add<Vector<float, 3>>("v:PX", Vector<float, 3>(0.0f));
         auto b_px = openGlState.get_buffer(px.name());
         if (!b_px) {
             b_px = ArrayBuffer();
@@ -486,10 +491,10 @@ namespace Bcg {
         // Set uniform values
         program.set_uniform1f("variance", sigma2);
         program.set_uniform1f("constant_c", c);
-        program.set_uniform1ui("numFixedPoints", target.positions().size());
+        program.set_uniform1ui("numFixedPoints", target_vpoint.vector().size());
 
         // Dispatch the compute shader
-        program.dispatch(source.positions().size(), 1, 1);
+        program.dispatch(source_vpoint.vector().size(), 1, 1);
 
         // Make sure the computation is done before accessing the results
         program.memory_barrier(ComputeShaderProgram::SHADER_STORAGE_BARRIER_BIT);

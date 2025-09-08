@@ -53,7 +53,6 @@ target_sources(Engine24 PRIVATE
         PointCloudToGraph.cpp
         Renderer.cpp
         Segment.cpp
-        SurfaceMesh.cpp
         SurfaceMeshCompute.cpp
         SurfaceMeshIo.cpp
         SurfaceMeshTriangles.cpp

@@ -596,7 +596,7 @@ namespace Bcg {
         //! pre-increment (rotates counter-clockwise)
         VertexAroundFaceCirculatorBase &operator++() {
             assert(data__ && halfedge_.is_valid());
-            halfedge_ = data__->next_halfedge(halfedge_);
+            halfedge_ = data__->get_next(halfedge_);
             is_active_ = true;
             return *this;
         }
@@ -681,7 +681,7 @@ namespace Bcg {
         //! pre-increment (rotates counter-clockwise)
         HalfedgeAroundFaceCirculatorBase &operator++() {
             assert(data__ && halfedge_.is_valid());
-            halfedge_ = data__->next_halfedge(halfedge_);
+            halfedge_ = data__->get_next(halfedge_);
             is_active_ = true;
             return *this;
         }

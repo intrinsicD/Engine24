@@ -19,7 +19,7 @@ namespace Bcg {
         if (!kdtree) {
             if (Engine::has<SurfaceMesh>(entity_id)) {
                 auto &mesh = Engine::State().get<SurfaceMesh>(entity_id);
-                kdtree.build(mesh.positions());
+                kdtree.build(mesh.interface.vpoint.vector());
             } else /*if(Engine::has<Graph>(entity_id)){
                     auto &graph = Engine::State().get<Graph>(entity_id);
                     kdtree.build(graph.positions());

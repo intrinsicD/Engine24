@@ -89,7 +89,8 @@ namespace Bcg {
     template<>
     struct BuilderTraits<AABB<float>, SurfaceMesh> {
         static AABB<float> build(const SurfaceMesh &m) noexcept {
-            return AABB<float>::Build(m.positions().begin(), m.positions().end());
+            return AABB<float>::Build(m.interface.vpoint.vector().begin(),
+                m.interface.vpoint.vector().end());
         }
     };
 
@@ -108,7 +109,7 @@ namespace Bcg {
         auto h_aabb = ModuleAABB::create(entity_id, BuilderTraits<AABB<float>, SurfaceMesh>::build(*h_mesh));
         auto &transform = Engine::require<TransformComponent>(entity_id);
 
-        ModuleAABB::center_and_scale_by_aabb(entity_id, h_mesh->vpoint_.name());
+        ModuleAABB::center_and_scale_by_aabb(entity_id, h_mesh->interface.vpoint.name());
         ModuleCamera::center_camera_at_distance(h_aabb->center(), 1.5f * glm::compMax(h_aabb->diagonal()));
 
         ComputeSurfaceMeshVertexNormals(entity_id);
@@ -118,7 +119,7 @@ namespace Bcg {
         ModulePhongSplattingView::setup(entity_id);
         ModuleGraphView::setup(entity_id);
         Log::Info("#v: {}, #e: {}, #h: {}, #f: {}",
-                  h_mesh->n_vertices(), h_mesh->n_edges(), h_mesh->n_halfedges(), h_mesh->n_faces());
+                  h_mesh->data.vertices.n_vertices(), h_mesh->data.edges.n_edges(), h_mesh->data.halfedges.n_halfedges(), h_mesh->data.faces.n_faces());
     }
 
     void ModuleMesh::cleanup(entt::entity entity_id) {
@@ -161,7 +162,7 @@ namespace Bcg {
             if (ImGuiFileDialog::Instance()->IsOk()) {
                 auto path = ImGuiFileDialog::Instance()->GetFilePathName();
                 auto smesh = ModuleMesh::load_mesh(path);
-                if (!smesh.is_empty()) {
+                if (!smesh.interface.is_empty()) {
                     auto entity_id = Engine::State().create();
                     ModuleMesh::create(entity_id, smesh);
                     ModuleMesh::setup(entity_id);
@@ -194,24 +195,24 @@ namespace Bcg {
     }
 
     void ModuleMesh::show_gui(const SurfaceMesh &mesh) {
-        if (ImGui::CollapsingHeader(("Vertices #v: " + std::to_string(mesh.n_vertices())).c_str())) {
+        if (ImGui::CollapsingHeader(("Vertices #v: " + std::to_string(mesh.data.vertices.n_vertices())).c_str())) {
             ImGui::PushID("Vertices");
-            Gui::Show("##Vertices", mesh.vprops_);
+            Gui::Show("##Vertices", mesh.data.vertices);
             ImGui::PopID();
         }
-        if (ImGui::CollapsingHeader(("Halfedges #h: " + std::to_string(mesh.n_halfedges())).c_str())) {
+        if (ImGui::CollapsingHeader(("Halfedges #h: " + std::to_string(mesh.data.halfedges.n_halfedges())).c_str())) {
             ImGui::PushID("Halfedges");
-            Gui::Show("##Halfedges", mesh.hprops_);
+            Gui::Show("##Halfedges", mesh.data.halfedges);
             ImGui::PopID();
         }
-        if (ImGui::CollapsingHeader(("Edges #e: " + std::to_string(mesh.n_edges())).c_str())) {
+        if (ImGui::CollapsingHeader(("Edges #e: " + std::to_string(mesh.data.edges.n_edges())).c_str())) {
             ImGui::PushID("Edges");
-            Gui::Show("##Edges", mesh.eprops_);
+            Gui::Show("##Edges", mesh.data.edges);
             ImGui::PopID();
         }
-        if (ImGui::CollapsingHeader(("Faces #f: " + std::to_string(mesh.n_faces())).c_str())) {
+        if (ImGui::CollapsingHeader(("Faces #f: " + std::to_string(mesh.data.faces.n_faces())).c_str())) {
             ImGui::PushID("Faces");
-            Gui::Show("##Faces", mesh.fprops_);
+            Gui::Show("##Faces", mesh.data.faces);
             ImGui::PopID();
         }
     }
@@ -231,7 +232,7 @@ namespace Bcg {
             auto end_time = std::chrono::high_resolution_clock::now();
             std::chrono::duration<double> build_duration = end_time - start_time;
 
-            if (smesh.is_empty()) {
+            if (smesh.interface.is_empty()) {
                 Log::Error("Failed to load mesh from file: {}", event.paths[i]);
                 continue;
             }

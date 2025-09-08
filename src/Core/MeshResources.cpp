@@ -11,6 +11,8 @@
 #include "entt/resource/loader.hpp"
 #include "entt/signal/dispatcher.hpp"
 
+#include <chrono>
+
 namespace Bcg {
     struct SurfaceMeshLoader : entt::resource_loader<SurfaceMesh> {
         using result_type = std::shared_ptr<SurfaceMesh>;

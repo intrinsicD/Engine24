@@ -8,7 +8,9 @@
 #include "IoHelpers.h"
 #include "Logger.h"
 #include "happly.h"
+
 #include <filesystem>
+#include <iterator>
 #include <map>
 
 namespace Bcg {
@@ -39,7 +41,7 @@ namespace Bcg {
         std::vector<int>
                 halfedge_tex_idx; //texture coordinates sorted for halfedges
         HalfedgeProperty<TexCoordType> tex_coords =
-                mesh.halfedge_property<TexCoordType>("h:tex");
+                mesh.interface.halfedge_property<TexCoordType>("h:tex");
         bool with_tex_coord = false;
 
         // open file (in ASCII mode)
@@ -61,7 +63,7 @@ namespace Bcg {
                 // vertex
             else if (strncmp(s.data(), "v ", 2) == 0) {
                 if (sscanf(s.data(), "v %f %f %f", &x, &y, &z)) {
-                    mesh.add_vertex(PointType(x, y, z));
+                    mesh.interface.add_vertex(PointType(x, y, z));
                 }
             }
 
@@ -126,7 +128,7 @@ namespace Bcg {
                             {
                                 int idx = atoi(p0);
                                 if (idx < 0)
-                                    idx = mesh.n_vertices() + idx + 1;
+                                    idx = mesh.data.vertices.n_vertices() + idx + 1;
                                 vertices.emplace_back(idx - 1);
                                 break;
                             }
@@ -152,14 +154,14 @@ namespace Bcg {
 
                 Face f;
                 try {
-                    f = mesh.add_face(vertices);
+                    f = mesh.interface.add_face(vertices);
                 } catch (const TopologyException &e) {
                     Log::Warn("Failed to add face: {}", e.what());
                 }
 
                 // add texture coordinates
                 if (with_tex_coord && f.is_valid()) {
-                    auto h_fit = mesh.halfedges(f);
+                    auto h_fit = mesh.interface.get_halfedges(f);
                     auto h_end = h_fit;
                     unsigned v_idx = 0;
                     do {
@@ -176,7 +178,7 @@ namespace Bcg {
 
         // if there are no textures, delete texture property!
         if (!with_tex_coord) {
-            mesh.remove_halfedge_property(tex_coords);
+            mesh.interface.remove_halfedge_property(tex_coords);
         }
 
         fclose(in);
@@ -200,11 +202,11 @@ namespace Bcg {
         VertexProperty<TexCoordType> texcoords;
         VertexProperty<ColorType> colors;
         if (has_normals)
-            normals = mesh.vertex_property<NormalType>("v:normal");
+            normals = mesh.interface.vertex_property<NormalType>("v:normal");
         if (has_texcoords)
-            texcoords = mesh.vertex_property<TexCoordType>("v:tex");
+            texcoords = mesh.interface.vertex_property<TexCoordType>("v:tex");
         if (has_colors)
-            colors = mesh.vertex_property<ColorType>("v:color");
+            colors = mesh.interface.vertex_property<ColorType>("v:color");
 
         // read line, but skip comment lines
         while (lp && (lp[0] == '#' || lp[0] == '\n' || lp[0] == '\r')) {
@@ -224,7 +226,7 @@ namespace Bcg {
             return;
         }
 
-        mesh.reserve(nv, std::max(3 * nv, ne), nf);
+        mesh.interface.reserve(nv, std::max(3 * nv, ne), nf);
 
         // read vertices: pos [normal] [color] [texcoord]
         for (i = 0; i < nv && !feof(in); ++i) {
@@ -237,7 +239,7 @@ namespace Bcg {
             // position
             items = sscanf(lp, "%f %f %f%n", &x, &y, &z, &nc);
             assert(items == 3);
-            v = mesh.add_vertex(PointType(x, y, z));
+            v = mesh.interface.add_vertex(PointType(x, y, z));
             lp += nc;
 
             // normal
@@ -303,7 +305,7 @@ namespace Bcg {
                 lp += nc;
             }
             try {
-                mesh.add_face(vertices);
+                mesh.interface.add_face(vertices);
             }
             catch (const TopologyException &e) {
                 Log::Warn("Failed to add face: {}", e.what());
@@ -340,9 +342,9 @@ namespace Bcg {
         VertexProperty<NormalType> normals;
         VertexProperty<TexCoordType> texcoords;
         if (has_normals)
-            normals = mesh.vertex_property<NormalType>("v:normal");
+            normals = mesh.interface.vertex_property<NormalType>("v:normal");
         if (has_texcoords)
-            texcoords = mesh.vertex_property<TexCoordType>("v:tex");
+            texcoords = mesh.interface.vertex_property<TexCoordType>("v:tex");
 
         // #Vertices, #Faces, #Edges
         ReadBinary(in, nv);
@@ -357,7 +359,7 @@ namespace Bcg {
 
         ReadBinary(in, nf, swap);
         ReadBinary(in, ne, swap);
-        mesh.reserve(nv, std::max(3 * nv, ne), nf);
+        mesh.interface.reserve(nv, std::max(3 * nv, ne), nf);
 
         // read vertices: pos [normal] [color] [texcoord]
         for (i = 0; i < nv && !feof(in); ++i) {
@@ -365,7 +367,7 @@ namespace Bcg {
             ReadBinary(in, p[0], swap);
             ReadBinary(in, p[1], swap);
             ReadBinary(in, p[2], swap);
-            v = mesh.add_vertex((PointType) p);
+            v = mesh.interface.add_vertex((PointType) p);
 
             // normal
             if (has_normals) {
@@ -394,7 +396,7 @@ namespace Bcg {
                 vertices[j] = Vertex(idx);
             }
             try {
-                mesh.add_face(vertices);
+                mesh.interface.add_face(vertices);
             }
             catch (const TopologyException &e) {
                 Log::Warn("Failed to add face: {}", e.what());
@@ -505,29 +507,29 @@ namespace Bcg {
         }
         std::vector<std::vector<size_t>> fInd = plyIn.getFaceIndices<size_t>();
 
-        auto colors = mesh.vertex_property<Vector<float, 3>>("v:color");
+        auto colors = mesh.interface.vertex_property<Vector<float, 3>>("v:color");
 
-        mesh.vprops_.reserve(vPos.size());
+        mesh.data.vertices.reserve(vPos.size());
         for (const auto &point: vPos) {
-            mesh.add_vertex(glm::vec3(point[0], point[1], point[2]));
+            mesh.interface.add_vertex(glm::vec3(point[0], point[1], point[2]));
         }
 
         if (!vCol.empty()) {
-            for (const auto &v: mesh.vertices()) {
+            for (const auto &v: mesh.interface.vertices) {
                 const Eigen::Vector<double, 3> color(vCol[v.idx()][0] / 255.0, vCol[v.idx()][1] / 255.0,
                                                      vCol[v.idx()][2] / 255.0);
                 colors[v] = glm::vec3(color[0], color[1], color[2]);
             }
         } else {
-            mesh.vprops_.remove(colors);
+            mesh.data.vertices.remove(colors);
         }
 
-        mesh.fprops_.reserve(fInd.size());
+        mesh.data.faces.reserve(fInd.size());
         for (const auto &face: fInd) {
-            mesh.add_face({Vertex(face[0]), Vertex(face[1]), Vertex(face[2])});
+            mesh.interface.add_face({Vertex(face[0]), Vertex(face[1]), Vertex(face[2])});
         }
 
-        return mesh.fprops_.size() > 0;
+        return mesh.data.faces.size() > 0;
     }
 
     using vec3 = Vector<float, 3>;
@@ -632,7 +634,7 @@ namespace Bcg {
                     auto it = vertex_map.find(p);
                     if (it == vertex_map.end()) {
                         // No : add vertex and remember idx/vector mapping
-                        v = mesh.add_vertex((PointType) p);
+                        v = mesh.interface.add_vertex((PointType) p);
                         vertices[i] = v;
                         vertex_map[p] = v;
                     } else {
@@ -645,7 +647,7 @@ namespace Bcg {
                 if ((vertices[0] != vertices[1]) && (vertices[0] != vertices[2]) &&
                     (vertices[1] != vertices[2])) {
                     try {
-                        mesh.add_face(vertices);
+                        mesh.interface.add_face(vertices);
                     }
                     catch (const TopologyException &e) {
                         Log::Warn("Failed to add face: {}", e.what());
@@ -688,7 +690,7 @@ namespace Bcg {
                         auto it = vertex_map.find(p);
                         if (it == vertex_map.end()) {
                             // No : add vertex and remember idx/vector mapping
-                            v = mesh.add_vertex((PointType) p);
+                            v = mesh.interface.add_vertex((PointType) p);
                             vertices[i] = v;
                             vertex_map[p] = v;
                         } else {
@@ -702,7 +704,7 @@ namespace Bcg {
                         (vertices[0] != vertices[2]) &&
                         (vertices[1] != vertices[2])) {
                         try {
-                            mesh.add_face(vertices);
+                            mesh.interface.add_face(vertices);
                         }
                         catch (const TopologyException &e) {
                             Log::Warn("Failed to add face: {}", e.what());
@@ -738,19 +740,19 @@ namespace Bcg {
         TFRead(in, has_htex);
 
         // resize containers
-        mesh.vprops_.resize(nv);
-        mesh.hprops_.resize(nh);
-        mesh.eprops_.resize(ne);
-        mesh.fprops_.resize(nf);
+        mesh.data.vertices.resize(nv);
+        mesh.data.halfedges.resize(nh);
+        mesh.data.edges.resize(ne);
+        mesh.data.faces.resize(nf);
 
         // read properties from file
         // clang-format off
-        [[maybe_unused]] size_t nvc = fread((char *) mesh.vconn_.data(), sizeof(Halfedge), nv,
+        [[maybe_unused]] size_t nvc = fread((char *) mesh.interface.vconnectivity.data(), sizeof(Halfedge), nv,
                                             in);
-        [[maybe_unused]] size_t nhc = fread((char *) mesh.hconn_.data(), sizeof(HalfedgeConnectivity), nh,
+        [[maybe_unused]] size_t nhc = fread((char *) mesh.interface.hconnectivity.data(), sizeof(HalfedgeConnectivity), nh,
                                             in);
-        [[maybe_unused]] size_t nfc = fread((char *) mesh.fconn_.data(), sizeof(SurfaceMesh::FaceConnectivity), nf, in);
-        [[maybe_unused]] size_t np = fread((char *) mesh.vpoint_.data(), sizeof(PointType), nv, in);
+        [[maybe_unused]] size_t nfc = fread((char *) mesh.interface.fconnectivity.data(), sizeof(Halfedge), nf, in);
+        [[maybe_unused]] size_t np = fread((char *) mesh.interface.vpoint.data(), sizeof(PointType), nv, in);
         // clang-format on
 
         assert(nvc == nv);
@@ -760,7 +762,7 @@ namespace Bcg {
 
         // read texture coordinates
         if (has_htex) {
-            auto htex = mesh.halfedge_property<TexCoordType>("h:tex");
+            auto htex = mesh.interface.halfedge_property<TexCoordType>("h:tex");
             [[maybe_unused]] size_t nhtc =
                     fread((char *) htex.data(), sizeof(TexCoordType), nh, in);
             assert(nhtc == nh);
@@ -798,7 +800,7 @@ namespace Bcg {
 
         // check if we can write the mesh using 32-bit indices
         const auto uint_max = std::numeric_limits<uint32_t>::max();
-        if (mesh.n_vertices() > uint_max) {
+        if (mesh.data.vertices.n_vertices() > uint_max) {
             Log::Error("Mesh too large to be written with 32-bit indices.");
             return false;
         }
@@ -807,43 +809,43 @@ namespace Bcg {
         fprintf(out, "# OBJ export from PMP\n");
 
         // write vertices
-        auto points = mesh.get_vertex_property<PointType>("v:point");
-        for (auto v: mesh.vertices()) {
+        auto points = mesh.interface.get_vertex_property<PointType>("v:point");
+        for (auto v: mesh.data.vertices) {
             const PointType &p = points[v];
             fprintf(out, "v %.10f %.10f %.10f\n", p[0], p[1], p[2]);
         }
 
         // write normals
-        auto normals = mesh.get_vertex_property<NormalType>("v:normal");
+        auto normals = mesh.interface.get_vertex_property<NormalType>("v:normal");
         if (normals && flags.use_vertex_normals) {
-            for (auto v: mesh.vertices()) {
+            for (auto v: mesh.data.vertices) {
                 const NormalType &n = normals[v];
                 fprintf(out, "vn %.10f %.10f %.10f\n", n[0], n[1], n[2]);
             }
         }
 
         // write texture coordinates
-        auto tex_coords = mesh.get_halfedge_property<TexCoordType>("h:tex");
+        auto tex_coords = mesh.interface.get_halfedge_property<TexCoordType>("h:tex");
         bool write_texcoords = tex_coords && flags.use_halfedge_texcoords;
 
         if (write_texcoords) {
-            if (mesh.n_halfedges() > uint_max) {
+            if (mesh.data.halfedges.n_halfedges() > uint_max) {
                 Log::Error("Mesh too large to be written with 32-bit indices.");
                 return false;
             }
 
-            for (auto h: mesh.halfedges()) {
+            for (auto h: mesh.data.halfedges) {
                 const TexCoordType &pt = tex_coords[h];
                 fprintf(out, "vt %.10f %.10f\n", pt[0], pt[1]);
             }
         }
 
         // write faces
-        for (auto f: mesh.faces()) {
+        for (auto f: mesh.data.faces) {
             fprintf(out, "f");
 
-            auto h = mesh.halfedges(f);
-            for (auto v: mesh.vertices(f)) {
+            auto h = mesh.interface.get_halfedges(f);
+            for (auto v: mesh.interface.get_vertices(f)) {
                 auto idx = v.idx() + 1;
                 if (write_texcoords) {
                     // write vertex index, texCoord index and normal index
@@ -890,26 +892,26 @@ namespace Bcg {
         ofs.close();
         ofs.open(file.string(), std::ios::binary | std::ios::app);
 
-        const auto nv = static_cast<uint32_t>(mesh.n_vertices());
-        const auto nf = static_cast<uint32_t>(mesh.n_faces());
+        const auto nv = static_cast<uint32_t>(mesh.data.vertices.n_vertices());
+        const auto nf = static_cast<uint32_t>(mesh.data.faces.n_faces());
         const uint32_t ne = 0;
 
         WriteBinary(ofs, nv);
         WriteBinary(ofs, nf);
         WriteBinary(ofs, ne);
 
-        auto points = mesh.get_vertex_property<PointType>("v:point");
-        for (auto v: mesh.vertices()) {
+        auto points = mesh.interface.get_vertex_property<PointType>("v:point");
+        for (auto v: mesh.data.vertices) {
             const auto p = points[v];
             WriteBinary(ofs, p[0]);
             WriteBinary(ofs, p[1]);
             WriteBinary(ofs, p[2]);
         }
 
-        for (auto f: mesh.faces()) {
-            const auto valence = static_cast<uint32_t>(mesh.valence(f));
+        for (auto f: mesh.interface.faces) {
+            const auto valence = static_cast<uint32_t>(mesh.interface.valence(f));
             WriteBinary(ofs, valence);
-            for (auto fv: mesh.vertices(f)) {
+            for (auto fv: mesh.interface.get_vertices(f)) {
                 const uint32_t idx = fv.idx();
                 WriteBinary(ofs, idx);
             }
@@ -926,7 +928,7 @@ namespace Bcg {
 
         // check if we can write the mesh using 32-bit indices
         if (const auto max_idx = std::numeric_limits<uint32_t>::max();
-                mesh.n_vertices() > max_idx) {
+                mesh.data.vertices.n_vertices() > max_idx) {
             Log::Error("Mesh too large to be written with 32-bit indices.");
             return false;
         }
@@ -941,9 +943,9 @@ namespace Bcg {
         bool has_texcoords = false;
         bool has_colors = false;
 
-        auto normals = mesh.get_vertex_property<NormalType>("v:normal");
-        auto texcoords = mesh.get_vertex_property<TexCoordType>("v:tex");
-        auto colors = mesh.get_vertex_property<ColorType>("v:color");
+        auto normals = mesh.interface.get_vertex_property<NormalType>("v:normal");
+        auto texcoords = mesh.interface.get_vertex_property<TexCoordType>("v:tex");
+        auto colors = mesh.interface.get_vertex_property<ColorType>("v:color");
 
         if (normals && flags.use_vertex_normals)
             has_normals = true;
@@ -959,11 +961,11 @@ namespace Bcg {
             fprintf(out, "C");
         if (has_normals)
             fprintf(out, "N");
-        fprintf(out, "OFF\n%zu %zu 0\n", mesh.n_vertices(), mesh.n_faces());
+        fprintf(out, "OFF\n%zu %zu 0\n", mesh.data.vertices.n_vertices(), mesh.data.faces.n_faces());
 
         // vertices, and optionally normals and texture coordinates
-        VertexProperty<PointType> points = mesh.get_vertex_property<PointType>("v:point");
-        for (auto v: mesh.vertices()) {
+        VertexProperty<PointType> points = mesh.interface.get_vertex_property<PointType>("v:point");
+        for (auto v: mesh.data.vertices) {
             const PointType &p = points[v];
             fprintf(out, "%.10f %.10f %.10f", p[0], p[1], p[2]);
 
@@ -986,10 +988,10 @@ namespace Bcg {
         }
 
         // faces
-        for (auto f: mesh.faces()) {
-            auto nv = mesh.valence(f);
+        for (auto f: mesh.data.faces) {
+            auto nv = mesh.interface.valence(f);
             fprintf(out, "%zu", nv);
-            auto fv = mesh.vertices(f);
+            auto fv = mesh.interface.get_vertices(f);
             auto fvend = fv;
             do {
                 fprintf(out, " %d", (uint32_t) (*fv).idx());
@@ -1006,24 +1008,24 @@ namespace Bcg {
         std::vector<std::array<unsigned char, 3>> meshVertexColors;
         std::vector<std::vector<size_t>> meshFaceIndices;
 
-        meshVertexPositions.reserve(mesh.n_vertices());
-        meshFaceIndices.reserve(mesh.n_faces());
-        auto positions = mesh.get_vertex_property<Vector<float, 3 >>("v:point");
+        meshVertexPositions.reserve(mesh.data.vertices.n_vertices());
+        meshFaceIndices.reserve(mesh.data.faces.n_faces());
+        auto positions = mesh.interface.get_vertex_property<Vector<float, 3 >>("v:point");
 
-        for (const auto v: mesh.vertices()) {
+        for (const auto v: mesh.data.vertices) {
             meshVertexPositions.push_back({positions[v][0], positions[v][1], positions[v][2]});
         }
 
-        auto colors = mesh.get_vertex_property<Vector<float, 3>>("v:color");
+        auto colors = mesh.interface.get_vertex_property<Vector<float, 3>>("v:color");
 
         if (colors) {
-            for (const auto v: mesh.vertices()) {
+            for (const auto v: mesh.data.vertices) {
                 meshVertexColors.push_back({(unsigned char) (colors[v][0] * 255),
                                             (unsigned char) (colors[v][1] * 255),
                                             (unsigned char) (colors[v][2] * 255)});
             }
         }
-        auto triangles = mesh.get_face_property<Vector<unsigned int, 3 >>("f:indices");
+        auto triangles = mesh.interface.get_face_property<Vector<unsigned int, 3 >>("f:indices");
         if (!triangles) {
             Log::Error("Failed to get face property: f:indices");
             return false;
@@ -1058,19 +1060,19 @@ namespace Bcg {
         std::fill_n(std::ostream_iterator<char>(ofs), 80 - header.size(), ' ');
 
         //  write number of triangles
-        auto n_triangles = static_cast<uint32_t>(mesh.n_faces());
+        auto n_triangles = static_cast<uint32_t>(mesh.data.faces.n_faces());
         ofs.write((char *) &n_triangles, sizeof(n_triangles));
 
         // write normal, points, and attribute byte count
-        auto normals = mesh.get_face_property<NormalType>("f:normal");
-        auto points = mesh.get_vertex_property<PointType>("v:point");
-        for (auto f: mesh.faces()) {
+        auto normals = mesh.interface.get_face_property<NormalType>("f:normal");
+        auto points = mesh.interface.get_vertex_property<PointType>("v:point");
+        for (auto f: mesh.data.faces) {
             auto n = normals[f];
             ofs.write((char *) &n[0], sizeof(float));
             ofs.write((char *) &n[1], sizeof(float));
             ofs.write((char *) &n[2], sizeof(float));
 
-            for (auto v: mesh.vertices(f)) {
+            for (auto v: mesh.interface.get_vertices(f)) {
                 auto p = points[v];
                 ofs.write((char *) &p[0], sizeof(float));
                 ofs.write((char *) &p[1], sizeof(float));
@@ -1083,12 +1085,12 @@ namespace Bcg {
     }
 
     bool WriteStl(const std::string &filepath, const SurfaceMesh &mesh, const IOFlags &flags) {
-        if (!mesh.is_triangle_mesh()) {
+        if (!mesh.interface.is_triangle_mesh()) {
             Log::Error("write_stl: Not a triangle mesh.");
             return false;
         }
 
-        auto fnormals = mesh.get_face_property<NormalType>("f:normal");
+        auto fnormals = mesh.interface.get_face_property<NormalType>("f:normal");
         if (!fnormals) {
             Log::Error("write_stl: No face normals present.");
             return false;
@@ -1099,16 +1101,16 @@ namespace Bcg {
         }
 
         std::ofstream ofs(filepath.c_str());
-        auto points = mesh.get_vertex_property<PointType>("v:point");
+        auto points = mesh.interface.get_vertex_property<PointType>("v:point");
 
         ofs << "solid stl\n";
 
-        for (const auto &f: mesh.faces()) {
+        for (const auto &f: mesh.data.faces) {
             const auto &n = fnormals[f];
             ofs << "  facet normal ";
             ofs << n[0] << " " << n[1] << " " << n[2] << "\n";
             ofs << "    outer loop\n";
-            for (const auto &v: mesh.vertices(f)) {
+            for (const auto &v: mesh.interface.get_vertices(f)) {
                 const auto &p = points[v];
                 ofs << "      vertex ";
                 ofs << p[0] << " " << p[1] << " " << p[2] << "\n";
@@ -1130,13 +1132,13 @@ namespace Bcg {
         }
 
         // get properties
-        auto htex = mesh.get_halfedge_property<TexCoordType>("h:tex");
+        auto htex = mesh.interface.get_halfedge_property<TexCoordType>("h:tex");
 
         // how many elements?
-        auto nv = mesh.n_vertices();
-        auto ne = mesh.n_edges();
-        auto nh = mesh.n_halfedges();
-        auto nf = mesh.n_faces();
+        auto nv = mesh.data.vertices.n_vertices();
+        auto ne = mesh.data.edges.n_edges();
+        auto nh = mesh.data.halfedges.n_halfedges();
+        auto nf = mesh.data.faces.n_faces();
 
         // write header
         TFWrite(out, nv);
@@ -1146,10 +1148,10 @@ namespace Bcg {
 
         // write properties to file
         // clang-format off
-        fwrite((char *) mesh.vconn_.data(), sizeof(Halfedge), nv, out);
-        fwrite((char *) mesh.hconn_.data(), sizeof(HalfedgeConnectivity), nh, out);
-        fwrite((char *) mesh.fconn_.data(), sizeof(SurfaceMesh::FaceConnectivity), nf, out);
-        fwrite((char *) mesh.vpoint_.data(), sizeof(PointType), nv, out);
+        fwrite((char *) mesh.interface.vconnectivity.data(), sizeof(Halfedge), nv, out);
+        fwrite((char *) mesh.interface.hconnectivity.data(), sizeof(HalfedgeConnectivity), nh, out);
+        fwrite((char *) mesh.interface.fconnectivity.data(), sizeof(Halfedge), nf, out);
+        fwrite((char *) mesh.interface.vpoint.data(), sizeof(PointType), nv, out);
         // clang-format on
 
         // texture coordinates

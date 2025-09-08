@@ -85,7 +85,7 @@ namespace Bcg {
                     auto result = EigenDecompositionSparse(laplacians, k, generalized, sigma);
                     m_registry.emplace_or_replace<EigenDecompositionResult>(entity_id, result);
                     for(int i = 0; i < k; ++i){
-                        Property<float> evec = mesh->vprops_.add<float>("evec" + std::to_string(i));
+                        Property<float> evec = mesh->data.vertices.add<float>("evec" + std::to_string(i));
                         Map(evec.vector()) = result.evecs.col(i);
                     }
                 }

@@ -29,7 +29,7 @@ namespace Bcg::Commands {
             return;
         }
 
-        if (!mesh.has_face_property("f:indices")) {
+        if (!mesh.interface.has_face_property("f:indices")) {
             Log::TODO("Implement: Mesh does not have faces, its a Point Cloud. Forward to Point Cloud stuff...");
         }
     }
@@ -48,16 +48,16 @@ namespace Bcg::Commands {
 
 
         ModuleAABB::setup(entity_id);
-        CenterAndScaleByAABB(entity_id, mesh.vpoint_.name()).execute();
+        CenterAndScaleByAABB(entity_id, mesh.interface.vpoint.name()).execute();
 
         auto h_aabb = Engine::State().get<AABBHandle>(entity_id);
         auto &transform = Engine::State().emplace<TransformComponent>(entity_id);
 
         std::string message = name + ": ";
-        message += " #v: " + std::to_string(mesh.n_vertices());
-        message += " #e: " + std::to_string(mesh.n_edges());
-        message += " #h: " + std::to_string(mesh.n_halfedges());
-        message += " #f: " + std::to_string(mesh.n_faces());
+        message += " #v: " + std::to_string(mesh.data.vertices.n_vertices());
+        message += " #e: " + std::to_string(mesh.data.edges.n_edges());
+        message += " #h: " + std::to_string(mesh.data.halfedges.n_halfedges());
+        message += " #f: " + std::to_string(mesh.data.faces.n_faces());
         message += " Done.";
 
         Log::Info(message);

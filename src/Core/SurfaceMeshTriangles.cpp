@@ -6,13 +6,13 @@
 
 namespace Bcg {
     FaceProperty<Vector<unsigned int, 3>> SurfaceMeshTriangles(SurfaceMesh &mesh) {
-        auto triangles = mesh.get_face_property<Vector<unsigned int, 3 >>("f:indices");
+        auto triangles = mesh.interface.get_face_property<Vector<unsigned int, 3 >>("f:indices");
         if (!triangles) {
-            triangles = mesh.add_face_property<Vector<unsigned int, 3 >>("f:indices");
+            triangles = mesh.interface.add_face_property<Vector<unsigned int, 3 >>("f:indices");
         }
-        for (auto f: mesh.faces()) {
+        for (auto f: mesh.interface.faces) {
             std::vector<unsigned int> faceIndices;
-            for (auto v: mesh.vertices(f)) {
+            for (auto v: mesh.interface.get_vertices(f)) {
                 faceIndices.push_back(v.idx());
             }
             if (faceIndices.size() == 3) {

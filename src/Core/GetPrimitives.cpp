@@ -10,16 +10,16 @@
 
 namespace Bcg {
     Vertices *GetPrimitives::vertices() const {
-        if(Engine::has<MeshHandle>(entity_id)){
-            return &Engine::State().get<MeshHandle>(entity_id)->vprops_;
+        if (Engine::has<MeshHandle>(entity_id)) {
+            return &Engine::State().get<MeshHandle>(entity_id)->data.vertices;
         }
-        if(Engine::has<PointCloudHandle>(entity_id)){
+        if (Engine::has<PointCloudHandle>(entity_id)) {
             return &Engine::State().get<PointCloudHandle>(entity_id)->data.vertices;
         }
         if (Engine::has<SurfaceMesh>(entity_id)) {
-            return &Engine::State().get<SurfaceMesh>(entity_id).vprops_;
+            return &Engine::State().get<SurfaceMesh>(entity_id).data.vertices;
         }
-        if(Engine::has<Graph>(entity_id)){
+        if (Engine::has<Graph>(entity_id)) {
             return &Engine::State().get<Graph>(entity_id).data.vertices;
         }
         if (Engine::has<PointCloud>(entity_id)) {
@@ -29,37 +29,37 @@ namespace Bcg {
     }
 
     Halfedges *GetPrimitives::halfedges() const {
-        if(Engine::has<MeshHandle>(entity_id)){
-            return &Engine::State().get<MeshHandle>(entity_id)->hprops_;
+        if (Engine::has<MeshHandle>(entity_id)) {
+            return &Engine::State().get<MeshHandle>(entity_id)->data.halfedges;
         }
         if (Engine::has<SurfaceMesh>(entity_id)) {
-            return &Engine::State().get<SurfaceMesh>(entity_id).hprops_;
+            return &Engine::State().get<SurfaceMesh>(entity_id).data.halfedges;
         }
-        if(Engine::has<Graph>(entity_id)){
+        if (Engine::has<Graph>(entity_id)) {
             return &Engine::State().get<Graph>(entity_id).data.halfedges;
         }
         return nullptr;
     }
 
     Edges *GetPrimitives::edges() const {
-        if(Engine::has<MeshHandle>(entity_id)){
-            return &Engine::State().get<MeshHandle>(entity_id)->eprops_;
+        if (Engine::has<MeshHandle>(entity_id)) {
+            return &Engine::State().get<MeshHandle>(entity_id)->data.edges;
         }
         if (Engine::has<SurfaceMesh>(entity_id)) {
-            return &Engine::State().get<SurfaceMesh>(entity_id).eprops_;
+            return &Engine::State().get<SurfaceMesh>(entity_id).data.edges;
         }
-        if(Engine::has<Graph>(entity_id)){
+        if (Engine::has<Graph>(entity_id)) {
             return &Engine::State().get<Graph>(entity_id).data.edges;
         }
         return nullptr;
     }
 
     Faces *GetPrimitives::faces() const {
-        if(Engine::has<MeshHandle>(entity_id)){
-            return &Engine::State().get<MeshHandle>(entity_id)->fprops_;
+        if (Engine::has<MeshHandle>(entity_id)) {
+            return &Engine::State().get<MeshHandle>(entity_id)->data.faces;
         }
         if (Engine::has<SurfaceMesh>(entity_id)) {
-            return &Engine::State().get<SurfaceMesh>(entity_id).fprops_;
+            return &Engine::State().get<SurfaceMesh>(entity_id).data.faces;
         }
         return nullptr;
     }
