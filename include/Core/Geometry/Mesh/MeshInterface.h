@@ -416,14 +416,6 @@ namespace Bcg {
         std::vector<bool> add_face_needs_adjust_;
         NextCache add_face_next_cache_;
     };
-
-    struct MeshOwning : public HalfedgeMeshInterface {
-        MeshOwning() : HalfedgeMeshInterface(data) {
-        }
-
-    private:
-        MeshData data;
-    };
 }
 
 #endif //ENGINE24_MESHINTERFACE_H

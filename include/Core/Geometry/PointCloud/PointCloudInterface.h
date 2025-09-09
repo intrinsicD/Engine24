@@ -103,14 +103,6 @@ namespace Bcg {
 
         void garbage_collection();
     };
-
-    struct PointCloudOwning : public PointCloudInterface {
-        PointCloudOwning() : PointCloudInterface(vertices_) {
-        }
-
-    private:
-        Vertices vertices_;
-    };
 }
 
 #endif //ENGINE24_POINTCLOUDINTERFACE_H

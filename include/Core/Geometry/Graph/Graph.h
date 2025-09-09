@@ -11,7 +11,7 @@ namespace Bcg {
     class Graph {
     public:
         Graph() : interface(data) {
-            ;
+
         }
 
         virtual ~Graph() = default;

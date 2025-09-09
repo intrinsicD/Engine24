@@ -273,14 +273,6 @@ namespace Bcg {
             return {this, v};
         }
     };
-
-    struct GraphOwning : public GraphInterface {
-        GraphOwning() : GraphInterface(data) {
-        }
-
-    private:
-        GraphData data;
-    };
 }
 
 #endif //ENGINE24_GRAPHINTERFACE_H
