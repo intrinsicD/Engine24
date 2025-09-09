@@ -495,7 +495,8 @@ namespace Bcg {
         if (!plyIn.hasElement("vertex") ||
             !plyIn.getElement("vertex").hasProperty("x") ||
             !plyIn.getElement("vertex").hasProperty("y") ||
-            !plyIn.getElement("vertex").hasProperty("z")) {
+            !plyIn.getElement("vertex").hasProperty("z") ||
+            !plyIn.hasElement("face")) {
             Log::Error("Failed to open file: " + filepath);
             return false;
         }
@@ -505,7 +506,6 @@ namespace Bcg {
         if (plyIn.getElement("vertex").hasProperty("red")) {
             vCol = plyIn.getVertexColors();
         }
-        std::vector<std::vector<size_t>> fInd = plyIn.getFaceIndices<size_t>();
 
         auto colors = mesh.interface.vertex_property<Vector<float, 3>>("v:color");
 
@@ -523,6 +523,8 @@ namespace Bcg {
         } else {
             mesh.data.vertices.remove(colors);
         }
+
+        std::vector<std::vector<size_t>> fInd = plyIn.getFaceIndices<size_t>();
 
         mesh.data.faces.reserve(fInd.size());
         for (const auto &face: fInd) {

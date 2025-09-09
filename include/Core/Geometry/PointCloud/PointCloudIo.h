@@ -25,6 +25,8 @@ namespace Bcg{
 
     bool ReadXyz(const std::string &filepath, PointCloud &pc);
 
+    bool ReadPly(const std::string &filepath, PointCloud &pc);
+
     bool Write(const std::string &filepath, const PointCloud &pc, const PointCloudIOFlags &flags = PointCloudIOFlags());
 
     bool WriteCsv(const std::string &filepath, const PointCloud &pc, const PointCloudIOFlags &flags = PointCloudIOFlags());
@@ -41,6 +43,8 @@ namespace Bcg{
     bool ReadPts(const std::string &filepath, PointCloudInterface &pci);
 
     bool ReadXyz(const std::string &filepath, PointCloudInterface &pci);
+
+    bool ReadPly(const std::string &filepath, PointCloudInterface &pci);
 
     bool Write(const std::string &filepath, const PointCloudInterface &pci, const PointCloudIOFlags &flags = PointCloudIOFlags());
 

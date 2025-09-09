@@ -406,8 +406,38 @@ namespace Bcg {
         if(any){
             std::string property_name_3d = property_name + "Color3d";
             auto v_colorf3 = vertices->get_or_add<Vector<float, 3>>(property_name_3d);
-            t = (t.array() - t.minCoeff()) / (t.maxCoeff() - t.minCoeff());
-            Map(v_colorf3.vector()) = t * Eigen::Vector<float, 3>::Unit(0).transpose() + (1.0f - t.array()).matrix() * Eigen::Vector<float, 3>::Unit(1).transpose();
+
+            // Ensure the destination vector has the correct size before creating a map
+            v_colorf3.vector().resize(vertices->size());
+
+            // Create a map to the destination memory. It's now safe because the size matches.
+            // Note that Eigen matrices are column-major by default.
+            // We will treat your data as a block of XYZXYZ...
+            // This requires a map of size 3xN and then transposing it for easier assignments.
+
+            auto color_map = Map(v_colorf3.vector()).transpose(); // Now color_map is 3 x N
+
+            // Normalize the scalar field t to the range [0, 1]
+            float min_val = t.minCoeff();
+            float max_val = t.maxCoeff();
+            float range = max_val - min_val;
+
+            // Avoid division by zero if all values are the same
+            if (range > 0) {
+                t = (t.array() - min_val) / range;
+            } else {
+                t.setZero(); // Or set to 0.5, or whatever makes sense
+            }
+
+            // --- FIX: Assign colors column by column ---
+            // Interpolate between Green (Color1) and Red (Color2)
+            // Red component
+            color_map.col(0) = t;
+            // Green component
+            color_map.col(1) = 1.0f - t.array();
+            // Blue component
+            color_map.col(2).setZero();
+
             set_color(entity_id, property_name_3d);
         }
     }
