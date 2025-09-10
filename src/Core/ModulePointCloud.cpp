@@ -21,6 +21,7 @@
 #include "PointCloudToGraph.h"
 #include "CommandsPointCloud.h"
 #include "Picker.h"
+#include "GeometryUtils.h"
 
 #include "ModuleGraphView.h"
 
@@ -110,6 +111,7 @@ namespace Bcg {
         auto h_pc = get(entity_id);
         auto h_aabb = ModuleAABB::create(entity_id, BuilderTraits<AABB<float>, PointCloud>::build(*h_pc));
         auto &transform = Engine::require<TransformComponent>(entity_id);
+        Require<PointCloudInterface>(entity_id, Engine::State());
 
         ModuleAABB::center_and_scale_by_aabb(entity_id, h_pc->interface.vpoint.name());
         ModuleCamera::center_camera_at_distance(h_aabb->center(), glm::compMax(h_aabb->diagonal()));
