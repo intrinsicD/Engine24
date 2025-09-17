@@ -216,6 +216,10 @@ namespace Bcg {
             vconnectivity[v] = h;
         }
 
+        [[nodiscard]] Vertex from_vertex(Halfedge h) const {
+            return to_vertex(get_opposite(h));
+        }
+
         [[nodiscard]] Vertex to_vertex(Halfedge h) const {
             return hconnectivity[h].v;
         }

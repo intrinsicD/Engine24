@@ -23,6 +23,20 @@ namespace Bcg {
         Eigen::SparseMatrix<float> L;       // L = M^-1 * S
         Eigen::SparseMatrix<float> L_sym;   // L_sym = M^-1/2 * S * M^-1/2
 
+        void build(const std::vector<Eigen::Triplet<float>> &S_triplets, const std::vector<Eigen::Triplet<float>> &M_triplets, long n) {
+            S.resize(n, n);
+            S.setFromTriplets(S_triplets.begin(), S_triplets.end());
+
+            M.resize(n, n);
+            M.setFromTriplets(M_triplets.begin(), M_triplets.end());
+
+            // Clear derived matrices to ensure they are recomputed when needed
+            M_inv.resize(0, 0);
+            M_inv_sqrt.resize(0, 0);
+            L.resize(0, 0);
+            L_sym.resize(0, 0);
+        }
+
         // --- 'Exists' Checkers ---
         bool L_exists() const { return L.rows() > 0; }
 

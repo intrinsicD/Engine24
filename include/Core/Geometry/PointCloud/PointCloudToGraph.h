@@ -1,11 +1,10 @@
 #pragma once
 
+#include "PointCloudInterface.h"
 #include "Graph.h"
-#include "GeometryCommon.h"
-#include "Types.h"
 
 namespace Bcg {
-    Graph PointCloudToKNNGraph(const VertexProperty<PointType> &points, int k);
+    void PointCloudToKNNGraph(PointCloudInterface &pci, int k, GraphInterface &out_graph);
 
-    Graph PointCloudToRadiusGraph(const VertexProperty<PointType> &points, float radius);
+    void PointCloudToRadiusGraph(PointCloudInterface &pci, float radius, GraphInterface &out_graph);
 }

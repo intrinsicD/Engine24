@@ -1,25 +1,23 @@
+#include "GuiModuleGraphLaplacian.h"
 
-
-#include "GuiModuleMeshLaplacian.h"
 #include "imgui.h"
 #include "implot/implot.h"
-#include "SurfaceMeshLaplacianOperator.h"
+#include "GraphLaplacianOperator.h"
 #include "Picker.h"
-#include "ModuleMesh.h"
 #include "PropertyEigenMap.h"
 
 #include <entt/entity/registry.hpp>
 
 namespace Bcg {
-    GuiModuleMeshLaplacian::GuiModuleMeshLaplacian(entt::registry &registry) : GuiModule("Laplacian"),
+    GuiModuleGraphLaplacian::GuiModuleGraphLaplacian(entt::registry &registry) : GuiModule("GraphLaplacian"),
                                                                                m_registry(registry) {
 
     }
 
 
-    void GuiModuleMeshLaplacian::render_menu() {
+    void GuiModuleGraphLaplacian::render_menu() {
         if (ImGui::BeginMenu("Module")) {
-            if (ImGui::BeginMenu("Mesh")) {
+            if (ImGui::BeginMenu("Graph")) {
                 ImGui::MenuItem(name.c_str(), nullptr, &m_is_window_open);
                 ImGui::EndMenu();
             }
@@ -27,7 +25,7 @@ namespace Bcg {
         }
     }
 
-    void GuiModuleMeshLaplacian::render_gui() {
+    void GuiModuleGraphLaplacian::render_gui() {
         if (!m_is_window_open) {
             return;
         }
@@ -38,36 +36,29 @@ namespace Bcg {
             m_is_window_open = false;
             return;
         }
-        if (!(m_registry.all_of<SurfaceMesh>(entity_id) || m_registry.all_of<MeshHandle>(entity_id))) {
+        if (!(m_registry.all_of<Graph>(entity_id) || m_registry.all_of<GraphInterface>(entity_id))) {
             return;
         }
 
-        auto *mesh = m_registry.try_get<SurfaceMesh>(entity_id);
-        if(!mesh){
-            auto h_mesh =  m_registry.try_get<MeshHandle>(entity_id);
-            if(h_mesh->is_valid()){
-                mesh = h_mesh->ptr();
+        auto *gi = m_registry.try_get<GraphInterface>(entity_id);
+        if(!gi){
+            auto *graph =  m_registry.try_get<Graph>(entity_id);
+            if (graph) {
+                gi = &graph->interface;
             }
         }
 
-        if (ImGui::Begin("Mesh - Laplacian", &m_is_window_open)) {
-            if (ImGui::Button("Compute Cotan Laplacian")) {
+        if (ImGui::Begin("Graph - Laplacian", &m_is_window_open)) {
+            if (ImGui::Button("Compute Heat Kernel Laplacian")) {
 
-                if(mesh){
-                    auto laplacians = ComputeCotanLaplacianOperator(*mesh);
+                if(gi){
+                    auto laplacians = ComputeHeatKernelLaplacianOperator(*gi);
                     m_registry.emplace_or_replace<LaplacianMatrices>(entity_id, laplacians);
                 }
             }
             if (ImGui::Button("Compute Graph Laplacian")) {
-                auto *mesh = m_registry.try_get<SurfaceMesh>(entity_id);
-                if(!mesh){
-                    auto h_mesh =  m_registry.try_get<MeshHandle>(entity_id);
-                    if(h_mesh->is_valid()){
-                        mesh = h_mesh->ptr();
-                    }
-                }
-                if(mesh){
-                    auto laplacians = ComputeGraphLaplacianOperator(*mesh);
+                if(gi){
+                    auto laplacians = ComputeGraphLaplacianOperator(*gi);
                     m_registry.emplace_or_replace<LaplacianMatrices>(entity_id, laplacians);
                 }
             }
@@ -84,7 +75,7 @@ namespace Bcg {
                     auto result = EigenDecompositionSparse(laplacians, k, generalized, sigma);
                     m_registry.emplace_or_replace<EigenDecompositionResult>(entity_id, result);
                     for(int i = 0; i < k; ++i){
-                        Property<float> evec = mesh->data.vertices.add<float>("evec" + std::to_string(i));
+                        Property<float> evec = gi->vertex_property<float>("evec" + std::to_string(i));
                         Map(evec.vector()) = result.evecs.col(i);
                     }
                 }
@@ -126,7 +117,7 @@ namespace Bcg {
     }
 
     // Recursively draws an entity and all its children as a tree.
-    void GuiModuleMeshLaplacian::render_gui(entt::entity entity_id) {
+    void GuiModuleGraphLaplacian::render_gui(entt::entity entity_id) {
 
     }
 }

@@ -19,6 +19,12 @@ namespace Bcg {
                                                                vertices.vertex_property<ScalarType>("v:scalarfield")),
                                                            vradius(vertices.vertex_property<ScalarType>("v:radius")),
                                                            vdeleted(vertices.vertex_property<bool>("v:deleted")) {
+            assert(vpoint && vpoint.name() == "v:point");
+            assert(vnormal && vnormal.name() == "v:normal");
+            assert(vcolor && vcolor.name() == "v:color");
+            assert(vscalarfield && vscalarfield.name() == "v:scalarfield");
+            assert(vradius && vradius.name() == "v:radius");
+            assert(vdeleted && vdeleted.name() == "v:deleted");
         }
 
         PointCloudInterface(PointCloudInterface &&other) noexcept

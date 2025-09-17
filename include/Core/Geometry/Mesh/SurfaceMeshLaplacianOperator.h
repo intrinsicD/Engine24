@@ -29,7 +29,6 @@ namespace Bcg {
         std::vector<Eigen::Triplet<float>> S_triplets;
 
         // Use a vector to accumulate the diagonal entries for both S and M.
-        Eigen::VectorXd S_diagonal = Eigen::VectorXd::Zero(n_vertices);
         Eigen::VectorXd M_diagonal_areas = Eigen::VectorXd::Zero(n_vertices);
 
         // Iterate over all faces to compute cotangent weights and barycentric areas.
@@ -86,10 +85,6 @@ namespace Bcg {
             S_triplets.emplace_back(v2_h.idx(), v2_h.idx(), cot0 + cot1);
         }
 
-        // Finalize the Stiffness Matrix (S)
-        matrices.S.resize(n_vertices, n_vertices);
-        matrices.S.setFromTriplets(S_triplets.begin(), S_triplets.end());
-
         // Finalize the Mass Matrix (M)
         std::vector<Eigen::Triplet<float>> M_triplets;
         M_triplets.reserve(n_vertices);
@@ -101,9 +96,8 @@ namespace Bcg {
                 M_triplets.emplace_back(i, i, 1e-9);
             }
         }
-        matrices.M.resize(n_vertices, n_vertices);
-        matrices.M.setFromTriplets(M_triplets.begin(), M_triplets.end());
 
+        matrices.build(S_triplets, M_triplets, n_vertices);
         return matrices;
     }
 
@@ -147,11 +141,7 @@ namespace Bcg {
             S_triplets.emplace_back(i, i, diagonal_degrees[i]);
         }
 
-        // Build the Stiffness Matrix (S), which is the Graph Laplacian itself in this case.
-        matrices.S.resize(n_vertices, n_vertices);
-        matrices.S.setFromTriplets(S_triplets.begin(), S_triplets.end());
-
-        // The Mass Matrix (M) for a simple graph Laplacian is the Identity matrix.
+        matrices.build(S_triplets , {}, n_vertices);
         matrices.M.resize(n_vertices, n_vertices);
         matrices.M.setIdentity();
 

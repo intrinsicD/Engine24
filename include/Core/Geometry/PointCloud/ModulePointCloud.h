@@ -6,14 +6,12 @@
 #define ENGINE24_POINTCLOUDMODULE_H
 
 #include "ComponentModule.h"
+#include "ComponentHandle.h"
 #include "PointCloud.h"
 #include "StringTraitsMesh.h"
 #include "Events/EventsCallbacks.h"
 
 namespace Bcg {
-    using PointCloudHandle = PoolHandle<PointCloud>;
-    using PointCloudPool = Pool<PointCloud>;
-
     class ModulePointCloud : public Module {
     public:
         ModulePointCloud();
@@ -24,21 +22,16 @@ namespace Bcg {
 
         void deactivate() override;
 
-        // Creation and management --------------------------------------------------------------------------------------
-
-        static PointCloudHandle make_handle(const PointCloud &pc);
-
-        static PointCloudHandle create(entt::entity entity_id, const PointCloud &pc);
-
-        static PointCloudHandle add(entt::entity entity_id, PointCloudHandle h_pc);
+        // Creation and management -------------------------------------------------------------------------------------
 
         static void remove(entt::entity entity_id);
 
         static bool has(entt::entity entity_id);
 
-        static PointCloudHandle get(entt::entity entity_id);
+        static void destroy_entity(entt::entity entity_id);
 
-        // Processing ---------------------------------------------------------------------------------------------------
+
+        // Processing --------------------------------------------------------------------------------------------------
 
         static PointCloud load_point_cloud(const std::string &filepath);
 
@@ -54,9 +47,8 @@ namespace Bcg {
 
         void render_gui() override;
 
-        static void show_gui(const PointCloudHandle &h_pc);
 
-        static void show_gui(const PointCloud &pc);
+        static void show_gui(const PointCloudInterface &pci);
 
         static void show_gui(entt::entity entity_id);
 

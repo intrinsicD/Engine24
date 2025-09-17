@@ -7,7 +7,7 @@ namespace Bcg {
     struct Vertices : public PropertyContainer {
         using VertexIterator = Iterator<Vertices, Vertex>;
 
-        Vertices() : PropertyContainer() {
+        Vertices() : PropertyContainer(), vdeleted(vertex_property<bool>("v:deleted", false)) {
         }
 
         ~Vertices() override = default;
@@ -69,7 +69,7 @@ namespace Bcg {
     struct Halfedges : public PropertyContainer {
         using HalfEdgeIterator = Iterator<Halfedges, Halfedge>;
 
-        Halfedges() : PropertyContainer() {
+        Halfedges() : PropertyContainer(), hdeleted(halfedge_property<bool>("h:deleted", false)) {
         }
 
         HalfedgeProperty<bool> hdeleted;
@@ -131,7 +131,7 @@ namespace Bcg {
     struct Edges : public PropertyContainer {
         using EdgeIterator = Iterator<Edges, Edge>;
 
-        Edges() : PropertyContainer() {
+        Edges() : PropertyContainer(), edeleted(edge_property<bool>("e:deleted", false)) {
         }
 
         EdgeProperty<bool> edeleted;
@@ -193,7 +193,7 @@ namespace Bcg {
     struct Faces : public PropertyContainer {
         using FaceIterator = Iterator<Faces, Face>;
 
-        Faces() : PropertyContainer() {
+        Faces() : PropertyContainer(), fdeleted(face_property<bool>("f:deleted", false)) {
         }
 
         FaceProperty<bool> fdeleted;
