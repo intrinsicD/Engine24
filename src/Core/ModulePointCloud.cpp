@@ -236,8 +236,9 @@ namespace Bcg {
             }
 
             auto entity_id = Engine::State().create();
+            auto &vertices = Require<Vertices>(entity_id, Engine::State());
+            vertices = spc.data.vertices;
             auto &pci = Require<PointCloudInterface>(entity_id, Engine::State());
-            pci.vertices = std::move(spc.data.vertices);
             setup(entity_id);
             Log::Info("Build Spc in " + std::to_string(build_duration.count()) + " seconds");
         }

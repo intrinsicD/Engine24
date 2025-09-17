@@ -8,6 +8,8 @@
 #include "LaplacianOperator.h"
 #include "Graph.h" // Assuming this provides vertex, edge, face iterators and connectivity
 #include "Eigen/Geometry"
+#include "CovarianceInterface.h"
+#include "GlmToEigen.h"
 
 #include <vector>
 
@@ -59,7 +61,6 @@ namespace Bcg {
 
             S_triplets.emplace_back(v_i_idx, v_j_idx, -weight);
             S_triplets.emplace_back(v_j_idx, v_i_idx, -weight);
-
 
 
             M_diagonal_values[v_i_idx] += weight;
@@ -120,6 +121,76 @@ namespace Bcg {
         matrices.M.resize(n_vertices, n_vertices);
         matrices.M.setIdentity();
 
+        return matrices;
+    }
+
+    inline LaplacianMatrices ComputeGMMLaplacianOperator(GraphInterface &graph, double t_factor = 1.0) {
+        LaplacianMatrices matrices;
+        const long n_vertices = graph.vertices.n_vertices();
+        if (n_vertices == 0) return matrices;
+
+        std::vector<Eigen::Triplet<float> > S_triplets;
+        // Reserve space: 2 triplets for each edge (i,j) and (j,i), plus n for the diagonal.
+        S_triplets.reserve(graph.edges.n_edges() * 2 + n_vertices);
+
+        Eigen::VectorXd M_diagonal_values = Eigen::VectorXd::Zero(n_vertices);
+
+        auto scale = graph.vertex_property<Vector<float, 3> >("v:scale", Vector<float, 3>(0.0f));
+        auto rotation = graph.vertex_property<Vector<float, 4> >("v:rotation", Vector<float, 4>(0.0f));
+
+        if (!scale || !rotation) {
+            Log::Error("ComputeGMMLaplacianOperator: Missing 'v:scale' or 'v:rotation' vertex properties.");
+            return matrices;
+        }
+
+        // Iterate over all edges to set off-diagonal entries
+        for (const auto edge: graph.edges) {
+            auto h0 = graph.get_halfedge(edge, 0);
+            auto v_i = graph.from_vertex(h0);
+            auto v_j = graph.to_vertex(h0);
+
+            auto v_i_quat = Eigen::Quaternion<double>(rotation[v_i].w, rotation[v_i].x, rotation[v_i].y,
+                                                      rotation[v_i].z);
+            auto v_i_scale = Eigen::Vector3d(scale[v_i].x, scale[v_i].y, scale[v_i].z);
+            CovarianceInterface<double> i_cov_i(v_i_scale, v_i_quat);
+
+            auto v_j_quat = Eigen::Quaternion<double>(rotation[v_j].w, rotation[v_j].x, rotation[v_j].y,
+                                                      rotation[v_j].z);
+            auto v_j_scale = Eigen::Vector3d(scale[v_j].x, scale[v_j].y, scale[v_j].z);
+            CovarianceInterface<double> i_cov_j(v_j_scale, v_j_quat);
+
+            const auto S_ij = (i_cov_i.get_covariance_matrix() + i_cov_j.get_covariance_matrix()) / 2.0;
+            Eigen::Vector3d diff = MapConst(glm::dvec3(graph.vpoint[v_i]) - glm::dvec3(graph.vpoint[v_j]));
+
+            const double weight = std::exp((-diff.transpose() * S_ij.inverse() * diff / (2.0 * double(t_factor))).value());
+
+            auto v_i_idx = graph.from_vertex(h0).idx();
+            auto v_j_idx = graph.to_vertex(h0).idx();
+                    // Off-diagonal elements are -1 for every connected edge
+            S_triplets.emplace_back(v_i_idx, v_j_idx, -weight);
+            S_triplets.emplace_back(v_j_idx, v_i_idx, -weight);
+
+
+            M_diagonal_values[v_i_idx] += weight;
+            M_diagonal_values[v_j_idx] += weight;
+        }
+
+        for (long i = 0; i < n_vertices; ++i) {
+            S_triplets.emplace_back(i, i, M_diagonal_values[i]);
+        }
+
+        // --- Step 4: Finalize the Mass Matrix ---
+        std::vector<Eigen::Triplet<float> > M_triplets;
+        M_triplets.reserve(n_vertices);
+        for (long i = 0; i < n_vertices; ++i) {
+            if (M_diagonal_values[i] > 1e-9) {
+                M_triplets.emplace_back(i, i, M_diagonal_values[i]);
+            } else {
+                M_triplets.emplace_back(i, i, 1e-9);
+            }
+        }
+
+        matrices.build(S_triplets, M_triplets, n_vertices);
         return matrices;
     }
 }

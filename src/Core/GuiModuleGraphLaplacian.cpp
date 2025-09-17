@@ -10,8 +10,7 @@
 
 namespace Bcg {
     GuiModuleGraphLaplacian::GuiModuleGraphLaplacian(entt::registry &registry) : GuiModule("GraphLaplacian"),
-                                                                               m_registry(registry) {
-
+        m_registry(registry) {
     }
 
 
@@ -41,29 +40,38 @@ namespace Bcg {
         }
 
         auto *gi = m_registry.try_get<GraphInterface>(entity_id);
-        if(!gi){
-            auto *graph =  m_registry.try_get<Graph>(entity_id);
+        if (!gi) {
+            auto *graph = m_registry.try_get<Graph>(entity_id);
             if (graph) {
                 gi = &graph->interface;
             }
         }
 
         if (ImGui::Begin("Graph - Laplacian", &m_is_window_open)) {
+            static float t_scale = 1.0;
+            ImGui::InputFloat("t scale", &t_scale);
+            if (gi->vertices.has_vertex_property("v:scale") && gi->vertices.has_vertex_property("v:rotation")) {
+                if (ImGui::Button("Compute GMM Laplacian")) {
+                    if (gi) {
+                        auto laplacians = ComputeGMMLaplacianOperator(*gi, t_scale);
+                        m_registry.emplace_or_replace<LaplacianMatrices>(entity_id, laplacians);
+                    }
+                }
+            }
             if (ImGui::Button("Compute Heat Kernel Laplacian")) {
-
-                if(gi){
-                    auto laplacians = ComputeHeatKernelLaplacianOperator(*gi);
+                if (gi) {
+                    auto laplacians = ComputeHeatKernelLaplacianOperator(*gi, t_scale);
                     m_registry.emplace_or_replace<LaplacianMatrices>(entity_id, laplacians);
                 }
             }
             if (ImGui::Button("Compute Graph Laplacian")) {
-                if(gi){
+                if (gi) {
                     auto laplacians = ComputeGraphLaplacianOperator(*gi);
                     m_registry.emplace_or_replace<LaplacianMatrices>(entity_id, laplacians);
                 }
             }
 
-            if(m_registry.all_of<LaplacianMatrices>(entity_id)){
+            if (m_registry.all_of<LaplacianMatrices>(entity_id)) {
                 auto &laplacians = m_registry.get<LaplacianMatrices>(entity_id);
                 static int k = 10;
                 ImGui::InputInt("num eigenvalues", &k);
@@ -71,15 +79,15 @@ namespace Bcg {
                 ImGui::Checkbox("generalized", &generalized);
                 static float sigma = 0.0f;
                 ImGui::InputFloat("sigma", &sigma);
-                if(ImGui::Button("Compute Eigen Decomposition")){
+                if (ImGui::Button("Compute Eigen Decomposition")) {
                     auto result = EigenDecompositionSparse(laplacians, k, generalized, sigma);
                     m_registry.emplace_or_replace<EigenDecompositionResult>(entity_id, result);
-                    for(int i = 0; i < k; ++i){
+                    for (int i = 0; i < k; ++i) {
                         Property<float> evec = gi->vertex_property<float>("evec" + std::to_string(i));
                         Map(evec.vector()) = result.evecs.col(i);
                     }
                 }
-                if(m_registry.all_of<EigenDecompositionResult>(entity_id)){
+                if (m_registry.all_of<EigenDecompositionResult>(entity_id)) {
                     auto &result = m_registry.get<EigenDecompositionResult>(entity_id);
                     //Show plot of eigenvalues if they exist
                     if (ImPlot::BeginPlot("Eigenvalue Spectrum", "Index (i)", "Value (λ)")) {
@@ -111,13 +119,11 @@ namespace Bcg {
                 }
                 ImGui::Separator();
             }
-
         }
         ImGui::End();
     }
 
     // Recursively draws an entity and all its children as a tree.
     void GuiModuleGraphLaplacian::render_gui(entt::entity entity_id) {
-
     }
 }
