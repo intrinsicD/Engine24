@@ -24,6 +24,7 @@ target_sources(Engine24 PRIVATE
         GuiModuleGraphLaplacian.cpp
         GuiModuleMeshLaplacian.cpp
         GaussianMixture.cpp
+        GaussianMixtureInterface.cpp
         GLFWUtils.cpp
         GLFWContext.cpp
         HandleGlfwKeyEvents.cpp

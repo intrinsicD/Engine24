@@ -19,10 +19,10 @@ namespace Bcg {
 
         CUDA_HOST_DEVICE AABB() = default;
 
-        CUDA_HOST_DEVICE explicit AABB(const Vector<T, 3> &min, const Vector<T, 3> &max): min(min), max(max) {
+        CUDA_HOST_DEVICE explicit AABB(const Vector<T, 3> &min, const Vector<T, 3> &max) : min(min), max(max) {
         }
 
-        CUDA_HOST_DEVICE explicit AABB(const Vector<T, 3> &point): min(point), max(point) {
+        CUDA_HOST_DEVICE explicit AABB(const Vector<T, 3> &point) : min(point), max(point) {
         }
 
         CUDA_HOST_DEVICE bool is_valid() const {
@@ -51,6 +51,10 @@ namespace Bcg {
         CUDA_HOST_DEVICE void grow(const Vector<T, 3> &point) {
             min = VecTraits<Vector<T, 3> >::cwiseMin(min, point);
             max = VecTraits<Vector<T, 3> >::cwiseMax(max, point);
+        }
+
+        CUDA_HOST_DEVICE void grow(const AABB &aabb) {
+            merge(aabb);
         }
 
         CUDA_HOST_DEVICE Vector<T, 3> diagonal() const {
