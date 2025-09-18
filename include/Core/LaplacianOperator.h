@@ -1,3 +1,4 @@
+#pragma once
 // --- REQUIRED SPECTRA HEADERS ---
 // Make sure the Spectra 'include' directory is in your project's include path
 
@@ -35,6 +36,9 @@ namespace Bcg {
             M_inv_sqrt.resize(0, 0);
             L.resize(0, 0);
             L_sym.resize(0, 0);
+
+            S.makeCompressed();
+            M.makeCompressed();
         }
 
         // --- 'Exists' Checkers ---

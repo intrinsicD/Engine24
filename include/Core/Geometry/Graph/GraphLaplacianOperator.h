@@ -10,6 +10,7 @@
 #include "Eigen/Geometry"
 #include "CovarianceInterface.h"
 #include "GlmToEigen.h"
+#include "GmmUtils.h"
 
 #include <vector>
 
@@ -124,7 +125,13 @@ namespace Bcg {
         return matrices;
     }
 
+
+
     inline LaplacianMatrices ComputeGMMLaplacianOperator(GraphInterface &graph, double t_factor = 1.0) {
+        return BuildGmmApproxLaplacian(graph, t_factor);
+    }
+
+    inline LaplacianMatrices ComputeGMMGraphLaplacianOperator(GraphInterface &graph, double t_factor = 1.0) {
         LaplacianMatrices matrices;
         const long n_vertices = graph.vertices.n_vertices();
         if (n_vertices == 0) return matrices;
@@ -162,11 +169,12 @@ namespace Bcg {
             const auto S_ij = (i_cov_i.get_covariance_matrix() + i_cov_j.get_covariance_matrix()) / 2.0;
             Eigen::Vector3d diff = MapConst(glm::dvec3(graph.vpoint[v_i]) - glm::dvec3(graph.vpoint[v_j]));
 
-            const double weight = std::exp((-diff.transpose() * S_ij.inverse() * diff / (2.0 * double(t_factor))).value());
+            const double weight = std::exp(
+                (-diff.transpose() * S_ij.inverse() * diff / (2.0 * double(t_factor))).value());
 
             auto v_i_idx = graph.from_vertex(h0).idx();
             auto v_j_idx = graph.to_vertex(h0).idx();
-                    // Off-diagonal elements are -1 for every connected edge
+            // Off-diagonal elements are -1 for every connected edge
             S_triplets.emplace_back(v_i_idx, v_j_idx, -weight);
             S_triplets.emplace_back(v_j_idx, v_i_idx, -weight);
 
