@@ -4,7 +4,7 @@
 
 #include "PointCloudInterface.h"
 #include "Logger.h"
-#include "Eigen/Dense.h"
+#include "Eigen/Dense"
 
 namespace Bcg {
     class GaussianMixtureInterface : public PointCloudInterface {
