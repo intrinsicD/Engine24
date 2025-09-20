@@ -92,20 +92,6 @@ namespace Bcg {
     }
 
     template<typename T>
-    struct ContainsTraits<Sphere<T>, Vector<T, 3> > {
-        CUDA_HOST_DEVICE static bool contains(const Sphere<T> &a, const Vector<T, 3> &b) noexcept {
-            return isWithinBounds(a, b);
-        }
-    };
-
-    template<typename T>
-    struct IntersectsTraits<Sphere<T>, Vector<T, 3> > {
-        CUDA_HOST_DEVICE static bool intersects(const Sphere<T> &a, const Vector<T, 3> &b) noexcept {
-            return isWithinBounds(a, b);
-        }
-    };
-
-    template<typename T>
     struct ContainsTraits<Sphere<T>, Sphere<T> > {
         CUDA_HOST_DEVICE static bool contains(const Sphere<T> &a, const Sphere<T> &b) noexcept {
             return isWithinBounds(a, b.center) &&

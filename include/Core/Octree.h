@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Properties.h"
-#include "AABB.h"
-#include "Sphere.h"
+#include "GeometricContainment.h"
+#include "GeometricIntersection.h"
 #include "Logger.h"
 
 #include <numeric>
@@ -110,7 +110,6 @@ namespace Bcg {
             }
 
             AABB<float> node_aabb = aabbs[node_idx];
-            auto center = node_aabb.center();
 
             Eigen::Vector3f sp = choose_split_point(node_idx);
 
@@ -218,18 +217,13 @@ namespace Bcg {
             const Node &node = nodes[node_idx];
             const AABB<float>& nb = aabbs[node_idx];
 
-            // get center and radius (use radius() if your Sphere provides a getter)
-            const auto qc = query_sphere.center();
-            const float r  = query_sphere.radius;     // <-- change to query_sphere.radius() if needed
-            const float r2 = r * r;
-
             // prune if no overlap using Minkowski sum logic
-            if (!OverlapsTraits<Sphere<float>, AABB<float>>::overlaps(qc, r, r2, nb)) {
+            if (!IntersectsTraits<Sphere<float>, AABB<float>>::intersects(query_sphere, nb)) {
                 return;
             }
 
-            const bool accept_all_safe = (split_policy.tight_children || split_policy.assign_by_overlap);
-            if (accept_all_safe && ContainsTraits<AABB<float>, Sphere<float>>::contains(qc, r2, nb)) {
+            const bool accept_all_safe = split_policy.tight_children;
+            if (accept_all_safe && ContainsTraits<Sphere<float>, AABB<float>>::contains(query_sphere, nb)) {
                 // Sphere fully contains the node's AABB => every element in this node intersects the sphere.
                 for (size_t i = node.first_element; i <= node.last_element; ++i) {
                     result.push_back(element_indices[i]);
@@ -255,12 +249,37 @@ namespace Bcg {
 
         void query_recursive(size_t node_idx, const Eigen::Vector<float, 3> &query_point, size_t k,
                      std::vector<size_t> &result) const {
-
+            //find the k closest points to query_point in the octree and return the indices
         }
 
         void query_recursive(size_t node_idx, const Eigen::Vector<float, 3> &query_point,
-             std::vector<size_t> &result) const {
+             size_t &result) const {
+            //find the closest point to query_point in the octree and return its index
 
+            const Node &node = nodes[node_idx];
+            const AABB<float> &nb = aabbs[node_idx];
+
+            if (!IntersectsTraits<Eigen::Vector3f, AABB<float>>::intersects(query_point, nb)) {
+                return;
+            }
+
+            if (node.is_leaf) {
+                float min_dist = std::numeric_limits<float>::max();
+                for (size_t i = node.first_element; i <= node.last_element; ++i) {
+                    size_t elem_idx = element_indices[i];
+                    float dist = (element_aabbs[elem_idx].center() - query_point).squaredNorm();
+                    if (dist < min_dist) {
+                        min_dist = dist;
+                        result = elem_idx;
+                    }
+                }
+            } else {
+                for (size_t child_idx : node.children) {
+                    if (child_idx != std::numeric_limits<size_t>::max()) {
+                        query_recursive(child_idx, query_point, result);
+                    }
+                }
+            }
         }
 
         Eigen::Vector3f compute_mean_center(size_t first, size_t last) const {

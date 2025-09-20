@@ -134,13 +134,6 @@ namespace Bcg {
     };
 
     template<typename T>
-    struct IntersectsTraits<AABB<T>, Vector<T, 3> > {
-        CUDA_HOST_DEVICE static bool intersects(const AABB<T> &a, const Vector<T, 3> &b) noexcept {
-            return isWithinBounds(a, b);
-        }
-    };
-
-    template<typename T>
     struct ContainsTraits<AABB<T>, AABB<T> > {
         CUDA_HOST_DEVICE static bool contains(const AABB<T> &a, const AABB<T> &b) noexcept {
             return a.min.x <= b.min.x && b.max.x <= a.max.x &&
