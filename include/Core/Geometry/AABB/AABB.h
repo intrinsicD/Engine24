@@ -120,6 +120,13 @@ namespace Bcg {
     };
 
     template<typename T>
+    struct BuilderTraits<AABB<T>, std::vector<Vector<T, 3> > > {
+        CUDA_HOST_DEVICE static AABB<T> build(const std::vector<Vector<T, 3>> &v) noexcept {
+            return AABB<T>::Build(v.begin(), v.end());
+        }
+    };
+
+    template<typename T>
     CUDA_HOST_DEVICE static bool isWithinBounds(const AABB<T> &a, const Vector<T, 3> &b) noexcept {
         return a.min.x <= b.x && b.x <= a.max.x &&
                a.min.y <= b.y && b.y <= a.max.y &&

@@ -5,10 +5,10 @@
 #ifndef VECTRAITS_H
 #define VECTRAITS_H
 
-#include <GlmToEigen.h>
-
 #include "MatVec.h"
 #include "Macros.h"
+
+#include <glm/gtx/component_wise.hpp>
 
 namespace Bcg {
     template<typename T>
@@ -45,7 +45,7 @@ namespace Bcg {
         CUDA_HOST_DEVICE
 
         static S squared_distance(const glm::vec<L, S, Q> &u, const glm::vec<L, S, Q> &v) {
-            return glm::dot(u, v);
+            return squared_length(u - v);
         }
 
         CUDA_HOST_DEVICE
@@ -58,6 +58,12 @@ namespace Bcg {
 
         static S length(const glm::vec<L, S, Q> &u) {
             return glm::length(u);
+        }
+
+        CUDA_HOST_DEVICE
+
+        static S squared_length(const glm::vec<L, S, Q> &u) {
+            return glm::dot(u, u);
         }
 
         CUDA_HOST_DEVICE
