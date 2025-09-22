@@ -1,0 +1,8 @@
+//
+// Created by alex on 9/23/25.
+//
+
+#ifndef ENGINE24_LAPLACIANCHECKS_H
+#define ENGINE24_LAPLACIANCHECKS_H
+
+#endif //ENGINE24_LAPLACIANCHECKS_H
