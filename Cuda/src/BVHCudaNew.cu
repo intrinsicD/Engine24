@@ -43,7 +43,7 @@ namespace Bcg::cuda {
         auto end_time = std::chrono::high_resolution_clock::now();
 
         std::chrono::duration<double> build_duration = end_time - start_time;
-        Log::Info("Build KDTree in {} seconds", build_duration.count());
+        Log::Info("Build Cuda KDTree in {} seconds", build_duration.count());
     }
 
     [[nodiscard]] QueryResult

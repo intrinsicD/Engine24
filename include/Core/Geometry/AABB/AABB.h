@@ -10,6 +10,7 @@
 #include "VecTraits.h"
 #include "Macros.h"
 #include "GeometricTraits.h"
+#include "GlmToEigen.h"
 
 namespace Bcg {
     template<typename T>

@@ -1,9 +1,10 @@
 #pragma once
 
-#include "Eigen/Dense"
 #include "GraphInterface.h"
 #include "LaplacianOperator.h"
 #include "Logger.h"
+#include "AABB.h"
+#include "MatTraits.h"
 
 #include <chrono>
 
@@ -34,15 +35,16 @@ namespace Bcg {
      * @param det_Sigma Precomputed determinant of the covariance matrix for efficiency.
      * @return The scalar value of the Gaussian PDF at point x.
      */
-    inline double evaluate_gaussian(const Eigen::Vector3d &x, const Eigen::Vector3d &mu,
-                                    const Eigen::Matrix3d &Sigma_inv, double det_Sigma) {
+    template<typename T>
+    inline T evaluate_gaussian(const Vector<T, 3> &x, const Vector<T, 3> &mu,
+                               const Matrix<T, 3, 3> &Sigma_inv, T det_Sigma) {
         // Normalization constant
-        const double PI = 3.14159265358979323846;
-        double norm_const = 1.0 / (std::pow(2 * PI, 1.5) * std::sqrt(det_Sigma));
+        const T PI = 3.14159265358979323846;
+        T norm_const = 1.0 / (std::pow(2 * PI, 1.5) * std::sqrt(det_Sigma));
 
         // Exponent term
-        Eigen::Vector3d x_minus_mu = x - mu;
-        double exponent = -0.5 * x_minus_mu.transpose() * Sigma_inv * x_minus_mu;
+        Vector<T, 3> x_minus_mu = x - mu;
+        T exponent = -0.5 * MatTraits<Matrix<T, 3, 3> >::transpose(x_minus_mu) * Sigma_inv * x_minus_mu;
 
         return norm_const * std::exp(exponent);
     }
@@ -56,16 +58,17 @@ namespace Bcg {
      * @param weights A vector of weights for each Gaussian in the GMM.
      * @return The scalar value of the GMM field at point x.
      */
-    inline double compute_gmm_field_value(const Eigen::Vector3d &x,
-                                          const std::vector<Eigen::Vector3d> &mus,
-                                          const std::vector<Eigen::Matrix3d> &Sigmas,
-                                          const std::vector<double> &weights) {
-        double total_value = 0.0;
+    template<typename T>
+    inline T compute_gmm_field_value(const Vector<T, 3> &x,
+                                     const std::vector<Vector<T, 3> > &mus,
+                                     const std::vector<Matrix<T, 3, 3> > &Sigmas,
+                                     const std::vector<T> &weights) {
+        T total_value = 0.0;
         for (size_t i = 0; i < mus.size(); ++i) {
-            Eigen::Matrix3d Sigma_inv = Sigmas[i].inverse();
-            double det_Sigma = Sigmas[i].determinant();
+            Matrix<T, 3, 3> Sigma_inv = MatTraits<Matrix<T, 3, 3> >::inverse(Sigmas[i]);
+            T det_Sigma = MatTraits<Matrix<T, 3, 3> >::determinant(Sigmas[i]);
             if (det_Sigma <= 0) continue;
-            double weight = weights.empty() ? 1.0 : weights[i];
+            T weight = weights.empty() ? 1.0 : weights[i];
             total_value += weight * evaluate_gaussian(x, mus[i], Sigma_inv, det_Sigma);
         }
         return total_value;
@@ -80,18 +83,19 @@ namespace Bcg {
      * @param weights A vector of weights for each Gaussian in the GMM.
      * @return The 3D gradient vector of the GMM field at point x.
      */
-    inline Eigen::Vector3d compute_gmm_gradient(const Eigen::Vector3d &x,
-                                                const std::vector<Eigen::Vector3d> &mus,
-                                                const std::vector<Eigen::Matrix3d> &Sigmas,
-                                                const std::vector<double> &weights) {
-        Eigen::Vector3d total_gradient = Eigen::Vector3d::Zero();
+    template<typename T>
+    inline Vector<T, 3> compute_gmm_gradient(const Vector<T, 3> &x,
+                                             const std::vector<Vector<T, 3> > &mus,
+                                             const std::vector<Matrix<T, 3, 3> > &Sigmas,
+                                             const std::vector<T> &weights) {
+        Vector<T, 3> total_gradient = Vector<T, 3>::Zero();
         for (size_t i = 0; i < mus.size(); ++i) {
-            Eigen::Matrix3d Sigma_inv = Sigmas[i].inverse();
-            double det_Sigma = Sigmas[i].determinant();
+            Matrix<T, 3, 3> Sigma_inv = MatTraits<Matrix<T, 3, 3> >::inverse(Sigmas[i]);
+            T det_Sigma = MatTraits<Matrix<T, 3, 3> >::determinant(Sigmas[i]);
             if (det_Sigma <= 0) continue;
-            double N_i_at_x = evaluate_gaussian(x, mus[i], Sigma_inv, det_Sigma);
-            double weight = weights.empty() ? 1.0 : weights[i];
-            Eigen::Vector3d grad_i = weight * N_i_at_x * Sigma_inv * (x - mus[i]);
+            T N_i_at_x = evaluate_gaussian(x, mus[i], Sigma_inv, det_Sigma);
+            T weight = weights.empty() ? 1.0 : weights[i];
+            Vector<T, 3> grad_i = weight * N_i_at_x * Sigma_inv * (x - mus[i]);
             total_gradient -= grad_i;
         }
         return total_gradient;
@@ -108,22 +112,23 @@ namespace Bcg {
      * @param iterations The number of Newton steps to perform.
      * @return The projected 3D point on or very near the surface.
      */
-    inline Eigen::Vector3d project_point_to_surface(const Eigen::Vector3d &start_point,
-                                                    const std::vector<Eigen::Vector3d> &mus,
-                                                    const std::vector<Eigen::Matrix3d> &Sigmas,
-                                                    const std::vector<double> &weights,
-                                                    double iso_value,
-                                                    int iterations = 5) {
-        Eigen::Vector3d current_point = start_point;
+    template<typename T>
+    inline Vector<T, 3> project_point_to_surface(const Vector<T, 3> &start_point,
+                                                 const std::vector<Vector<T, 3> > &mus,
+                                                 const std::vector<Matrix<T, 3, 3> > &Sigmas,
+                                                 const std::vector<T> &weights,
+                                                 T iso_value,
+                                                 int iterations = 5) {
+        Vector<T, 3> current_point = start_point;
 
         for (int i = 0; i < iterations; ++i) {
             // 1. Evaluate the field value F(x_k)
-            double F_x = compute_gmm_field_value(current_point, mus, Sigmas, weights);
+            T F_x = compute_gmm_field_value(current_point, mus, Sigmas, weights);
 
             // 2. Evaluate the gradient grad F(x_k)
-            Eigen::Vector3d grad_F_x = compute_gmm_gradient(current_point, mus, Sigmas, weights);
+            Vector<T, 3> grad_F_x = compute_gmm_gradient(current_point, mus, Sigmas, weights);
 
-            double grad_norm_sq = grad_F_x.squaredNorm();
+            T grad_norm_sq = VecTraits<Vector<T, 3> >::squared_length(grad_F_x);
             if (grad_norm_sq < 1e-12) {
                 // Gradient is too small; cannot proceed reliably.
                 // This can happen far from the surface or at a saddle point.
@@ -133,7 +138,7 @@ namespace Bcg {
 
             // 3. Apply the Newton update step
             // x_{k+1} = x_k - (F(x_k) - c) / ||grad F(x_k)||^2 * grad F(x_k)
-            double error = F_x - iso_value;
+            T error = F_x - iso_value;
             current_point -= (error / grad_norm_sq) * grad_F_x;
         }
 
@@ -151,15 +156,16 @@ namespace Bcg {
      * @param weights A vector of scalar weights for each Gaussian.
      * @return The 3D unit normal vector at point x.
      */
-    inline Eigen::Vector3d compute_surface_normal(const Eigen::Vector3d &x,
-                                                  const std::vector<Eigen::Vector3d> &mus,
-                                                  const std::vector<Eigen::Matrix3d> &Sigmas,
-                                                  const std::vector<double> &weights) {
-        Eigen::Vector3d grad = compute_gmm_gradient(x, mus, Sigmas, weights);
+    template<typename T>
+    inline Vector<T, 3> compute_surface_normal(const Vector<T, 3> &x,
+                                               const std::vector<Vector<T, 3> > &mus,
+                                               const std::vector<Matrix<T, 3, 3> > &Sigmas,
+                                               const std::vector<T> &weights) {
+        Vector<T, 3> grad = compute_gmm_gradient(x, mus, Sigmas, weights);
         if (grad.norm() > 1e-9) {
             return grad.normalized();
         }
-        return Eigen::Vector3d::UnitZ(); // Fallback
+        return Vector<T, 3>::UnitZ(); // Fallback
     }
 
     /**
@@ -167,9 +173,10 @@ namespace Bcg {
      * @param normal The 3D normal vector of the plane. Must be a unit vector.
      * @return The 3x3 projection matrix P.
      */
-    inline Eigen::Matrix3d compute_projection_matrix_P(const Eigen::Vector3d &normal) {
+    template<typename T>
+    inline Matrix<T, 3, 3> compute_projection_matrix_P(const Vector<T, 3> &normal) {
         // Assumes `normal` is already normalized for efficiency.
-        return Eigen::Matrix3d::Identity() - normal * normal.transpose();
+        return MatTraits<Matrix<T, 3, 3> >::identity() - VecTraits<Vector<T, 3> >::outer_product(normal, normal);
     }
 
     /**
@@ -177,17 +184,18 @@ namespace Bcg {
      * @param normal The 3D normal vector of the plane. Must be a unit vector.
      * @return A 3x2 matrix where columns are the orthonormal basis vectors of the tangent plane.
      */
-    inline Eigen::Matrix<double, 3, 2> compute_tangent_basis(const Eigen::Vector3d &normal) {
+    template<typename T>
+    inline Eigen::Matrix<T, 3, 2> compute_tangent_basis(const Vector<T, 3> &normal) {
         // Find a vector that is not parallel to the normal.
-        Eigen::Vector3d a = (std::abs(normal.x()) > 0.9) ? Eigen::Vector3d(0, 1, 0) : Eigen::Vector3d(1, 0, 0);
+        Vector<T, 3> a = (std::abs(normal.x()) > 0.9) ? Vector<T, 3>(0, 1, 0) : Vector<T, 3>(1, 0, 0);
 
         // Use cross products to find two orthogonal vectors in the plane.
-        Eigen::Vector3d v1 = normal.cross(a).normalized();
-        Eigen::Vector3d v2 = normal.cross(v1).normalized();
+        Vector<T, 3> v1 = VecTraits<Vector<T, 3> >::normalize(VecTraits<Vector<T, 3> >::cross(normal, a));
+        Vector<T, 3> v2 = VecTraits<Vector<T, 3> >::normalize(VecTraits<Vector<T, 3> >::cross(normal, v1));
 
-        Eigen::Matrix<double, 3, 2> V;
-        V.col(0) = v1;
-        V.col(1) = v2;
+        Matrix<T, 3, 2> V;
+        V[0] = v1;
+        V[1] = v2;
         return V;
     }
 
@@ -200,12 +208,13 @@ namespace Bcg {
      * @param Sigma_j Covariance of the second Gaussian.
      * @return The mean vector mu_ij.
      */
-    inline Eigen::Vector3d compute_mu_ij(const Eigen::Vector3d &mu_i, const Eigen::Matrix3d &Sigma_i,
-                                         const Eigen::Vector3d &mu_j, const Eigen::Matrix3d &Sigma_j) {
-        Eigen::Matrix3d Sigma_i_inv = Sigma_i.inverse();
-        Eigen::Matrix3d Sigma_j_inv = Sigma_j.inverse();
+    template<typename T>
+    inline Vector<T, 3> compute_mu_ij(const Vector<T, 3> &mu_i, const Matrix<T, 3, 3> &Sigma_i,
+                                      const Vector<T, 3> &mu_j, const Matrix<T, 3, 3> &Sigma_j) {
+        Matrix<T, 3, 3> Sigma_i_inv = MatTraits<Matrix<T, 3, 3>>::inverse(Sigma_i);
+        Matrix<T, 3, 3> Sigma_j_inv = MatTraits<Matrix<T, 3, 3>>::inverse(Sigma_j);
 
-        Eigen::Matrix3d Sigma_ij = (Sigma_i_inv + Sigma_j_inv).inverse();
+        Matrix<T, 3, 3> Sigma_ij = MatTraits<Matrix<T, 3, 3>>::inverse(Sigma_i_inv + Sigma_j_inv);
 
         return Sigma_ij * (Sigma_i_inv * mu_i + Sigma_j_inv * mu_j);
     }
@@ -217,8 +226,9 @@ namespace Bcg {
      * @param tangent_basis_V The 3x2 matrix whose columns form the basis of the tangent plane.
      * @return The resulting 2x2 projected covariance matrix.
      */
-    inline Eigen::Matrix2d compute_tilde_Sigma(const Eigen::Matrix3d &Sigma,
-                                               const Eigen::Matrix<double, 3, 2> &tangent_basis_V) {
+    template<typename T>
+    inline Matrix<T, 2, 2> compute_tilde_Sigma(const Matrix<T, 3, 3> &Sigma,
+                                               const Eigen::Matrix<T, 3, 2> &tangent_basis_V) {
         return tangent_basis_V.transpose() * Sigma * tangent_basis_V;
     }
 
@@ -231,12 +241,13 @@ namespace Bcg {
      * @param Sigma_j Covariance of the second Gaussian.
      * @return The scalar overlap factor K_ij.
      */
-    inline double compute_K_ij(const Eigen::Vector3d &mu_i, const Eigen::Matrix3d &Sigma_i,
-                               const Eigen::Vector3d &mu_j, const Eigen::Matrix3d &Sigma_j) {
-        Eigen::Vector3d mu_diff = mu_i - mu_j;
-        Eigen::Matrix3d Sigma_sum_inv = (Sigma_i + Sigma_j).inverse();
+    template<typename T>
+    inline T compute_K_ij(const Vector<T, 3> &mu_i, const Matrix<T, 3, 3> &Sigma_i,
+                          const Vector<T, 3> &mu_j, const Matrix<T, 3, 3> &Sigma_j) {
+        Vector<T, 3> mu_diff = mu_i - mu_j;
+        Matrix<T, 3, 3> Sigma_sum_inv = (Sigma_i + Sigma_j).inverse();
 
-        double exponent = -0.5 * mu_diff.transpose() * Sigma_sum_inv * mu_diff;
+        T exponent = -0.5 * mu_diff.transpose() * Sigma_sum_inv * mu_diff;
 
         return std::exp(exponent);
     }
@@ -248,8 +259,9 @@ namespace Bcg {
      * @param tilde_Sigma_ij The 2x2 projected covariance of the product Gaussian.
      * @return The approximate scalar value of M_ij.
      */
-    inline double compute_M_ij_approx(double K_ij, const Eigen::Matrix2d &tilde_Sigma_ij) {
-        double det = tilde_Sigma_ij.determinant();
+    template<typename T>
+    inline T compute_M_ij_approx(T K_ij, const Matrix<T, 2, 2> &tilde_Sigma_ij) {
+        T det = tilde_Sigma_ij.determinant();
         if (det <= 0) {
             // Handle potential numerical issues with non-positive definite matrices
             return 0.0;
@@ -265,9 +277,10 @@ namespace Bcg {
      * @param tilde_Sigma_ij The 2x2 projected covariance of the product Gaussian ij.
      * @return The scalar value of the trace term.
      */
-    inline double compute_trace_term_A_ij(const Eigen::Matrix2d &tilde_Sigma_i, const Eigen::Matrix2d &tilde_Sigma_j,
-                                          const Eigen::Matrix2d &tilde_Sigma_ij) {
-        Eigen::Matrix2d product = tilde_Sigma_j.inverse() * tilde_Sigma_i.inverse() * tilde_Sigma_ij;
+    template<typename T>
+    inline T compute_trace_term_A_ij(const Matrix<T, 2, 2> &tilde_Sigma_i, const Matrix<T, 2, 2> &tilde_Sigma_j,
+                                     const Matrix<T, 2, 2> &tilde_Sigma_ij) {
+        Matrix<T, 2, 2> product = tilde_Sigma_j.inverse() * tilde_Sigma_i.inverse() * tilde_Sigma_ij;
         return product.trace();
     }
 
@@ -282,12 +295,13 @@ namespace Bcg {
      * @param P The 3x3 projection matrix onto the tangent plane at hat_mu_ij.
      * @return The scalar value of the projection term.
      */
-    inline double compute_projection_term_A_ij(
-        const Eigen::Vector3d &mu_i, const Eigen::Matrix3d &Sigma_i,
-        const Eigen::Vector3d &mu_j, const Eigen::Matrix3d &Sigma_j,
-        const Eigen::Vector3d &mu_ij, const Eigen::Matrix3d &P) {
-        Eigen::Vector3d vec_i = Sigma_i.inverse() * (mu_ij - mu_i);
-        Eigen::Vector3d vec_j = Sigma_j.inverse() * (mu_ij - mu_j);
+    template<typename T>
+    inline T compute_projection_term_A_ij(
+        const Vector<T, 3> &mu_i, const Matrix<T, 3, 3> &Sigma_i,
+        const Vector<T, 3> &mu_j, const Matrix<T, 3, 3> &Sigma_j,
+        const Vector<T, 3> &mu_ij, const Matrix<T, 3, 3> &P) {
+        Vector<T, 3> vec_i = Sigma_i.inverse() * (mu_ij - mu_i);
+        Vector<T, 3> vec_j = Sigma_j.inverse() * (mu_ij - mu_j);
 
         // The result is a 1x1 matrix, so we extract the scalar value.
         return vec_j.transpose() * P * vec_i;
@@ -297,33 +311,34 @@ namespace Bcg {
      * @brief Precomputes the mean vectors mu_ij for all pairs of Gaussians in the graph.
      * @param gi A reference to the graph interface containing Gaussian data.
      */
-    inline LaplacianMatrices BuildGmmApproxLaplacian(GraphInterface &gi, double iso_value = 0.01) {
+    template<typename T>
+    inline LaplacianMatrices BuildGmmApproxLaplacian(GraphInterface &gi, T iso_value = 0.01) {
         Stopwatch total_stopwatch("Total BuildGmmApproxLaplacian");
 
         LaplacianMatrices matrices;
-        auto mu_ij = gi.edge_property<Eigen::Vector3d>("e:mu_ij", Eigen::Vector3d::Zero());
-        auto proj_m_ij = gi.edge_property<Eigen::Vector3d>("e:proj_mu_ij", Eigen::Vector3d::Zero());
-        auto sigma_ij = gi.edge_property<Eigen::Matrix3d>("e:sigma_ij", Eigen::Matrix3d::Zero());
-        auto normal_ij = gi.edge_property<Eigen::Vector3d>("e:normal_ij", Eigen::Vector3d::Zero());
-        auto a_ij = gi.edge_property<double>("e:a_ij", 0);
-        auto m_ij = gi.edge_property<double>("e:m_ij", 0);
-        auto k_ij = gi.edge_property<double>("e:k_ij", 0);
-        auto trace_ij = gi.edge_property<double>("e:trace_ij", 0);
+        auto mu_ij = gi.edge_property<Vector<T, 3> >("e:mu_ij", Vector<T, 3>::Zero());
+        auto proj_m_ij = gi.edge_property<Vector<T, 3> >("e:proj_mu_ij", Vector<T, 3>::Zero());
+        auto sigma_ij = gi.edge_property<Matrix<T, 3, 3> >("e:sigma_ij", Matrix<T, 3, 3>::Zero());
+        auto normal_ij = gi.edge_property<Vector<T, 3> >("e:normal_ij", Vector<T, 3>::Zero());
+        auto a_ij = gi.edge_property<T>("e:a_ij", 0);
+        auto m_ij = gi.edge_property<T>("e:m_ij", 0);
+        auto k_ij = gi.edge_property<T>("e:k_ij", 0);
+        auto trace_ij = gi.edge_property<T>("e:trace_ij", 0);
 
-        auto m_i = gi.vertex_property<Eigen::Vector3d>("v:mu_i", Eigen::Vector3d::Zero());
-        auto scale = gi.vertex_property<Vector<float, 3> >("v:scale", Vector<float, 3>(0.0f));
-        auto rotation = gi.vertex_property<Vector<float, 4> >("v:rotation", Vector<float, 4>(0.0f));
-        auto sigma_i = gi.vertex_property<Eigen::Matrix3d>("v:sigma_i", Eigen::Matrix3d::Identity());
-        auto sigma_i_inverse = gi.vertex_property<Eigen::Matrix3d>("v:sigma_i_inverse", Eigen::Matrix3d::Identity());
-        auto a_ii = gi.vertex_property<double>("v:stiffness_diag");
-        auto m_ii = gi.vertex_property<double>("v:mass_diag"); {
+        auto m_i = gi.vertex_property<Vector<T, 3> >("v:mu_i", Vector<T, 3>::Zero());
+        auto scale = gi.vertex_property<Vector<T, 3> >("v:scale", Vector<T, 3>(0.0f));
+        auto rotation = gi.vertex_property<Vector<T, 4> >("v:rotation", Vector<T, 4>(0.0f));
+        auto sigma_i = gi.vertex_property<Matrix<T, 3, 3> >("v:sigma_i", Matrix<T, 3, 3>::Identity());
+        auto sigma_i_inverse = gi.vertex_property<Matrix<T, 3, 3> >("v:sigma_i_inverse", Matrix<T, 3, 3>::Identity());
+        auto a_ii = gi.vertex_property<T>("v:stiffness_diag");
+        auto m_ii = gi.vertex_property<T>("v:mass_diag"); {
             Stopwatch sw("Stage 1: Precomputing per-vertex covariances");
             for (const auto v_i: gi.vertices) {
                 m_i[v_i] = MapConst(glm::dvec3(gi.vpoint[v_i]));
-                auto v_i_quat = Eigen::Quaternion<double>(rotation[v_i].w, rotation[v_i].x, rotation[v_i].y,
-                                                          rotation[v_i].z);
-                auto v_i_scale = Eigen::Vector3d(scale[v_i].x, scale[v_i].y, scale[v_i].z);
-                CovarianceInterface<double> i_cov_i(v_i_scale, v_i_quat);
+                auto v_i_quat = Eigen::Quaternion<T>(rotation[v_i].w, rotation[v_i].x, rotation[v_i].y,
+                                                     rotation[v_i].z);
+                auto v_i_scale = Vector<T, 3>(scale[v_i].x, scale[v_i].y, scale[v_i].z);
+                CovarianceInterface<T> i_cov_i(v_i_scale, v_i_quat);
                 sigma_i[v_i] = i_cov_i.get_covariance_matrix();
                 sigma_i_inverse[v_i] = sigma_i[v_i].inverse();
             }
@@ -334,66 +349,66 @@ namespace Bcg {
                 auto v_i = gi.from_vertex(h0);
                 auto v_j = gi.to_vertex(h0);
 
-                const Eigen::Vector3d mu_i = m_i[v_i];
-                const Eigen::Vector3d mu_j = m_i[v_j];
+                const Vector<T, 3> mu_i = m_i[v_i];
+                const Vector<T, 3> mu_j = m_i[v_j];
 
-                const Eigen::Matrix3d &Sigma_i = sigma_i[v_i];
-                const Eigen::Matrix3d &Sigma_j = sigma_i[v_j];
+                const Matrix<T, 3, 3> &Sigma_i = sigma_i[v_i];
+                const Matrix<T, 3, 3> &Sigma_j = sigma_i[v_j];
 
-                const Eigen::Matrix3d &Sigma_i_inv = sigma_i_inverse[v_i];
-                const Eigen::Matrix3d &Sigma_j_inv = sigma_i_inverse[v_j];
+                const Matrix<T, 3, 3> &Sigma_i_inv = sigma_i_inverse[v_i];
+                const Matrix<T, 3, 3> &Sigma_j_inv = sigma_i_inverse[v_j];
 
                 mu_ij[edge] = compute_mu_ij(mu_i, Sigma_i, mu_j, Sigma_j);;
                 sigma_ij[edge] = (Sigma_i_inv + Sigma_j_inv).inverse();
             }
         }
 
-        std::vector<Eigen::Triplet<float> > triplets_A;
-        std::vector<Eigen::Triplet<float> > triplets_M; {
+        std::vector<Eigen::Triplet<T> > triplets_A;
+        std::vector<Eigen::Triplet<T> > triplets_M; {
             Stopwatch sw("Stage 3: Per-edge projection and term evaluation");
             for (const auto edge: gi.edges) {
                 auto h0 = gi.get_halfedge(edge, 0);
                 auto v_i = gi.from_vertex(h0);
                 auto v_j = gi.to_vertex(h0);
 
-                const Eigen::Vector3d mu_i = MapConst(glm::dvec3(gi.vpoint[v_i]));
-                const Eigen::Vector3d mu_j = MapConst(glm::dvec3(gi.vpoint[v_j]));
+                const Vector<T, 3> mu_i = MapConst(glm::dvec3(gi.vpoint[v_i]));
+                const Vector<T, 3> mu_j = MapConst(glm::dvec3(gi.vpoint[v_j]));
 
-                const Eigen::Vector3d &Mu_ij = mu_ij[edge];
-                const Eigen::Matrix3d &Sigma_ij = sigma_ij[edge];
+                const Vector<T, 3> &Mu_ij = mu_ij[edge];
+                const Matrix<T, 3, 3> &Sigma_ij = sigma_ij[edge];
 
-                const Eigen::Matrix3d &Sigma_i = sigma_i[v_i];
-                const Eigen::Matrix3d &Sigma_j = sigma_i[v_j];
+                const Matrix<T, 3, 3> &Sigma_i = sigma_i[v_i];
+                const Matrix<T, 3, 3> &Sigma_j = sigma_i[v_j];
 
                 proj_m_ij[edge] = project_point_to_surface(mu_ij[edge], m_i.vector(), sigma_i.vector(), {}, iso_value);
                 normal_ij[edge] = compute_surface_normal(proj_m_ij[edge], m_i.vector(), sigma_i.vector(), {});
 
                 // 2. Compute the geometric setup at hat_mu_ij
-                Eigen::Matrix3d P = compute_projection_matrix_P(normal_ij[edge]);
-                Eigen::Matrix<double, 3, 2> V = compute_tangent_basis(normal_ij[edge]);
+                Matrix<T, 3, 3> P = compute_projection_matrix_P(normal_ij[edge]);
+                Eigen::Matrix<T, 3, 2> V = compute_tangent_basis(normal_ij[edge]);
 
                 // 3. Compute the 2D projected covariances
-                Eigen::Matrix2d tilde_Sigma_i = compute_tilde_Sigma(Sigma_i, V);
-                Eigen::Matrix2d tilde_Sigma_j = compute_tilde_Sigma(Sigma_j, V);
-                Eigen::Matrix2d tilde_Sigma_ij = compute_tilde_Sigma(Sigma_ij, V);
+                Matrix<T, 2, 2> tilde_Sigma_i = compute_tilde_Sigma(Sigma_i, V);
+                Matrix<T, 2, 2> tilde_Sigma_j = compute_tilde_Sigma(Sigma_j, V);
+                Matrix<T, 2, 2> tilde_Sigma_ij = compute_tilde_Sigma(Sigma_ij, V);
 
                 // 4. Calculate the Galerkin matrix components
-                double K_ij = compute_K_ij(mu_i, Sigma_i, mu_j, Sigma_j);
-                double M_ij = compute_M_ij_approx(K_ij, tilde_Sigma_ij);
+                T K_ij = compute_K_ij(mu_i, Sigma_i, mu_j, Sigma_j);
+                T M_ij = compute_M_ij_approx(K_ij, tilde_Sigma_ij);
 
-                double trace_term = compute_trace_term_A_ij(tilde_Sigma_i, tilde_Sigma_j, tilde_Sigma_ij);
-                double projection_term = compute_projection_term_A_ij(mu_i, Sigma_i, mu_j, Sigma_j, Mu_ij, P);
+                T trace_term = compute_trace_term_A_ij(tilde_Sigma_i, tilde_Sigma_j, tilde_Sigma_ij);
+                T projection_term = compute_projection_term_A_ij(mu_i, Sigma_i, mu_j, Sigma_j, Mu_ij, P);
 
                 // The full approximation for A_ij would be M_ij * (trace_term + projection_term)
-                double A_ij = M_ij * (trace_term + projection_term);
+                T A_ij = M_ij * (trace_term + projection_term);
 
                 m_ij[edge] = A_ij;
                 a_ij[edge] = M_ij;
                 k_ij[edge] = K_ij;
                 trace_ij[edge] = trace_term;
 
-                double stiffness_val = a_ij[edge];
-                double mass_val = m_ij[edge];
+                T stiffness_val = a_ij[edge];
+                T mass_val = m_ij[edge];
 
                 auto v_i_idx = v_i.idx();
                 auto v_j_idx = v_j.idx();
@@ -413,9 +428,7 @@ namespace Bcg {
                 m_ii[v_i] += mass_val;
                 m_ii[v_j] += mass_val;
             }
-        }
-
-        {
+        } {
             Stopwatch sw("Stage 4: Assembling sparse matrices from triplets");
             for (const auto v_i: gi.vertices) {
                 const auto i = v_i.idx();

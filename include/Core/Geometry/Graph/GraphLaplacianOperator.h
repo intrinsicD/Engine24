@@ -10,7 +10,7 @@
 #include "Eigen/Geometry"
 #include "CovarianceInterface.h"
 #include "GlmToEigen.h"
-#include "GmmUtils.h"
+#include "GaussianMixtureInterface.h"
 
 #include <vector>
 
@@ -128,7 +128,9 @@ namespace Bcg {
 
 
     inline LaplacianMatrices ComputeGMMLaplacianOperator(GraphInterface &graph, double t_factor = 1.0) {
-        return BuildGmmApproxLaplacian(graph, t_factor);
+        GaussianMixtureInterface gmm(graph.vertices);
+        gmm.build();
+        return gmm.compute_laplacian_matrices(graph.halfedges, graph.edges);
     }
 
     inline LaplacianMatrices ComputeGMMGraphLaplacianOperator(GraphInterface &graph, double t_factor = 1.0) {

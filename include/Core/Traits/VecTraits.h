@@ -50,7 +50,7 @@ namespace Bcg {
 
         CUDA_HOST_DEVICE
 
-        static S normalize(const glm::vec<L, S, Q> &u) {
+        static glm::vec<L, S, Q> normalize(const glm::vec<L, S, Q> &u) {
             return glm::normalize(u);
         }
 
@@ -94,6 +94,18 @@ namespace Bcg {
 
         static glm::vec<L, bool, Q> greaterThanEqual(const glm::vec<L, S, Q> &u, const glm::vec<L, S, Q> &v) {
             return glm::greaterThanEqual(u, v);
+        }
+
+        CUDA_HOST_DEVICE
+
+        static glm::mat<L, L, S, Q> outer_product(const glm::vec<L, S, Q> &u, const glm::vec<L, S, Q> &v) {
+            return glm::outerProduct(u, v);
+        }
+
+        CUDA_HOST_DEVICE
+
+        static glm::vec<L, S, Q> cross(const glm::vec<L, S, Q> &u, const glm::vec<L, S, Q> &v) {
+            return glm::cross(u, v);
         }
     };
 }
