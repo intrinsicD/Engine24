@@ -2,6 +2,7 @@
 
 #include "GraphInterface.h"
 #include "LaplacianOperator.h"
+#include "CovarianceInterface.h"
 #include "Logger.h"
 #include "AABB.h"
 #include "MatTraits.h"
@@ -211,10 +212,10 @@ namespace Bcg {
     template<typename T>
     inline Vector<T, 3> compute_mu_ij(const Vector<T, 3> &mu_i, const Matrix<T, 3, 3> &Sigma_i,
                                       const Vector<T, 3> &mu_j, const Matrix<T, 3, 3> &Sigma_j) {
-        Matrix<T, 3, 3> Sigma_i_inv = MatTraits<Matrix<T, 3, 3>>::inverse(Sigma_i);
-        Matrix<T, 3, 3> Sigma_j_inv = MatTraits<Matrix<T, 3, 3>>::inverse(Sigma_j);
+        Matrix<T, 3, 3> Sigma_i_inv = MatTraits<Matrix<T, 3, 3> >::inverse(Sigma_i);
+        Matrix<T, 3, 3> Sigma_j_inv = MatTraits<Matrix<T, 3, 3> >::inverse(Sigma_j);
 
-        Matrix<T, 3, 3> Sigma_ij = MatTraits<Matrix<T, 3, 3>>::inverse(Sigma_i_inv + Sigma_j_inv);
+        Matrix<T, 3, 3> Sigma_ij = MatTraits<Matrix<T, 3, 3> >::inverse(Sigma_i_inv + Sigma_j_inv);
 
         return Sigma_ij * (Sigma_i_inv * mu_i + Sigma_j_inv * mu_j);
     }
@@ -306,6 +307,62 @@ namespace Bcg {
         // The result is a 1x1 matrix, so we extract the scalar value.
         return vec_j.transpose() * P * vec_i;
     }
+
+    template<typename T>
+    Matrix<T, 3, 3> get_covariance_matrix(const Vector<T, 3> &scale, const Vector<T, 4> &quat) {
+        Matrix<T, 3, 3> rotation_matrix = glm::mat3_cast(glm::quat(quat));
+        Matrix<T, 3, 3> scale_matrix = Matrix<T, 3, 3>(0.0f);
+        scale_matrix[0][0] = scale[0] * scale[0];
+        scale_matrix[1][1] = scale[1] * scale[1];
+        scale_matrix[2][2] = scale[2] * scale[2];
+        return rotation_matrix * scale_matrix * glm::transpose( rotation_matrix);
+    }
+
+    template<typename T>
+    Matrix<T, 3, 3> get_covariance_matrix(const Vector<T, 3> &scale) {
+        Matrix<T, 3, 3> scale_matrix = Matrix<T, 3, 3>(0.0f);
+        scale_matrix[0][0] = scale[0] * scale[0];
+        scale_matrix[1][1] = scale[1] * scale[1];
+        scale_matrix[2][2] = scale[2] * scale[2];
+        return scale_matrix;
+    }
+
+    template<typename T>
+    std::vector<Matrix<T, 3, 3> > compute_covs_from(const std::vector<Vector<T, 3> > &scales) {
+        size_t size = scales.size();
+        std::vector<Matrix<T, 3, 3> > covariances(size);
+        for (size_t i = 0; i < size; i++) {
+            covariances[i] = get_covariance_matrix(scales[i]);
+        }
+        return covariances;
+    }
+
+    template<typename T>
+    std::vector<Matrix<T, 3, 3> > compute_covs_from(const std::vector<Vector<T, 3> > &scales,
+                                                           const std::vector<Vector<T, 4> > &rotations) {
+        size_t size = scales.size();
+        if (size != rotations.size()) {
+            Log::Error("compute_covs_from(): scales.size() != rotations.size()");
+            return std::vector<Matrix<T, 3, 3> >(size, Matrix<T, 3, 3>(1.0f));
+        }
+
+        std::vector<Matrix<T, 3, 3> > covariances(size);
+        for (size_t i = 0; i < size; i++) {
+            covariances[i] = get_covariance_matrix(scales[i], rotations[i]);
+        }
+        return covariances;
+    }
+
+    template<typename T>
+    std::vector<Matrix<T, 3, 3> > compute_covs_inverse_from(const std::vector<Matrix<T, 3, 3> > &covariances) {
+        size_t size = covariances.size();
+        std::vector<Matrix<T, 3, 3> > covariances_inv(size);
+        for (size_t i = 0; i < size; i++) {
+            covariances_inv[i] = glm::inverse(covariances[i]);
+        }
+        return covariances_inv;
+    }
+
 
     /**
      * @brief Precomputes the mean vectors mu_ij for all pairs of Gaussians in the graph.

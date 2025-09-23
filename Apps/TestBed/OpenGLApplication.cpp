@@ -73,6 +73,7 @@ namespace Bcg {
             gui_modules.add(std::make_unique<GuiModuleHierarchy>(engine.state, entity_selection));
             gui_modules.add(std::make_unique<GuiModuleMeshLaplacian>(engine.state));
             gui_modules.add(std::make_unique<GuiModuleGraphLaplacian>(engine.state));
+            gui_modules.add(std::make_unique<GuiModuleGaussianMixture>(engine.state));
 
             Plugins::init();
             Plugins::activate_all();

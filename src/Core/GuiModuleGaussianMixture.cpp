@@ -4,6 +4,7 @@
 #include "implot/implot.h"
 #include "PointCloudInterface.h"
 #include "GraphInterface.h"
+#include "GmmUtils.h"
 #include "Picker.h"
 #include "PropertyEigenMap.h"
 
@@ -12,8 +13,9 @@
 #include "PointCloud.h"
 
 namespace Bcg {
-    GuiModuleGaussianMixture::GuiModuleGaussianMixture(entt::registry &registry) : GuiModule("GuiModuleGaussianMixture"),
-        m_registry(registry) {
+    GuiModuleGaussianMixture::GuiModuleGaussianMixture(
+        entt::registry &registry) : GuiModule("GuiModuleGaussianMixture"),
+                                    m_registry(registry) {
     }
 
 
@@ -63,8 +65,9 @@ namespace Bcg {
         if (ImGui::Begin("Gaussian Mixture", &m_is_window_open)) {
             auto mus = pci->vertex_property<PointType>("v:point");
             auto covs = pci->get_vertex_property<Matrix<float, 3, 3> >("v:covs");
+            auto covs_inv = pci->get_vertex_property<Matrix<float, 3, 3> >("v:covs");
             auto weights = pci->get_vertex_property<float>("v:weights");
-            auto scales = pci->get_vertex_property<float>("v:scale");
+            auto scales = pci->get_vertex_property<Vector<float, 3> >("v:scale");
             auto rotations = pci->get_vertex_property<Vector<float, 4> >("v:rotation");
 
             if (!covs) {
@@ -73,18 +76,22 @@ namespace Bcg {
                         if (rotations) {
                             //anisotropic case
                             covs = pci->vertex_property<Matrix<float, 3, 3> >("v:covs");
-                            compute_covs_from(covs, scales);
-                        }else {
+                            covs.vector() = compute_covs_from(scales.vector(), rotations.vector());
+                        } else {
                             //isotropic case
                             covs = pci->vertex_property<Matrix<float, 3, 3> >("v:covs");
-                            compute_covs_from(covs, scales);
+                            covs.vector() = compute_covs_from(scales.vector());
                         }
                     }
                 }
-            }else {
-
             }
-
+            if (!covs_inv) {
+                if (ImGui::Button("Compute Inverse Covariances")) {
+                    covs_inv = pci->vertex_property<Matrix<float, 3, 3> >("v:covs_inv");
+                    covs_inv.vector() = compute_covs_inverse_from(covs.vector());
+                }
+                //TODO continue here...
+            }
         }
         ImGui::End();
     }
