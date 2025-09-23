@@ -38,7 +38,7 @@ namespace Bcg {
         for (const auto entity_id: view) {
             auto h_aabb = ModuleAABB::get(entity_id);
             auto &transform = Engine::State().get<WorldTransformComponent>(entity_id);
-            if (AABBUtils::Contains(*h_aabb, (glm::inverse(transform.world_transform) * glm::vec4(picked.spaces.wsp, 1.0f)))) {
+            if (AABBUtils::Contains(*h_aabb, glm::vec3(glm::inverse(transform.world_transform) * glm::vec4(picked.spaces.wsp, 1.0f)))) {
                 picked.entity.id = entity_id;
                 break;
             }

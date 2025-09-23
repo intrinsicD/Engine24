@@ -26,6 +26,7 @@
 #include "GuiModuleHierarchy.h"
 #include "GuiModuleMeshLaplacian.h"
 #include "GuiModuleGraphLaplacian.h"
+#include "GuiModuleGaussianMixture.h"
 #include "AssetManager.h"
 
 

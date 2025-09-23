@@ -23,6 +23,7 @@ target_sources(Engine24 PRIVATE
         GuiModuleHierarchy.cpp
         GuiModuleGraphLaplacian.cpp
         GuiModuleMeshLaplacian.cpp
+        GuiModuleGaussianMixture.cpp
         GaussianMixture.cpp
         GaussianMixtureInterface.cpp
         GLFWUtils.cpp

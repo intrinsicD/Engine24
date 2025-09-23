@@ -508,7 +508,7 @@ namespace Bcg {
                     triplets_A.emplace_back(v_j_idx, v_i_idx, stiffness_val);
 
                     triplets_M.emplace_back(v_j_idx, v_j_idx, mass_val);
-                    triplets_M.emplace_back(v_j_idx, v_j_idx, mass_val);
+                    triplets_M.emplace_back(v_i_idx, v_j_idx, mass_val);
 
                     // Accumulate the sums for the diagonal entries
                     a_ii[v_i] -= stiffness_val;
