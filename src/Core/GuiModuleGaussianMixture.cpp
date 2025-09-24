@@ -3,14 +3,19 @@
 #include "imgui.h"
 #include "implot/implot.h"
 #include "PointCloudInterface.h"
+#include "PointCloud.h"
 #include "GraphInterface.h"
 #include "GmmUtils.h"
 #include "Picker.h"
+#include "Engine.h"
+#include "AABBsToGraph.h"
+#include "GeometryUtils.h"
 #include "PropertyEigenMap.h"
+#include "TransformComponent.h"
+#include "ModuleGraph.h"
 
 #include <entt/entity/registry.hpp>
 
-#include "PointCloud.h"
 
 namespace Bcg {
     GuiModuleGaussianMixture::GuiModuleGaussianMixture(
@@ -85,7 +90,19 @@ namespace Bcg {
                     }
                 }
             }
-            if (!covs_inv) {
+            if (covs) {
+                if (ImGui::Button("Visualize Covariances as boxes")) {
+                    auto aabbs_id = Engine::State().create();
+                    auto &gi = Require<GraphInterface>(aabbs_id, Engine::State());
+                    gi.clear();
+                    OrientedBoxesToGraph(mus.vector(), scales.vector(), rotations.vector(), gi);
+                    ModuleGraph::setup(aabbs_id);
+                    auto transform_entity = Engine::State().get<TransformComponent>(entity_id);
+                    auto &transform_boxes = Engine::require<TransformComponent>(aabbs_id);
+                    transform_boxes = transform_entity;
+                }
+            }
+            if (!covs_inv && covs) {
                 if (ImGui::Button("Compute Inverse Covariances")) {
                     covs_inv = pci->vertex_property<Matrix<float, 3, 3> >("v:covs_inv");
                     covs_inv.vector() = compute_covs_inverse_from(covs.vector());

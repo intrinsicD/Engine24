@@ -339,7 +339,7 @@ namespace Bcg {
 
         glm::vec3 front = v_params.center - v_params.eye;
         v_params.center = center;
-        v_params.eye = center - front * distance / tanf(p_params.fovy_degrees / 2.0f);
+        v_params.eye = center - front * distance;
         SetViewParams(camera, v_params);
         fit_near_and_far_to_distance(distance);
     }

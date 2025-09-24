@@ -7,28 +7,13 @@
 #include "LaplacianOperator.h"
 #include "MatTraits.h"
 #include "GraphInterface.h"
+#include "GmmUtils.h"
 
 #include <vector>
 #include <chrono>
 
 
 namespace Bcg {
-    class Stopwatch {
-    public:
-        explicit Stopwatch(const std::string &name) : m_name(name), m_start(std::chrono::high_resolution_clock::now()) {
-        }
-
-        ~Stopwatch() {
-            auto end = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - m_start).count();
-            Log::Info(m_name + " took " + std::to_string(duration) + " ms.");
-        }
-
-    private:
-        std::string m_name;
-        std::chrono::time_point<std::chrono::high_resolution_clock> m_start;
-    };
-
     class GaussianMixtureInterface : public PointCloudInterface {
     public:
         VertexProperty<PointType> means;
@@ -62,32 +47,9 @@ namespace Bcg {
 
         GaussianMixtureInterface() = default;
 
-        AABB<float> constructAABBForGaussian(const Vector<float, 3> &mean,
-                                             const Matrix<float, 3, 3> &covariance) const {
-            // The diagonal elements of the covariance matrix are the variances along the corresponding axes.
-            // The standard deviation is the square root of the variance.
-            float sigmaX = std::sqrt(covariance[0][0]);
-            float sigmaY = std::sqrt(covariance[1][1]);
-            float sigmaZ = std::sqrt(covariance[2][2]);
-
-            // The 3-sigma range gives us the extents of the AABB from the mean.
-            Vector<float, 3> extents(3.0f * sigmaX, 3.0f * sigmaY, 3.0f * sigmaZ);
-
-            // The AABB is centered at the Gaussian's mean.
-            AABB<float> box;
-            box.min = mean - extents;
-            box.max = mean + extents;
-
-            return box;
-        }
-
         Property<AABB<float> > ConvertGaussiansToAABBs() {
             auto aabbs = vertices.vertex_property<AABB<float> >("v:aabb");
-
-            for (const auto v: vertices) {
-                aabbs[v] = constructAABBForGaussian(means[v], covariances[v]);
-            }
-            return aabbs;
+            aabbs.vector() = compute_aabbs_from(means.vector(), covariances.vector());
         }
 
         void build() {

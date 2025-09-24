@@ -93,10 +93,10 @@ namespace Bcg {
 
         auto &transform = Engine::require<TransformComponent>(entity_id);
 
-        ScaleAndCenterAt(transform, h_aabb->center(), glm::compMax(h_aabb->diagonal()));
+        //ScaleAndCenterAt(transform, h_aabb->center(), 1 / glm::compMax(h_aabb->diagonal()));
 
-        ModuleAABB::center_and_scale_by_aabb(entity_id, pci.vpoint.name());
-        ModuleCamera::center_camera_at_distance(h_aabb->center(), glm::compMax(h_aabb->diagonal()));
+        //ModuleAABB::center_and_scale_by_aabb(entity_id, pci.vpoint.name());
+        ModuleCamera::center_camera_at_distance(h_aabb->center(),  glm::compMax(h_aabb->diagonal()));
 
         Commands::ComputePointCloudLocalPcasKnn(entity_id, 32).execute();
         //TODO add ComputeSurfacePointCloudVertexNormals etc.

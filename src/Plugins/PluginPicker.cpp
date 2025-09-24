@@ -38,7 +38,8 @@ namespace Bcg {
         for (const auto entity_id: view) {
             auto h_aabb = ModuleAABB::get(entity_id);
             auto &transform = Engine::State().get<WorldTransformComponent>(entity_id);
-            if (AABBUtils::Contains(*h_aabb, glm::vec3(glm::inverse(transform.world_transform) * glm::vec4(picked.spaces.wsp, 1.0f)))) {
+            if (AABBUtils::Contains(
+                *h_aabb, glm::vec3(glm::inverse(transform.world_transform) * glm::vec4(picked.spaces.wsp, 1.0f)))) {
                 picked.entity.id = entity_id;
                 break;
             }
@@ -140,7 +141,13 @@ namespace Bcg {
 
     void PluginPicker::show_gui(Picked &picked) {
         auto &entity = picked.entity;
-        ImGui::Text("entity id: %u", static_cast<entt::id_type>(entity.id));
+        int id = static_cast<int>(entity.id);
+        if (ImGui::InputInt("entity id: %u", &id)) {
+            auto temp = static_cast<entt::entity>(id);
+            if (Engine::valid(temp)) {
+                picked.entity.id = temp;
+            }
+        }
         ImGui::Text("is_background: %s", entity.is_background ? "true" : "false");
         ImGui::Text("vertex_idx: %u", entity.vertex_idx);
         ImGui::Text("edge_idx: %u", entity.edge_idx);
