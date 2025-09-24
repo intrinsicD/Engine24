@@ -7,28 +7,13 @@
 #include "LaplacianOperator.h"
 #include "MatTraits.h"
 #include "GraphInterface.h"
+#include "GmmUtils.h"
 
 #include <vector>
 #include <chrono>
 
 
 namespace Bcg {
-    class Stopwatch {
-    public:
-        explicit Stopwatch(const std::string &name) : m_name(name), m_start(std::chrono::high_resolution_clock::now()) {
-        }
-
-        ~Stopwatch() {
-            auto end = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - m_start).count();
-            Log::Info(m_name + " took " + std::to_string(duration) + " ms.");
-        }
-
-    private:
-        std::string m_name;
-        std::chrono::time_point<std::chrono::high_resolution_clock> m_start;
-    };
-
     class GaussianMixtureInterface : public PointCloudInterface {
     public:
         VertexProperty<PointType> means;
@@ -64,57 +49,9 @@ namespace Bcg {
 
         GaussianMixtureInterface() = default;
 
-        AABB<float> constructAABBForGaussian(const Vector<float, 3> &mean,
-                                             const Matrix<float, 3, 3> &covariance,
-                                             float k_sigma = 3.0f,
-                                             float min_half_extent = 0.0f) const {
-            /*// The diagonal elements of the covariance matrix are the variances along the corresponding axes.
-            // The standard deviation is the square root of the variance.
-            float vx = std::max(covariance[0][0], 0.0f);
-            float vy = std::max(covariance[1][1], 0.0f);
-            float vz = std::max(covariance[2][2], 0.0f);
-
-            float sigmaX = std::sqrt(vx);
-            float sigmaY = std::sqrt(vy);
-            float sigmaZ = std::sqrt(vz);
-
-            // The 3-sigma range gives us the extents of the AABB from the mean.
-            Vector<float, 3> extents(3.0f * sigmaX, 3.0f * sigmaY, 3.0f * sigmaZ);
-
-            // The AABB is centered at the Gaussian's mean.
-            AABB<float> box;
-            box.min = mean - extents;
-            box.max = mean + extents;
-
-            return box;*/
-            // Symmetrize to guard against numeric asymmetry.
-            const Matrix<float, 3, 3> cov_sym =
-                    0.5f * (covariance + MatTraits<Matrix<float, 3, 3> >::transpose(covariance));
-
-            // World-axis variances: Σ_ii.
-            const float vx = std::max(cov_sym[0][0], 0.0f);
-            const float vy = std::max(cov_sym[1][1], 0.0f);
-            const float vz = std::max(cov_sym[2][2], 0.0f);
-
-            // Half-extents: k * stddev along each world axis.
-            Vector<float, 3> extents(k_sigma * std::sqrt(vx),
-                                     k_sigma * std::sqrt(vy),
-                                     k_sigma * std::sqrt(vz));
-
-            if (min_half_extent > 0.0f) {
-                extents.x = std::max(extents.x, min_half_extent);
-                extents.y = std::max(extents.y, min_half_extent);
-                extents.z = std::max(extents.z, min_half_extent);
-            }
-
-            AABB<float> box;
-            box.min = mean - extents;
-            box.max = mean + extents;
-            return box;
-        }
-
-        Property<AABB<float> > ConvertGaussiansToAABBs(float k_sigma = 3.0f, float min_half_extent = 0.0f) {
+        Property<AABB<float> > ConvertGaussiansToAABBs() {
             auto aabbs = vertices.vertex_property<AABB<float> >("v:aabb");
+            aabbs.vector() = compute_aabbs_from(means.vector(), covariances.vector());
 
             for (const auto v: vertices) {
                 aabbs[v] = constructAABBForGaussian(means[v], covariances[v], k_sigma, min_half_extent);
@@ -216,12 +153,12 @@ namespace Bcg {
                 D[2][2] = sz * sz;
 
                 // 4) Σ = R D R^T (use your Matrix ops, not glm::transpose on a non-glm type)
-                Matrix<float,3,3> Rt = transpose(R);
+                Matrix<float,3,3> Rt = glm::transpose(R);
                 covariances[v] = R * D * Rt;
             }
 
-            compute_covs_inverse();   // assumes SPD; your clamps help
-            compute_norm_factors();   // make sure it uses det(Σ) = (σx σy σz)^2
+            compute_covs_inverse();
+            compute_norm_factors();
         }
 
         std::vector<float> pdf(const std::vector<Vector<float, 3> > &query_points) const {
@@ -305,8 +242,8 @@ namespace Bcg {
 
             friend std::ostream &operator<<(std::ostream &os, const EvalPoint &ep) {
                 os << "Point: (" << ep.point.x << ", " << ep.point.y << ", " << ep.point.z << "), "
-                        << "PDF: " << ep.pdf << ", "
-                        << "Gradient: (" << ep.gradient.x << ", " << ep.gradient.y << ", " << ep.gradient.z << ")";
+                   << "PDF: " << ep.pdf << ", "
+                   << "Gradient: (" << ep.gradient.x << ", " << ep.gradient.y << ", " << ep.gradient.z << ")";
                 return os;
             }
         };

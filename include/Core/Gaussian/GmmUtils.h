@@ -2,6 +2,7 @@
 
 #include "GraphInterface.h"
 #include "LaplacianOperator.h"
+#include "CovarianceInterface.h"
 #include "Logger.h"
 #include "AABB.h"
 #include "MatTraits.h"
@@ -211,10 +212,10 @@ namespace Bcg {
     template<typename T>
     inline Vector<T, 3> compute_mu_ij(const Vector<T, 3> &mu_i, const Matrix<T, 3, 3> &Sigma_i,
                                       const Vector<T, 3> &mu_j, const Matrix<T, 3, 3> &Sigma_j) {
-        Matrix<T, 3, 3> Sigma_i_inv = MatTraits<Matrix<T, 3, 3>>::inverse(Sigma_i);
-        Matrix<T, 3, 3> Sigma_j_inv = MatTraits<Matrix<T, 3, 3>>::inverse(Sigma_j);
+        Matrix<T, 3, 3> Sigma_i_inv = MatTraits<Matrix<T, 3, 3> >::inverse(Sigma_i);
+        Matrix<T, 3, 3> Sigma_j_inv = MatTraits<Matrix<T, 3, 3> >::inverse(Sigma_j);
 
-        Matrix<T, 3, 3> Sigma_ij = MatTraits<Matrix<T, 3, 3>>::inverse(Sigma_i_inv + Sigma_j_inv);
+        Matrix<T, 3, 3> Sigma_ij = MatTraits<Matrix<T, 3, 3> >::inverse(Sigma_i_inv + Sigma_j_inv);
 
         return Sigma_ij * (Sigma_i_inv * mu_i + Sigma_j_inv * mu_j);
     }
@@ -306,6 +307,92 @@ namespace Bcg {
         // The result is a 1x1 matrix, so we extract the scalar value.
         return vec_j.transpose() * P * vec_i;
     }
+
+    template<typename T>
+    Matrix<T, 3, 3> get_covariance_matrix(const Vector<T, 3> &scale, const Vector<T, 4> &quat) {
+        Matrix<T, 3, 3> rotation_matrix = glm::mat3_cast(glm::quat(quat));
+        Matrix<T, 3, 3> scale_matrix = Matrix<T, 3, 3>(0.0f);
+        scale_matrix[0][0] = scale[0] * scale[0];
+        scale_matrix[1][1] = scale[1] * scale[1];
+        scale_matrix[2][2] = scale[2] * scale[2];
+        return rotation_matrix * scale_matrix * glm::transpose(rotation_matrix);
+    }
+
+    template<typename T>
+    Matrix<T, 3, 3> get_covariance_matrix(const Vector<T, 3> &scale) {
+        Matrix<T, 3, 3> scale_matrix = Matrix<T, 3, 3>(0.0f);
+        scale_matrix[0][0] = scale[0] * scale[0];
+        scale_matrix[1][1] = scale[1] * scale[1];
+        scale_matrix[2][2] = scale[2] * scale[2];
+        return scale_matrix;
+    }
+
+    template<typename T>
+    std::vector<Matrix<T, 3, 3> > compute_covs_from(const std::vector<Vector<T, 3> > &scales) {
+        size_t size = scales.size();
+        std::vector<Matrix<T, 3, 3> > covariances(size);
+        for (size_t i = 0; i < size; i++) {
+            covariances[i] = get_covariance_matrix(scales[i]);
+        }
+        return covariances;
+    }
+
+    template<typename T>
+    std::vector<Matrix<T, 3, 3> > compute_covs_from(const std::vector<Vector<T, 3> > &scales,
+                                                    const std::vector<Vector<T, 4> > &rotations) {
+        size_t size = scales.size();
+        if (size != rotations.size()) {
+            Log::Error("compute_covs_from(): scales.size() != rotations.size()");
+            return std::vector<Matrix<T, 3, 3> >(size, Matrix<T, 3, 3>(1.0f));
+        }
+
+        std::vector<Matrix<T, 3, 3> > covariances(size);
+        for (size_t i = 0; i < size; i++) {
+            covariances[i] = get_covariance_matrix(scales[i], rotations[i]);
+        }
+        return covariances;
+    }
+
+    template<typename T>
+    std::vector<Matrix<T, 3, 3> > compute_covs_inverse_from(const std::vector<Matrix<T, 3, 3> > &covariances) {
+        size_t size = covariances.size();
+        std::vector<Matrix<T, 3, 3> > covariances_inv(size);
+        for (size_t i = 0; i < size; i++) {
+            covariances_inv[i] = glm::inverse(covariances[i]);
+        }
+        return covariances_inv;
+    }
+
+    template<typename T>
+    AABB<T> aabb_for(const Vector<T, 3> &mean,
+                     const Matrix<T, 3, 3> &covariance) {
+        // The diagonal elements of the covariance matrix are the variances along the corresponding axes.
+        // The standard deviation is the square root of the variance.
+        T sigmaX = std::sqrt(covariance[0][0]);
+        T sigmaY = std::sqrt(covariance[1][1]);
+        T sigmaZ = std::sqrt(covariance[2][2]);
+
+        // The 3-sigma range gives us the extents of the AABB from the mean.
+        Vector<T, 3> extents(3.0f * sigmaX, 3.0f * sigmaY, 3.0f * sigmaZ);
+
+        // The AABB is centered at the Gaussian's mean.
+        AABB<T> box;
+        box.min = mean - extents;
+        box.max = mean + extents;
+
+        return box;
+    }
+
+    template<typename T>
+    std::vector<AABB<T> > compute_aabbs_from(const std::vector<Vector<T, 3> > &means, const std::vector<Matrix<T, 3, 3> > &covs) {
+        size_t size = means.size();
+        std::vector<AABB<T> > aabbs(size);
+        for (size_t i = 0; i < size; i++) {
+            aabbs[i] = aabb_for(means[i], covs[i]);
+        }
+        return aabbs;
+    }
+
 
     /**
      * @brief Precomputes the mean vectors mu_ij for all pairs of Gaussians in the graph.
@@ -417,8 +504,8 @@ namespace Bcg {
                 triplets_A.emplace_back(v_i_idx, v_j_idx, stiffness_val);
                 triplets_A.emplace_back(v_j_idx, v_i_idx, stiffness_val);
 
-                triplets_M.emplace_back(v_j_idx, v_j_idx, mass_val);
-                triplets_M.emplace_back(v_j_idx, v_j_idx, mass_val);
+                triplets_M.emplace_back(v_j_idx, v_i_idx, mass_val);
+                triplets_M.emplace_back(v_i_idx, v_j_idx, mass_val);
 
                 // Accumulate the sums for the diagonal entries
                 a_ii[v_i] -= stiffness_val;

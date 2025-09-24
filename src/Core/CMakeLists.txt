@@ -43,6 +43,7 @@ target_sources(Engine24 PRIVATE
         ModuleSphereView.cpp
         ModulePhongSplattingView.cpp
         ModuleGraphView.cpp
+        ModuleGraph.cpp
         ModulePointCloud.cpp
         Picker.cpp
         PickerSystem.cpp
