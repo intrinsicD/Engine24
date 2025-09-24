@@ -32,6 +32,8 @@ namespace Bcg {
     class GaussianMixtureInterface : public PointCloudInterface {
     public:
         VertexProperty<PointType> means;
+        VertexProperty<Vector<float, 3> > scale;
+        VertexProperty<Vector<float, 4> > rotation;
         VertexProperty<Matrix<float, 3, 3> > covariances;
         VertexProperty<Matrix<float, 3, 3> > covariances_inv;
         VertexProperty<float> weights;
@@ -63,12 +65,18 @@ namespace Bcg {
         GaussianMixtureInterface() = default;
 
         AABB<float> constructAABBForGaussian(const Vector<float, 3> &mean,
-                                             const Matrix<float, 3, 3> &covariance) const {
-            // The diagonal elements of the covariance matrix are the variances along the corresponding axes.
+                                             const Matrix<float, 3, 3> &covariance,
+                                             float k_sigma = 3.0f,
+                                             float min_half_extent = 0.0f) const {
+            /*// The diagonal elements of the covariance matrix are the variances along the corresponding axes.
             // The standard deviation is the square root of the variance.
-            float sigmaX = std::sqrt(covariance[0][0]);
-            float sigmaY = std::sqrt(covariance[1][1]);
-            float sigmaZ = std::sqrt(covariance[2][2]);
+            float vx = std::max(covariance[0][0], 0.0f);
+            float vy = std::max(covariance[1][1], 0.0f);
+            float vz = std::max(covariance[2][2], 0.0f);
+
+            float sigmaX = std::sqrt(vx);
+            float sigmaY = std::sqrt(vy);
+            float sigmaZ = std::sqrt(vz);
 
             // The 3-sigma range gives us the extents of the AABB from the mean.
             Vector<float, 3> extents(3.0f * sigmaX, 3.0f * sigmaY, 3.0f * sigmaZ);
@@ -78,21 +86,59 @@ namespace Bcg {
             box.min = mean - extents;
             box.max = mean + extents;
 
+            return box;*/
+            // Symmetrize to guard against numeric asymmetry.
+            const Matrix<float, 3, 3> cov_sym =
+                    0.5f * (covariance + MatTraits<Matrix<float, 3, 3> >::transpose(covariance));
+
+            // World-axis variances: Σ_ii.
+            const float vx = std::max(cov_sym[0][0], 0.0f);
+            const float vy = std::max(cov_sym[1][1], 0.0f);
+            const float vz = std::max(cov_sym[2][2], 0.0f);
+
+            // Half-extents: k * stddev along each world axis.
+            Vector<float, 3> extents(k_sigma * std::sqrt(vx),
+                                     k_sigma * std::sqrt(vy),
+                                     k_sigma * std::sqrt(vz));
+
+            if (min_half_extent > 0.0f) {
+                extents.x = std::max(extents.x, min_half_extent);
+                extents.y = std::max(extents.y, min_half_extent);
+                extents.z = std::max(extents.z, min_half_extent);
+            }
+
+            AABB<float> box;
+            box.min = mean - extents;
+            box.max = mean + extents;
             return box;
         }
 
-        Property<AABB<float> > ConvertGaussiansToAABBs() {
+        Property<AABB<float> > ConvertGaussiansToAABBs(float k_sigma = 3.0f, float min_half_extent = 0.0f) {
             auto aabbs = vertices.vertex_property<AABB<float> >("v:aabb");
 
             for (const auto v: vertices) {
-                aabbs[v] = constructAABBForGaussian(means[v], covariances[v]);
+                aabbs[v] = constructAABBForGaussian(means[v], covariances[v], k_sigma, min_half_extent);
             }
             return aabbs;
         }
 
         void build() {
+            if (!scale) {
+                scale = vertices.vertex_property<Vector<float, 3> >("v:scale");
+            }
+            if (!rotation) {
+                rotation = vertices.vertex_property<Vector<float, 4> >("v:rotation");
+            }
+
+            if (scale && rotation) {
+                set_covs(scale.vector(), rotation.vector());
+            } else {
+                Log::Error("Missing 'v:scale' or 'v:rotation' vertex properties.");
+                return;
+            }
             octree = Octree();
-            auto aabbs = ConvertGaussiansToAABBs();
+            auto aabbs = ConvertGaussiansToAABBs(3.0f, 0.0f);
+            // Build the octree with a maximum of 32 elements per node and a maximum depth
             octree.build(aabbs, {Octree::SplitPoint::Median, true, 0.0f}, 32, 10);
         }
 
@@ -139,33 +185,43 @@ namespace Bcg {
         void set_covs(const std::vector<Vector<float, 3> > &scaling,
                       const std::vector<Vector<float, 4> > &quaternions) {
             if (scaling.size() != quaternions.size()) {
-                Log::Error("Size of scaling does not match Size of quaternions");
+                Log::Error("Size of scaling does not match size of quaternions");
                 return;
             }
             if (scaling.size() != vertices.size()) {
-                Log::Error("Size of scaling does not match Size of vertices");
+                Log::Error("Size of scaling does not match size of vertices");
                 return;
             }
 
-            for (const auto v: vertices) {
+            covariances = vertices.vertex_property<Matrix<float,3,3>>("v:covs");
+
+            for (const auto v : vertices) {
                 const size_t i = v.idx();
-                glm::quat q = {quaternions[i].w, quaternions[i].x, quaternions[i].y, quaternions[i].z};
 
-                // Convert quaternion to rotation matrix using GLM
-                Matrix<float, 3, 3> rotation_matrix = glm::mat3_cast(q);
+                // 1) Build & normalize quaternion (w,x,y,z)
+                glm::quat q(quaternions[i].w, quaternions[i].x, quaternions[i].y, quaternions[i].z);
+                q = glm::normalize(q);
 
-                // Create scale matrix
-                Matrix<float, 3, 3> scale_matrix = Matrix<float, 3, 3>(0.0f);
-                scale_matrix[0][0] = scaling[i].x * scaling[i].x;
-                scale_matrix[1][1] = scaling[i].y * scaling[i].y;
-                scale_matrix[2][2] = scaling[i].z * scaling[i].z;
+                // 2) Rotation in GLM, then convert once
+                Matrix<float,3,3> R = glm::mat3_cast(q);     // from your GlmToEigen.h (or equivalent)
 
-                // Compute covariance matrix: R * S^2 * R^T
-                covariances[v] = rotation_matrix * scale_matrix * glm::transpose(rotation_matrix);
+                // 3) Diagonal of variances (σ^2). Clamp to epsilon to avoid singular Σ.
+                const float sx = std::max(scaling[i].x, 1e-8f);
+                const float sy = std::max(scaling[i].y, 1e-8f);
+                const float sz = std::max(scaling[i].z, 1e-8f);
+
+                Matrix<float,3,3> D(0.0f);
+                D[0][0] = sx * sx;
+                D[1][1] = sy * sy;
+                D[2][2] = sz * sz;
+
+                // 4) Σ = R D R^T (use your Matrix ops, not glm::transpose on a non-glm type)
+                Matrix<float,3,3> Rt = transpose(R);
+                covariances[v] = R * D * Rt;
             }
 
-            compute_covs_inverse();
-            compute_norm_factors();
+            compute_covs_inverse();   // assumes SPD; your clamps help
+            compute_norm_factors();   // make sure it uses det(Σ) = (σx σy σz)^2
         }
 
         std::vector<float> pdf(const std::vector<Vector<float, 3> > &query_points) const {
@@ -249,21 +305,49 @@ namespace Bcg {
 
             friend std::ostream &operator<<(std::ostream &os, const EvalPoint &ep) {
                 os << "Point: (" << ep.point.x << ", " << ep.point.y << ", " << ep.point.z << "), "
-                   << "PDF: " << ep.pdf << ", "
-                   << "Gradient: (" << ep.gradient.x << ", " << ep.gradient.y << ", " << ep.gradient.z << ")";
+                        << "PDF: " << ep.pdf << ", "
+                        << "Gradient: (" << ep.gradient.x << ", " << ep.gradient.y << ", " << ep.gradient.z << ")";
                 return os;
             }
         };
 
-        std::vector<EvalPoint> pdf_and_gradient(
-            const std::vector<EvalPoint> &query_points) const {
-            std::vector<EvalPoint> results = query_points;
+        void pdf_and_gradient(const Vector<float, 3> &query_point, Vector<float, 3> &total_gradient, float &total_pdf) {
+            std::vector<size_t> candidate_indices;
+            AABB<float> point_aabb(query_point, query_point);
+            octree.query(point_aabb, candidate_indices);
 
+            total_pdf = 0.0;
+            total_gradient = Vector<float, 3>(0.0, 0.0, 0.0); // Use double for accumulation
+            for (const size_t idx: candidate_indices) {
+                Vertex v(idx);
+
+                if (norm_factors[v] == 0.0f) continue;
+
+                Vector<float, 3> delta = query_point - means[v];
+                float mahalanobis_sq = glm::dot(delta, covariances_inv[v] * delta);
+
+                // First, calculate the PDF for this Gaussian (N(x))
+                float single_pdf = norm_factors[v] * std::exp(-0.5f * mahalanobis_sq);
+
+                total_pdf += weights[v] * single_pdf;
+
+                // Now, calculate the gradient for this Gaussian: -Σ⁻¹(x-μ) * N(x)
+                Vector<float, 3> single_gradient = -1.0f * (covariances_inv[v] * delta) * single_pdf;
+
+                // Add the weighted gradient to the total
+                total_gradient += weights[v] * single_gradient;
+            }
+        }
+
+        void pdfs_and_gradients(const std::vector<Vector<float, 3> > &points,
+                                std::vector<Vector<float, 3> > &gradients,
+                                std::vector<float> &pdfs) const {
             std::vector<size_t> candidate_indices;
 
-            for (auto &query: results) {
+            for (size_t i = 0; i < points.size(); ++i) {
+                const auto &query_point = points[i];
                 // --- 1. BROAD PHASE (Identical to pdf method) ---
-                AABB<float> point_aabb(query.point, query.point);
+                AABB<float> point_aabb(query_point, query_point);
                 octree.query(point_aabb, candidate_indices);
 
                 // --- 2. NARROW PHASE ---
@@ -274,7 +358,7 @@ namespace Bcg {
 
                     if (norm_factors[v] == 0.0f) continue;
 
-                    Vector<float, 3> delta = query.point - means[v];
+                    Vector<float, 3> delta = query_point - means[v];
                     float mahalanobis_sq = glm::dot(delta, covariances_inv[v] * delta);
 
                     // First, calculate the PDF for this Gaussian (N(x))
@@ -288,43 +372,44 @@ namespace Bcg {
                     // Add the weighted gradient to the total
                     total_gradient += weights[v] * single_gradient;
                 }
-                query.gradient = total_gradient;
-                query.pdf = total_pdf;
+                gradients[i] = total_gradient;
+                pdfs[i] = total_pdf;
             }
-            return results;
         }
 
-        std::vector<EvalPoint> project_point_to_surface(const std::vector<EvalPoint> &start_point,
-                                                        float iso_value,
-                                                        int iterations = 5) {
-            std::vector<EvalPoint> results = start_point;
-
-            std::vector<size_t> active_points(start_point.size());
-            std::iota(active_points.begin(), active_points.end(), 0);
+        void project_point_to_surface(std::vector<Vector<float, 3> > &points,
+                                      std::vector<Vector<float, 3> > &gradients,
+                                      std::vector<float> &pdfs,
+                                      float iso_value,
+                                      int iterations = 5) {
+            std::vector<size_t> active_indices(points.size());
+            std::iota(active_indices.begin(), active_indices.end(), 0);
 
             for (int i = 0; i < iterations; ++i) {
                 // 1. Evaluate the field value F(x_k) and 2. Evaluate the gradient grad F(x_k)
-                results = pdf_and_gradient(results);
+                pdfs_and_gradients(points, gradients, pdfs);
 
-                for (const auto idx: active_points) {
-                    const float F_x = results[idx].pdf;
-                    const Vector<float, 3> &grad_F_x = results[idx].gradient;
+                for (size_t active_idx = 0; active_idx < active_indices.size(); /* no increment here */) {
+                    size_t point_idx = active_indices[active_idx];
+
+                    const Vector<float, 3> &grad_F_x = gradients[point_idx];
                     float grad_norm_sq = VecTraits<Vector<float, 3> >::squared_length(grad_F_x);
-                    // Check for near-zero gradient norm to avoid division by zero
-                    if (grad_norm_sq < 1e-12) {
-                        // Remove this point from active points to skip further updates with swap and resize
-                        std::swap(active_points[idx], active_points.back());
-                        active_points.pop_back();
-                    }
 
-                    // 3. Apply the Newton update step
-                    // x_{k+1} = x_k - (F(x_k) - c) / ||grad F(x_k)||^2 * grad F(x_k)
-                    float error = F_x - iso_value;
-                    results[idx].point -= (error / grad_norm_sq) * grad_F_x;
+                    if (grad_norm_sq < 1e-12) {
+                        // Remove this point by swapping with the last and popping.
+                        // Do not increment active_idx, as we need to process the new element at this position.
+                        active_indices[active_idx] = active_indices.back();
+                        active_indices.pop_back();
+                    } else {
+                        const float F_x = pdfs[point_idx];
+                        float error = F_x - iso_value;
+                        points[point_idx] -= (error / grad_norm_sq) * grad_F_x;
+
+                        // Only increment if we didn't remove the element.
+                        ++active_idx;
+                    }
                 }
             }
-
-            return results;
         }
 
         template<typename T>
@@ -404,6 +489,36 @@ namespace Bcg {
             return VecTraits<Vector<float, 3> >::dot(vec_j, P * vec_i);
         }
 
+        void compute_mus_and_sigmas(GraphInterface &gi) {
+            auto sigma_ij = gi.edges.edge_property<Matrix<float, 3, 3> >("e:sigma_ij", Matrix<float, 3, 3>(1.0));
+            auto mu_ij = gi.edges.edge_property<Vector<float, 3> >("e:mu_ij", Vector<float, 3>(0.0));
+            auto eval_points = gi.edges.edge_property<EvalPoint>("e:eval_points");
+            Stopwatch sw("Stage 1: Compute mu_ij and sigma_ij");
+            for (const auto edge: gi.edges) {
+                auto h0 = gi.get_halfedge(edge, 0);
+                auto v_i = gi.from_vertex(h0);
+                auto v_j = gi.to_vertex(h0);
+
+                const Vector<float, 3> mu_i = means[v_i];
+                const Vector<float, 3> mu_j = means[v_j];
+
+
+                const Matrix<float, 3, 3> &Sigma_i_inv = covariances_inv[v_i];
+                const Matrix<float, 3, 3> &Sigma_j_inv = covariances_inv[v_j];
+
+                sigma_ij[edge] = MatTraits<Matrix<float, 3, 3> >::inverse(Sigma_i_inv + Sigma_j_inv);
+                mu_ij[edge] = sigma_ij[edge] * (Sigma_i_inv * mu_i + Sigma_j_inv * mu_j);
+                eval_points[edge].point = mu_ij[edge];
+            }
+        }
+
+        void initialize_eval_points(std::vector<Vector<float, 3> > &points,
+                                    std::vector<Vector<float, 3> > &gradients,
+                                    std::vector<float> &pdfs) {
+            Stopwatch sw("Stage 2: Per-edge projection and term evaluation");
+            pdfs_and_gradients(points, gradients, pdfs);
+        }
+
         LaplacianMatrices compute_laplacian_matrices(Halfedges &halfedges, Edges &edges) {
             auto mu_ij = edges.edge_property<Vector<float, 3> >("e:mu_ij", Vector<float, 3>(0.0));
             auto proj_m_ij = edges.edge_property<Vector<float, 3> >("e:proj_mu_ij", Vector<float, 3>(0.0));
@@ -413,6 +528,8 @@ namespace Bcg {
             auto m_ij = edges.edge_property<float>("e:m_ij", 0);
             auto k_ij = edges.edge_property<float>("e:k_ij", 0);
             auto trace_ij = edges.edge_property<float>("e:trace_ij", 0);
+            auto pdf_ij = edges.edge_property<float>("e:pdf_ij", 0);
+            auto grad_ij = edges.edge_property<Vector<float, 3> >("e:grad_ij", Vector<float, 3>(0.0));
 
             auto a_ii = vertices.vertex_property<float>("v:stiffness_diag");
             auto m_ii = vertices.vertex_property<float>("v:mass_diag");
@@ -420,43 +537,16 @@ namespace Bcg {
             compute_covs_inverse();
             auto gi = GraphInterface(vertices, halfedges, edges);
 
-            auto eval_points = edges.edge_property<EvalPoint>("e:eval_points");
-            {
-                Stopwatch sw("Stage 1: Compute mu_ij and sigma_ij");
-                for (const auto edge: edges) {
-                    auto h0 = gi.get_halfedge(edge, 0);
-                    auto v_i = gi.from_vertex(h0);
-                    auto v_j = gi.to_vertex(h0);
-
-                    const Vector<float, 3> mu_i = means[v_i];
-                    const Vector<float, 3> mu_j = means[v_j];
-
-
-                    const Matrix<float, 3, 3> &Sigma_i_inv = covariances_inv[v_i];
-                    const Matrix<float, 3, 3> &Sigma_j_inv = covariances_inv[v_j];
-
-                    sigma_ij[edge] = MatTraits<Matrix<float, 3, 3> >::inverse(Sigma_i_inv + Sigma_j_inv);
-                    mu_ij[edge] = sigma_ij[edge] * (Sigma_i_inv * mu_i + Sigma_j_inv * mu_j);
-                    eval_points[edge].point = mu_ij[edge];
-                }
-            }
+            compute_mus_and_sigmas(gi);
+            proj_m_ij.vector() = mu_ij.vector();
+            initialize_eval_points(proj_m_ij.vector(), grad_ij.vector(), pdf_ij.vector());
 
 
             std::vector<Eigen::Triplet<float> > triplets_A;
-            std::vector<Eigen::Triplet<float> > triplets_M;
-
-            {
-                Stopwatch sw("Stage 2: Per-edge projection and term evaluation");
-                eval_points.vector() = pdf_and_gradient(eval_points.vector());
-            } {
-
-            }
-            std::vector<EvalPoint> projected;
-            {
+            std::vector<Eigen::Triplet<float> > triplets_M; {
                 Stopwatch sw("Stage 3: Project to surface");
-                projected = project_point_to_surface(eval_points.vector(), 0.01f, 5);
-            }
-            {
+                project_point_to_surface(proj_m_ij.vector(), grad_ij.vector(), pdf_ij.vector(), 0.01f, 5);
+            } {
                 Stopwatch sw("Stage 4: Compute Laplacian terms and assemble matrices");
 
                 for (const auto edge: edges) {
@@ -464,7 +554,7 @@ namespace Bcg {
                     auto v_i = gi.from_vertex(h0);
                     auto v_j = gi.to_vertex(h0);
 
-                    normal_ij[edge] = VecTraits<Vector<float, 3> >::normalize(-projected[edge.idx()].gradient);
+                    normal_ij[edge] = VecTraits<Vector<float, 3> >::normalize(-grad_ij[edge]);
 
                     Matrix<float, 3, 3> P = compute_projection_matrix_P(normal_ij[edge]);
                     Matrix<float, 2, 3> V = compute_tangent_basis(normal_ij[edge]);
@@ -483,19 +573,18 @@ namespace Bcg {
                     const Vector<float, 3> &Mu_ij = mu_ij[edge];
 
                     // 4. Calculate the Galerkin matrix components
-                    float K_ij = compute_K_ij(mu_i, Sigma_i, mu_j, Sigma_j);
-                    float M_ij = compute_M_ij_approx(K_ij, tilde_Sigma_ij);
+                    const float K_ij = compute_K_ij(mu_i, Sigma_i, mu_j, Sigma_j);
+                    const float M_ij = compute_M_ij_approx(K_ij, tilde_Sigma_ij);
+                    const float tr_ij = compute_trace_term_A_ij(tilde_Sigma_i, tilde_Sigma_j, tilde_Sigma_ij);
+                    const float pr_ij = compute_projection_term_A_ij(mu_i, Sigma_i, mu_j, Sigma_j, Mu_ij, P);
 
-                    float trace_term = compute_trace_term_A_ij(tilde_Sigma_i, tilde_Sigma_j, tilde_Sigma_ij);
-                    float projection_term = compute_projection_term_A_ij(mu_i, Sigma_i, mu_j, Sigma_j, Mu_ij, P);
 
                     // The full approximation for A_ij would be M_ij * (trace_term + projection_term)
-                    float A_ij = M_ij * (trace_term + projection_term);
-
-                    m_ij[edge] = A_ij;
-                    a_ij[edge] = M_ij;
+                    const float A_ij = M_ij * (tr_ij + pr_ij); // stiffness contribution
+                    a_ij[edge] = A_ij;
+                    m_ij[edge] = M_ij;
                     k_ij[edge] = K_ij;
-                    trace_ij[edge] = trace_term;
+                    trace_ij[edge] = tr_ij;
 
                     float stiffness_val = a_ij[edge];
                     float mass_val = m_ij[edge];
@@ -504,15 +593,15 @@ namespace Bcg {
                     auto v_j_idx = v_j.idx();
 
                     // Add the symmetric off-diagonal entries
-                    triplets_A.emplace_back(v_i_idx, v_j_idx, stiffness_val);
-                    triplets_A.emplace_back(v_j_idx, v_i_idx, stiffness_val);
+                    triplets_A.emplace_back(v_i_idx, v_j_idx, -stiffness_val);
+                    triplets_A.emplace_back(v_j_idx, v_i_idx, -stiffness_val);
 
                     triplets_M.emplace_back(v_j_idx, v_j_idx, mass_val);
                     triplets_M.emplace_back(v_j_idx, v_j_idx, mass_val);
 
                     // Accumulate the sums for the diagonal entries
-                    a_ii[v_i] -= stiffness_val;
-                    a_ii[v_j] -= stiffness_val;
+                    a_ii[v_i] += stiffness_val;
+                    a_ii[v_j] += stiffness_val;
 
                     // For the lumped mass matrix, the diagonal is the sum of off-diagonals
                     m_ii[v_i] += mass_val;
@@ -530,7 +619,8 @@ namespace Bcg {
                 // M_ii = integral of phi_i^2. A simple approx is 1.0 or sum of row.
                 // Let's add the diagonal sum plus a base value (e.g., 1.0) to keep it well-conditioned.
                 // A proper M_ii would require projecting and integrating phi_i^2.
-                triplets_M.emplace_back(i, i, m_ii[v_i]);
+                const float mdiag = std::max(m_ii[v_i], 1e-9f);
+                triplets_M.emplace_back(i, i, mdiag);
             }
             LaplacianMatrices matrices;
             matrices.build(triplets_A, triplets_M, gi.vertices.n_vertices());

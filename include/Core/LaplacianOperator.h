@@ -1,12 +1,10 @@
 #pragma once
-// --- REQUIRED SPECTRA HEADERS ---
-// Make sure the Spectra 'include' directory is in your project's include path
 
-// For the standard problem (generalized = false)
+#include "LaplacianChecks.h"
+
 #include <Spectra/MatOp/SparseSymShiftSolve.h>
 #include <Spectra/SymEigsShiftSolver.h>
 
-// For the generalized problem (generalized = true)
 #include <Spectra/MatOp/SymShiftInvert.h>     // The key operator for (A - sB)^-1
 #include <Spectra/MatOp/SparseSymMatProd.h>    // The key operator for B*v
 #include <Spectra/SymGEigsShiftSolver.h>      // The correct solver class
@@ -21,15 +19,18 @@ namespace Bcg {
         // --- Derived Matrices (lazily computed) ---
         Eigen::SparseMatrix<float> M_inv;
         Eigen::SparseMatrix<float> M_inv_sqrt;
-        Eigen::SparseMatrix<float> L;       // L = M^-1 * S
-        Eigen::SparseMatrix<float> L_sym;   // L_sym = M^-1/2 * S * M^-1/2
+        Eigen::SparseMatrix<float> L; // L = M^-1 * S
+        Eigen::SparseMatrix<float> L_sym; // L_sym = M^-1/2 * S * M^-1/2
 
-        void build(const std::vector<Eigen::Triplet<float>> &S_triplets, const std::vector<Eigen::Triplet<float>> &M_triplets, long n) {
+        void build(const std::vector<Eigen::Triplet<float> > &S_triplets,
+                   const std::vector<Eigen::Triplet<float> > &M_triplets, long n) {
             S.resize(n, n);
-            S.setFromTriplets(S_triplets.begin(), S_triplets.end());
+            S.setFromTriplets(S_triplets.begin(), S_triplets.end(),
+                              [](const float &a, const float &b) { return a + b; });
 
             M.resize(n, n);
-            M.setFromTriplets(M_triplets.begin(), M_triplets.end());
+            M.setFromTriplets(M_triplets.begin(), M_triplets.end(),
+                              [](const float &a, const float &b) { return a + b; });
 
             // Clear derived matrices to ensure they are recomputed when needed
             M_inv.resize(0, 0);
@@ -39,6 +40,28 @@ namespace Bcg {
 
             S.makeCompressed();
             M.makeCompressed();
+
+            auto result = AnalyzeLaplacian(S, &M);
+            if (!result.symmetric) {
+                Log::Error(fmt::format("Laplacian matrix S is not symmetric. Symmetry norm: {}", result.symmetry_norm));
+            }
+            if (!result.zero_row_sum) {
+                Log::Error(fmt::format("Laplacian matrix S does not have zero row sums. Row sum infinity norm: {}",
+                                       result.ones_resid_inf));
+            }
+            if (!result.nonpos_offdiag) {
+                Log::Error(fmt::format(
+                    "Laplacian matrix S has positive off-diagonal entries. Max off-diagonal value: {}",
+                    result.max_offdiag));
+            }
+            if (!result.diagonally_dominant) {
+                Log::Error(fmt::format(
+                    "Laplacian matrix S is not diagonally dominant. Min diagonal: {}, Max off-diagonal sum: {}",
+                    result.min_diag, result.max_offdiag));
+            }
+            if (!result.M_spd) {
+                Log::Error(fmt::format("Laplacian matrix M is not sparse."));
+            }
         }
 
         // --- 'Exists' Checkers ---
@@ -55,7 +78,7 @@ namespace Bcg {
             if (!force && M_inv_exists()) return;
             if (M.rows() == 0) throw std::runtime_error("Mass matrix M is not initialized.");
 
-            std::vector<Eigen::Triplet<float>> triplets;
+            std::vector<Eigen::Triplet<float> > triplets;
             triplets.reserve(M.nonZeros());
             for (int k = 0; k < M.outerSize(); ++k) {
                 for (Eigen::SparseMatrix<float>::InnerIterator it(M, k); it; ++it) {
@@ -72,7 +95,7 @@ namespace Bcg {
             if (!force && M_inv_sqrt_exists()) return;
             if (M.rows() == 0) throw std::runtime_error("Mass matrix M is not initialized.");
 
-            std::vector<Eigen::Triplet<float>> triplets;
+            std::vector<Eigen::Triplet<float> > triplets;
             triplets.reserve(M.nonZeros());
             for (int k = 0; k < M.outerSize(); ++k) {
                 for (Eigen::SparseMatrix<float>::InnerIterator it(M, k); it; ++it) {
@@ -112,10 +135,10 @@ namespace Bcg {
      * THIS IS THE FINAL, CORRECT IMPLEMENTATION based on Spectra's documented design patterns.
      */
     inline EigenDecompositionResult EigenDecompositionSparse(
-            LaplacianMatrices &matrices,
-            int k,
-            bool generalized = true,
-            float sigma = 0.0f) {
+        LaplacianMatrices &matrices,
+        int k,
+        bool generalized = true,
+        float sigma = 0.0f) {
         if (k <= 0) throw std::invalid_argument("Number of eigenvalues k must be positive.");
         if (matrices.S.rows() == 0) throw std::runtime_error("Stiffness matrix S not initialized.");
         if (k >= matrices.S.rows()) throw std::invalid_argument("k must be smaller than the matrix size.");
@@ -139,9 +162,9 @@ namespace Bcg {
 
             // 3. The solver that uses the shift-invert mode for generalized symmetric problems.
             Spectra::SymGEigsShiftSolver<
-                    Spectra::SymShiftInvert<float, Eigen::Sparse, Eigen::Sparse>,
-                    Spectra::SparseSymMatProd<float>,
-                    Spectra::GEigsMode::ShiftInvert>
+                        Spectra::SymShiftInvert<float, Eigen::Sparse, Eigen::Sparse>,
+                        Spectra::SparseSymMatProd<float>,
+                        Spectra::GEigsMode::ShiftInvert>
                     solver(opInv, opM, k, ncv, sigma);
 
             solver.init();
@@ -160,7 +183,7 @@ namespace Bcg {
             matrices.create_L_sym();
 
             Spectra::SparseSymShiftSolve<float> op(matrices.L_sym);
-            Spectra::SymEigsShiftSolver<Spectra::SparseSymShiftSolve<float>> solver(op, k, ncv, sigma);
+            Spectra::SymEigsShiftSolver<Spectra::SparseSymShiftSolve<float> > solver(op, k, ncv, sigma);
 
             solver.init();
             int nconv = solver.compute(Spectra::SortRule::LargestMagn);

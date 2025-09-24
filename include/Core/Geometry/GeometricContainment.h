@@ -7,48 +7,44 @@
 namespace Bcg {
     template<typename T>
     struct ContainsTraits<Sphere<T>, AABB<T> > {
-        CUDA_HOST_DEVICE static bool contains(const Sphere<T> &a, const AABB<T> &b) noexcept {
-            // Check if all 8 corners of the AABB are within the sphere
-            Vector<T, 3> corners[8] = {
-                {b.min.x, b.min.y, b.min.z},
-                {b.min.x, b.min.y, b.max.z},
-                {b.min.x, b.max.y, b.min.z},
-                {b.min.x, b.max.y, b.max.z},
-                {b.max.x, b.min.y, b.min.z},
-                {b.max.x, b.min.y, b.max.z},
-                {b.max.x, b.max.y, b.min.z},
-                {b.max.x, b.max.y, b.max.z}
-            };
-
-            for (const auto &corner: corners) {
-                T dist_squared = (corner.x - a.center.x) * (corner.x - a.center.x) +
-                                 (corner.y - a.center.y) * (corner.y - a.center.y) +
-                                 (corner.z - a.center.z) * (corner.z - a.center.z);
-                if (dist_squared > (a.radius * a.radius)) {
-                    return false; // At least one corner is outside the sphere
-                }
-            }
-            return true; // All corners are inside the sphere
+        CUDA_HOST_DEVICE static bool contains(const Sphere<T> &sphere, const AABB<T> &aabb) noexcept {
+            assert(aabb.min.x <= aabb.max.x && aabb.min.y <= aabb.max.y && aabb.min.z <= aabb.max.z);
+            assert(sphere.radius >= T(0));
+            // farthest distance from s.center to the AABB occurs at the corner with
+            // per-axis farthest endpoint from the center.
+            const T dx = (sphere.center.x < (aabb.min.x + aabb.max.x) * T(0.5))
+                             ? (aabb.max.x - sphere.center.x)
+                             : (sphere.center.x - aabb.min.x);
+            const T dy = (sphere.center.y < (aabb.min.y + aabb.max.y) * T(0.5))
+                             ? (aabb.max.y - sphere.center.y)
+                             : (sphere.center.y - aabb.min.y);
+            const T dz = (sphere.center.z < (aabb.min.z + aabb.max.z) * T(0.5))
+                             ? (aabb.max.z - sphere.center.z)
+                             : (sphere.center.z - aabb.min.z);
+            const T d2 = dx * dx + dy * dy + dz * dz;
+            return d2 <= sphere.radius * sphere.radius; // touching counts as contained
         }
     };
 
     template<typename T>
     struct ContainsTraits<AABB<T>, Sphere<T> > {
-        CUDA_HOST_DEVICE static bool contains(const AABB<T> &a, const Sphere<T> &b) noexcept {
-            // Check if the sphere's center is within the AABB
-            if (b.center.x - b.radius < a.min.x || b.center.x + b.radius > a.max.x ||
-                b.center.y - b.radius < a.min.y || b.center.y + b.radius > a.max.y ||
-                b.center.z - b.radius < a.min.z || b.center.z + b.radius > a.max.z) {
-                return false; // Sphere extends outside the AABB
-            }
-            return true; // Sphere is fully contained within the AABB
+        CUDA_HOST_DEVICE static bool contains(const AABB<T> &aabb, const Sphere<T> &sphere) noexcept {
+            assert(aabb.min.x <= aabb.max.x && aabb.min.y <= aabb.max.y && aabb.min.z <= aabb.max.z);
+            assert(sphere.radius >= T(0));
+            // AABB contains Sphere if the sphere is fully inside the AABB
+            return !(sphere.center.x - sphere.radius < aabb.min.x ||
+                     sphere.center.x + sphere.radius > aabb.max.x ||
+                     sphere.center.y - sphere.radius < aabb.min.y ||
+                     sphere.center.y + sphere.radius > aabb.max.y ||
+                     sphere.center.z - sphere.radius < aabb.min.z ||
+                     sphere.center.z + sphere.radius > aabb.max.z);
         }
     };
 
     template<typename T>
     struct ContainsTraits<Sphere<T>, Vector<T, 3> > {
-        CUDA_HOST_DEVICE static bool contains(const Sphere<T> &a, const Vector<T, 3> &b) noexcept {
-            return VecTraits<Vector<T, 3> >::squared_distance(a.center, b) <= a.radius * a.radius;
+        CUDA_HOST_DEVICE static bool contains(const Sphere<T> &sphere, const Vector<T, 3> &point) noexcept {
+            return VecTraits<Vector<T, 3> >::squared_distance(sphere.center, point) <= sphere.radius * sphere.radius;
         }
     };
 }

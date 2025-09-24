@@ -11,7 +11,6 @@
 #include <vector>
 
 namespace Bcg {
-
     /**
      * @brief Computes the geometrically accurate Cotangent Laplacian and associated matrices.
      * This is the standard, preferred Laplacian for most geometry processing tasks on triangle meshes.
@@ -26,14 +25,14 @@ namespace Bcg {
         if (n_vertices == 0) return matrices;
 
         // Use a list of triplets to build the sparse matrices efficiently.
-        std::vector<Eigen::Triplet<float>> S_triplets;
+        std::vector<Eigen::Triplet<float> > S_triplets;
 
         // Use a vector to accumulate the diagonal entries for both S and M.
         Eigen::VectorXd M_diagonal_areas = Eigen::VectorXd::Zero(n_vertices);
 
         // Iterate over all faces to compute cotangent weights and barycentric areas.
         // This is more robust than iterating over edges for handling boundary conditions.
-        for (const auto face : mesh.data.faces) {
+        for (const auto face: mesh.data.faces) {
             // Get the 3 vertices of the triangle face
             auto h = mesh.interface.get_halfedge(face);
             auto v0_h = mesh.interface.to_vertex(h);
@@ -41,9 +40,9 @@ namespace Bcg {
             auto v2_h = mesh.interface.to_vertex(mesh.interface.get_prev(h));
 
             // Get their 3D positions
-            const PointType & p0 = mesh.interface.vpoint[v0_h];
-            const PointType & p1 = mesh.interface.vpoint[v1_h];
-            const PointType & p2 = mesh.interface.vpoint[v2_h];
+            const PointType &p0 = mesh.interface.vpoint[v0_h];
+            const PointType &p1 = mesh.interface.vpoint[v1_h];
+            const PointType &p2 = mesh.interface.vpoint[v2_h];
 
             // Calculate edge vectors
             glm::dvec3 e0 = glm::dvec3(p2) - glm::dvec3(p1);
@@ -52,7 +51,7 @@ namespace Bcg {
 
             // Calculate face area (using cross product)
             // The area of the triangle is 0.5 * |e2 x (-e1)|
-            double twice_area = glm::length(glm::cross(e2,-e1));
+            double twice_area = glm::length(glm::cross(e2, -e1));
             if (twice_area < 1e-9) continue; // Skip degenerate triangles
             double area = twice_area * 0.5;
 
@@ -86,11 +85,11 @@ namespace Bcg {
         }
 
         // Finalize the Mass Matrix (M)
-        std::vector<Eigen::Triplet<float>> M_triplets;
+        std::vector<Eigen::Triplet<float> > M_triplets;
         M_triplets.reserve(n_vertices);
-        for(long i = 0; i < n_vertices; ++i){
+        for (long i = 0; i < n_vertices; ++i) {
             // Ensure mass is non-zero to avoid division by zero later
-            if(M_diagonal_areas[i] > 1e-9) {
+            if (M_diagonal_areas[i] > 1e-9) {
                 M_triplets.emplace_back(i, i, M_diagonal_areas[i]);
             } else {
                 M_triplets.emplace_back(i, i, 1e-9);
@@ -115,14 +114,14 @@ namespace Bcg {
         const long n_vertices = mesh.data.vertices.n_vertices();
         if (n_vertices == 0) return matrices;
 
-        std::vector<Eigen::Triplet<float>> S_triplets;
+        std::vector<Eigen::Triplet<float> > S_triplets;
         // Reserve space: 2 triplets for each edge (i,j) and (j,i), plus n for the diagonal.
         S_triplets.reserve(mesh.data.edges.n_edges() * 2 + n_vertices);
 
         Eigen::VectorXf diagonal_degrees = Eigen::VectorXf::Zero(n_vertices);
 
         // Iterate over all edges to set off-diagonal entries
-        for (const auto edge : mesh.data.edges) {
+        for (const auto edge: mesh.data.edges) {
             auto h0 = mesh.interface.get_halfedge(edge, 0);
             auto v_i = mesh.interface.from_vertex(h0);
             auto v_j = mesh.interface.to_vertex(h0);
@@ -141,9 +140,11 @@ namespace Bcg {
             S_triplets.emplace_back(i, i, diagonal_degrees[i]);
         }
 
-        matrices.build(S_triplets , {}, n_vertices);
-        matrices.M.resize(n_vertices, n_vertices);
-        matrices.M.setIdentity();
+        std::vector<Eigen::Triplet<float> > M_triplets;
+        M_triplets.reserve(n_vertices);
+        for (int i = 0; i < n_vertices; ++i) M_triplets.emplace_back(i, i, 1.0f);
+
+        matrices.build(S_triplets, M_triplets, n_vertices);
 
         return matrices;
     }

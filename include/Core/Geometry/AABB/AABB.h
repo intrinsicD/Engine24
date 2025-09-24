@@ -6,6 +6,7 @@
 #define ENGINE24_AABB_H
 
 #include "MatVec.h"
+#include "MathUtils.h"
 #include "StringTraits.h"
 #include "VecTraits.h"
 #include "Macros.h"
@@ -71,7 +72,8 @@ namespace Bcg {
         }
 
         CUDA_HOST_DEVICE T volume() const {
-            return VecTraits<Vector<T, 3> >::prod(diagonal());
+            T v = VecTraits<Vector<T, 3> >::prod(diagonal());
+            return v >= T(0) ? v : T(0);
         }
 
         CUDA_HOST_DEVICE T surface_area() const {
@@ -101,15 +103,17 @@ namespace Bcg {
     template<typename T>
     struct SquaredDistanceTraits<AABB<T>, Vector<T, 3> > {
         CUDA_HOST_DEVICE static T squared_distance(const AABB<T> &aabb, const Vector<T, 3> &point) noexcept {
-            return VecTraits<Vector<T, 3> >::squared_distance(
-                ClosestPointTraits<AABB<T>, Vector<T, 3> >::closest_point(aabb, point), point);
+            const T dx = d_max( d_max(aabb.min.x - point.x, T(0)), point.x - aabb.max.x );
+            const T dy = d_max( d_max(aabb.min.y - point.y, T(0)), point.y - aabb.max.y );
+            const T dz = d_max( d_max(aabb.min.z - point.z, T(0)), point.z - aabb.max.z );
+            return dx*dx + dy*dy + dz*dz;
         }
     };
 
     template<typename T>
     struct DistanceTraits<AABB<T>, Vector<T, 3> > {
         CUDA_HOST_DEVICE static T distance(const AABB<T> &aabb, const Vector<T, 3> &point) noexcept {
-            return sqrt(SquaredDistanceTraits<AABB<T>, Vector<T, 3> >::squared_distance(aabb, point));
+            return d_sqrt(SquaredDistanceTraits<AABB<T>, Vector<T, 3> >::squared_distance(aabb, point));
         }
     };
 
@@ -122,31 +126,27 @@ namespace Bcg {
 
     template<typename T>
     struct BuilderTraits<AABB<T>, std::vector<Vector<T, 3> > > {
-        CUDA_HOST_DEVICE static AABB<T> build(const std::vector<Vector<T, 3>> &v) noexcept {
+        CUDA_HOST static AABB<T> build(const std::vector<Vector<T, 3> > &v) noexcept {
             return AABB<T>::Build(v.begin(), v.end());
         }
     };
 
     template<typename T>
-    CUDA_HOST_DEVICE static bool isWithinBounds(const AABB<T> &a, const Vector<T, 3> &b) noexcept {
-        return a.min.x <= b.x && b.x <= a.max.x &&
-               a.min.y <= b.y && b.y <= a.max.y &&
-               a.min.z <= b.z && b.z <= a.max.z;
-    }
-
-    template<typename T>
     struct ContainsTraits<AABB<T>, Vector<T, 3> > {
         CUDA_HOST_DEVICE static bool contains(const AABB<T> &a, const Vector<T, 3> &b) noexcept {
-            return isWithinBounds(a, b);
+            return a.min.x <= b.x && b.x <= a.max.x &&
+                   a.min.y <= b.y && b.y <= a.max.y &&
+                   a.min.z <= b.z && b.z <= a.max.z;
         }
     };
 
     template<typename T>
-    struct ContainsTraits<AABB<T>, AABB<T> > {
-        CUDA_HOST_DEVICE static bool contains(const AABB<T> &a, const AABB<T> &b) noexcept {
-            return a.min.x <= b.min.x && b.max.x <= a.max.x &&
-                   a.min.y <= b.min.y && b.max.y <= a.max.y &&
-                   a.min.z <= b.min.z && b.max.z <= a.max.z;
+    struct ContainsTraits<AABB<T>, AABB<T>> {
+        CUDA_HOST_DEVICE static bool contains(const AABB<T>& outer, const AABB<T>& inner) noexcept {
+            assert(outer.min.x <= outer.max.x && outer.min.y <= outer.max.y && outer.min.z <= outer.max.z);
+            assert(inner.min.x <= inner.max.x && inner.min.y <= inner.max.y && inner.min.z <= inner.max.z);
+            return outer.min.x <= inner.min.x && outer.min.y <= inner.min.y && outer.min.z <= inner.min.z &&
+                   outer.max.x >= inner.max.x && outer.max.y >= inner.max.y && outer.max.z >= inner.max.z;
         }
     };
 
