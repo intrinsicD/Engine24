@@ -384,7 +384,77 @@ namespace Bcg {
     }
 
     template<typename T>
-    std::vector<AABB<T> > compute_aabbs_from(const std::vector<Vector<T, 3> > &means, const std::vector<Matrix<T, 3, 3> > &covs) {
+    AABB<T> aabb_for(const Vector<T, 3> &mean,
+                     const Vector<T, 3> &scale, const Vector<T, 4> &quat) {
+        // A Gaussian is defined by its mean and its covariance matrix Sigma.
+        // The 'scale' vector represents the standard deviations in the object's local,
+        // un-rotated coordinate system. The variances are the squares of these values.
+        Vector<T, 3> variances(scale[0] * scale[0],
+                               scale[1] * scale[1],
+                               scale[2] * scale[2]);
+
+        // The 'quat' quaternion gives us the rotation matrix R that transforms from
+        // the local coordinate system to the world coordinate system.
+        Matrix<T, 3, 3> R = glm::mat3_cast(glm::quat(quat.w, quat.x, quat.y, quat.z));
+
+        // The covariance matrix in world coordinates is given by Sigma = R * D * R^T,
+        // where D is the diagonal matrix of local variances.
+        // To find the AABB, we need the variances along the world axes, which are the
+        // diagonal elements of Sigma. A direct computation is most efficient.
+        //
+        // Sigma_ii = sum_j (R_ij^2 * D_jj)
+        //
+        // Note: GLM matrices are column-major, so R[i][j] accesses the element
+        // at column i, row j.
+
+        Matrix<T, 3, 3> R_squared = R;
+        R_squared[0][0] *= R[0][0];
+        R_squared[0][1] *= R[0][1];
+        R_squared[0][2] *= R[0][2];
+        R_squared[1][0] *= R[1][0];
+        R_squared[1][1] *= R[1][1];
+        R_squared[1][2] *= R[1][2];
+        R_squared[2][0] *= R[2][0];
+        R_squared[2][1] *= R[2][1];
+        R_squared[2][2] *= R[2][2];
+
+        // The diagonal of Sigma = R*D*R^T is the same as the diagonal of (R^2)*D,
+        // where R^2 is the element-wise square of R.
+        // Transposing R_squared because GLM is column-major to easily dot with variances.
+        Matrix<T, 3, 3> R_squared_T = glm::transpose(R_squared);
+
+        T varX = glm::dot(R_squared_T[0], variances);
+        T varY = glm::dot(R_squared_T[1], variances);
+        T varZ = glm::dot(R_squared_T[2], variances);
+
+        // The standard deviations along the world axes are the sqrt of the variances.
+        Vector<T, 3> world_std_dev(std::sqrt(varX), std::sqrt(varY), std::sqrt(varZ));
+
+        // The 3-sigma rule gives us the extents of the AABB from the mean.
+        Vector<T, 3> extents = static_cast<T>(3.0) * world_std_dev;
+
+        // The AABB is centered at the Gaussian's mean.
+        AABB<T> box;
+        box.min = mean - extents;
+        box.max = mean + extents;
+
+        return box;
+    }
+
+    template<typename T>
+    std::vector<AABB<T> > compute_aabbs_from(const std::vector<Vector<T, 3> > &means,
+                                             const std::vector<Vector<T, 3> > &scale, const std::vector<Vector<T, 4> > &quat) {
+        size_t size = means.size();
+        std::vector<AABB<T> > aabbs(size);
+        for (size_t i = 0; i < size; i++) {
+            aabbs[i] = aabb_for(means[i], scale[i], quat[i]);
+        }
+        return aabbs;
+    }
+
+    template<typename T>
+    std::vector<AABB<T> > compute_aabbs_from(const std::vector<Vector<T, 3> > &means,
+                                             const std::vector<Matrix<T, 3, 3> > &covs) {
         size_t size = means.size();
         std::vector<AABB<T> > aabbs(size);
         for (size_t i = 0; i < size; i++) {

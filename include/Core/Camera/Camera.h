@@ -43,8 +43,6 @@ namespace Bcg {
         float zFar = 100.0f;
     };
 
-
-
     struct CameraUniformBuffer : public UniformBuffer {
 
     };

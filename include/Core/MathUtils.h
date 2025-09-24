@@ -1,6 +1,9 @@
 #pragma once
 
 #include "Macros.h"
+#ifndef __CUDA_ARCH__
+#include <cmath>
+#endif
 
 namespace Bcg {
     template<typename T>

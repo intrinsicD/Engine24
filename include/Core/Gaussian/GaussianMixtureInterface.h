@@ -51,11 +51,7 @@ namespace Bcg {
 
         Property<AABB<float> > ConvertGaussiansToAABBs() {
             auto aabbs = vertices.vertex_property<AABB<float> >("v:aabb");
-            aabbs.vector() = compute_aabbs_from(means.vector(), covariances.vector());
-
-            for (const auto v: vertices) {
-                aabbs[v] = constructAABBForGaussian(means[v], covariances[v], k_sigma, min_half_extent);
-            }
+            aabbs.vector() = compute_aabbs_from(means.vector(), scale.vector(), rotation.vector());
             return aabbs;
         }
 
@@ -74,7 +70,7 @@ namespace Bcg {
                 return;
             }
             octree = Octree();
-            auto aabbs = ConvertGaussiansToAABBs(3.0f, 0.0f);
+            auto aabbs = ConvertGaussiansToAABBs();
             // Build the octree with a maximum of 32 elements per node and a maximum depth
             octree.build(aabbs, {Octree::SplitPoint::Median, true, 0.0f}, 32, 10);
         }
@@ -130,9 +126,9 @@ namespace Bcg {
                 return;
             }
 
-            covariances = vertices.vertex_property<Matrix<float,3,3>>("v:covs");
+            covariances = vertices.vertex_property<Matrix<float, 3, 3> >("v:covs");
 
-            for (const auto v : vertices) {
+            for (const auto v: vertices) {
                 const size_t i = v.idx();
 
                 // 1) Build & normalize quaternion (w,x,y,z)
@@ -140,20 +136,20 @@ namespace Bcg {
                 q = glm::normalize(q);
 
                 // 2) Rotation in GLM, then convert once
-                Matrix<float,3,3> R = glm::mat3_cast(q);     // from your GlmToEigen.h (or equivalent)
+                Matrix<float, 3, 3> R = glm::mat3_cast(q); // from your GlmToEigen.h (or equivalent)
 
                 // 3) Diagonal of variances (σ^2). Clamp to epsilon to avoid singular Σ.
                 const float sx = std::max(scaling[i].x, 1e-8f);
                 const float sy = std::max(scaling[i].y, 1e-8f);
                 const float sz = std::max(scaling[i].z, 1e-8f);
 
-                Matrix<float,3,3> D(0.0f);
+                Matrix<float, 3, 3> D(0.0f);
                 D[0][0] = sx * sx;
                 D[1][1] = sy * sy;
                 D[2][2] = sz * sz;
 
                 // 4) Σ = R D R^T (use your Matrix ops, not glm::transpose on a non-glm type)
-                Matrix<float,3,3> Rt = glm::transpose(R);
+                Matrix<float, 3, 3> Rt = glm::transpose(R);
                 covariances[v] = R * D * Rt;
             }
 
@@ -242,8 +238,8 @@ namespace Bcg {
 
             friend std::ostream &operator<<(std::ostream &os, const EvalPoint &ep) {
                 os << "Point: (" << ep.point.x << ", " << ep.point.y << ", " << ep.point.z << "), "
-                   << "PDF: " << ep.pdf << ", "
-                   << "Gradient: (" << ep.gradient.x << ", " << ep.gradient.y << ", " << ep.gradient.z << ")";
+                        << "PDF: " << ep.pdf << ", "
+                        << "Gradient: (" << ep.gradient.x << ", " << ep.gradient.y << ", " << ep.gradient.z << ")";
                 return os;
             }
         };
@@ -533,8 +529,8 @@ namespace Bcg {
                     triplets_A.emplace_back(v_i_idx, v_j_idx, -stiffness_val);
                     triplets_A.emplace_back(v_j_idx, v_i_idx, -stiffness_val);
 
-                    triplets_M.emplace_back(v_j_idx, v_j_idx, mass_val);
-                    triplets_M.emplace_back(v_j_idx, v_j_idx, mass_val);
+                    triplets_M.emplace_back(v_j_idx, v_i_idx, mass_val);
+                    triplets_M.emplace_back(v_i_idx, v_j_idx, mass_val);
 
                     // Accumulate the sums for the diagonal entries
                     a_ii[v_i] += stiffness_val;
