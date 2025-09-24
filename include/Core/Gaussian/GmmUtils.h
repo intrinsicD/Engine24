@@ -453,8 +453,7 @@ namespace Bcg {
     }
 
     template<typename T>
-    std::vector<AABB<T> > compute_aabbs_from(const std::vector<Vector<T, 3> > &means,
-                                             const std::vector<Matrix<T, 3, 3> > &covs) {
+    std::vector<AABB<T> > compute_aabbs_from(const std::vector<Vector<T, 3> > &means, const std::vector<Matrix<T, 3, 3> > &covs) {
         size_t size = means.size();
         std::vector<AABB<T> > aabbs(size);
         for (size_t i = 0; i < size; i++) {

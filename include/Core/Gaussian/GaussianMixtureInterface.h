@@ -528,7 +528,6 @@ namespace Bcg {
                     // Add the symmetric off-diagonal entries
                     triplets_A.emplace_back(v_i_idx, v_j_idx, -stiffness_val);
                     triplets_A.emplace_back(v_j_idx, v_i_idx, -stiffness_val);
-
                     triplets_M.emplace_back(v_j_idx, v_i_idx, mass_val);
                     triplets_M.emplace_back(v_i_idx, v_j_idx, mass_val);
 
