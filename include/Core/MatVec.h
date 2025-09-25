@@ -12,7 +12,9 @@
 #include "glm/glm.hpp"
 
 #include "glm/gtx/component_wise.hpp"
+#include "glm/gtx/compatibility.hpp"
 #include "glm/gtc/type_ptr.hpp"
+#include "glm/gtc/quaternion.hpp"
 
 namespace Bcg {
 /*    template<typename T, int N>
@@ -26,6 +28,9 @@ namespace Bcg {
 
     template<typename T, int C, int R, glm::qualifier Q = glm::defaultp>
     using Matrix = glm::mat<C, R, T, Q>;
+
+    template<typename T, glm::qualifier Q = glm::defaultp>
+    using Quaternion = glm::qua<T, Q>;
 
     template<typename T, int N>
     Vector<T, N> SafeNormalize(const Vector<T, N> &v, T length, T epsilon = 1e-6) {

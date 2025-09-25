@@ -5,8 +5,7 @@
 #include "Hierarchy.h"
 #include "ParentComponent.h"
 #include "ChildrenComponent.h"
-#include "TransformDirty.h"
-#include "WorldTransformComponent.h"
+#include "../../include/Core/Transform/WorldTransformComponent.h"
 #include "TransformComponent.h"
 #include "TransformSystem.h"
 #include "entt/entity/registry.hpp"
@@ -75,7 +74,7 @@ namespace Bcg{
         }
 
         // --- 5. Mark the child as dirty to propagate changes down its own hierarchy ---
-        m_registry.emplace_or_replace<TransformDirty>(child_id);
+        m_registry.emplace_or_replace<DirtyWorldTransform>(child_id);
     }
 
     void Hierarchy::destroy_entity(entt::entity entity_id) {

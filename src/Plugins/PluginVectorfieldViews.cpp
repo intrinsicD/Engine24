@@ -10,11 +10,14 @@
 #include "Picker.h"
 #include "Camera.h"
 #include "ModuleGraphics.h"
-#include "WorldTransformComponent.h"
+#include "../../include/Core/Transform/WorldTransformComponent.h"
 #include "GetPrimitives.h"
 #include "PropertyEigenMap.h"
 #include "OpenGLState.h"
+#include "AABBComponents.h"
+
 #include <numeric>
+
 
 namespace Bcg {
     void PluginViewVectorfields::activate() {
@@ -122,9 +125,9 @@ namespace Bcg {
         SetVectorVectorfieldView(entity_id, vectorfield_name, vectorfield_name).execute();
         SetColorVectorfieldView(entity_id, vectorfield_name, "uniform_color").execute();
 
-        if (Engine::has<AABBHandle>(entity_id)) {
-            auto h_aabb = ModuleAABB::get(entity_id);
-            view.uniform_length = glm::length(h_aabb->diagonal()) / 100.0f;
+        if (Engine::has<LocalAABB>(entity_id)) {
+            auto local = Engine::State().get<LocalAABB>(entity_id);
+            view.uniform_length = glm::length(local.aabb.diagonal()) / 100.0f;
         } else {
             view.uniform_length = 1.0f;
         }

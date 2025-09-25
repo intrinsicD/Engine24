@@ -11,7 +11,7 @@
 #include "PropertyEigenMap.h"
 #include <numeric>
 #include "CameraUtils.h"
-#include "WorldTransformComponent.h"
+#include "../../include/Core/Transform/WorldTransformComponent.h"
 #include "ModuleGraphics.h"
 
 namespace Bcg {

@@ -9,6 +9,7 @@
 
 namespace Bcg{
     void UpdateTransformSystem(entt::registry &registry);
+    void ClearTransformDirtyTags(entt::registry &registry);
 }
 
 #endif //ENGINE24_TRANSFORMSYSTEM_H

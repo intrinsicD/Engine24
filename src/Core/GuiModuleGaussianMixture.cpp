@@ -13,6 +13,7 @@
 #include "PropertyEigenMap.h"
 #include "TransformComponent.h"
 #include "ModuleGraph.h"
+#include "PointCloudUtils.h"
 
 #include <entt/entity/registry.hpp>
 
@@ -70,7 +71,8 @@ namespace Bcg {
         if (ImGui::Begin("Gaussian Mixture", &m_is_window_open)) {
             auto mus = pci->vertex_property<PointType>("v:point");
             auto covs = pci->get_vertex_property<Matrix<float, 3, 3> >("v:covs");
-            auto covs_inv = pci->get_vertex_property<Matrix<float, 3, 3> >("v:covs");
+            // Fix: retrieve the correct inverse covariance property
+            auto covs_inv = pci->get_vertex_property<Matrix<float, 3, 3> >("v:covs_inv");
             auto weights = pci->get_vertex_property<float>("v:weights");
             auto scales = pci->get_vertex_property<Vector<float, 3> >("v:scale");
             auto rotations = pci->get_vertex_property<Vector<float, 4> >("v:rotation");
@@ -90,16 +92,49 @@ namespace Bcg {
                     }
                 }
             }
+
+            static float sigma_k = 1.0f;
+            if (scales) {
+                ImGui::SliderFloat("Sigma multiplier (k)", &sigma_k, 0.1f, 5.0f, "%.2f x sigma");
+                ImGui::SameLine();
+                if (ImGui::SmallButton("1x")) sigma_k = 1.0f;
+                ImGui::SameLine();
+                if (ImGui::SmallButton("2x")) sigma_k = 2.0f;
+                ImGui::SameLine();
+                if (ImGui::SmallButton("3x")) sigma_k = 3.0f;
+            }
+
             if (covs) {
                 if (ImGui::Button("Visualize Covariances as boxes")) {
                     auto aabbs_id = Engine::State().create();
                     auto &gi = Require<GraphInterface>(aabbs_id, Engine::State());
                     gi.clear();
-                    OrientedBoxesToGraph(mus.vector(), scales.vector(), rotations.vector(), gi);
+                    if (scales && rotations) {
+                        // Visualize oriented k-sigma boxes (k defaults to 1; set to 3 for 3-sigma)
+                        OrientedBoxesToGraph(mus.vector(), scales.vector(), rotations.vector(), gi, sigma_k);
+                    } else if (scales) {
+                        // Fallback: no rotations, visualize axis-aligned boxes scaled by k-sigma
+                        std::vector<AABB<float> > aabbs;
+                        aabbs.reserve(mus.vector().size());
+                        const float k = std::max(0.0f, sigma_k);
+                        for (size_t i = 0; i < mus.vector().size(); ++i) {
+                            const auto &mu = mus.vector()[i];
+                            const auto &s = scales.vector()[i];
+                            Vector<float, 3> ext(k * s.x, k * s.y, k * s.z);
+                            AABB<float> box;
+                            box.min = mu - ext;
+                            box.max = mu + ext;
+                            aabbs.emplace_back(box);
+                        }
+                        AABBsToGraph(aabbs, gi);
+                    }
                     ModuleGraph::setup(aabbs_id);
                     auto transform_entity = Engine::State().get<TransformComponent>(entity_id);
                     auto &transform_boxes = Engine::require<TransformComponent>(aabbs_id);
                     transform_boxes = transform_entity;
+                }
+                if (ImGui::Button("Visualize Covariances as local frames")) {
+                    compute_vectorfields_of_gaussians(*pci);
                 }
             }
             if (!covs_inv && covs) {

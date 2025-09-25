@@ -4,8 +4,7 @@
 
 #include "TransformSystem.h"
 #include "TransformComponent.h"
-#include "WorldTransformComponent.h"
-#include "TransformDirty.h"
+#include "../../include/Core/Transform/WorldTransformComponent.h"
 #include "ParentComponent.h"
 #include "ChildrenComponent.h"
 #include "entt/entity/registry.hpp"
@@ -20,7 +19,7 @@ namespace Bcg {
         // even if multiple children in the same hierarchy were dirtied.
         std::unordered_set<entt::entity> dirty_roots;
 
-        auto dirty_view = registry.view<TransformDirty>();
+        auto dirty_view = registry.view<DirtyLocalTransform>();
         for (auto entity: dirty_view) {
             auto current = entity;
             // Traverse up the hierarchy until we find the root parent.
@@ -61,7 +60,8 @@ namespace Bcg {
                 registry.emplace_or_replace<WorldTransformComponent>(current_entity, final_world_matrix);
 
                 // 3. Mark the entity as clean
-                registry.remove<TransformDirty>(current_entity);
+                registry.remove<DirtyLocalTransform>(current_entity);
+                registry.emplace_or_replace<DirtyWorldTransform>(current_entity);
 
                 // 4. Add all direct children to the queue for the next level of processing
                 if (auto *children_comp = registry.try_get<ChildrenComponent>(current_entity)) {
@@ -71,5 +71,9 @@ namespace Bcg {
                 }
             }
         }
+    }
+    void ClearTransformDirtyTags(entt::registry &registry) {
+        registry.clear<DirtyLocalTransform>();
+        registry.clear<DirtyWorldTransform>();
     }
 }

@@ -8,7 +8,7 @@
 #include "Picker.h"
 #include "CameraUtils.h"
 #include "ModuleGraphics.h"
-#include "WorldTransformComponent.h"
+#include "../../include/Core/Transform/WorldTransformComponent.h"
 #include "EventsCallbacks.h"
 #include "Keyboard.h"
 #include "OpenGLState.h"

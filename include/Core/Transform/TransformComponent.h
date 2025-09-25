@@ -21,6 +21,8 @@ namespace Bcg{
             return trans * rot * sc;
         }
     };
+
+    struct DirtyLocalTransform{};
 }
 
 #endif //ENGINE24_TRANSFORMCOMPONENT_H

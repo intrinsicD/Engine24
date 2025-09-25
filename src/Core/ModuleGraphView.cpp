@@ -8,7 +8,7 @@
 #include "Engine.h"
 #include "GetPrimitives.h"
 #include "CameraUtils.h"
-#include "WorldTransformComponent.h"
+#include "../../include/Core/Transform/WorldTransformComponent.h"
 #include "ModuleGraphics.h"
 #include "OpenGLState.h"
 #include "PropertyEigenMap.h"

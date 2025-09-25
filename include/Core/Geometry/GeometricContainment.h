@@ -3,6 +3,7 @@
 #include "GeometricTraits.h"
 #include "AABB.h"
 #include "Sphere.h"
+#include "OBB.h"
 
 namespace Bcg {
     template<typename T>
@@ -38,13 +39,6 @@ namespace Bcg {
                      sphere.center.y + sphere.radius > aabb.max.y ||
                      sphere.center.z - sphere.radius < aabb.min.z ||
                      sphere.center.z + sphere.radius > aabb.max.z);
-        }
-    };
-
-    template<typename T>
-    struct ContainsTraits<Sphere<T>, Vector<T, 3> > {
-        CUDA_HOST_DEVICE static bool contains(const Sphere<T> &sphere, const Vector<T, 3> &point) noexcept {
-            return VecTraits<Vector<T, 3> >::squared_distance(sphere.center, point) <= sphere.radius * sphere.radius;
         }
     };
 }

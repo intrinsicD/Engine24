@@ -23,7 +23,8 @@
 #include "FileWatcher.h"
 #include "GuiModuleRendererSettings.h"
 #include "TransformSystem.h"
-#include "GuiModuleTransforms.h"
+#include "AABBSystem.h"
+#include "../../include/Core/Transform/GuiModuleTransforms.h"
 #include "GuiModuleHierarchy.h"
 #include "GuiModuleMeshLaplacian.h"
 #include "GuiModuleGraphLaplacian.h"
@@ -71,8 +72,8 @@ namespace Bcg {
             auto &gui_modules = Engine::Context().emplace<GuiModules>();
             gui_modules.add(std::make_unique<GuiModuleCamera>());
             gui_modules.add(std::make_unique<GuiModuleRendererSettings>(*renderer));
-            gui_modules.add(std::make_unique<GuiModuleTransforms>(engine.state, *renderer, entity_selection));
-            gui_modules.add(std::make_unique<GuiModuleHierarchy>(engine.state, entity_selection));
+            gui_modules.add(std::make_unique<GuiModuleTransforms>(engine.state, *renderer));
+            gui_modules.add(std::make_unique<GuiModuleHierarchy>(engine.state));
             gui_modules.add(std::make_unique<GuiModuleMeshLaplacian>(engine.state));
             gui_modules.add(std::make_unique<GuiModuleGraphLaplacian>(engine.state));
             gui_modules.add(std::make_unique<GuiModuleGaussianMixture>(engine.state));
@@ -81,14 +82,12 @@ namespace Bcg {
             Plugins::activate_all();
             Engine::handle_command_double_buffer();
         }
-
     }
 
     void Application::run() {
         auto &modules = Engine::Context().get<Modules>();
         modules.activate();
 
-        auto &entity_selection = engine.state.ctx().get<EntitySelection>();
         auto &camera = engine.state.ctx().get<Camera>();
 
         auto &gui_modules = Engine::Context().get<GuiModules>();
@@ -109,6 +108,7 @@ namespace Bcg {
             int updates = 0;
             while (accumulator.has_step(k_fixed_time_step) && updates < k_max_updates_per_frame) {
                 UpdateTransformSystem(engine.state);
+                UpdateWorldAABBSystem(engine.state);
                 modules.fixed_update(k_fixed_time_step);
                 accumulator.consume_step(k_fixed_time_step);
                 ++updates;
@@ -118,6 +118,7 @@ namespace Bcg {
             double alpha = accumulator.get_alpha(k_fixed_time_step);
             //Second UpdateTransformSystem call to ensure that the transforms are up to date
             UpdateTransformSystem(engine.state);
+            UpdateWorldAABBSystem(engine.state);
             modules.begin_frame();
             modules.variable_update(delta_time, alpha);
             modules.update();
@@ -125,8 +126,7 @@ namespace Bcg {
             Plugins::update_all();
 
             Engine::handle_command_double_buffer();
-            Engine::handle_buffered_events();
-            {
+            Engine::handle_buffered_events(); {
                 renderer->begin_frame();
 
                 Plugins::render_all();
@@ -134,6 +134,7 @@ namespace Bcg {
                 Engine::handle_command_double_buffer();
                 Engine::handle_buffered_events();
                 renderer->begin_gui();
+                GuiModuleTransforms::render_guizmo(*renderer);
 
                 Plugins::render_menu();
                 modules.render_menu();
@@ -143,14 +144,21 @@ namespace Bcg {
                 gui_modules.render_gui();
                 renderer->end_gui();
 
+                // Apply any transform changes produced by the gizmo/UI this frame
+                UpdateTransformSystem(engine.state);
+                UpdateWorldAABBSystem(engine.state);
+
                 Engine::handle_command_double_buffer();
                 Engine::handle_buffered_events();
                 modules.end_frame();
                 Plugins::end_frame();
                 renderer->end_frame();
 
-                picker_system->update(engine.state, camera, entity_selection);
+                picker_system->update(engine.state, camera);
             }
+
+            ClearWorldAABBDirtyTags(engine.state);
+            ClearTransformDirtyTags(engine.state);
         }
     }
 
@@ -160,6 +168,5 @@ namespace Bcg {
         auto &gui_modules = Engine::Context().emplace<GuiModules>();
         gui_modules.deactivate();
         Plugins::deactivate_all();
-
     }
 }

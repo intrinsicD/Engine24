@@ -6,8 +6,10 @@
 #define AABBUTILS_H
 
 #include "AABB.h"
+#include "OBBUtils.h"
+#include "GeometricTraits.h"
 
-namespace Bcg::AABBUtils {
+namespace Bcg {
     template<typename T>
     std::vector<AABB<T> > ConvertToAABBs(const std::vector<Vector<T, 3> > &points) {
         if (points.empty()) return {};
@@ -77,6 +79,38 @@ namespace Bcg::AABBUtils {
         };
     }
 
+    //BuilderTraits for AABB for Point, Vector of Points, OBB, Sphere
+    template<typename T, typename Shape>
+    struct BuilderTraits<AABB<T>, Shape> {
+        CUDA_HOST_DEVICE static AABB<T> build(const Shape &) noexcept {
+            static_assert(sizeof(Shape) == 0, "BuilderTraits<AABB, Shape> not implemented for this shape.");
+            return AABB<T>();
+        }
+
+        CUDA_HOST_DEVICE static AABB<T> build(const std::vector<Vector<T, 3> > &shape) noexcept {
+            return AABB<T>::Build(shape.begin(), shape.end());
+        }
+
+        CUDA_HOST_DEVICE static AABB<T> build(const OBB<T> &shape) noexcept {
+            auto corners = GetVertices(shape);
+            return AABB<T>::Build(corners.begin(), corners.end());
+        }
+
+        CUDA_HOST_DEVICE static AABB<T> build(const Sphere<T> &shape) noexcept {
+            Vector<T, 3> min = shape.center - Vector<T, 3>(shape.radius);
+            Vector<T, 3> max = shape.center + Vector<T, 3>(shape.radius);
+            return AABB<T>{min, max};
+        }
+
+        CUDA_HOST static std::vector<AABB<T> > build_all(const std::vector<Vector<T, 3> > &points) noexcept {
+            std::vector<AABB<T> > aabbs;
+            for (const auto &p: points) {
+                aabbs.emplace_back(p, p);
+            }
+            return aabbs;
+        }
+    };
+
     template<typename T>
     Vector<T, 3> ClosestPoint(const AABB<T> &aabb, const Vector<T, 3> &point) {
         return ClosestPointTraits<AABB<T>, Vector<T, 3> >::closest_point(aabb, point);
@@ -105,6 +139,17 @@ namespace Bcg::AABBUtils {
     template<typename T>
     T Distance(const AABB<T> &aabb, const Vector<T, 3> &point) {
         return DistanceTraits<AABB<T>, AABB<T> >::distance(aabb, point);
+    }
+
+    template<typename T>
+    AABB<T> apply_transform(const AABB<T> &aabb, const Matrix<T, 4, 4> &transform) {
+        AABB<T> transformed_aabb;
+        auto corners = GetVertices(aabb);
+        for (auto iter = corners.begin(); iter != corners.end(); ++iter) {
+            transformed_aabb.grow(glm::vec3(transform * glm::vec4(*iter, 1.0f)));
+        }
+
+        return transformed_aabb;
     }
 }
 

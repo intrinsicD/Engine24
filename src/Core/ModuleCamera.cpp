@@ -3,6 +3,8 @@
 //
 
 #include "ModuleCamera.h"
+
+#include "AABBComponents.h"
 #include "CameraUtils.h"
 #include "Engine.h"
 #include "Entity.h"
@@ -91,10 +93,12 @@ namespace Bcg {
         ViewParams v_params = GetViewParams(camera);
         glm::vec4 ec = camera.view * glm::vec4(v_params.center, 1.0f);
         glm::vec3 c(ec[0] / ec[3], ec[1] / ec[3], ec[2] / ec[3]);
-        glm::mat4 center_matrix = glm::translate(glm::mat4(1.0f), -c);
-        glm::mat4 rot_matrix = glm::rotate(glm::mat4(1.0f), glm::radians(angle), axis);
+        // Match PMP TrackballViewer: V' = T(c) * R(angle, axis) * T(-c) * V
+        glm::mat4 T_c = glm::translate(glm::mat4(1.0f), c);
+        glm::mat4 T_minc = glm::translate(glm::mat4(1.0f), -c);
+        glm::mat4 rot_matrix = glm::rotate(glm::mat4(1.0f), glm::radians(angle), glm::normalize(axis));
 
-        camera.view = center_matrix * rot_matrix * glm::inverse(center_matrix) * camera.view;
+        camera.view = T_c * rot_matrix * T_minc * camera.view;
         glm::mat4 inv_view = glm::inverse(camera.view);
         v_params.eye = glm::vec3(inv_view[3]);
         v_params.up = glm::vec3(inv_view[1]);
@@ -111,12 +115,12 @@ namespace Bcg {
             newPointok = map_to_sphere(newPoint2D, newPoint3D);
 
             if (newPointok) {
-                glm::vec3 axis = cross(last_point_3d_, newPoint3D);
+                glm::vec3 axis = glm::cross(last_point_3d_, newPoint3D);
                 float cosAngle = glm::dot(last_point_3d_, newPoint3D);
 
                 if (fabs(cosAngle) < 1.0) {
                     float angle = 2.0 * acos(cosAngle) * 180.0 / std::numbers::pi;
-                    rotate(camera, axis, -angle);
+                    rotate(camera, axis, angle); // match PMP sign convention
                 }
             }
         }
@@ -145,15 +149,15 @@ namespace Bcg {
         auto vp = ModuleGraphics::get_viewport();
         float viewport_width = vp[2];
         float viewport_height = vp[3];
-        float fov = p_params.fovy_degrees; // Field of view in radians
+        float fov_deg = p_params.fovy_degrees;
 
         // Compute the scale factors for screen to world space translation
         float aspect_ratio = viewport_width / viewport_height;
-        float half_fov_y = fov / 2.0;
-        float half_fov_x = std::atan(std::tan(half_fov_y) * aspect_ratio);
+        float half_fov_y = glm::radians(fov_deg) * 0.5f; // degrees -> radians
+        float half_fov_x = atanf(tanf(half_fov_y) * aspect_ratio);
 
-        float world_dx = dx / viewport_width * 2 * std::tan(half_fov_x) * distance_to_scene;
-        float world_dy = dy / viewport_height * 2 * std::tan(half_fov_y) * distance_to_scene;
+        float world_dx = (dx / viewport_width) * 2.0f * tanf(half_fov_x) * distance_to_scene;
+        float world_dy = (dy / viewport_height) * 2.0f * tanf(half_fov_y) * distance_to_scene;
 
         // Translate the camera in world space
         glm::vec3 translation = up * world_dy - right * world_dx;
@@ -203,14 +207,42 @@ namespace Bcg {
         if (event.action) {
             auto &picked = Engine::Context().get<Picked>();
             auto &camera = Engine::Context().get<Camera>();
-            ViewParams v_params = GetViewParams(camera);
-            glm::vec3 front = v_params.center - v_params.eye;
+            const auto entity_id = picked.entity.id;
+            if (Engine::valid(entity_id)) {
+                const auto &world = Engine::State().get<WorldAABB>(entity_id);
+                auto view_params = GetViewParams(camera);
+                auto perspective_params = GetPerspectiveParams(camera);
 
-            float d = glm::length(front);
-            v_params.center = picked.spaces.wsp;
-            v_params.eye = v_params.center - front * d;
-            SetViewParams(camera, v_params);
-            Log::Info("Focus onto: {} {} {}", v_params.center[0], v_params.center[1], v_params.center[2]);
+                // 1. Calculate the radius of a sphere that encloses the AABB
+                float radius = glm::length(world.aabb.diagonal()) / 2.0f;
+
+                // 2. Get the camera's FOV (assuming a perspective camera)
+                // This might be stored directly in your camera component. Let's assume you can get it.
+                float fov = glm::radians(perspective_params.fovy_degrees); // e.g., in radians
+
+                // 3. Calculate the distance needed from the object's center
+                // This is basic trigonometry: tan(angle) = opposite / adjacent
+                // tan(fov/2) = radius / distance
+                // distance = radius / tan(fov/2)
+                float distance = radius / std::tan(fov / 2.0f);
+
+                // 4. Preserve old orientation
+                const auto front_normalized = glm::normalize(view_params.center - view_params.eye);
+
+                // 5. Set new view parameters
+                if (!picked.entity.is_background) {
+                    view_params.center = picked.spaces.wsp;
+                } else {
+                    view_params.center = world.aabb.center();
+                }
+
+                view_params.eye = view_params.center - front_normalized * distance;
+                // The 'up' and 'right' vectors don't need to be recalculated if you just move eye and center.
+
+                SetViewParams(camera, view_params);
+
+                Log::Info("Center onto: {} {} {}", view_params.center[0], view_params.center[1], view_params.center[2]);
+            }
         }
     }
 
@@ -218,16 +250,36 @@ namespace Bcg {
         if (event.action) {
             auto &picked = Engine::Context().get<Picked>();
             auto &camera = Engine::Context().get<Camera>();
-            if (Engine::valid(picked.entity.id)) {
-                auto h_aabb = ModuleAABB::get(picked.entity.id);
-                PerspectiveParams p_params = GetPerspectiveParams(camera);
-                ViewParams v_params = GetViewParams(camera);
-                float d = glm::compMax(h_aabb->diagonal()) /*/ tan(p_params.fovy / 2.0)*/;
-                glm::vec3 front = v_params.center - v_params.eye;
-                v_params.center = h_aabb->center();
-                v_params.eye = v_params.center - front * d;
-                SetViewParams(camera, v_params);
-                Log::Info("Center onto: {} {} {}", v_params.center[0], v_params.center[1], v_params.center[2]);
+            const auto entity_id = picked.entity.id;
+            if (Engine::valid(entity_id)) {
+                const auto &world = Engine::State().get<WorldAABB>(entity_id);
+                auto view_params = GetViewParams(camera);
+                auto perspective_params = GetPerspectiveParams(camera);
+
+                // 1. Calculate the radius of a sphere that encloses the AABB
+                float radius = glm::length(world.aabb.diagonal()) / 2.0f;
+
+                // 2. Get the camera's FOV (assuming a perspective camera)
+                // This might be stored directly in your camera component. Let's assume you can get it.
+                float fov = glm::radians(perspective_params.fovy_degrees); // e.g., in radians
+
+                // 3. Calculate the distance needed from the object's center
+                // This is basic trigonometry: tan(angle) = opposite / adjacent
+                // tan(fov/2) = radius / distance
+                // distance = radius / tan(fov/2)
+                float distance = radius / std::tan(fov / 2.0f);
+
+                // 4. Preserve old orientation
+                const auto front_normalized = glm::normalize(view_params.center - view_params.eye);
+
+                // 5. Set new view parameters
+                view_params.center = world.aabb.center();
+                view_params.eye = view_params.center - front_normalized * distance;
+                // The 'up' and 'right' vectors don't need to be recalculated if you just move eye and center.
+
+                SetViewParams(camera, view_params);
+
+                Log::Info("Center onto: {} {} {}", view_params.center[0], view_params.center[1], view_params.center[2]);
             }
         }
     }
@@ -325,7 +377,6 @@ namespace Bcg {
             Engine::Dispatcher().sink<Events::Callback::FramebufferResize>().disconnect<&on_framebuffer_resize>();
             Engine::Dispatcher().sink<Events::Key::F>().disconnect<&on_key_focus>();
             Engine::Dispatcher().sink<Events::Key::C>().disconnect<&on_key_center>();
-
         }
     }
 

@@ -7,14 +7,15 @@
 #include "ChildrenComponent.h"
 #include "Hierarchy.h"
 #include "NameComponent.h"
+#include "Picker.h"
 
 #include "imgui.h"
 #include "entt/entity/registry.hpp"
 
 namespace Bcg {
 
-    GuiModuleHierarchy::GuiModuleHierarchy(entt::registry &registry, EntitySelection &entity_selection)
-            : GuiModule("Hierarchy"), m_registry(registry), m_entity_selection(entity_selection) {}
+    GuiModuleHierarchy::GuiModuleHierarchy(entt::registry &registry)
+            : GuiModule("Hierarchy"), m_registry(registry) {}
 
     void GuiModuleHierarchy::render_menu() {
         if (ImGui::BeginMenu("Module")) {
@@ -42,7 +43,8 @@ namespace Bcg {
 
             // If the user clicks on the empty space in the window, deselect everything.
             if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered()) {
-                m_entity_selection.deselect_entity();
+                auto &picked = m_registry.ctx().get<Picked>();
+                picked.entity = {};
             }
         }
         ImGui::End();
@@ -56,7 +58,8 @@ namespace Bcg {
 
         // --- Setup Tree Node Flags ---
         ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
-        if (m_entity_selection.get_selected_entity() == entity_id) {
+        auto &picked = m_registry.ctx().get<Picked>();
+        if (picked.entity.id == entity_id) {
             flags |= ImGuiTreeNodeFlags_Selected;
         }
 
@@ -71,7 +74,7 @@ namespace Bcg {
 
         // --- Handle Selection ---
         if (ImGui::IsItemClicked()) {
-            m_entity_selection.select_entity(entity_id);
+            picked.entity.id = entity_id;
         }
 
         // --- Handle Drag-and-Drop ---

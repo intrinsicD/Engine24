@@ -21,11 +21,9 @@ namespace Bcg {
         CUDA_HOST_DEVICE Sphere() = default;
 
         CUDA_HOST_DEVICE Sphere(const Vector<T, 3> &center, T radius) : center(center), radius(std::abs(radius)) {
-
         }
 
         CUDA_HOST_DEVICE Sphere(const Vector<T, 3> &point) : center(point), radius(T(0)) {
-
         }
 
         CUDA_HOST_DEVICE bool is_valid() const {
@@ -55,12 +53,13 @@ namespace Bcg {
         }
     };
 
-     //------------------------------------------------------------------------------------------------------------------
+    //------------------------------------------------------------------------------------------------------------------
 
     template<typename T>
     struct ClosestPointTraits<Sphere<T>, Vector<T, 3> > {
-        CUDA_HOST_DEVICE static Vector<T, 3> closest_point(const Sphere<T> &sphere, const Vector<T, 3> &point) noexcept {
-            return VecTraits<Vector<T, 3>>::normalize(sphere.center - point) * sphere.radius + sphere.center;
+        CUDA_HOST_DEVICE static Vector<T, 3>
+        closest_point(const Sphere<T> &sphere, const Vector<T, 3> &point) noexcept {
+            return VecTraits<Vector<T, 3> >::normalize(sphere.center - point) * sphere.radius + sphere.center;
         }
     };
 
@@ -87,24 +86,28 @@ namespace Bcg {
     };
 
     template<typename T>
-    CUDA_HOST_DEVICE static bool isWithinBounds(const Sphere<T> &a, const Vector<T, 3> &b) noexcept {
-        return VecTraits<Vector<T, 3> >::squared_distance(a.center, b) <= a.radius * a.radius;
-    }
-
-    template<typename T>
     struct ContainsTraits<Sphere<T>, Sphere<T> > {
         CUDA_HOST_DEVICE static bool contains(const Sphere<T> &a, const Sphere<T> &b) noexcept {
-            return isWithinBounds(a, b.center) &&
-                   VecTraits<Vector<T, 3> >::squared_distance(a.center, b.center) <= (a.radius - b.radius) * (a.radius - b.radius);
+            return ContainsTraits<Sphere<T>, Vector<T, 3> >::contains(a, b.center) &&
+                   VecTraits<Vector<T, 3> >::squared_distance(a.center, b.center) <= (a.radius - b.radius) * (
+                       a.radius - b.radius);
+        }
+    };
+
+    template<typename T>
+    struct ContainsTraits<Sphere<T>, Vector<T, 3> > {
+        CUDA_HOST_DEVICE static bool contains(const Sphere<T> &sphere, const Vector<T, 3> &point) noexcept {
+            return VecTraits<Vector<T, 3> >::squared_distance(sphere.center, point) <= sphere.radius * sphere.radius;
         }
     };
 
     template<typename T>
     struct IntersectsTraits<Sphere<T>, Sphere<T> > {
         CUDA_HOST_DEVICE static bool intersects(const Sphere<T> &a, const Sphere<T> &b) noexcept {
-            return isWithinBounds(a, b.center) ||
-                   isWithinBounds(b, a.center) ||
-                   VecTraits<Vector<T, 3> >::squared_distance(a.center, b.center) <= (a.radius + b.radius) * (a.radius + b.radius);
+            return ContainsTraits<Sphere<T>, Vector<T, 3> >::contains(a, b.center) ||
+                   ContainsTraits<Sphere<T>, Vector<T, 3> >::contains(b, a.center) ||
+                   VecTraits<Vector<T, 3> >::squared_distance(a.center, b.center) <= (a.radius + b.radius) * (
+                       a.radius + b.radius);
         }
     };
 

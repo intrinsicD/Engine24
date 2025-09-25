@@ -10,6 +10,9 @@
 #include "ModuleSphereView.h"
 #include "ModulePhongSplattingView.h"
 #include "ModuleGraphView.h"
+#include "AABBComponents.h"
+#include "CameraUtils.h"
+#include "TransformUtils.h"
 
 #include "imgui.h"
 #include "ImGuiFileDialog.h"
@@ -20,6 +23,7 @@
 #include "SurfaceMeshIo.h" //TODO move to MeshResources.h
 #include "Picker.h"
 #include "SurfaceMeshCompute.h"
+
 
 namespace Bcg {
     ModuleMesh::ModuleMesh() : Module("MeshModule") {
@@ -86,14 +90,6 @@ namespace Bcg {
         return true;
     }
 
-    template<>
-    struct BuilderTraits<AABB<float>, SurfaceMesh> {
-        static AABB<float> build(const SurfaceMesh &m) noexcept {
-            return AABB<float>::Build(m.interface.vpoint.vector().begin(),
-                m.interface.vpoint.vector().end());
-        }
-    };
-
     void ModuleMesh::setup(entt::entity entity_id) {
         if (!Engine::valid(entity_id)) {
             Log::Warn("{}::Setup failed, Entity is not valid. Abort Command", s_name);
@@ -106,11 +102,40 @@ namespace Bcg {
         }
 
         auto h_mesh = get(entity_id);
-        auto h_aabb = ModuleAABB::create(entity_id, BuilderTraits<AABB<float>, SurfaceMesh>::build(*h_mesh));
-        auto &transform = Engine::require<TransformComponent>(entity_id);
+        const auto &mi = *h_mesh;
+        if (!Engine::has<LocalAABB>(entity_id)) {
+            auto &local = Engine::require<LocalAABB>(entity_id);
+            local.aabb = BuilderTraits<AABB<float>, std::vector<Vector<float, 3> > >::build(
+                mi.interface.vpoint.vector());
+        }
 
-        ModuleAABB::center_and_scale_by_aabb(entity_id, h_mesh->interface.vpoint.name());
-        ModuleCamera::center_camera_at_distance(h_aabb->center(), 1.5f * glm::compMax(h_aabb->diagonal()));
+        auto &local = Engine::require<LocalAABB>(entity_id);
+
+        if (!Engine::has<TransformComponent>(entity_id)) {
+            const auto &camera = Engine::Context().get<Camera>();
+            const auto view_params = GetViewParams(camera);
+
+            // Robust target scale based on bounding "radius"
+            const glm::vec3 half_extent = local.aabb.half_extent();
+            const float max_extent = glm::compMax(glm::abs(half_extent));
+            const float radius = std::max(1e-6f, max_extent); // half of the longest side
+            const float uniform_scale = 1.0f / radius; // longest side becomes ~2 units
+
+            // Safe view center (fallback to origin)
+            glm::vec3 view_center = view_params.center;
+            if (!glm::all(glm::isfinite(view_center))) view_center = glm::vec3(0.0f);
+
+            const glm::mat4 T_to_origin = glm::translate(glm::mat4(1.0f), -local.aabb.center());
+            const glm::mat4 S_uniform = glm::scale(glm::mat4(1.0f), glm::vec3(uniform_scale));
+            const glm::mat4 T_to_view = glm::translate(glm::mat4(1.0f), view_center);
+
+            const glm::mat4 model_matrix = T_to_view * S_uniform * T_to_origin;
+
+            Engine::State().emplace_or_replace<TransformComponent>(entity_id, decompose(model_matrix));
+            Engine::State().emplace_or_replace<DirtyLocalTransform>(entity_id);
+
+            Log::Info("AABB half_extent: {}, scale: {}", glm::to_string(half_extent), uniform_scale);
+        }
 
         ComputeSurfaceMeshVertexNormals(entity_id);
         //TODO add MeshView etc.
@@ -119,7 +144,8 @@ namespace Bcg {
         ModulePhongSplattingView::setup(entity_id);
         ModuleGraphView::setup(entity_id);
         Log::Info("#v: {}, #e: {}, #h: {}, #f: {}",
-                  h_mesh->data.vertices.n_vertices(), h_mesh->data.edges.n_edges(), h_mesh->data.halfedges.n_halfedges(), h_mesh->data.faces.n_faces());
+                  h_mesh->data.vertices.n_vertices(), h_mesh->data.edges.n_edges(),
+                  h_mesh->data.halfedges.n_halfedges(), h_mesh->data.faces.n_faces());
     }
 
     void ModuleMesh::cleanup(entt::entity entity_id) {
@@ -176,7 +202,7 @@ namespace Bcg {
     }
 
     void ModuleMesh::render_gui() {
-        if(file_dialog_gui_enabled){
+        if (file_dialog_gui_enabled) {
             render_filedialog();
         }
         if (gui_enabled) {

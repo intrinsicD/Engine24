@@ -23,7 +23,7 @@ namespace Bcg{
 
         // The main update function to be called during the rendering phase of the game loop.
         // It will only perform the expensive picking render pass if a pick was requested.
-        void update(entt::registry& registry, const Camera& camera, EntitySelection& selection_state);
+        void update(entt::registry& registry, const Camera& camera);
 
         // Must be called when the main window's viewport resizes.
         void on_viewport_resize(uint32_t width, uint32_t height);

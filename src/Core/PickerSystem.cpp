@@ -6,6 +6,7 @@
 #include "WorldTransformComponent.h"
 #include "ModuleGraphics.h"
 #include "Engine.h"
+#include "Picker.h"
 
 #include "glad/gl.h" // Or your OpenGL header
 
@@ -25,8 +26,7 @@ namespace Bcg {
         m_fbo.resize(width, height);
     }
 
-    void PickerSystem::update(entt::registry &registry, const Bcg::Camera &camera,
-                              Bcg::EntitySelection &selection_state) {
+    void PickerSystem::update(entt::registry &registry, const Camera &camera) {
         // Only run the expensive render pass if a pick was actually requested this frame.
         if (!m_pick_request_pos.has_value()) {
             return;
@@ -43,11 +43,11 @@ namespace Bcg {
         uint32_t flipped_y = m_fbo.get_height() - static_cast<uint32_t>(pick_pos.y);
 
         int entity_id = m_fbo.read_pixel(static_cast<uint32_t>(pick_pos.x), flipped_y);
-
+        auto &picked = registry.ctx().get<Picked>();
         if (entity_id != -1) {
-            selection_state.select_entity(static_cast<entt::entity>(entity_id));
+            picked.entity.id = static_cast<entt::entity>(entity_id);
         } else {
-            selection_state.deselect_entity();
+            picked.entity = {};
         }
 
         // --- 3. Clear the request so we don't pick again next frame ---

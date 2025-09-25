@@ -13,8 +13,4 @@ namespace Bcg::Commands {
     void Commands::Cleanup<AABB<float>>::execute() const {
         ModuleAABB::cleanup(entity_id);
     }
-
-    void Commands::CenterAndScaleByAABB::execute() const {
-        ModuleAABB::center_and_scale_by_aabb(entity_id, property_name);
-    }
 }

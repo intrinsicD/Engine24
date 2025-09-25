@@ -1,8 +1,8 @@
 target_sources(Engine24 PRIVATE
+        AABBSystem.cpp
         Camera.cpp
         GuiModuleCamera.cpp
         CommandsCamera.cpp
-        CommandsMesh.cpp
         CommandsMeshView.cpp
         CommandsSphereView.cpp
         CommandsPointCloud.cpp

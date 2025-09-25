@@ -7,7 +7,8 @@
 #include "ModuleCamera.h"
 #include "TransformComponent.h"
 #include "TransformUtils.h"
-#include "ModuleAABB.h"
+#include "AABBComponents.h"
+#include "CameraUtils.h"
 
 #include "imgui.h"
 #include "ImGuiFileDialog.h"
@@ -53,13 +54,6 @@ namespace Bcg {
     }
 
 
-    template<>
-    struct BuilderTraits<AABB<float>, GraphInterface> {
-        static AABB<float> build(const GraphInterface &gi) noexcept {
-            return AABB<float>::Build(gi.vpoint.vector().begin(), gi.vpoint.vector().end());
-        }
-    };
-
     void ModuleGraph::setup(entt::entity entity_id) {
         if (!Engine::valid(entity_id)) {
             Log::Warn("{}::Setup failed, Entity is not valid. Abort Command", s_name);
@@ -68,16 +62,38 @@ namespace Bcg {
 
         auto &gi = Require<GraphInterface>(entity_id, Engine::State());
 
-        auto h_aabb = ModuleAABB::create(entity_id, BuilderTraits<AABB<float>, GraphInterface>::build(gi));
+        if (!Engine::has<LocalAABB>(entity_id)) {
+            auto &local = Engine::require<LocalAABB>(entity_id);
+            local.aabb = BuilderTraits<AABB<float>, std::vector<Vector<float, 3>>>::build(gi.vpoint.vector());
+        }
 
-        auto &transform = Engine::require<TransformComponent>(entity_id);
+        auto &local = Engine::require<LocalAABB>(entity_id);
 
-        //ScaleAndCenterAt(transform, h_aabb->center(), glm::compMax(h_aabb->diagonal()));
+        if (!Engine::has<TransformComponent>(entity_id)) {
+            const auto &camera = Engine::Context().get<Camera>();
+            const auto view_params = GetViewParams(camera);
 
-        /*
-        ModuleAABB::center_and_scale_by_aabb(entity_id, gi.vpoint.name());
-        ModuleCamera::center_camera_at_distance(h_aabb->center(), glm::compMax(h_aabb->diagonal()));
-        */
+            // Robust target scale based on bounding "radius"
+            const glm::vec3 half_extent = local.aabb.half_extent();
+            const float max_extent = glm::compMax(glm::abs(half_extent));
+            const float radius = std::max(1e-6f, max_extent);  // half of the longest side
+            const float uniform_scale = 1.0f / radius;                // longest side becomes ~2 units
+
+            // Safe view center (fallback to origin)
+            glm::vec3 view_center = view_params.center;
+            if (!glm::all(glm::isfinite(view_center))) view_center = glm::vec3(0.0f);
+
+            const glm::mat4 T_to_origin = glm::translate(glm::mat4(1.0f), -local.aabb.center());
+            const glm::mat4 S_uniform   = glm::scale(glm::mat4(1.0f), glm::vec3(uniform_scale));
+            const glm::mat4 T_to_view   = glm::translate(glm::mat4(1.0f), view_center);
+
+            const glm::mat4 model_matrix = T_to_view * S_uniform * T_to_origin;
+
+            Engine::State().emplace_or_replace<TransformComponent>(entity_id, decompose(model_matrix));
+            Engine::State().emplace_or_replace<DirtyLocalTransform>(entity_id);
+
+            Log::Info("AABB half_extent: {}, scale: {}", glm::to_string(half_extent), uniform_scale);
+        }
 
         ModuleGraphView::setup(entity_id);
         Log::Info("#v: {}", gi.vertices.n_vertices());

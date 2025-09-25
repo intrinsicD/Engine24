@@ -5,12 +5,14 @@
 #ifndef ENGINE24_WORLDTRANSFORMCOMPONENT_H
 #define ENGINE24_WORLDTRANSFORMCOMPONENT_H
 
-#include "MatVec.h"
+#include "../MatVec.h"
 
 namespace Bcg{
     struct WorldTransformComponent {
-        glm::mat4 world_transform = glm::mat4(1.0f); // Identity matrix by default
+       Matrix<float, 4, 4> world_transform = Matrix<float, 4, 4>(1.0f); // Identity matrix by default
     };
+
+    struct DirtyWorldTransform{};
 }
 
 #endif //ENGINE24_WORLDTRANSFORMCOMPONENT_H

@@ -3,13 +3,15 @@
 //
 
 #include "PluginPicker.h"
+
+#include "AABBComponents.h"
 #include "Engine.h"
-#include "../../Graphics/ModuleGraphics.h"
+#include "ModuleGraphics.h"
 #include "PluginSelection.h"
 #include "EventsCallbacks.h"
 #include "Mouse.h"
 #include "imgui.h"
-#include "WorldTransformComponent.h"
+#include "../../include/Core/Transform/WorldTransformComponent.h"
 #include "ModuleAABB.h"
 #include "ModuleMesh.h"
 #include "Cuda/BVHCudaNew.h"
@@ -34,12 +36,12 @@ namespace Bcg {
         auto &picked = last_picked();
         picked.spaces = mouse.cursor.last_left.press;
         picked.entity.is_background = picked.spaces.ndc.z == 1.0;
-        auto view = Engine::State().view<AABBHandle, WorldTransformComponent>();
+        auto view = Engine::State().view<WorldAABB, WorldTransformComponent>();
         for (const auto entity_id: view) {
-            auto h_aabb = ModuleAABB::get(entity_id);
+            auto world = view.get<WorldAABB>(entity_id);
             auto &transform = Engine::State().get<WorldTransformComponent>(entity_id);
-            if (AABBUtils::Contains(
-                *h_aabb, glm::vec3(glm::inverse(transform.world_transform) * glm::vec4(picked.spaces.wsp, 1.0f)))) {
+            if (Contains(
+                world.aabb, glm::vec3(glm::inverse(transform.world_transform) * glm::vec4(picked.spaces.wsp, 1.0f)))) {
                 picked.entity.id = entity_id;
                 break;
             }

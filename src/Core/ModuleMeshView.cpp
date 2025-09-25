@@ -9,7 +9,7 @@
 #include "Picker.h"
 #include "CameraUtils.h"
 #include "EventsEntity.h"
-#include "WorldTransformComponent.h"
+#include "../../include/Core/Transform/WorldTransformComponent.h"
 #include "GetPrimitives.h"
 #include "OpenGLState.h"
 #include "SurfaceMeshTriangles.h"

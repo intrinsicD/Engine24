@@ -13,7 +13,7 @@ namespace Bcg{
     class EntitySelection;
     class GuiModuleTransforms : public GuiModule{
     public:
-        GuiModuleTransforms(entt::registry &registry, Renderer &renderer, EntitySelection &entity_selection);
+        GuiModuleTransforms(entt::registry &registry, Renderer &renderer);
 
         ~GuiModuleTransforms() = default;
 
@@ -21,16 +21,17 @@ namespace Bcg{
 
         void render_gui() override;
 
+        static void render_guizmo(Renderer &renderer);
+
     private:
         // Renders the ImGui inspector panel with text inputs.
         void render_inspector_panel(entt::entity entity_id);
 
         // Renders the 3D viewport gizmo.
-        void render_gizmo(entt::entity entity_id);
+        static void render_gizmo(entt::entity entity_id, Renderer &renderer);
 
         entt::registry &m_registry; // Provides access to the entity registry and components
         Renderer& m_renderer; // Provides camera and registry access
-        EntitySelection& m_entity_selection; // Provides access to the currently selected entity
 
         bool m_is_window_open = false;
     };

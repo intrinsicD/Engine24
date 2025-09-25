@@ -22,8 +22,8 @@ namespace Bcg {
         glm::quat orientation;
         glm::vec3 translation;
         glm::decompose(matrix, scale, orientation, translation, skew, perspective);
-        glm::vec3 angle_axis = glm::eulerAngles(orientation);
-        return {scale, angle_axis, translation};
+        // Return fields in the correct TransformComponent order: {position, rotation, scale}
+        return {translation, orientation, scale};
     }
 
     glm::mat4 compose(const TransformComponent &transform) {
