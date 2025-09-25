@@ -7,7 +7,7 @@
 #include "GlmToEigen.h"
 #include <Eigen/Eigenvalues>
 
-namespace Bcg{
+namespace Bcg {
     template<typename T>
     std::array<Vector<T, 3>, 8> GetVertices(const OBB<T> &obb) {
         std::array<Vector<T, 3>, 8> vertices{};
@@ -48,14 +48,9 @@ namespace Bcg{
         };
     }
 
-    //BuilderTraits of OBB for Point, AABB, Sphere
+    //BuilderTraits of OBB for Point, AABB, Sphere and collections
     template<typename T, typename Shape>
     struct BuilderTraits<OBB<T>, Shape> {
-        CUDA_HOST_DEVICE static OBB<T> build(const Shape &) noexcept {
-            static_assert(sizeof(Shape) == 0, "BuilderTraits<OBB, Shape> not implemented for this shape.");
-            return OBB<T>();
-        }
-
         CUDA_HOST_DEVICE static OBB<T> build(const AABB<T> &shape) noexcept {
             Vector<T, 3> center = (shape.min + shape.max) * static_cast<T>(0.5);
             Vector<T, 3> half_extents = (shape.max - shape.min) * static_cast<T>(0.5);
@@ -74,81 +69,98 @@ namespace Bcg{
             return OBB<T>{shape, Vector<T, 3>(0, 0, 0), Vector<T, 4>(1, 0, 0, 0)};
         }
 
-        CUDA_HOST_DEVICE static OBB<T> build(const Vector<T, 3> &center, const Vector<T, 3> &scale, const Quaternion<T> &quat) noexcept {
+        CUDA_HOST_DEVICE static OBB<T> build(const Vector<T, 3> &center, const Vector<T, 3> &scale,
+                                             const Quaternion<T> &quat) noexcept {
             return OBB<T>{center, scale, quat};
         }
 
-        CUDA_HOST static std::vector<OBB<T>> build_all(const std::vector<Vector<T, 3> > &points) noexcept {
-            std::vector<OBB<T>> obbs;
-            for (const auto &p: points) {
-                obbs.emplace_back(p, Vector<T, 3>(0, 0, 0), Vector<T, 4>(1, 0, 0, 0));
-            }
-            return obbs;
-        }
-    };
-
-    // Builder for OBB from a vector of points: axes from PCA, extents from projections
-    template<typename T>
-    struct BuilderTraits<OBB<T>, std::vector<Vector<T, 3>>> {
-        CUDA_HOST static OBB<T> build(const std::vector<Vector<T, 3>> &points) noexcept {
+        // Build from raw points via PCA extents
+        CUDA_HOST static OBB<T> build(const std::vector<Vector<T, 3> > &points) noexcept {
             OBB<T> result{};
             if (points.empty()) {
-                result.center = Vector<T,3>(0);
-                result.half_extents = Vector<T,3>(0);
-                result.axes = Vector<T,4>(1,0,0,0);
+                result.center = Vector<T, 3>(0);
+                result.half_extents = Vector<T, 3>(0);
+                result.axes = Vector<T, 4>(1, 0, 0, 0);
                 return result;
             }
 
-            // 1) Compute centroid
-            Vector<T,3> c(0);
-            for (const auto &p : points) c += p;
+            // 1) Centroid
+            Vector<T, 3> c(0);
+            for (const auto &p: points) c += p;
             c /= static_cast<T>(points.size());
 
-            // 2) Compute covariance matrix
-            Eigen::Matrix<T,3,3> C = Eigen::Matrix<T,3,3>::Zero();
-            for (const auto &p : points) {
-                Eigen::Matrix<T,3,1> d;
+            // 2) Covariance
+            Eigen::Matrix<T, 3, 3> C = Eigen::Matrix<T, 3, 3>::Zero();
+            for (const auto &p: points) {
+                Eigen::Matrix<T, 3, 1> d;
                 d << (p.x - c.x), (p.y - c.y), (p.z - c.z);
                 C.noalias() += d * d.transpose();
             }
             C /= static_cast<T>(points.size());
 
-            // 3) Eigen decomposition (covariance is symmetric)
-            Eigen::SelfAdjointEigenSolver<Eigen::Matrix<T,3,3>> es(C);
-            const auto &V = es.eigenvectors(); // columns are eigenvectors (ascending eigenvalues)
+            // 3) Eigen decomposition
+            Eigen::SelfAdjointEigenSolver<Eigen::Matrix<T, 3, 3> > es(C);
+            const auto &V = es.eigenvectors();
 
-            // Build rotation matrix with columns = eigenvectors
-            Matrix<T,3,3> R(1);
-            R[0] = Vector<T,3>(V(0,0), V(1,0), V(2,0));
-            R[1] = Vector<T,3>(V(0,1), V(1,1), V(2,1));
-            R[2] = Vector<T,3>(V(0,2), V(1,2), V(2,2));
+            Matrix<T, 3, 3> R(1);
+            R[0] = Vector<T, 3>(V(0, 0), V(1, 0), V(2, 0));
+            R[1] = Vector<T, 3>(V(0, 1), V(1, 1), V(2, 1));
+            R[2] = Vector<T, 3>(V(0, 2), V(1, 2), V(2, 2));
 
-            // Ensure right-handed basis
-            if (glm::dot(R[2], glm::cross(R[0], R[1])) < T(0)) {
-                R[2] = -R[2];
-            }
+            // Ensure right-handed
+            if (glm::dot(R[2], glm::cross(R[0], R[1])) < T(0)) R[2] = -R[2];
 
-            // 4) Project points into local frame to find min/max on each axis
-            Vector<T,3> minL(std::numeric_limits<T>::max());
-            Vector<T,3> maxL(std::numeric_limits<T>::lowest());
-            for (const auto &p : points) {
-                const Vector<T,3> d = p - c;
+            // 4) Project to find extents
+            Vector<T, 3> minL(std::numeric_limits<T>::max());
+            Vector<T, 3> maxL(std::numeric_limits<T>::lowest());
+            for (const auto &p: points) {
+                const Vector<T, 3> d = p - c;
                 const T lx = glm::dot(d, R[0]);
                 const T ly = glm::dot(d, R[1]);
                 const T lz = glm::dot(d, R[2]);
-                minL.x = glm::min(minL.x, lx); maxL.x = glm::max(maxL.x, lx);
-                minL.y = glm::min(minL.y, ly); maxL.y = glm::max(maxL.y, ly);
-                minL.z = glm::min(minL.z, lz); maxL.z = glm::max(maxL.z, lz);
+                minL.x = glm::min(minL.x, lx);
+                maxL.x = glm::max(maxL.x, lx);
+                minL.y = glm::min(minL.y, ly);
+                maxL.y = glm::max(maxL.y, ly);
+                minL.z = glm::min(minL.z, lz);
+                maxL.z = glm::max(maxL.z, lz);
             }
 
-            const Vector<T,3> he = (maxL - minL) * T(0.5);
-            const Vector<T,3> centerLocal = (minL + maxL) * T(0.5);
-            const Vector<T,3> centerWorld = c + R * centerLocal;
+            const Vector<T, 3> he = (maxL - minL) * T(0.5);
+            const Vector<T, 3> centerLocal = (minL + maxL) * T(0.5);
+            const Vector<T, 3> centerWorld = c + R * centerLocal;
 
             result.center = centerWorld;
             result.half_extents = he;
             result.axes = glm::quat_cast(R);
             return result;
+        }
+
+        // Build from multiple OBBs by collecting corner points and re-fitting
+        CUDA_HOST static OBB<T> build(const std::vector<OBB<T> > &obbs) noexcept {
+            std::vector<Vector<T, 3> > pts;
+            pts.reserve(obbs.size() * 8);
+            for (const auto &o: obbs) {
+                auto corners = GetVertices(o);
+                for (const auto &v: corners) pts.push_back(v);
+            }
+            return build(pts);
+        }
+
+        // Build from multiple AABBs by converting to OBB and merging
+        CUDA_HOST static OBB<T> build(const std::vector<AABB<T> > &aabbs) noexcept {
+            std::vector<OBB<T> > obbs;
+            obbs.reserve(aabbs.size());
+            for (const auto &a: aabbs) obbs.emplace_back(build(a));
+            return build(obbs);
+        }
+
+        // Build from multiple Spheres by converting to OBBs and merging
+        CUDA_HOST static OBB<T> build(const std::vector<Sphere<T> > &spheres) noexcept {
+            std::vector<OBB<T> > obbs;
+            obbs.reserve(spheres.size());
+            for (const auto &s: spheres) obbs.emplace_back(build(s));
+            return build(obbs);
         }
     };
 

@@ -82,12 +82,7 @@ namespace Bcg {
     //BuilderTraits for AABB for Point, Vector of Points, OBB, Sphere
     template<typename T, typename Shape>
     struct BuilderTraits<AABB<T>, Shape> {
-        CUDA_HOST_DEVICE static AABB<T> build(const Shape &) noexcept {
-            static_assert(sizeof(Shape) == 0, "BuilderTraits<AABB, Shape> not implemented for this shape.");
-            return AABB<T>();
-        }
-
-        CUDA_HOST_DEVICE static AABB<T> build(const std::vector<Vector<T, 3> > &shape) noexcept {
+        CUDA_HOST static AABB<T> build(const std::vector<Vector<T, 3> > &shape) noexcept {
             return AABB<T>::Build(shape.begin(), shape.end());
         }
 
@@ -102,10 +97,58 @@ namespace Bcg {
             return AABB<T>{min, max};
         }
 
-        CUDA_HOST static std::vector<AABB<T> > build_all(const std::vector<Vector<T, 3> > &points) noexcept {
+        // Build from many AABBs by merging
+        CUDA_HOST static AABB<T> build(const std::vector<AABB<T> > &shapes) noexcept {
+            AABB<T> result;
+            for (const auto &a : shapes) {
+                result.grow(a);
+            }
+            return result;
+        }
+
+        // Build from many Spheres by merging their AABBs
+        CUDA_HOST static AABB<T> build(const std::vector<Sphere<T> > &shapes) noexcept {
+            AABB<T> result;
+            for (const auto &s : shapes) {
+                const Vector<T,3> rvec(s.radius);
+                result.grow(AABB<T>{s.center - rvec, s.center + rvec});
+            }
+            return result;
+        }
+
+        // Build from many OBBs by merging the AABB of their corners
+        CUDA_HOST static AABB<T> build(const std::vector<OBB<T> > &shapes) noexcept {
+            AABB<T> result;
+            for (const auto &o : shapes) {
+                auto corners = GetVertices(o);
+                for (const auto &v : corners) result.grow(v);
+            }
+            return result;
+        }
+    };
+
+    template<typename T, typename Shapes>
+    struct BuilderTraits<std::vector<AABB<T>>, Shapes> {
+        CUDA_HOST static std::vector<AABB<T> > build(const std::vector<Vector<T, 3> > &points) noexcept {
             std::vector<AABB<T> > aabbs;
             for (const auto &p: points) {
                 aabbs.emplace_back(p, p);
+            }
+            return aabbs;
+        }
+
+        CUDA_HOST static std::vector<AABB<T> > build(const std::vector<Sphere<T> > &spheres) noexcept {
+            std::vector<AABB<T> > aabbs;
+            for (const auto &s: spheres) {
+                aabbs.emplace_back(BuilderTraits<AABB<T>, Sphere<T> >::build(s));
+            }
+            return aabbs;
+        }
+
+        CUDA_HOST static std::vector<AABB<T> > build(const std::vector<OBB<T> > &obbs) noexcept {
+            std::vector<AABB<T> > aabbs;
+            for (const auto &o: obbs) {
+                aabbs.emplace_back(BuilderTraits<AABB<T>, OBB<T> >::build(o));
             }
             return aabbs;
         }
@@ -133,12 +176,12 @@ namespace Bcg {
 
     template<typename T>
     AABB<T> Intersection(const AABB<T> &a, const AABB<T> &b) {
-        return IntersectionTraits<AABB<T>, AABB<T> >::intersects(a, b);
+        return IntersectionTraits<AABB<T>, AABB<T> >::intersection(a, b);
     }
 
     template<typename T>
     T Distance(const AABB<T> &aabb, const Vector<T, 3> &point) {
-        return DistanceTraits<AABB<T>, AABB<T> >::distance(aabb, point);
+        return DistanceTraits<AABB<T>, Vector<T, 3> >::distance(aabb, point);
     }
 
     template<typename T>

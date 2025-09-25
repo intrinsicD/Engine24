@@ -42,7 +42,7 @@ namespace Bcg {
         Log::Info("KDTREE KNN CPU: " + std::to_string(timer.stop().delta) + " seconds");
 
         auto aabbs = pci.vertex_property<AABB<float> >("v:aabb");
-        aabbs.vector() = ConvertToAABBs(pci.vpoint.vector());
+        aabbs.vector() = BuilderTraits<std::vector<AABB<float>>, std::vector<Vector<float, 3>>>::build(pci.vpoint.vector());
 
         timer.start();
         Octree octree;

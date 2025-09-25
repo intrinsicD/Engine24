@@ -9,6 +9,7 @@
 #include "TransformUtils.h"
 #include "AABBComponents.h"
 #include "CameraUtils.h"
+#include "AABBUtils.h"
 
 #include "imgui.h"
 #include "ImGuiFileDialog.h"
