@@ -55,7 +55,7 @@ namespace Bcg {
         PropertyContainer octree;
         Property<Node> nodes;
 
-        Property<AABB<float> > element_aabbs;
+        std::vector<AABB<float> > element_aabbs;
 
         [[nodiscard]] size_t get_max_elements_per_node() const noexcept {
             return max_elements_per_node;
@@ -73,11 +73,11 @@ namespace Bcg {
             return element_indices;
         }
 
-        void build(const Property<AABB<float> > &aabbs, const SplitPolicy &policy, const size_t max_per_node,
+        void build(const std::vector<AABB<float> > &aabbs, const SplitPolicy &policy, const size_t max_per_node,
                    const size_t max_depth) {
             element_aabbs = aabbs;
 
-            if (!element_aabbs) {
+            if (element_aabbs.empty()) {
                 Log::Error("Element AABBs property is not set. Cannot build octree.");
                 return;
             }
@@ -87,7 +87,7 @@ namespace Bcg {
             max_octree_depth = max_depth;
 
             octree.clear(); // Clear previous state
-            const size_t num_elements = element_aabbs.vector().size();
+            const size_t num_elements = element_aabbs.size();
 
             if (num_elements == 0) {
                 element_indices.clear();
@@ -103,7 +103,7 @@ namespace Bcg {
             const size_t root_idx = create_node();
             nodes[root_idx].first_element = 0;
             nodes[root_idx].num_elements = num_elements;
-            nodes[root_idx].aabb = AABB<float>::Build(element_aabbs.vector().begin(), element_aabbs.vector().end());
+            nodes[root_idx].aabb = AABB<float>::Build(element_aabbs.begin(), element_aabbs.end());
 
             subdivide_volume(root_idx, 0);
         }

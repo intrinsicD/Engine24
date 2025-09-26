@@ -139,9 +139,27 @@ namespace Bcg {
         int k,
         bool generalized = true,
         float sigma = 0.0f) {
+
         if (k <= 0) throw std::invalid_argument("Number of eigenvalues k must be positive.");
         if (matrices.S.rows() == 0) throw std::runtime_error("Stiffness matrix S not initialized.");
         if (k >= matrices.S.rows()) throw std::invalid_argument("k must be smaller than the matrix size.");
+
+        // Basic sanity: avoid exact-singular K = S - σ M at σ = 0 for Laplacians
+        if (generalized && std::abs(sigma) < 1e-12f) {
+            // pick a small positive shift away from the nullspace
+            sigma = 1e-3f;
+            Log::Info("Adjusted sigma to {} to avoid singular (S - sigma*M).", sigma);
+        }
+
+        // Quick finite/symmetry checks to fail fast before factorization
+        auto chk = AnalyzeLaplacian(matrices.S, &matrices.M);
+        if (!chk.symmetric || std::isnan(chk.symmetry_norm) || std::isinf(chk.symmetry_norm)) {
+            throw std::invalid_argument("Matrix S is not finite/symmetric; cannot factorize (S - sigma*M).");
+        }
+        // M should be SPD (diagonal lumping recommended)
+        if (!chk.M_spd) {
+            throw std::invalid_argument("Matrix M is not SPD; enable mass lumping or fix assembly.");
+        }
 
         EigenDecompositionResult result;
         int ncv = std::min((int) matrices.S.rows() - 1, 2 * k + 1);

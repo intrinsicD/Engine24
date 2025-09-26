@@ -46,7 +46,7 @@ namespace Bcg {
 
         timer.start();
         Octree octree;
-        octree.build(aabbs, {Octree::SplitPoint::Median, true, 0.0f}, 32, 10);
+        octree.build(aabbs.vector(), {Octree::SplitPoint::Median, true, 0.0f}, 32, 10);
 
         Log::Info("OCTREE BUILD CPU: " + std::to_string(timer.stop().delta) + " seconds");
         timer.start();

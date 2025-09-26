@@ -30,8 +30,6 @@ namespace Bcg{
     TransformComponent decompose(const glm::mat4 &matrix);
 
     glm::mat4 compose(const TransformComponent &component);
-
-    void ScaleAndCenterAt(TransformComponent &t, const glm::vec3 &center, float scale);
 }
 
 #endif //ENGINE24_TRANSFORMUTILS_H

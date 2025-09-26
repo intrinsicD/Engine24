@@ -27,13 +27,6 @@ namespace Bcg {
     }
 
     template<typename T>
-    Vector<T, 3> cross(const Vector<T, 3> &u, const Vector<T, 3> &v) {
-        return Vector<T, 3>(u[1] * v[2] - u[2] * v[1],
-                            u[2] * v[0] - u[0] * v[2],
-                            u[0] * v[1] - u[1] * v[0]);
-    }
-
-    template<typename T>
     Matrix<T, 4, 4> inverse(const Matrix<T, 4, 4> &m) {
         T Coef00 = m(2, 2) * m(3, 3) - m(2, 3) * m(3, 2);
         T Coef02 = m(2, 1) * m(3, 3) - m(2, 3) * m(3, 1);

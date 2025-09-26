@@ -72,7 +72,7 @@ namespace Bcg {
             octree = Octree();
             auto aabbs = ConvertGaussiansToAABBs();
             // Build the octree with a maximum of 32 elements per node and a maximum depth
-            octree.build(aabbs, {Octree::SplitPoint::Median, true, 0.0f}, 32, 10);
+            octree.build(aabbs.vector(), {Octree::SplitPoint::Median, true, 0.0f}, 32, 10);
         }
 
         void set_covs(const std::vector<Matrix<float, 3, 3> > &covs) {

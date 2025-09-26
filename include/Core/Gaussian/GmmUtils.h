@@ -364,96 +364,66 @@ namespace Bcg {
     }
 
     template<typename T>
-    AABB<T> aabb_for(const Vector<T, 3> &mean,
-                     const Matrix<T, 3, 3> &covariance) {
-        // The diagonal elements of the covariance matrix are the variances along the corresponding axes.
-        // The standard deviation is the square root of the variance.
-        T sigmaX = std::sqrt(covariance[0][0]);
-        T sigmaY = std::sqrt(covariance[1][1]);
-        T sigmaZ = std::sqrt(covariance[2][2]);
+    AABB<T> BuildAABB(const Vector<T, 3> &mu,
+                      const Vector<T, 3> &scale,
+                      const Quaternion<T> &quat,
+                      T k = 3.0) {
+        // Normalize quaternion to be safe.
+        Quaternion<T> q = glm::normalize(quat);
+        const Matrix<T, 3, 3> R = glm::mat3_cast(q);
 
-        // The 3-sigma range gives us the extents of the AABB from the mean.
-        Vector<T, 3> extents(3.0f * sigmaX, 3.0f * sigmaY, 3.0f * sigmaZ);
+        // k-scaled stddevs in local axes
+        const Vector<T, 3> ks = k * scale;
 
-        // The AABB is centered at the Gaussian's mean.
+        // Per-axis squared extents in world: Δ_i^2 = sum_j (R_ij^2 * (kσ_j)^2)
+        Vector<T, 3> delta;
+        const T ksx2 = ks.x * ks.x;
+        const T ksy2 = ks.y * ks.y;
+        const T ksz2 = ks.z * ks.z;
+
+        // Row 0 → x extent
+        const T r00 = R[0][0], r01 = R[1][0], r02 = R[2][0];
+        delta.x = std::sqrt(r00 * r00 * ksx2 + r01 * r01 * ksy2 + r02 * r02 * ksz2);
+
+        // Row 1 → y extent
+        const T r10 = R[0][1], r11 = R[1][1], r12 = R[2][1];
+        delta.y = std::sqrt(r10 * r10 * ksx2 + r11 * r11 * ksy2 + r12 * r12 * ksz2);
+
+        // Row 2 → z extent
+        const T r20 = R[0][2], r21 = R[1][2], r22 = R[2][2];
+        delta.z = std::sqrt(r20 * r20 * ksx2 + r21 * r21 * ksy2 + r22 * r22 * ksz2);
+
         AABB<T> box;
-        box.min = mean - extents;
-        box.max = mean + extents;
+        box.min = mu - delta;
+        box.max = mu + delta;
 
-        return box;
-    }
-
-    template<typename T>
-    AABB<T> aabb_for(const Vector<T, 3> &mean,
-                     const Vector<T, 3> &scale, const Vector<T, 4> &quat) {
-        // A Gaussian is defined by its mean and its covariance matrix Sigma.
-        // The 'scale' vector represents the standard deviations in the object's local,
-        // un-rotated coordinate system. The variances are the squares of these values.
-        Vector<T, 3> variances(scale[0] * scale[0],
-                               scale[1] * scale[1],
-                               scale[2] * scale[2]);
-
-        // The 'quat' quaternion gives us the rotation matrix R that transforms from
-        // the local coordinate system to the world coordinate system.
-        Matrix<T, 3, 3> R = glm::mat3_cast(glm::quat(quat.w, quat.x, quat.y, quat.z));
-
-        // The covariance matrix in world coordinates is given by Sigma = R * D * R^T,
-        // where D is the diagonal matrix of local variances.
-        // To find the AABB, we need the variances along the world axes, which are the
-        // diagonal elements of Sigma. A direct computation is most efficient.
-        //
-        // Sigma_ii = sum_j (R_ij^2 * D_jj)
-        //
-        // Note: GLM matrices are column-major, so R[i][j] accesses the element
-        // at column i, row j.
-
-        Matrix<T, 3, 3> R_squared = R;
-        R_squared[0][0] *= R[0][0];
-        R_squared[0][1] *= R[0][1];
-        R_squared[0][2] *= R[0][2];
-        R_squared[1][0] *= R[1][0];
-        R_squared[1][1] *= R[1][1];
-        R_squared[1][2] *= R[1][2];
-        R_squared[2][0] *= R[2][0];
-        R_squared[2][1] *= R[2][1];
-        R_squared[2][2] *= R[2][2];
-
-        // The diagonal of Sigma = R*D*R^T is the same as the diagonal of (R^2)*D,
-        // where R^2 is the element-wise square of R.
-        // Transposing R_squared because GLM is column-major to easily dot with variances.
-        Matrix<T, 3, 3> R_squared_T = glm::transpose(R_squared);
-
-        T varX = glm::dot(R_squared_T[0], variances);
-        T varY = glm::dot(R_squared_T[1], variances);
-        T varZ = glm::dot(R_squared_T[2], variances);
-
-        // The standard deviations along the world axes are the sqrt of the variances.
-        Vector<T, 3> world_std_dev(std::sqrt(varX), std::sqrt(varY), std::sqrt(varZ));
-
-        // The 3-sigma rule gives us the extents of the AABB from the mean.
-        Vector<T, 3> extents = static_cast<T>(3.0) * world_std_dev;
-
-        // The AABB is centered at the Gaussian's mean.
-        AABB<T> box;
-        box.min = mean - extents;
-        box.max = mean + extents;
-
+        // Optional: guard against zero-thickness due to tiny σ (helpful for robust tree building).
+        const T eps = T(1e-9);
+        for (int i = 0; i < 3; ++i) {
+            if (box.max[i] - box.min[i] < eps) {
+                box.min[i] -= T(0.5) * eps;
+                box.max[i] += T(0.5) * eps;
+            }
+        }
         return box;
     }
 
     template<typename T>
     std::vector<AABB<T> > compute_aabbs_from(const std::vector<Vector<T, 3> > &means,
-                                             const std::vector<Vector<T, 3> > &scale, const std::vector<Vector<T, 4> > &quat) {
+                                             const std::vector<Vector<T, 3> > &scale,
+                                             const std::vector<Vector<T, 4> > &quat) {
         size_t size = means.size();
         std::vector<AABB<T> > aabbs(size);
         for (size_t i = 0; i < size; i++) {
-            aabbs[i] = aabb_for(means[i], scale[i], quat[i]);
+            Quaternion<T> q(quat[i].x, quat[i].y, quat[i].z, quat[i].w);
+            aabbs[i] = BuildAABB(means[i], scale[i], q);
         }
         return aabbs;
     }
 
     template<typename T>
-    std::vector<AABB<T> > compute_aabbs_from(const std::vector<Vector<T, 3> > &means, const std::vector<Matrix<T, 3, 3> > &covs) {
+    std::vector<AABB<T> > compute_aabbs_from(const std::vector<Vector<T, 3> > &means,
+                                             const std::vector<Matrix<T, 3, 3> > &covs) {
         size_t size = means.size();
         std::vector<AABB<T> > aabbs(size);
         for (size_t i = 0; i < size; i++) {
@@ -491,9 +461,9 @@ namespace Bcg {
             Stopwatch sw("Stage 1: Precomputing per-vertex covariances");
             for (const auto v_i: gi.vertices) {
                 m_i[v_i] = MapConst(glm::dvec3(gi.vpoint[v_i]));
-                auto v_i_quat = Eigen::Quaternion<T>(rotation[v_i].w, rotation[v_i].x, rotation[v_i].y,
-                                                     rotation[v_i].z);
-                auto v_i_scale = Vector<T, 3>(scale[v_i].x, scale[v_i].y, scale[v_i].z);
+                auto v_i_quat = Eigen::Quaternion<T>(rotation[v_i].x, rotation[v_i].y, rotation[v_i].z,
+                                                     rotation[v_i].w);
+                auto v_i_scale = glm::exp(Vector<T, 3>(scale[v_i].x, scale[v_i].y, scale[v_i].z));
                 CovarianceInterface<T> i_cov_i(v_i_scale, v_i_quat);
                 sigma_i[v_i] = i_cov_i.get_covariance_matrix();
                 sigma_i_inverse[v_i] = sigma_i[v_i].inverse();

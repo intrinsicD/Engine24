@@ -14,8 +14,12 @@
 #include "TransformComponent.h"
 #include "ModuleGraph.h"
 #include "PointCloudUtils.h"
+#include "GaussianGalerkinLaplacian.h"
+#include "VecTraits.h"
 
 #include <entt/entity/registry.hpp>
+
+#include "EventsKeys.h"
 
 
 namespace Bcg {
@@ -77,22 +81,6 @@ namespace Bcg {
             auto scales = pci->get_vertex_property<Vector<float, 3> >("v:scale");
             auto rotations = pci->get_vertex_property<Vector<float, 4> >("v:rotation");
 
-            if (!covs) {
-                if (ImGui::Button("Initialize Covariances")) {
-                    if (scales) {
-                        if (rotations) {
-                            //anisotropic case
-                            covs = pci->vertex_property<Matrix<float, 3, 3> >("v:covs");
-                            covs.vector() = compute_covs_from(scales.vector(), rotations.vector());
-                        } else {
-                            //isotropic case
-                            covs = pci->vertex_property<Matrix<float, 3, 3> >("v:covs");
-                            covs.vector() = compute_covs_from(scales.vector());
-                        }
-                    }
-                }
-            }
-
             static float sigma_k = 1.0f;
             if (scales) {
                 ImGui::SliderFloat("Sigma multiplier (k)", &sigma_k, 0.1f, 5.0f, "%.2f x sigma");
@@ -102,6 +90,75 @@ namespace Bcg {
                 if (ImGui::SmallButton("2x")) sigma_k = 2.0f;
                 ImGui::SameLine();
                 if (ImGui::SmallButton("3x")) sigma_k = 3.0f;
+            }
+
+            static std::vector<Gaussian<float>> gaussians(mus.vector().size());
+            static LaplacianAssemblyOptions<float> opt;
+            static float c_value = 1.0f;
+            ImGui::InputFloat("c value", &c_value);
+            ImGui::Checkbox("Use mass lumping", &opt.lump_mass);
+            ImGui::Checkbox("Use random-walk normalization", &opt.normalize_rw);
+            ImGui::Checkbox("Use symmetric normalization", &opt.normalize_sym);
+            ImGui::Checkbox("Use symmetric pairs", &opt.symmetric_pair);
+            if (ImGui::Button("Galerkin")) {
+                for (size_t i = 0; i < mus.vector().size(); ++i) {
+                    gaussians[i].mu = Eigen::Vector<float, 3>(mus.vector()[i].x, mus.vector()[i].y, mus.vector()[i].z);
+                    gaussians[i].log_sigma = Eigen::Vector<float, 3>(scales.vector()[i].x, scales.vector()[i].y, scales.vector()[i].z);
+                    gaussians[i].q = Eigen::Quaternion<float>(rotations.vector()[i].x, rotations.vector()[i].y, rotations.vector()[i].z, rotations.vector()[i].w).normalized();
+                    gaussians[i].w = weights ? weights.vector()[i] : 1.0f;
+                }
+
+                auto result = AssembleGaussianGalerkinLaplacian<float>(gaussians, opt, c_value, sigma_k);
+                Engine::State().emplace_or_replace<LaplacianMatrices>(entity_id, result);
+            }
+
+            if(m_registry.all_of<LaplacianMatrices>(entity_id)){
+                auto &laplacians = m_registry.get<LaplacianMatrices>(entity_id);
+                static int k = 10;
+                ImGui::InputInt("num eigenvalues", &k);
+                static bool generalized = true;
+                ImGui::Checkbox("generalized", &generalized);
+                static float sigma = 0.0f;
+                ImGui::InputFloat("sigma", &sigma);
+                if(ImGui::Button("Compute Eigen Decomposition")){
+                    auto result = EigenDecompositionSparse(laplacians, k, generalized, sigma);
+                    m_registry.emplace_or_replace<EigenDecompositionResult>(entity_id, result);
+                    for(int i = 0; i < k; ++i){
+                        Property<float> evec = pci->vertices.add<float>("evec" + std::to_string(i));
+                        Map(evec.vector()) = result.evecs.col(i);
+                    }
+                }
+                if(m_registry.all_of<EigenDecompositionResult>(entity_id)){
+                    auto &result = m_registry.get<EigenDecompositionResult>(entity_id);
+                    //Show plot of eigenvalues if they exist
+                    if (ImPlot::BeginPlot("Eigenvalue Spectrum", "Index (i)", "Value (λ)")) {
+                        ImPlot::PlotLine("λ", result.evals.data(), result.evals.size());
+                        ImPlot::EndPlot();
+                    }
+
+                    // --- Method 2: Log-Scale Plot ---
+                    if (ImPlot::BeginPlot("Log-Scale Spectrum", "Index (i)", "Value (log λ)")) {
+                        // --- FIX ---
+                        // 1. Create a temporary vector for the shifted data.
+                        std::vector<float> shifted_evals;
+                        shifted_evals.resize(result.evals.size());
+
+                        // 2. Add a small epsilon to each eigenvalue.
+                        float epsilon = 1e-8f;
+                        for (size_t i = 0; i < result.evals.size(); ++i) {
+                            shifted_evals[i] = result.evals[i] + epsilon;
+                        }
+
+                        // 3. Set the axis scale to logarithmic *before* plotting.
+                        ImPlot::SetupAxisScale(ImAxis_Y1, ImPlotScale_Log10);
+
+                        // 4. Plot the new, shifted data.
+                        ImPlot::PlotLine("log(λ + ε)", shifted_evals.data(), shifted_evals.size());
+
+                        ImPlot::EndPlot();
+                    }
+                }
+                ImGui::Separator();
             }
 
             if (covs) {

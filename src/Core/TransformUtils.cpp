@@ -33,8 +33,4 @@ namespace Bcg {
         return trans * rot * sc;
     }
 
-    void ScaleAndCenterAt(TransformComponent &t, const glm::vec3 &center_world, float scale) {
-        t.position = center_world;
-        t.scale = glm::vec3(scale);
-    }
 }

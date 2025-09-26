@@ -93,7 +93,7 @@ namespace Bcg {
 
         for (size_t i = 0; i < means.size(); ++i) {
             const auto &mean = means[i];
-            const auto &scale = scales[i] * mul; // scale -> 2*k*sigma
+            const auto &scale = glm::exp(scales[i]) * mul; // scale -> 2*k*sigma
             const auto &rot_vec = rotations_vec4[i];
 
             glm::qua<T> rotation = glm::normalize(glm::qua<T>(rot_vec.x, rot_vec.y, rot_vec.z, rot_vec.w));
